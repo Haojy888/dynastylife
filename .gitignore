@@ -1,0 +1,7 @@
+node_modules/
+.DS_Store
+Thumbs.db
+*.log
+
+# Local visual verification screenshots, not required by the web app.
+/*.png

@@ -1,0 +1,29 @@
+{
+  "source": "Extracted from Unity APK addressable bundles",
+  "eventCount": 561,
+  "activityEventCount": 260,
+  "talentCount": 34,
+  "coreTalentCount": 18,
+  "careerCount": 27,
+  "methodStats": {
+    "InfluenceRandomPropertyOfInt": 664,
+    "InfluencePropertyOfInt": 166,
+    "BecomeFriends": 109,
+    "InfluenceSick": 53,
+    "GoToChangeCityData": 47,
+    "ResetAvatar": 18,
+    "InfluencePersonEnterPrison": 16,
+    "InfluencePersonSelfOfDeath": 11,
+    "AddTag": 6,
+    "InfluencePersonSelfSick": 6,
+    "ToTemple": 5,
+    "Dismiss": 3,
+    "GoToBetNumber": 3,
+    "InfluenceSelfOfDeath": 3,
+    "InfluenceCure": 2,
+    "InviteToParty": 2,
+    "ChangedUpperLimitOfLife": 1,
+    "GoToWhoreHouse": 1,
+    "InfluencePersonSelfCureOfAllSick": 1
+  }
+}
