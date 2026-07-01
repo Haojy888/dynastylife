@@ -495,6 +495,52 @@ const PLEASURE_STORIES = [
   },
 ];
 
+const COURTESAN_MIN_AGE = 18;
+const COURTESAN_ROUNDS = [
+  {
+    id: "talent",
+    label: "才艺展示",
+    action: "欣赏",
+    note: "听琴、观舞、看诗画，眼力与学识会影响你能否看出妙处。",
+  },
+  {
+    id: "wit",
+    label: "机锋问答",
+    action: "问答",
+    note: "席上出题试才情，处世与德行越高，越能问出佳句。",
+  },
+  {
+    id: "gift",
+    label: "赠礼助兴",
+    action: "赠礼",
+    note: "以花笺、绢帕或金钗助兴，能推高支持，也可能折损德行。",
+  },
+];
+const COURTESAN_SPECIALTIES = [
+  { name: "琵琶", icon: "BambooFlute", text: "指下急雨落银瓶，最擅一曲边塞旧调。" },
+  { name: "昆曲", icon: "Activity", text: "唱腔婉转，水袖一翻，满堂都静了下来。" },
+  { name: "诗词", icon: "Book", text: "临席成句，善把离合悲欢写进短笺。" },
+  { name: "舞袖", icon: "FlowerChiefTitle", text: "长袖回风，步步踩在鼓点与灯影里。" },
+  { name: "琴艺", icon: "FemaleSkill", text: "琴声清越，不求喧哗，却最能入人心。" },
+  { name: "说唱", icon: "MainBook", text: "能把市井故事唱得跌宕，惹得满座喝彩。" },
+];
+const COURTESAN_BACKGROUNDS = [
+  "出身梨园，自幼随师学艺，最看重知音二字。",
+  "曾在富户家教习女乐，谈吐温雅，心思细密。",
+  "家道中落后入坊，仍藏着几卷旧书与一身傲气。",
+  "随商队辗转诸城，见多识广，能讲各地奇闻。",
+  "被老鸨重点栽培，场面功夫圆熟，也懂得自保。",
+  "性情清冷，不爱争宠，只在曲中藏锋。",
+];
+const COURTESAN_QUESTIONS = [
+  "若忠孝难两全，何者为先？",
+  "一首诗最贵风骨，还是最贵情真？",
+  "富贵人家相争，平民该不该卷入？",
+  "遇知己赏识，是当守身自重，还是乘势改命？",
+  "官场贵人邀饮，如何既不失礼又不失身段？",
+  "风月场中一句承诺，究竟值几分真心？",
+];
+
 const MAIN_DOORS = [
   { id: "home", label: "家中", icon: "FamilyIcon" },
   { id: "assets", label: "家产", icon: "House" },
@@ -1104,6 +1150,11 @@ function clamp(value, min = 0, max = 100) {
   return Math.max(min, Math.min(max, value));
 }
 
+function clampNumber(value, min, max, fallback = min) {
+  const next = Number.isFinite(Number(value)) ? Number(value) : fallback;
+  return Math.max(min, Math.min(max, Math.round(next)));
+}
+
 function escapeHtml(value) {
   return String(value ?? "")
     .replace(/&/g, "&amp;")
@@ -1279,6 +1330,7 @@ function startLife() {
     study: { prep: 0, lastYear: -1 },
     gamble: createGambleRound(50),
     miniGames: createMiniGamesState(),
+    courtesanContest: null,
     market: { year: -1, factor: 1 },
     caravanMemory: {},
     pendingCaravan: null,
@@ -1356,6 +1408,7 @@ function normalizeState(raw) {
   next.study = normalizeStudy(next.study);
   next.gamble = normalizeGamble(next.gamble);
   next.miniGames = normalizeMiniGames(next.miniGames);
+  next.courtesanContest = normalizeCourtesanContest(next.courtesanContest);
   next.careerProgress = next.careerProgress && typeof next.careerProgress === "object" ? next.careerProgress : {};
   next.market = next.market && typeof next.market === "object" ? next.market : {};
   next.market.year = Number.isFinite(Number(next.market.year)) ? Number(next.market.year) : -1;
@@ -1502,6 +1555,87 @@ function normalizeFriend(friend) {
     id: source.id || `friend-${name}`,
     lastMet: Number.isFinite(Number(source.lastMet)) ? Number(source.lastMet) : -1,
     debt: Math.max(0, Number(source.debt) || 0),
+  };
+}
+
+function courtesanEntranceCost() {
+  const money = Number(state?.stats?.money || 0);
+  return clampNumber(Math.round(money * 0.018), 80, 900, 120);
+}
+
+function courtesanGiftCost() {
+  const money = Number(state?.stats?.money || 0);
+  return clampNumber(Math.round(money * 0.012), 50, 600, 80);
+}
+
+function createCourtesanCandidate(index = 0) {
+  const specialty = sample(COURTESAN_SPECIALTIES) || COURTESAN_SPECIALTIES[0];
+  return normalizeCourtesanCandidate({
+    id: `courtesan-${Date.now()}-${index}-${Math.random().toString(16).slice(2)}`,
+    name: makePersonName("female"),
+    age: randInt(18, 28),
+    specialty: specialty.name,
+    icon: specialty.icon,
+    specialtyText: specialty.text,
+    background: sample(COURTESAN_BACKGROUNDS),
+    talent: randInt(42, 95),
+    wit: randInt(36, 92),
+    virtue: randInt(28, 88),
+    looks: randInt(48, 96),
+    support: randInt(4, 18),
+    affection: randInt(42, 66),
+    score: 0,
+    roundScores: [],
+  }, index);
+}
+
+function normalizeCourtesanCandidate(candidate, index = 0) {
+  const source = candidate && typeof candidate === "object" ? candidate : {};
+  const specialty = COURTESAN_SPECIALTIES.find((item) => item.name === source.specialty) || sample(COURTESAN_SPECIALTIES) || COURTESAN_SPECIALTIES[0];
+  return {
+    id: source.id || `courtesan-${index}-${Math.random().toString(16).slice(2)}`,
+    name: source.name || makePersonName("female"),
+    age: clampNumber(source.age, 18, 36, randInt(18, 28)),
+    specialty: source.specialty || specialty.name,
+    icon: source.icon || specialty.icon,
+    specialtyText: source.specialtyText || specialty.text,
+    background: source.background || sample(COURTESAN_BACKGROUNDS) || "身世不详，却以一门才艺立足瓦舍。",
+    talent: clampNumber(source.talent, 0, 100, randInt(42, 95)),
+    wit: clampNumber(source.wit, 0, 100, randInt(36, 92)),
+    virtue: clampNumber(source.virtue, 0, 100, randInt(28, 88)),
+    looks: clampNumber(source.looks, 0, 100, randInt(48, 96)),
+    support: clampNumber(source.support, 0, 100, randInt(4, 18)),
+    affection: clampNumber(source.affection, 0, 100, randInt(42, 66)),
+    score: Math.max(0, Math.round(Number(source.score) || 0)),
+    roundScores: Array.isArray(source.roundScores) ? source.roundScores.slice(0, COURTESAN_ROUNDS.length) : [],
+  };
+}
+
+function createCourtesanContest() {
+  const count = randInt(3, 5);
+  return normalizeCourtesanContest({
+    id: `contest-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    round: 0,
+    entranceCost: courtesanEntranceCost(),
+    giftCost: courtesanGiftCost(),
+    startedYear: Number(state?.year ?? state?.age ?? 0),
+    candidates: Array.from({ length: count }, (_, index) => createCourtesanCandidate(index)),
+    log: ["今日后楼设局评选佳丽，诸客入席，花笺在案，灯影照人。"],
+  });
+}
+
+function normalizeCourtesanContest(contest) {
+  if (!contest || typeof contest !== "object" || !Array.isArray(contest.candidates)) return null;
+  const candidates = contest.candidates.map(normalizeCourtesanCandidate).filter(Boolean).slice(0, 6);
+  if (!candidates.length) return null;
+  return {
+    id: contest.id || `contest-${Date.now()}`,
+    round: clampNumber(contest.round, 0, COURTESAN_ROUNDS.length, 0),
+    entranceCost: Math.max(0, Math.round(Number(contest.entranceCost) || 120)),
+    giftCost: Math.max(0, Math.round(Number(contest.giftCost) || 80)),
+    startedYear: Number.isFinite(Number(contest.startedYear)) ? Number(contest.startedYear) : 0,
+    candidates,
+    log: Array.isArray(contest.log) ? contest.log.slice(-8) : [],
   };
 }
 
@@ -4733,9 +4867,150 @@ function newGambleRound() {
   render();
 }
 
+function startCourtesanContest(forceNew = false) {
+  if (!state || state.dead || state.prisonYears > 0 || state.age < COURTESAN_MIN_AGE) return;
+  if (state.courtesanContest && !forceNew) {
+    view.page = "courtesanContest";
+    save();
+    render();
+    return;
+  }
+  const contest = createCourtesanContest();
+  const deltas = [];
+  if (state.stats.money < contest.entranceCost) {
+    return finishAction("囊中羞涩", `今晚佳丽竞选需入席钱 ${moneyText(contest.entranceCost)}，你盘缠不足，只得暂且作罢。`, [{ label: "钱财", value: "不足", negative: true }], "CashBox");
+  }
+  changeStat("money", -contest.entranceCost, deltas);
+  changeStat("mood", randInt(1, 3), deltas);
+  addLedger("佳丽竞选", -contest.entranceCost, "瓦舍风月入席钱。");
+  state.courtesanContest = contest;
+  state.lastDeltas = deltas;
+  view.page = "courtesanContest";
+  view.placeId = "theater";
+  save();
+  render();
+}
+
+function courtesanRoundScore(candidate, roundId, supported = false) {
+  const audience = randInt(8, 24) + Math.floor(candidate.support / 4);
+  let base = 0;
+  let boost = 0;
+  if (roundId === "talent") {
+    base = Math.floor(candidate.talent * 0.5 + candidate.looks * 0.2);
+    boost = Math.floor(((state.stats.knowledge || 0) + (state.stats.eq || 0)) / 18) + randInt(8, 18);
+  } else if (roundId === "wit") {
+    base = Math.floor(candidate.wit * 0.52 + candidate.virtue * 0.16);
+    boost = Math.floor(((state.stats.eq || 0) + (state.stats.virtue || 0)) / 20) + randInt(8, 20);
+  } else {
+    base = Math.floor(candidate.affection * 0.34 + candidate.support * 0.5);
+    boost = randInt(16, 32) + Math.floor(courtesanGiftCost() / 25);
+  }
+  return base + audience + (supported ? boost : 0);
+}
+
+function courtesanRoundLine(candidate, roundId, score) {
+  const question = sample(COURTESAN_QUESTIONS);
+  if (roundId === "talent") return `${candidate.name}献${candidate.specialty}，${candidate.specialtyText} 本轮得 ${score} 分。`;
+  if (roundId === "wit") return `你以“${question}”问${candidate.name}，她应答得体，满座点头，本轮得 ${score} 分。`;
+  return `你赠礼助兴，${candidate.name}含笑谢过，灯下声望又起，本轮得 ${score} 分。`;
+}
+
+function chooseCourtesanAction(candidateId, actionId) {
+  const contest = normalizeCourtesanContest(state.courtesanContest);
+  const round = COURTESAN_ROUNDS[contest?.round || 0];
+  if (!contest || !round || actionId !== round.id) return;
+  const target = contest.candidates.find((candidate) => candidate.id === candidateId);
+  if (!target) return;
+  const deltas = [];
+  if (round.id === "gift") {
+    const cost = contest.giftCost || courtesanGiftCost();
+    if (state.stats.money < cost) {
+      state.lastDeltas = [{ label: "钱财", value: "不足", negative: true }];
+      return render();
+    }
+    changeStat("money", -cost, deltas);
+    changeStat("relationship", randInt(1, 3), deltas);
+    changeStat("virtue", -randInt(0, 2), deltas);
+    addLedger("竞选赠礼", -cost, `赠礼支持${target.name}。`);
+    target.affection = clampNumber(target.affection + randInt(8, 16), 0, 100, target.affection);
+    target.support = clampNumber(target.support + randInt(10, 20), 0, 100, target.support);
+  } else if (round.id === "talent") {
+    changeStat("mood", randInt(2, 5), deltas);
+    changeStat("knowledge", randInt(1, 3), deltas);
+    target.affection = clampNumber(target.affection + randInt(3, 8), 0, 100, target.affection);
+  } else if (round.id === "wit") {
+    changeStat("eq", randInt(1, 4), deltas);
+    changeStat("virtue", randInt(-1, 2), deltas);
+    target.affection = clampNumber(target.affection + randInt(4, 9), 0, 100, target.affection);
+  }
+  let selectedLine = "";
+  contest.candidates = contest.candidates.map((candidate) => {
+    const supported = candidate.id === candidateId;
+    const score = courtesanRoundScore(candidate, round.id, supported);
+    const next = { ...candidate };
+    next.score += score;
+    next.roundScores = [...next.roundScores, { round: round.id, score, supported }];
+    if (supported) selectedLine = courtesanRoundLine(next, round.id, score);
+    return next;
+  });
+  contest.round += 1;
+  contest.log = [...contest.log, selectedLine].slice(-8);
+  state.courtesanContest = normalizeCourtesanContest(contest);
+  state.lastDeltas = deltas;
+  save();
+  render();
+}
+
+function finishCourtesanContest() {
+  const contest = normalizeCourtesanContest(state.courtesanContest);
+  if (!contest || contest.round < COURTESAN_ROUNDS.length) return;
+  const ranking = [...contest.candidates].sort((a, b) => b.score - a.score);
+  const winner = ranking[0];
+  const deltas = [];
+  changeStat("mood", randInt(4, 10), deltas);
+  changeStat("eq", randInt(1, 4), deltas);
+  changeStat("relationship", randInt(3, 8), deltas);
+  if (winner.score >= 250) changeStat("favorability", randInt(1, 4), deltas);
+  if (Math.random() > 0.74) changeStat("virtue", -randInt(1, 3), deltas);
+  let bondText = "";
+  const bond = clampNumber(winner.affection + Math.floor(winner.score / 18), 45, 96, winner.affection);
+  if (state.gender === "male" && !state.family.spouse && !state.family.lover && bond >= 62) {
+    state.family.lover = winner.name;
+    state.family.loverMeta = normalizeRelative({
+      name: winner.name,
+      relation: "花魁知己",
+      gender: "female",
+      age: winner.age,
+      physique: randInt(45, 78),
+      affection: bond,
+    }, state.name.slice(0, 1), "partner");
+    state.family.spouseAffection = bond;
+    bondText = `散场后，${winner.name}托人送来花笺，愿与你常通音讯，成为花魁知己。`;
+  } else if (!state.friends.some((friend) => friend.name === winner.name)) {
+    state.friends.push(normalizeFriend({
+      name: winner.name,
+      relation: "花魁知己",
+      gender: "female",
+      age: winner.age,
+      physique: randInt(45, 78),
+      affection: bond,
+      lastMet: state.age,
+    }));
+    bondText = `${winner.name}记下你的赏识，日后可作一位风月场中的知己。`;
+  }
+  if (!state.tags.includes("瓦舍知音")) state.tags.push("瓦舍知音");
+  const runnerUp = ranking[1];
+  const text = `三轮竞选落定，${winner.name}以 ${winner.score} 分夺得花魁，${runnerUp ? `${runnerUp.name}居次。` : "满堂喝彩。"}你在席间赏才、问答、赠礼，既得一夜风雅，也添几分人脉牵连。${bondText}`;
+  state.courtesanContest = null;
+  view.page = "place";
+  view.placeId = "theater";
+  finishAction("花魁竞选", text, deltas, "FlowerChiefTitle");
+}
+
 function performPlaceAction(id) {
   if (!state || state.dead || state.prisonYears > 0) return;
   if (id === "prepareExam") return prepareExam();
+  if (id === "courtesanContest") return startCourtesanContest();
   const deltas = [];
   let title = "去处";
   let text = "";
@@ -5286,6 +5561,7 @@ function inheritFromChild(id) {
     study: { prep: Math.floor(heirStudy / 4), lastYear: -1 },
     gamble: createGambleRound(50),
     miniGames: createMiniGamesState(),
+    courtesanContest: null,
     market: { year: -1, factor: 1 },
     caravanMemory: normalizeCaravanMemory(state.caravanMemory),
     family: {
@@ -6601,6 +6877,7 @@ function centerContent() {
   if (view.page === "codex") return codexView();
   if (view.page === "gamble") return gambleView();
   if (view.page === "miniGames") return miniGamesView();
+  if (view.page === "courtesanContest") return courtesanContestView();
   if (view.page === "activity") return activityView();
   if (view.page === "exam") return examView();
   return overviewView();
@@ -6707,6 +6984,95 @@ function activityView() {
       ${activity.exam ? examStatusNote() : ""}
     </article>
     ${activityEventPreview(activity)}`;
+}
+
+function courtesanContestView() {
+  const contest = normalizeCourtesanContest(state.courtesanContest);
+  if (!contest) {
+    return `
+      <article class="play-card courtesan-card">
+        <p class="eyebrow">瓦舍风月</p>
+        <h2>佳丽竞选</h2>
+        <p>今夜灯影未起，后楼暂无竞选。若想入席，可重新开一场。</p>
+        <div class="main-actions">
+          <button class="primary-btn" data-action="courtesan-contest-start">入席开场</button>
+          <button class="ghost-btn" data-action="back-places">返回活动</button>
+        </div>
+      </article>`;
+  }
+  const round = COURTESAN_ROUNDS[contest.round];
+  const ranking = [...contest.candidates].sort((a, b) => b.score - a.score);
+  const leader = ranking[0];
+  const finished = contest.round >= COURTESAN_ROUNDS.length;
+  return `
+    <article class="play-card courtesan-card">
+      <div class="courtesan-hero">
+        <div>
+          <p class="eyebrow">瓦舍风月</p>
+          <h2>佳丽竞选</h2>
+          <p>${finished ? "三轮已毕，花魁将定。" : `${round.label}：${round.note}`}</p>
+        </div>
+        <div class="courtesan-preview">
+          <span>花魁预选</span>
+          <strong>${escapeHtml(leader?.name || "未定")}</strong>
+          <small>${leader ? `${leader.score} 分 · ${leader.specialty}` : "尚未开评"}</small>
+        </div>
+      </div>
+      <section class="score-grid courtesan-summary">
+        ${scoreTile("轮次", `${Math.min(contest.round + 1, COURTESAN_ROUNDS.length)}/${COURTESAN_ROUNDS.length}`)}
+        ${scoreTile("入席", moneyText(contest.entranceCost))}
+        ${scoreTile("赠礼", moneyText(contest.giftCost))}
+      </section>
+      <section class="courtesan-list">
+        ${ranking.map((candidate, index) => courtesanCandidateCard(candidate, index, round, finished, contest.giftCost)).join("")}
+      </section>
+      <section class="courtesan-log">
+        <strong>席间记录</strong>
+        ${(contest.log || []).slice().reverse().map((item) => `<p>${escapeHtml(item)}</p>`).join("")}
+      </section>
+      <div class="main-actions">
+        ${finished ? `<button class="primary-btn" data-action="courtesan-contest-finish">评定花魁</button>` : ""}
+        <button class="ghost-btn" data-action="back-places">返回瓦舍</button>
+      </div>
+    </article>`;
+}
+
+function courtesanCandidateCard(candidate, index, round, finished, giftCost) {
+  const stats = [
+    ["才艺", candidate.talent],
+    ["机智", candidate.wit],
+    ["品德", candidate.virtue],
+    ["姿容", candidate.looks],
+  ];
+  const rankLabel = index === 0 ? "花魁预选" : `第 ${index + 1} 名`;
+  const actionDisabled = round?.id === "gift" && state.stats.money < giftCost;
+  return `
+    <article class="courtesan-person ${index === 0 ? "leading" : ""}">
+      <div class="courtesan-avatar">
+        ${icon(candidate.icon || "FlowerChiefTitle", candidate.specialty)}
+        <span>${escapeHtml(candidate.name.slice(-1))}</span>
+      </div>
+      <div class="courtesan-body">
+        <header>
+          <div>
+            <small>${escapeHtml(rankLabel)} · ${candidate.age} 岁</small>
+            <h3>${escapeHtml(candidate.name)}</h3>
+          </div>
+          <b>${candidate.score} 分</b>
+        </header>
+        <p>${escapeHtml(candidate.background)}</p>
+        <p class="courtesan-talent">${escapeHtml(candidate.specialty)} · ${escapeHtml(candidate.specialtyText)}</p>
+        <div class="courtesan-bars">
+          ${stats.map(([label, value]) => `
+            <span><em>${escapeHtml(label)}</em><i><b style="width:${clampNumber(value, 0, 100, 0)}%"></b></i><strong>${value}</strong></span>
+          `).join("")}
+        </div>
+        <div class="courtesan-card-foot">
+          <span>拉拢度 ${candidate.affection}</span>
+          ${finished || !round ? `<span>待评定</span>` : `<button class="primary-btn" data-courtesan-action="${round.id}" data-courtesan-id="${escapeHtml(candidate.id)}" ${actionDisabled ? "disabled" : ""}>${escapeHtml(round.action)}${round.id === "gift" ? ` · ${moneyText(giftCost)}` : ""}</button>`}
+        </div>
+      </div>
+    </article>`;
 }
 
 function eventResultView() {
@@ -6893,6 +7259,7 @@ function placeActionButtons(place, locked) {
     theater: [
       ["theaterWatch", "听曲看戏", "消磨半日，心情舒展。", "Activity"],
       ["pleasureRisk", "花酒消遣", "18 岁后可入，快意花费，也有损德染病之险", "Whorehouse", 18],
+      ["courtesanContest", "佳丽竞选", "18 岁后可入，赏才问答，评出一夜花魁", "FlowerChiefTitle", COURTESAN_MIN_AGE],
     ],
     temple: [["templePray", "焚香祈福", "添德行、安心绪", "Temple"]],
     academy: [["prepareExam", "备考温课", "消耗一年在书院温题，提升备考进度", "Book"]],
@@ -8402,6 +8769,7 @@ app.addEventListener("click", (event) => {
   if (button.dataset.guessKind) return chooseGuessKind(button.dataset.guessKind);
   if (button.dataset.guessValue) return chooseGuessValue(button.dataset.guessValue);
   if (button.dataset.guessRounds) return setGuessRounds(button.dataset.guessRounds);
+  if (button.dataset.courtesanAction) return chooseCourtesanAction(button.dataset.courtesanId, button.dataset.courtesanAction);
   if (button.dataset.paiGowTile !== undefined) return selectPaiGowTile(button.dataset.paiGowTile);
   if (button.dataset.paiGowAuto) return autoPaiGowSplit(button.dataset.paiGowAuto);
   if (button.dataset.bigSmallChoice) return chooseBigSmall(button.dataset.bigSmallChoice);
@@ -8421,6 +8789,8 @@ app.addEventListener("click", (event) => {
   if (button.dataset.action === "pai-gow-new") return newPaiGowRound();
   if (button.dataset.action === "big-small-open") return revealBigSmall();
   if (button.dataset.action === "big-small-new") return newBigSmallRound();
+  if (button.dataset.action === "courtesan-contest-start") return startCourtesanContest(true);
+  if (button.dataset.action === "courtesan-contest-finish") return finishCourtesanContest();
   if (button.dataset.specialPlace) return useSpecialPlace(button.dataset.specialPlace);
   if (button.dataset.placeAction) return performPlaceAction(button.dataset.placeAction);
   if (button.dataset.cricketAction) return cricketAction(button.dataset.cricketAction, button.dataset.cricketId || "");
