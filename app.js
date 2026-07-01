@@ -524,6 +524,12 @@ const COURTESAN_SPECIALTIES = [
   { name: "琴艺", icon: "FemaleSkill", text: "琴声清越，不求喧哗，却最能入人心。" },
   { name: "说唱", icon: "MainBook", text: "能把市井故事唱得跌宕，惹得满座喝彩。" },
 ];
+const COURTESAN_PORTRAITS = [
+  "assets/courtesan-avatar-1.png",
+  "assets/courtesan-avatar-2.png",
+  "assets/courtesan-avatar-3.png",
+  "assets/courtesan-avatar-4.png",
+];
 const COURTESAN_BACKGROUNDS = [
   "出身梨园，自幼随师学艺，最看重知音二字。",
   "曾在富户家教习女乐，谈吐温雅，心思细密。",
@@ -1576,6 +1582,7 @@ function createCourtesanCandidate(index = 0) {
     age: randInt(18, 28),
     specialty: specialty.name,
     icon: specialty.icon,
+    portrait: COURTESAN_PORTRAITS[index % COURTESAN_PORTRAITS.length],
     specialtyText: specialty.text,
     background: sample(COURTESAN_BACKGROUNDS),
     talent: randInt(42, 95),
@@ -1598,6 +1605,7 @@ function normalizeCourtesanCandidate(candidate, index = 0) {
     age: clampNumber(source.age, 18, 36, randInt(18, 28)),
     specialty: source.specialty || specialty.name,
     icon: source.icon || specialty.icon,
+    portrait: source.portrait || COURTESAN_PORTRAITS[index % COURTESAN_PORTRAITS.length],
     specialtyText: source.specialtyText || specialty.text,
     background: source.background || sample(COURTESAN_BACKGROUNDS) || "身世不详，却以一门才艺立足瓦舍。",
     talent: clampNumber(source.talent, 0, 100, randInt(42, 95)),
@@ -7049,8 +7057,7 @@ function courtesanCandidateCard(candidate, index, round, finished, giftCost) {
   return `
     <article class="courtesan-person ${index === 0 ? "leading" : ""}">
       <div class="courtesan-avatar">
-        ${icon(candidate.icon || "FlowerChiefTitle", candidate.specialty)}
-        <span>${escapeHtml(candidate.name.slice(-1))}</span>
+        ${candidate.portrait ? `<img class="courtesan-portrait" src="${escapeHtml(candidate.portrait)}" alt="${escapeHtml(candidate.name)}" loading="eager">` : icon(candidate.icon || "FlowerChiefTitle", candidate.specialty)}
       </div>
       <div class="courtesan-body">
         <header>
