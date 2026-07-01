@@ -5,3 +5,6 @@ Thumbs.db
 
 # Local visual verification screenshots, not required by the web app.
 /*.png
+
+.vercel
+.env*
