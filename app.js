@@ -406,6 +406,95 @@ const TOP_SHORTCUTS = [
   { id: "menu", label: "菜单", icon: "Menu" },
 ];
 
+const THEATER_WATCH_STORIES = [
+  {
+    title: "瓦舍听书",
+    icon: "MainBook",
+    text: "说书先生拍案讲到旧朝奇案，满座屏息。你听出其中几分人情曲折，散场后还与邻座争论了半盏茶。",
+    effects: { mood: [4, 8], eq: [1, 4], knowledge: [1, 3] },
+  },
+  {
+    title: "瓦舍观戏",
+    icon: "Activity",
+    text: "台上生旦净末轮番登场，一折忠义戏唱到紧处，连卖茶的小厮都停了手。你心中郁气被锣鼓敲散。",
+    effects: { mood: [5, 10], virtue: [0, 2] },
+  },
+  {
+    title: "杂耍惊座",
+    icon: "Game",
+    text: "有伶人抛丸走索，足尖悬在细绳上，下面喝彩声如潮。你看得掌心生汗，倒也学到几分临场镇定。",
+    effects: { mood: [3, 7], physique: [0, 2], eq: [1, 3] },
+  },
+  {
+    title: "曲终识友",
+    icon: "Relationship1",
+    text: "散场时一位同好与你评曲，说到板眼处颇有见地。两人越谈越投契，互留姓名，约定下回再同听一出。",
+    effects: { mood: [3, 7], relationship: [3, 8], eq: [1, 3] },
+    friend: true,
+  },
+  {
+    title: "梨园手札",
+    icon: "Book",
+    text: "后台老伶人见你听得认真，递来一页旧抄戏词。纸边磨旧，唱腔批注却清楚，你收好后觉得颇有意味。",
+    effects: { mood: [2, 6], knowledge: [2, 5] },
+    item: "旧戏折",
+  },
+  {
+    title: "瓦舍争座",
+    icon: "DisputesAmongCivilians",
+    text: "前排有人为争座位吵嚷，几乎掀翻茶案。你出面劝了两句，虽错过开场，却让旁人记住你几分圆融。",
+    effects: { mood: [-2, 2], eq: [2, 5], favorability: [0, 2] },
+  },
+];
+
+const PLEASURE_STORIES = [
+  {
+    title: "花酒酬客",
+    icon: "Wine1",
+    text: "席间有人强劝你斗酒，你借笑谈转开话头，既不扫兴，也没失了分寸。临别时席上诸人都高看你一眼。",
+    cost: [100, 210],
+    effects: { mood: [4, 9], eq: [2, 5], relationship: [2, 6], virtue: [-3, -1] },
+  },
+  {
+    title: "红袖添香",
+    icon: "FlowerChiefTitle",
+    text: "一名歌妓见你谈吐不俗，低声与你讲起城中贵客往来。消息真假参半，却足够你窥见几分世情。",
+    cost: [120, 260],
+    effects: { mood: [5, 10], eq: [2, 5], knowledge: [1, 4], virtue: [-5, -2] },
+  },
+  {
+    title: "酒后失言",
+    icon: "AwkwardStatus",
+    text: "你酒意上头，席间一句戏言惹得邻桌冷眼。散场后虽无人追究，名声却难免沾了些浮浪气。",
+    cost: [80, 180],
+    effects: { mood: [-4, 2], eq: [-4, -1], favorability: [-3, -1], virtue: [-5, -2] },
+  },
+  {
+    title: "风月染疾",
+    icon: "Hospital",
+    text: "一夜欢场散尽，回家后你觉得身上发冷、心口烦闷。医者说多半是酒色伤身，需好生调养。",
+    cost: [130, 280],
+    effects: { mood: [-4, 2], physique: [-8, -3], virtue: [-6, -2] },
+    disease: ["风寒", "花柳暗疾", "惊悸"],
+  },
+  {
+    title: "豪客赏识",
+    icon: "CashBox",
+    text: "席上豪客听你谈吐有趣，临走时反替你结了半桌酒账，还邀你日后同游。此行竟少花了些钱。",
+    cost: [40, 120],
+    effects: { mood: [4, 9], relationship: [4, 9], eq: [1, 4], virtue: [-3, -1] },
+    friend: true,
+  },
+  {
+    title: "赎身传闻",
+    icon: "Letter",
+    text: "有女子托人递来一封短笺，说自己被迫入此行，盼有人代为传信。你收下信，却也知此事牵扯不浅。",
+    cost: [90, 190],
+    effects: { mood: [-2, 4], virtue: [1, 4], eq: [1, 3] },
+    item: "风月短笺",
+  },
+];
+
 const MAIN_DOORS = [
   { id: "home", label: "家中", icon: "FamilyIcon" },
   { id: "assets", label: "家产", icon: "House" },
@@ -1005,6 +1094,10 @@ function randInt(min, max) {
 
 function rangeValue(range) {
   return Array.isArray(range) ? randInt(range[0], range[1]) : Number(range || 0);
+}
+
+function applyEffectRanges(effects = {}, deltas = []) {
+  for (const [stat, range] of Object.entries(effects || {})) changeStat(stat, rangeValue(range), deltas);
 }
 
 function clamp(value, min = 0, max = 100) {
@@ -3046,10 +3139,12 @@ function useSpecialPlace(id) {
     render();
     return;
   } else if (id === "theater") {
-    changeStat("mood", randInt(3, 8), deltas);
-    changeStat("eq", randInt(1, 3), deltas);
-    title = "瓦舍";
-    text = "台上锣鼓喧天，散场时你仍觉余音在耳。";
+    const story = sample(THEATER_WATCH_STORIES);
+    applyEffectRanges(story.effects, deltas);
+    if (story.friend) addFriend();
+    if (story.item) addInventoryItem(story.item, deltas);
+    title = story.title || "瓦舍";
+    text = story.text || "台上锣鼓喧天，散场时你仍觉余音在耳。";
   } else if (id === "friend") {
     addFriend();
     changeStat("relationship", randInt(3, 8), deltas);
@@ -4718,26 +4813,30 @@ function performPlaceAction(id) {
     text = "客栈人来人往，你听得几桩近闻，也结识了些过路人。";
     iconName = "Restaurant";
   } else if (id === "theaterWatch") {
-    changeStat("mood", randInt(3, 8), deltas);
-    changeStat("eq", randInt(1, 3), deltas);
-    title = "瓦舍";
-    text = "台上锣鼓喧天，散场时你仍觉余音在耳。";
-    iconName = "Activity";
+    const story = sample(THEATER_WATCH_STORIES);
+    applyEffectRanges(story.effects, deltas);
+    if (story.friend) addFriend();
+    if (story.item) addInventoryItem(story.item, deltas);
+    title = story.title || "瓦舍";
+    text = story.text || "台上锣鼓喧天，散场时你仍觉余音在耳。";
+    iconName = story.icon || "Activity";
   } else if (id === "pleasureRisk") {
-    const cost = randInt(90, 240);
+    const story = sample(PLEASURE_STORIES);
+    const cost = rangeValue(story.cost || [90, 240]);
     if (state.stats.money < cost) return;
     changeStat("money", -cost, deltas);
-    changeStat("mood", randInt(4, 12), deltas);
-    changeStat("virtue", -randInt(1, 6), deltas);
-    if (Math.random() > 0.72) {
-      const disease = sample(["风寒", "花柳暗疾", "惊悸"]);
+    applyEffectRanges(story.effects, deltas);
+    if (story.friend) addFriend();
+    if (story.item) addInventoryItem(story.item, deltas);
+    if (story.disease || Math.random() > 0.78) {
+      const disease = sample(story.disease || ["风寒", "花柳暗疾", "惊悸"]);
       if (!state.diseases.includes(disease)) state.diseases.push(disease);
       deltas.push({ label: "病症", value: disease, negative: true });
     }
-    addLedger("风月花销", -cost, "花酒应酬。");
-    title = "花酒";
-    text = "你在风月场中消遣一夜，快意之外也添几分隐忧。";
-    iconName = "Whorehouse";
+    addLedger("风月花销", -cost, story.title || "花酒应酬");
+    title = story.title || "花酒";
+    text = `${story.text || "你在风月场中消遣一夜，快意之外也添几分隐忧。"} 此番花销 ${moneyText(cost)}。`;
+    iconName = story.icon || "Whorehouse";
   } else if (id === "templePray") {
     const cost = randInt(10, 60);
     changeStat("money", -Math.min(cost, Math.max(0, state.stats.money)), deltas);
