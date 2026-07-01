@@ -383,7 +383,14 @@ p {
 .profile-trigger {
   border: 0;
   padding: 0;
+  overflow: hidden;
   cursor: pointer;
+}
+
+.top-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .top-actions {
@@ -662,6 +669,11 @@ p {
   align-items: start;
 }
 
+.profile-card-column {
+  display: grid;
+  gap: 14px;
+}
+
 .profile-detail-sheet {
   display: grid;
   gap: 16px;
@@ -849,6 +861,13 @@ p {
   filter: drop-shadow(0 12px 18px rgba(0, 0, 0, 0.25));
 }
 
+.pc-avatar-emblem .profile-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: none;
+}
+
 .pc-avatar-emblem span {
   font-size: clamp(42px, 7vw, 74px);
   font-weight: 900;
@@ -960,6 +979,58 @@ p {
   width: 72%;
   height: 72%;
   object-fit: contain;
+}
+
+.pc-mini-avatar .profile-mini-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-avatar-picker {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid rgba(47, 125, 109, 0.18);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.profile-avatar-picker .section-title {
+  margin: 0;
+}
+
+.profile-avatar-options {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.profile-avatar-choice {
+  position: relative;
+  aspect-ratio: 1;
+  padding: 3px;
+  border: 2px solid rgba(47, 125, 109, 0.18);
+  border-radius: 50%;
+  background: rgba(255, 245, 206, 0.72);
+  overflow: hidden;
+  transition: transform 0.14s ease, border-color 0.14s ease, box-shadow 0.14s ease;
+}
+
+.profile-avatar-choice:hover {
+  transform: translateY(-1px);
+}
+
+.profile-avatar-choice.active {
+  border-color: rgba(225, 174, 82, 0.95);
+  box-shadow: 0 8px 18px rgba(129, 96, 44, 0.18);
+}
+
+.profile-avatar-choice img {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
 }
 
 .pc-user-text {

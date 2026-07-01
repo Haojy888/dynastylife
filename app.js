@@ -530,6 +530,15 @@ const COURTESAN_PORTRAITS = [
   "assets/courtesan-avatar-3.png",
   "assets/courtesan-avatar-4.png",
 ];
+const PLAYER_AVATARS = {
+  male: [
+    "assets/player-avatar-male-1.png",
+    "assets/player-avatar-male-2.png",
+    "assets/player-avatar-male-3.png",
+    "assets/player-avatar-male-4.png",
+  ],
+  female: COURTESAN_PORTRAITS,
+};
 const COURTESAN_BACKGROUNDS = [
   "出身梨园，自幼随师学艺，最看重知音二字。",
   "曾在富户家教习女乐，谈吐温雅，心思细密。",
@@ -1256,6 +1265,14 @@ function randomName() {
   render();
 }
 
+function avatarOptions(gender = state?.gender || "male") {
+  return PLAYER_AVATARS[gender === "female" ? "female" : "male"] || PLAYER_AVATARS.male;
+}
+
+function defaultProfileAvatar(gender = state?.gender || "male") {
+  return avatarOptions(gender)[0] || "";
+}
+
 function createFamily(familyName) {
   return {
     father: { name: `${familyName}${sample(DATA.database?.names?.male) || "父"}`, relation: "父亲", gender: "male", alive: true, age: randInt(28, 42), physique: randInt(58, 88), affection: randInt(72, 96) },
@@ -1310,6 +1327,7 @@ function startLife() {
   state = normalizeState({
     name: `${draft.family}${draft.given}`,
     gender: draft.gender,
+    profileAvatar: defaultProfileAvatar(draft.gender),
     difficulty: draft.difficulty,
     age: 0,
     year: 0,
@@ -1379,6 +1397,7 @@ function normalizeState(raw) {
   const next = raw || {};
   next.name ||= "李青云";
   next.gender = next.gender === "female" ? "female" : "male";
+  next.profileAvatar = avatarOptions(next.gender).includes(next.profileAvatar) ? next.profileAvatar : defaultProfileAvatar(next.gender);
   next.difficulty ||= "普通";
   next.age = Number.isFinite(Number(next.age)) ? Number(next.age) : 1;
   next.year = Number.isFinite(Number(next.year)) ? Number(next.year) : next.age;
@@ -5523,6 +5542,7 @@ function inheritFromChild(id) {
   state = normalizeState({
     name: heir.name,
     gender: heir.gender,
+    profileAvatar: defaultProfileAvatar(heir.gender),
     difficulty: "承继",
     age: startAge,
     year: startAge,
@@ -6734,7 +6754,7 @@ function renderGame() {
     <main class="app-shell game-shell">
       <header class="topbar">
         <div class="identity">
-          <button class="avatar profile-trigger" data-overlay="profile" title="资料">${state.gender === "female" ? "女" : "男"}</button>
+          <button class="avatar profile-trigger" data-overlay="profile" title="资料">${profileAvatarHtml("top-avatar-img")}</button>
           <div>
             <h1>${escapeHtml(state.name)}</h1>
             <p>${state.age}岁 · ${escapeHtml(state.location)} · ${escapeHtml(state.difficulty)}</p>
@@ -6791,7 +6811,10 @@ function profileOverlay() {
       <article class="profile-modal">
         <button class="profile-close" data-action="close-overlay" title="关闭">×</button>
         <div class="profile-layout">
-          ${profileCard()}
+          <div class="profile-card-column">
+            ${profileCard()}
+            ${profileAvatarPicker()}
+          </div>
           <div class="profile-detail-sheet">
             <p class="eyebrow">资料</p>
             <h2>${escapeHtml(state.name)}</h2>
@@ -6810,12 +6833,37 @@ function profileOverlay() {
     </section>`;
 }
 
+function profileAvatarHtml(className = "profile-avatar-img") {
+  const avatar = avatarOptions(state.gender).includes(state.profileAvatar) ? state.profileAvatar : defaultProfileAvatar(state.gender);
+  if (avatar) return `<img class="${escapeHtml(className)}" src="${escapeHtml(avatar)}" alt="${escapeHtml(state.name)}" loading="eager">`;
+  const fallback = icon(state.gender === "female" ? "Relationship2" : "Relationship1", state.name);
+  return fallback || `<span>${escapeHtml(state.gender === "female" ? "女" : "男")}</span>`;
+}
+
+function profileAvatarPicker() {
+  const options = avatarOptions(state.gender);
+  return `
+    <section class="profile-avatar-picker">
+      <div class="section-title">
+        <h2>头像</h2>
+        <strong>${options.length} 款</strong>
+      </div>
+      <div class="profile-avatar-options">
+        ${options.map((path, index) => `
+          <button class="profile-avatar-choice ${path === state.profileAvatar ? "active" : ""}" data-profile-avatar="${escapeHtml(path)}" title="头像 ${index + 1}">
+            <img src="${escapeHtml(path)}" alt="头像 ${index + 1}" loading="eager">
+          </button>`).join("")}
+      </div>
+    </section>`;
+}
+
 function profileCard() {
   const title = state.career?.name || (state.exam.rank >= 0 ? EXAM_TITLES[state.exam.rank] : "布衣");
   const handle = `${state.lineage?.familyName || state.name.slice(0, 1)}氏第${Math.max(1, Number(state.lineage?.generation) || 1)}代`;
   const status = state.prisonYears > 0 ? `牢狱余刑 ${state.prisonYears} 年` : state.diseases.length ? state.diseases[0] : statDesc("mood", state.stats.mood || 0);
   const statKeys = ["mood", "physique", "knowledge"];
-  const avatarIcon = icon(state.gender === "female" ? "Relationship2" : "Relationship1", state.name);
+  const avatarImage = profileAvatarHtml("profile-avatar-img");
+  const miniAvatarImage = profileAvatarHtml("profile-mini-avatar-img");
   return `
     <div class="pc-card-wrapper dynasty-profile-card" data-profile-card>
       <div class="pc-behind"></div>
@@ -6826,11 +6874,11 @@ function profileCard() {
             <div class="pc-glare"></div>
             <div class="pc-content pc-avatar-content">
               <div class="pc-avatar-emblem ${state.gender === "female" ? "female" : ""}">
-                ${avatarIcon || `<span>${escapeHtml(state.gender === "female" ? "女" : "男")}</span>`}
+                ${avatarImage}
               </div>
               <div class="pc-user-info">
                 <div class="pc-user-details">
-                  <div class="pc-mini-avatar">${avatarIcon || `<span>${escapeHtml(state.gender === "female" ? "女" : "男")}</span>`}</div>
+                  <div class="pc-mini-avatar">${miniAvatarImage}</div>
                   <div class="pc-user-text">
                     <div class="pc-handle">@${escapeHtml(handle)}</div>
                     <div class="pc-status">${escapeHtml(status)}</div>
@@ -8632,6 +8680,13 @@ function exportSave() {
   URL.revokeObjectURL(url);
 }
 
+function chooseProfileAvatar(path) {
+  if (!state || !avatarOptions(state.gender).includes(path)) return;
+  state.profileAvatar = path;
+  save();
+  render();
+}
+
 app.addEventListener("click", (event) => {
   const button = event.target.closest("button");
   if (!button) return;
@@ -8647,6 +8702,7 @@ app.addEventListener("click", (event) => {
   if (button.dataset.action === "start-life") return startLife();
   if (button.dataset.action === "reroll") return rerollDraft();
   if (button.dataset.action === "random-name") return randomName();
+  if (button.dataset.profileAvatar) return chooseProfileAvatar(button.dataset.profileAvatar);
   if (button.dataset.action === "next-year") return nextYear();
   if (button.dataset.action === "finish-event") return finishEvent();
   if (button.dataset.action === "finish-result") return finishEventResult();
