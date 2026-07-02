@@ -1103,6 +1103,8 @@ const LIFE_GOALS = [
   { id: "renown", title: "一方闻名", icon: "Activity", desc: "名望达到 60。", score: 120, done: () => state.stats.favorability >= 60, advice: "处理官府事务、活动事件或积累善名。" },
 ];
 
+const ONBOARDING_VERSION = 1;
+
 let state = loadSave();
 let draft = newDraft();
 let view = {
@@ -1111,7 +1113,7 @@ let view = {
   tab: "overview",
   activityId: "",
   placeId: "",
-  overlay: "",
+  overlay: state && !state.onboarding?.seen ? "onboarding" : "",
 };
 
 setAssetVars();
@@ -1365,6 +1367,7 @@ function startLife() {
     pendingSurprise: null,
     currentEvent: null,
     inventoryTab: "all",
+    onboarding: { version: ONBOARDING_VERSION, seen: false },
     lastDeltas: [],
     dead: false,
     deathReason: "",
@@ -1375,7 +1378,7 @@ function startLife() {
   view.tab = "overview";
   view.activityId = "";
   view.placeId = "";
-  view.overlay = "";
+  view.overlay = "onboarding";
   save();
   render();
 }
@@ -1446,6 +1449,7 @@ function normalizeState(raw) {
   next.eventResult = next.eventResult || null;
   next.pendingSurprise = next.pendingSurprise || null;
   next.inventoryTab = INVENTORY_CATEGORIES.some(([id]) => id === next.inventoryTab) ? next.inventoryTab : "all";
+  next.onboarding = normalizeOnboarding(next.onboarding);
   next.lastDeltas = Array.isArray(next.lastDeltas) ? next.lastDeltas : [];
   next.prisonYears = Math.max(0, Math.round(Number(next.prisonYears) || 0));
   next.dead = !!next.dead;
@@ -1455,6 +1459,15 @@ function normalizeState(raw) {
     next.pendingCaravan = null;
   }
   return next;
+}
+
+function normalizeOnboarding(onboarding) {
+  const source = onboarding && typeof onboarding === "object" ? onboarding : {};
+  const version = Math.max(0, Math.round(Number(source.version) || 0));
+  return {
+    version,
+    seen: !!source.seen && version >= ONBOARDING_VERSION,
+  };
 }
 
 function normalizeFamily(family, familyName) {
@@ -6761,6 +6774,10 @@ function renderGame() {
           </div>
         </div>
         <div class="top-actions">
+          <button class="shortcut-btn guide-shortcut" data-action="open-onboarding" title="新手引导">
+            ${icon("MainBook", "新手引导")}
+            <span>引导</span>
+          </button>
           ${TOP_SHORTCUTS.map((item) => `
             <button class="shortcut-btn" data-shortcut="${item.id}" title="${escapeHtml(item.label)}">
               ${icon(item.icon, item.label)}
@@ -6799,9 +6816,62 @@ function renderGame() {
 
 function overlayView() {
   if (!view.overlay) return "";
+  if (view.overlay === "onboarding") return onboardingOverlay();
   if (view.overlay === "profile") return profileOverlay();
   if (view.overlay === "surprise") return surpriseOverlay();
   return "";
+}
+
+function onboardingOverlay() {
+  const firstStep = state.age < 1
+    ? "先点“开始第一年”，让第一件人生事件发生。"
+    : state.age < MAIN_EXAM_MIN_AGE
+      ? "先关注体魄、学识和家中关系，等 15 岁后再选营生或科举。"
+      : "可以先去“营生”谋一份差事，或去“书院”参加科举。";
+  const firstAction = state.age < 1
+    ? `<button class="primary-btn" data-action="onboarding-next-year">开始第一年</button>`
+    : `<button class="primary-btn" data-action="finish-onboarding">知道了</button>`;
+  return `
+    <section class="game-overlay onboarding-overlay">
+      <article class="profile-modal onboarding-modal">
+        <button class="profile-close" data-action="finish-onboarding" title="关闭">×</button>
+        <div class="onboarding-hero">
+          <div class="onboarding-seal">${profileAvatarHtml("onboarding-avatar")}</div>
+          <div>
+            <p class="eyebrow">新手引导</p>
+            <h2>你是 ${escapeHtml(state.name)}</h2>
+            <p>你刚来到 ${escapeHtml(state.location)}，出身为${escapeHtml(state.difficulty)}。这不是单线剧情，而是一段会被选择、年龄、亲友和钱财一起推动的人生。</p>
+          </div>
+        </div>
+
+        <div class="onboarding-grid">
+          <section class="onboarding-card">
+            <strong>我是谁</strong>
+            <p>你会从幼年开始长大，经历家事、读书、交友、营生、婚育、仕途和死亡。每一年都会留下记录。</p>
+          </section>
+          <section class="onboarding-card">
+            <strong>能干什么</strong>
+            <p>你可以经营属性，照顾亲友，买房置业，参加科举，当官办事，也能去瓦舍、博坊、雅戏和行商押镖。</p>
+          </section>
+          <section class="onboarding-card highlight">
+            <strong>第一步做什么</strong>
+            <p>${escapeHtml(firstStep)}</p>
+          </section>
+        </div>
+
+        <ol class="onboarding-steps">
+          <li><b>看状态</b><span>左侧是心情、体魄、学识等核心属性，体魄太低会有生命风险。</span></li>
+          <li><b>点中间事件</b><span>人生事件会给你选择，不同选项会改属性、钱财和关系。</span></li>
+          <li><b>用右侧页签</b><span>右侧能查看命册、亲友、背包、账本和资料，后面会越来越重要。</span></li>
+          <li><b>长大后解锁</b><span>15 岁后开放营生和童试，18 岁后会开放更多成人活动。</span></li>
+        </ol>
+
+        <div class="onboarding-actions">
+          <button class="secondary-btn" data-action="finish-onboarding">以后再看</button>
+          ${firstAction}
+        </div>
+      </article>
+    </section>`;
 }
 
 function profileOverlay() {
@@ -8687,6 +8757,15 @@ function chooseProfileAvatar(path) {
   render();
 }
 
+function finishOnboarding({ advance = false } = {}) {
+  if (!state) return;
+  state.onboarding = { version: ONBOARDING_VERSION, seen: true };
+  view.overlay = "";
+  save();
+  if (advance) return nextYear();
+  render();
+}
+
 app.addEventListener("click", (event) => {
   const button = event.target.closest("button");
   if (!button) return;
@@ -8695,6 +8774,7 @@ app.addEventListener("click", (event) => {
     state = loadSave();
     if (state) {
       view.screen = "game";
+      view.overlay = state.onboarding?.seen ? "" : "onboarding";
       render();
     }
     return;
@@ -8703,6 +8783,13 @@ app.addEventListener("click", (event) => {
   if (button.dataset.action === "reroll") return rerollDraft();
   if (button.dataset.action === "random-name") return randomName();
   if (button.dataset.profileAvatar) return chooseProfileAvatar(button.dataset.profileAvatar);
+  if (button.dataset.action === "open-onboarding") {
+    view.overlay = "onboarding";
+    render();
+    return;
+  }
+  if (button.dataset.action === "finish-onboarding") return finishOnboarding();
+  if (button.dataset.action === "onboarding-next-year") return finishOnboarding({ advance: true });
   if (button.dataset.action === "next-year") return nextYear();
   if (button.dataset.action === "finish-event") return finishEvent();
   if (button.dataset.action === "finish-result") return finishEventResult();
