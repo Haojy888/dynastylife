@@ -1,0 +1,6 @@
+.git
+.env*
+.vercel
+
+# Local visual verification screenshots are not part of the published site.
+/*.png
