@@ -4,3 +4,6 @@
 
 # Local visual verification screenshots are not part of the published site.
 /*.png
+
+# Local maintenance scripts (asset scan/convert/smoke tests) are not deployed.
+tools

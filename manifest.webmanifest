@@ -1,0 +1,25 @@
+{
+  "name": "古代人生 Web",
+  "short_name": "古代人生",
+  "description": "古风人生模拟游戏:从抓周到终老,科举、营生、姻缘、押镖、促织、雅戏。",
+  "lang": "zh-CN",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f5ead8",
+  "theme_color": "#2f7d6d",
+  "icons": [
+    {
+      "src": "assets/favicon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/favicon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

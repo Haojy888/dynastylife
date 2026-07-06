@@ -5,6 +5,8 @@ Thumbs.db
 
 # Local visual verification screenshots, not required by the web app.
 /*.png
+tools/shot-*.png
+tools/unused-assets.txt
 
 .vercel
 .env*

@@ -525,17 +525,17 @@ const COURTESAN_SPECIALTIES = [
   { name: "说唱", icon: "MainBook", text: "能把市井故事唱得跌宕，惹得满座喝彩。" },
 ];
 const COURTESAN_PORTRAITS = [
-  "assets/courtesan-avatar-1.png",
-  "assets/courtesan-avatar-2.png",
-  "assets/courtesan-avatar-3.png",
-  "assets/courtesan-avatar-4.png",
+  "assets/courtesan-avatar-1.webp",
+  "assets/courtesan-avatar-2.webp",
+  "assets/courtesan-avatar-3.webp",
+  "assets/courtesan-avatar-4.webp",
 ];
 const PLAYER_AVATARS = {
   male: [
-    "assets/player-avatar-male-1.png",
-    "assets/player-avatar-male-2.png",
-    "assets/player-avatar-male-3.png",
-    "assets/player-avatar-male-4.png",
+    "assets/player-avatar-male-1.webp",
+    "assets/player-avatar-male-2.webp",
+    "assets/player-avatar-male-3.webp",
+    "assets/player-avatar-male-4.webp",
   ],
   female: COURTESAN_PORTRAITS,
 };
