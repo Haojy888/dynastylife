@@ -8587,6 +8587,316 @@ function scoreTile(label, value) {
   return `<div class="score-tile"><span>${escapeHtml(label)}</span><b>${escapeHtml(value)}</b></div>`;
 }
 
+function endingCareerTitle() {
+  if (state.career && careerKind(state.career) === "official") return officialTitle();
+  if (state.official?.unlocked && state.exam?.rank >= EXAM_STAGES.length - 1) return officialTitle();
+  const name = state.career?.name || "";
+  if (!name) return "未定营生";
+  const progress = state.careerProgress?.[name] || {};
+  const level = Math.max(1, Math.round(Number(progress.level) || 1));
+  return `${name} · ${level}级`;
+}
+
+function endingTagList(score = lifeScore()) {
+  const tags = [
+    lifeGrade(score),
+    state.difficulty,
+    state.location,
+    state.age >= 80 ? "高寿" : "",
+    state.age <= 35 ? "英年" : "",
+    state.career ? careerKindLabel(careerKind(state.career)) : "",
+    state.career?.name || "",
+    state.exam?.rank >= 0 ? EXAM_TITLES[state.exam.rank] : "",
+    hasPalaceAppointment() ? "殿试及第" : "",
+    state.family?.spouse ? "成家立室" : "",
+    livingChildren().length ? `${livingChildren().length}名子女` : "",
+    (state.assets || []).length >= 5 ? "广置田宅" : (state.assets || []).length ? "置办家产" : "",
+    state.cricketRecord?.champion ? "促织魁首" : "",
+    state.miniGames?.gomoku?.wins ? "雅戏好手" : "",
+    ...(state.tags || []),
+    ...completedGoals().map((goal) => goal.title),
+  ];
+  return [...new Set(tags.map((item) => String(item || "").trim()).filter(Boolean))].slice(0, 14);
+}
+
+function endingShareData(score = lifeScore(), inheritedMoney = Math.max(20, Math.round(Math.max(0, state.stats.money || 0) * 0.78)), generation = Math.max(1, Number(state.lineage?.generation) || 1)) {
+  const examTitle = state.exam?.rank >= 0 ? EXAM_TITLES[state.exam.rank] : "白身";
+  const careerTitle = endingCareerTitle();
+  const children = livingChildren();
+  const goals = completedGoals();
+  const tags = endingTagList(score);
+  const grade = lifeGrade(score);
+  const wealth = moneyText(state.stats?.money || 0);
+  const assets = state.assets || [];
+  const title = state.name || "无名氏";
+  const deathReason = state.deathReason || "命数已尽";
+  const highlightPool = [
+    careerTitle !== "未定营生" ? `最高身份：${careerTitle}` : "",
+    examTitle !== "白身" ? `功名：${examTitle}` : "",
+    assets.length ? `家业：${assets.length}处产业，余财${wealth}` : `余财：${wealth}`,
+    children.length ? `后嗣：${children.length}名子女可续家声` : "",
+    goals.length ? `达成：${goals.slice(0, 3).map((goal) => goal.title).join("、")}` : "",
+  ].filter(Boolean);
+  const epitaph = endingEpitaph({ grade, score, careerTitle, examTitle, assetCount: assets.length, childCount: children.length });
+  return {
+    name: title,
+    age: Math.round(Number(state.age) || 0),
+    deathReason,
+    grade,
+    score,
+    generation,
+    location: state.location || "清平县",
+    difficulty: state.difficulty || "普通",
+    examTitle,
+    careerTitle,
+    wealth,
+    inheritedMoney: moneyText(inheritedMoney),
+    assetCount: assets.length,
+    childCount: children.length,
+    goalCount: goals.length,
+    goalTotal: LIFE_GOALS.length,
+    logCount: (state.log || []).length,
+    tags,
+    highlights: highlightPool.slice(0, 5),
+    epitaph,
+  };
+}
+
+function endingEpitaph(data) {
+  if (data.grade === "传奇") return `${data.name || state.name}此生跌宕而成传奇，功名、家业与人情皆有可书之处，足够后人茶余饭后反复谈起。`;
+  if (data.careerTitle?.includes("大学士") || data.careerTitle?.includes("尚书") || data.careerTitle?.includes("总督")) return "此生入仕登高，案牍之间也曾牵动山河，身后名望仍在乡里官场流传。";
+  if (data.examTitle === "进士") return "此生读书有成，金榜题名后留下一段士林故事，虽有遗憾，终不负寒窗。";
+  if (data.assetCount >= 5) return "此生勤营家业，田宅铺面渐成根基，留给后人的不只是钱财，还有一门可续的生计。";
+  if (data.childCount >= 3) return "此生枝叶繁盛，家中儿女绕膝，身后仍有人接过旧名与新路。";
+  if (data.score >= 480) return "此生有起有落，却终能安身立命；翻开命册，仍有几笔值得被记住。";
+  return "此生平凡而真切，尝过世道冷暖，也在年月里留下了自己的痕迹。";
+}
+
+function endingSharePanel(data) {
+  return `
+    <section class="ending-share-panel">
+      <div class="section-title">
+        <h2>结局分享</h2>
+        <strong>${escapeHtml(data.grade)} · ${data.score}分</strong>
+      </div>
+      <p>${escapeHtml(data.epitaph)}</p>
+      <div class="ending-summary-grid">
+        ${infoLine("角色", `${data.name} · 第${data.generation}代`)}
+        ${infoLine("寿命", `${data.age}岁 · ${data.deathReason}`)}
+        ${infoLine("最高身份", data.careerTitle)}
+        ${infoLine("功名", data.examTitle)}
+        ${infoLine("家业", `${data.assetCount}处 · ${data.wealth}`)}
+        ${infoLine("传承", `${data.childCount}名子女 · 可继${data.inheritedMoney}`)}
+      </div>
+      <div class="ending-tag-cloud">${data.tags.map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}</div>
+      <div class="main-actions ending-share-actions">
+        <button class="primary-btn" data-action="download-ending-card">下载结局卡</button>
+        <button class="secondary-btn" data-action="copy-ending-text">复制分享文案</button>
+      </div>
+    </section>`;
+}
+
+function endingShareText() {
+  const data = endingShareData();
+  return [
+    `【古代人生结局】${data.name}`,
+    `享年：${data.age}岁（${data.deathReason}）`,
+    `最高身份：${data.careerTitle}`,
+    `功名：${data.examTitle}`,
+    `命格：${data.grade} · ${data.score}分`,
+    `家业：${data.assetCount}处 · ${data.wealth}`,
+    `关键词：${data.tags.slice(0, 10).join("、")}`,
+    data.epitaph,
+    "https://www.dynastylife.online",
+  ].join("\n");
+}
+
+function canvasRoundRect(ctx, x, y, width, height, radius) {
+  const r = Math.min(radius, width / 2, height / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + width, y, x + width, y + height, r);
+  ctx.arcTo(x + width, y + height, x, y + height, r);
+  ctx.arcTo(x, y + height, x, y, r);
+  ctx.arcTo(x, y, x + width, y, r);
+  ctx.closePath();
+}
+
+function canvasWrappedLines(ctx, text, maxWidth, maxLines = Infinity) {
+  const lines = [];
+  let line = "";
+  let truncated = false;
+  for (const char of String(text || "")) {
+    if (char === "\n") {
+      lines.push(line);
+      line = "";
+      continue;
+    }
+    const test = line + char;
+    if (line && ctx.measureText(test).width > maxWidth) {
+      lines.push(line);
+      line = char;
+      if (lines.length >= maxLines) {
+        truncated = true;
+        break;
+      }
+    } else {
+      line = test;
+    }
+  }
+  if (line && lines.length < maxLines) lines.push(line);
+  if (truncated && lines.length) {
+    let last = lines[lines.length - 1];
+    while (last.length > 1 && ctx.measureText(`${last}…`).width > maxWidth) last = last.slice(0, -1);
+    lines[lines.length - 1] = `${last}…`;
+  }
+  return lines;
+}
+
+function drawWrappedText(ctx, text, x, y, maxWidth, lineHeight, maxLines = Infinity) {
+  const lines = canvasWrappedLines(ctx, text, maxWidth, maxLines);
+  lines.forEach((line, index) => ctx.fillText(line, x, y + index * lineHeight));
+  return y + lines.length * lineHeight;
+}
+
+function drawEndingTag(ctx, tag, x, y, maxWidth) {
+  const text = String(tag || "");
+  const width = Math.min(maxWidth, ctx.measureText(text).width + 42);
+  canvasRoundRect(ctx, x, y, width, 48, 24);
+  ctx.fillStyle = "rgba(47, 125, 109, 0.14)";
+  ctx.fill();
+  ctx.strokeStyle = "rgba(47, 125, 109, 0.28)";
+  ctx.stroke();
+  ctx.fillStyle = "#2f6f62";
+  ctx.fillText(text, x + 21, y + 32);
+  return width;
+}
+
+function buildEndingCardCanvas() {
+  const data = endingShareData();
+  const canvas = document.createElement("canvas");
+  canvas.width = 1080;
+  canvas.height = 1440;
+  const ctx = canvas.getContext("2d");
+  const font = "Microsoft YaHei, SimHei, sans-serif";
+  const bg = ctx.createLinearGradient(0, 0, 1080, 1440);
+  bg.addColorStop(0, "#eef7ec");
+  bg.addColorStop(0.48, "#fff9ec");
+  bg.addColorStop(1, "#f2dfbf");
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, 1080, 1440);
+
+  ctx.fillStyle = "rgba(47, 125, 109, 0.08)";
+  ctx.fillRect(54, 54, 972, 1332);
+  ctx.strokeStyle = "#d7aa4e";
+  ctx.lineWidth = 6;
+  canvasRoundRect(ctx, 58, 58, 964, 1324, 34);
+  ctx.stroke();
+
+  ctx.fillStyle = "rgba(255, 255, 255, 0.68)";
+  canvasRoundRect(ctx, 96, 96, 888, 1248, 28);
+  ctx.fill();
+
+  ctx.fillStyle = "#2f7d6d";
+  ctx.font = `700 30px ${font}`;
+  ctx.fillText("古代人生 · 结局名帖", 128, 160);
+  ctx.fillStyle = "#1f2a2a";
+  ctx.font = `900 78px ${font}`;
+  ctx.fillText(data.name, 128, 250);
+  ctx.fillStyle = "#66706c";
+  ctx.font = `600 30px ${font}`;
+  ctx.fillText(`第${data.generation}代 · ${data.location} · ${data.difficulty}`, 128, 304);
+
+  const sealGradient = ctx.createLinearGradient(790, 134, 940, 284);
+  sealGradient.addColorStop(0, "#f5d978");
+  sealGradient.addColorStop(1, "#2f7d6d");
+  ctx.fillStyle = sealGradient;
+  ctx.beginPath();
+  ctx.arc(860, 220, 92, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "#e7c267";
+  ctx.lineWidth = 5;
+  ctx.stroke();
+  ctx.fillStyle = "rgba(255, 252, 232, 0.9)";
+  ctx.font = `900 66px ${font}`;
+  ctx.textAlign = "center";
+  ctx.fillText(data.name.slice(0, 1), 860, 242);
+  ctx.textAlign = "left";
+
+  const cards = [
+    ["享年", `${data.age}岁`],
+    ["死因", data.deathReason],
+    ["命格", `${data.grade} · ${data.score}分`],
+    ["功名", data.examTitle],
+    ["最高身份", data.careerTitle],
+    ["家业", `${data.assetCount}处 · ${data.wealth}`],
+  ];
+  let y = 374;
+  cards.forEach(([label, value], index) => {
+    const col = index % 2;
+    const row = Math.floor(index / 2);
+    const x = 128 + col * 416;
+    const top = y + row * 126;
+    ctx.fillStyle = "rgba(255, 255, 255, 0.74)";
+    canvasRoundRect(ctx, x, top, 376, 92, 18);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(47, 125, 109, 0.16)";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = "#78807c";
+    ctx.font = `700 24px ${font}`;
+    ctx.fillText(label, x + 24, top + 34);
+    ctx.fillStyle = "#1f2a2a";
+    ctx.font = `900 30px ${font}`;
+    drawWrappedText(ctx, value, x + 24, top + 70, 328, 36, 1);
+  });
+
+  y = 792;
+  ctx.fillStyle = "#2f7d6d";
+  ctx.font = `900 34px ${font}`;
+  ctx.fillText("一生评语", 128, y);
+  ctx.fillStyle = "#303938";
+  ctx.font = `600 30px ${font}`;
+  y = drawWrappedText(ctx, data.epitaph, 128, y + 54, 824, 48, 4) + 24;
+
+  ctx.fillStyle = "#2f7d6d";
+  ctx.font = `900 34px ${font}`;
+  ctx.fillText("人生关键词", 128, y);
+  ctx.font = `700 25px ${font}`;
+  let tagX = 128;
+  let tagY = y + 34;
+  data.tags.slice(0, 12).forEach((tag) => {
+    const tagWidth = Math.min(270, ctx.measureText(tag).width + 42);
+    if (tagX + tagWidth > 952) {
+      tagX = 128;
+      tagY += 62;
+    }
+    const drawnWidth = drawEndingTag(ctx, tag, tagX, tagY, 270);
+    tagX += drawnWidth + 14;
+  });
+
+  y = tagY + 102;
+  ctx.fillStyle = "#2f7d6d";
+  ctx.font = `900 34px ${font}`;
+  ctx.fillText("身后简记", 128, y);
+  ctx.fillStyle = "#303938";
+  ctx.font = `600 27px ${font}`;
+  data.highlights.slice(0, 4).forEach((line, index) => {
+    ctx.fillText(`· ${line}`, 132, y + 54 + index * 42);
+  });
+
+  ctx.fillStyle = "rgba(47, 125, 109, 0.12)";
+  canvasRoundRect(ctx, 128, 1256, 824, 56, 28);
+  ctx.fill();
+  ctx.fillStyle = "#2f7d6d";
+  ctx.font = `800 25px ${font}`;
+  ctx.fillText("生成于 dynastylife.online", 160, 1293);
+  ctx.fillStyle = "#9b7b35";
+  ctx.font = `700 22px ${font}`;
+  ctx.fillText(`命册经历 ${data.logCount} 件 · 人生目标 ${data.goalCount}/${data.goalTotal}`, 612, 1293);
+  return canvas;
+}
+
 function activityBucketName(bucket) {
   const names = {
     Agriculture: "农田事件",
@@ -8730,6 +9040,7 @@ function deathView() {
   const score = lifeScore();
   const inheritedMoney = Math.max(20, Math.round(Math.max(0, state.stats.money || 0) * 0.78));
   const generation = Math.max(1, Number(state.lineage?.generation) || 1);
+  const share = endingShareData(score, inheritedMoney, generation);
   return `
     <article class="play-card death-card">
       <p class="eyebrow">身后事</p>
@@ -8743,6 +9054,7 @@ function deathView() {
         ${scoreTile("世代", `第${generation}代`)}
         ${scoreTile("可继钱财", moneyText(inheritedMoney))}
       </section>
+      ${endingSharePanel(share)}
       <section class="inherit-section">
         <div class="section-title"><h2>选择子女承继</h2></div>
         ${heirs.length ? `<div class="button-list">${heirs.map((child) => `
@@ -8945,6 +9257,49 @@ function exportSave() {
   URL.revokeObjectURL(url);
 }
 
+function downloadEndingCard() {
+  if (!state?.dead) return;
+  const canvas = buildEndingCardCanvas();
+  const a = document.createElement("a");
+  a.href = canvas.toDataURL("image/png");
+  a.download = `${state.name || "古代人生"}-结局卡.png`;
+  a.click();
+}
+
+async function copyEndingText(button) {
+  if (!state?.dead) return;
+  const text = endingShareText();
+  let copied = false;
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      copied = true;
+    }
+  } catch {
+    copied = false;
+  }
+  if (!copied) {
+    const area = document.createElement("textarea");
+    area.value = text;
+    area.setAttribute("readonly", "");
+    area.style.position = "fixed";
+    area.style.left = "-9999px";
+    document.body.appendChild(area);
+    area.select();
+    try {
+      copied = document.execCommand("copy");
+    } catch {
+      copied = false;
+    }
+    area.remove();
+  }
+  if (button) {
+    const oldText = button.textContent;
+    button.textContent = copied ? "已复制" : "复制失败";
+    setTimeout(() => { button.textContent = oldText; }, 1200);
+  }
+}
+
 function chooseProfileAvatar(path) {
   if (!state || !avatarOptions(state.gender).includes(path)) return;
   state.profileAvatar = path;
@@ -9086,6 +9441,8 @@ app.addEventListener("click", (event) => {
     return;
   }
   if (button.dataset.action === "export") return exportSave();
+  if (button.dataset.action === "download-ending-card") return downloadEndingCard();
+  if (button.dataset.action === "copy-ending-text") return copyEndingText(button);
   if (button.dataset.action === "back-main") {
     view.page = "main";
     view.placeId = "";
