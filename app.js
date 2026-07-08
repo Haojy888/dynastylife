@@ -36,6 +36,27 @@ const MEMBER_MAP = {
   Favorability: "favorability",
 };
 
+const PREMIUM_ICON_OVERRIDES = {
+  MainBook: "assets/premium-icons/guide-book.webp",
+  Book: "assets/premium-icons/academy-book.webp",
+  Book1: "assets/premium-icons/academy-book.webp",
+  Book2: "assets/premium-icons/academy-book.webp",
+  Book6: "assets/premium-icons/academy-book.webp",
+  OfficialSchool: "assets/premium-icons/academy-book.webp",
+  RepairCarriage: "assets/premium-icons/carriage.webp",
+  Backpack: "assets/premium-icons/satchel.webp",
+  CashBox: "assets/premium-icons/ledger-chest.webp",
+  FamilyIcon: "assets/premium-icons/family-courtyard.webp",
+  House: "assets/premium-icons/estate-gate.webp",
+  Activity: "assets/premium-icons/activity-scroll.webp",
+  Official: "assets/premium-icons/official-seal.webp",
+  Restaurant: "assets/premium-icons/tea-inn.webp",
+  Inn: "assets/premium-icons/tea-inn.webp",
+  GamblingHouse: "assets/premium-icons/dice-house.webp",
+  BambooFlute: "assets/premium-icons/elegant-games.webp",
+  Game: "assets/premium-icons/elegant-games.webp",
+};
+
 const START_EVENT = {
   title: "抓周",
   content: "满岁之日，家中摆下几件物什。你伸出小手，长辈们屏息看你会抓起什么。",
@@ -1178,7 +1199,7 @@ function setAssetVars() {
 }
 
 function pathFor(name) {
-  return DATA.sprites?.[name] || "";
+  return PREMIUM_ICON_OVERRIDES[name] || DATA.sprites?.[name] || "";
 }
 
 function cssAsset(name) {
