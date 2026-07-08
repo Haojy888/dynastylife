@@ -1442,8 +1442,7 @@ function startLife() {
   view.placeId = "";
   view.overlay = "onboarding";
   const meta = loadSlotMeta();
-  currentSlot = meta.findIndex((s) => s === null);
-  if (currentSlot < 0) currentSlot = 0;
+  currentSlot = firstEmptySlot(meta);
   state.saveSlot = currentSlot;
   save();
   render();
@@ -1989,13 +1988,20 @@ function loadSlotMeta() {
 }
 function saveSlotMeta(meta) { localStorage.setItem(SAVE_META_KEY, JSON.stringify(meta)); }
 
-function updateSlotMeta(index) {
+function firstEmptySlot(meta = loadSlotMeta()) {
+  for (let i = 0; i < MAX_SLOTS; i += 1) {
+    if (!meta[i]) return i;
+  }
+  return 0;
+}
+
+function updateSlotMeta(index, sourceState = state) {
   const meta = loadSlotMeta();
   while (meta.length <= index) meta.push(null);
-  if (state && !state.dead) {
-    meta[index] = { slot: index, name: state.name, age: state.age, timestamp: Date.now(), title: "进行中" };
-  } else if (state && state.dead) {
-    meta[index] = { slot: index, name: state.name, age: state.age, timestamp: Date.now(), title: state.deathReason || "已故" };
+  if (sourceState && !sourceState.dead) {
+    meta[index] = { slot: index, name: sourceState.name || `存档位 ${index + 1}`, age: Math.round(Number(sourceState.age) || 0), timestamp: Date.now(), title: "进行中" };
+  } else if (sourceState && sourceState.dead) {
+    meta[index] = { slot: index, name: sourceState.name || `存档位 ${index + 1}`, age: Math.round(Number(sourceState.age) || 0), timestamp: Date.now(), title: sourceState.deathReason || "已故" };
   } else { meta[index] = null; }
   saveSlotMeta(meta);
 }
@@ -2029,7 +2035,7 @@ function migrateOldSave() {
     s.saveSlot = 0; currentSlot = 0;
     localStorage.setItem(slotKey(0), JSON.stringify(s));
     localStorage.removeItem(SAVE_LEGACY_KEY);
-    updateSlotMeta(0);
+    updateSlotMeta(0, s);
     return s;
   } catch { return null; }
 }
@@ -2038,7 +2044,7 @@ function save() {
   if (state && !state.__ephemeral && currentSlot >= 0) {
     state.saveSlot = currentSlot;
     localStorage.setItem(slotKey(currentSlot), JSON.stringify(state));
-    updateSlotMeta(currentSlot);
+    updateSlotMeta(currentSlot, state);
   }
 }
 
@@ -8960,6 +8966,19 @@ app.addEventListener("click", (event) => {
   if (!button) return;
 
   if (button.dataset.action === "continue-save") {
+    if (!state) {
+      const meta = loadSlotMeta();
+      const index = meta
+        .map((info, slot) => (info ? { ...info, slot } : null))
+        .filter(Boolean)
+        .sort((a, b) => Number(b.timestamp || 0) - Number(a.timestamp || 0))[0]?.slot;
+      if (Number.isFinite(index)) {
+        state = loadSave(index);
+        currentSlot = index;
+        if (state) state.saveSlot = index;
+      }
+    }
+    view.screen = "game";
     view.page = "save-manager";
     render();
     return;
@@ -8994,6 +9013,14 @@ app.addEventListener("click", (event) => {
   if (button.dataset.action === "open-save-manager") {
     view.page = "save-manager";
     render();
+    return;
+  }
+  if (button.dataset.action === "import-file") {
+    const input = document.getElementById("save-import-input");
+    if (input) {
+      input.dataset.importTargetSlot = "";
+      input.click();
+    }
     return;
   }
   if (button.dataset.saveSlot !== undefined && button.dataset.saveAction) {
@@ -9224,26 +9251,27 @@ document.addEventListener("change", (event) => {
     try {
       const imported = JSON.parse(e.target.result);
       if (!imported.name || !imported.stats) { alert("无效的存档文件"); return; }
+      const importedState = normalizeState(imported);
       const targetSlot = input.dataset.importTargetSlot !== "" ? Number(input.dataset.importTargetSlot) : -1;
       if (targetSlot >= 0 && targetSlot < MAX_SLOTS) {
-        imported.saveSlot = targetSlot;
-        localStorage.setItem(slotKey(targetSlot), JSON.stringify(imported));
-        updateSlotMeta(targetSlot);
+        importedState.saveSlot = targetSlot;
+        localStorage.setItem(slotKey(targetSlot), JSON.stringify(importedState));
+        updateSlotMeta(targetSlot, importedState);
         if (view.page === "save-manager") render();
-        else { state = normalizeState(imported); currentSlot = targetSlot; view.screen = "game"; view.page = "main"; render(); }
+        else { state = importedState; currentSlot = targetSlot; view.screen = "game"; view.page = "main"; render(); }
       } else {
         const meta = loadSlotMeta();
-        let slot = meta.findIndex((s) => s === null);
-        if (slot < 0) slot = 0;
-        imported.saveSlot = slot;
-        localStorage.setItem(slotKey(slot), JSON.stringify(imported));
-        updateSlotMeta(slot);
+        const slot = firstEmptySlot(meta);
+        importedState.saveSlot = slot;
+        localStorage.setItem(slotKey(slot), JSON.stringify(importedState));
+        updateSlotMeta(slot, importedState);
         if (view.page === "save-manager") render();
       }
     } catch { alert("导入失败：存档文件格式有误"); }
   };
   reader.readAsText(file);
   input.value = "";
+  input.dataset.importTargetSlot = "";
 });
 
 app.addEventListener("click", (event) => {
