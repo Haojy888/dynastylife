@@ -1,5 +1,9 @@
 const DATA = window.DYNASTY_LIFE_DATA || {};
-const SAVE_KEY = "dynasty-life-web-modern-v1";
+const SAVE_PREFIX = "dynasty-life-slot-";
+const SAVE_META_KEY = "dynasty-life-save-meta";
+const SAVE_LEGACY_KEY = "dynasty-life-web-modern-v1";
+const MAX_SLOTS = 3;
+let currentSlot = -1;
 
 const app = document.getElementById("app");
 const COPPER_PER_SILVER = 1000;
@@ -1105,7 +1109,57 @@ const LIFE_GOALS = [
 
 const ONBOARDING_VERSION = 1;
 
-let state = loadSave();
+const SFX = (() => {
+  let ctx = null;
+  let muted = false;
+  const VOLUME = 0.35;
+  function getCtx() {
+    if (!ctx) { try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch { return null; } }
+    if (ctx.state === "suspended") ctx.resume();
+    return ctx;
+  }
+  function osc(c, freq, type, dur, gainEnd) {
+    const o = c.createOscillator(); const g = c.createGain();
+    o.type = type || "sine"; o.frequency.setValueAtTime(freq, c.currentTime);
+    g.gain.setValueAtTime(VOLUME, c.currentTime);
+    g.gain.exponentialRampToValueAtTime(gainEnd || 0.001, c.currentTime + dur);
+    o.connect(g); g.connect(c.destination); o.start(c.currentTime); o.stop(c.currentTime + dur);
+  }
+  function noise(c, dur, highpass) {
+    const bufSize = Math.floor(c.sampleRate * dur);
+    const buf = c.createBuffer(1, bufSize, c.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < bufSize; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / bufSize);
+    const src = c.createBufferSource(); src.buffer = buf;
+    const gain = c.createGain(); gain.gain.setValueAtTime(VOLUME * 0.5, c.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + dur);
+    let node = src;
+    if (highpass) { const hp = c.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = highpass; src.connect(hp); node = hp; }
+    node.connect(gain); gain.connect(c.destination); src.start(c.currentTime); src.stop(c.currentTime + dur);
+  }
+  function play(name) {
+    if (muted) return;
+    const c = getCtx(); if (!c) return;
+    switch (name) {
+      case "click": osc(c, 1200, "sine", 0.06, 0.001); break;
+      case "page": noise(c, 0.12, 2000); break;
+      case "event": osc(c, 660, "sine", 0.4, 0.001); setTimeout(() => osc(c, 880, "sine", 0.3, 0.001), 80); break;
+      case "exam-pass": osc(c, 523, "sine", 0.15, 0.001); setTimeout(() => osc(c, 659, "sine", 0.15, 0.001), 120); setTimeout(() => osc(c, 784, "sine", 0.15, 0.001), 240); setTimeout(() => osc(c, 1047, "sine", 0.35, 0.001), 360); break;
+      case "exam-fail": osc(c, 440, "triangle", 0.2, 0.001); setTimeout(() => osc(c, 349, "triangle", 0.25, 0.001), 180); setTimeout(() => osc(c, 262, "triangle", 0.35, 0.001), 360); break;
+      case "death": osc(c, 110, "sine", 1.2, 0.001); osc(c, 165, "sine", 1.0, 0.001); break;
+      case "coin": osc(c, 1800, "sine", 0.06, 0.001); setTimeout(() => osc(c, 2200, "sine", 0.05, 0.001), 60); break;
+      case "win": for (const [f, d] of [[523,0],[659,0.1],[784,0.2],[1047,0.3]]) setTimeout(() => osc(c, f, "sine", 0.12, 0.001), d * 1000); setTimeout(() => { osc(c, 1319, "sine", 0.3, 0.001); }, 400); break;
+      case "milestone": for (const [f, d] of [[392,0],[523,0.1],[659,0.2],[784,0.3]]) setTimeout(() => osc(c, f, "triangle", 0.2, 0.001), d * 1000); break;
+      case "start": osc(c, 262, "sine", 0.5, 0.001); setTimeout(() => osc(c, 330, "sine", 0.4, 0.001), 200); setTimeout(() => osc(c, 392, "sine", 0.3, 0.001), 400); setTimeout(() => osc(c, 523, "sine", 0.6, 0.001), 600); break;
+      case "marry": osc(c, 880, "sine", 0.3, 0.001); setTimeout(() => osc(c, 1047, "sine", 0.3, 0.001), 200); setTimeout(() => osc(c, 880, "sine", 0.3, 0.001), 400); setTimeout(() => osc(c, 1175, "sine", 0.5, 0.001), 600); break;
+    }
+  }
+  function toggleMute() { muted = !muted; return muted; }
+  function isMuted() { return muted; }
+  document.addEventListener("click", () => { if (!ctx) getCtx(); }, { once: true });
+  return { play, toggleMute, isMuted };
+})();
+
+let state = loadCurrentSave();
 let draft = newDraft();
 let view = {
   screen: state ? "game" : "create",
@@ -1241,13 +1295,13 @@ function formatText(value) {
   return escapeHtml(normalizeMoneyText(value)).replace(/\n/g, "<br>");
 }
 
-function newDraft() {
+function newDraft(genderOverride) {
   const names = DATA.database?.names || {};
-  const gender = "male";
+  const gender = genderOverride === "female" ? "female" : "male";
   return {
     gender,
     family: sample(names.last) || "李",
-    given: sample(names.male) || "青云",
+    given: sample(gender === "female" ? names.female : names.male) || (gender === "female" ? "婉儿" : "青云"),
     difficulty: "普通",
     talents: pickMany(DATA.database?.talents || [], 3),
     coreTalent: sample(DATA.database?.coreTalents || []),
@@ -1301,17 +1355,24 @@ function makeSiblings(familyName, count = randInt(0, 2)) {
   });
 }
 
-function openingBiography(familyName, given) {
+function openingBiography(familyName, given, playerGender) {
   const day = sample(["七曜年", "春分日", "谷雨时", "桂月夜", "小雪晨"]) || "七曜年";
   const place = sample(["青省昆北府", "云州清平县", "洛城南里", "江陵水驿", "梁都外郭"]) || "清平县";
   const father = sample(["博文", "务农", "行商", "以抄书为业", "在县中当差"]) || "务农";
   const mother = sample(["温婉", "爽利", "善织", "闻名邻里", "以都讲为业"]) || "温婉";
-  const sibling = Math.random() > 0.42 ? `有${Math.random() > 0.5 ? "哥哥" : "姐姐"}${familyName}${sample(DATA.database?.names?.female) || "飞凰"}，正值垂髫之年。` : "家中暂未添兄姐。";
+  const hasSibling = Math.random() > 0.42;
+  let sibling = "家中暂未添兄姐。";
+  if (hasSibling) {
+    const siblingGender = Math.random() > 0.5 ? "male" : "female";
+    const siblingRelation = siblingGender === "male" ? "哥哥" : "姐姐";
+    const siblingName = sample(DATA.database?.names?.[siblingGender === "female" ? "female" : "male"]) || (siblingGender === "female" ? "飞凰" : "承安");
+    sibling = `有${siblingRelation}${familyName}${siblingName}，正值垂髫之年。`;
+  }
   return `${day}，我生于${place}，随父姓${familyName}，名${given}。父亲${familyName}${father}，年三十，以勤谨持家。母亲${sample(DATA.database?.names?.last) || "王"}氏，${mother}，年二十九，邻里多称其贤。${sibling}`;
 }
 
 function startLife() {
-  const biography = openingBiography(draft.family, draft.given);
+  const biography = openingBiography(draft.family, draft.given, draft.gender);
   const stats = {
     mood: randInt(56, 82),
     physique: randInt(38, 68),
@@ -1325,6 +1386,7 @@ function startLife() {
   };
 
   applyOpeningTalents(stats, draft.talents, draft.coreTalent);
+  SFX.play("start");
 
   state = normalizeState({
     name: `${draft.family}${draft.given}`,
@@ -1379,6 +1441,10 @@ function startLife() {
   view.activityId = "";
   view.placeId = "";
   view.overlay = "onboarding";
+  const meta = loadSlotMeta();
+  currentSlot = meta.findIndex((s) => s === null);
+  if (currentSlot < 0) currentSlot = 0;
+  state.saveSlot = currentSlot;
   save();
   render();
 }
@@ -1916,25 +1982,77 @@ function normalizeGamble(gamble) {
   };
 }
 
-function loadSave() {
+function slotKey(index) { return `${SAVE_PREFIX}${index}`; }
+
+function loadSlotMeta() {
+  try { return JSON.parse(localStorage.getItem(SAVE_META_KEY)) || []; } catch { return []; }
+}
+function saveSlotMeta(meta) { localStorage.setItem(SAVE_META_KEY, JSON.stringify(meta)); }
+
+function updateSlotMeta(index) {
+  const meta = loadSlotMeta();
+  while (meta.length <= index) meta.push(null);
+  if (state && !state.dead) {
+    meta[index] = { slot: index, name: state.name, age: state.age, timestamp: Date.now(), title: "进行中" };
+  } else if (state && state.dead) {
+    meta[index] = { slot: index, name: state.name, age: state.age, timestamp: Date.now(), title: state.deathReason || "已故" };
+  } else { meta[index] = null; }
+  saveSlotMeta(meta);
+}
+
+function clearSlotMeta(index) {
+  const meta = loadSlotMeta();
+  if (meta[index]) meta[index] = null;
+  saveSlotMeta(meta);
+}
+
+function loadSave(slot) {
   try {
-    const raw = localStorage.getItem(SAVE_KEY);
+    const raw = localStorage.getItem(slotKey(slot));
     return raw ? normalizeState(JSON.parse(raw)) : null;
-  } catch {
-    return null;
+  } catch { return null; }
+}
+
+function loadCurrentSave() {
+  const meta = loadSlotMeta();
+  for (let i = meta.length - 1; i >= 0; i--) {
+    if (meta[i]) { const s = loadSave(i); if (s) { currentSlot = i; s.saveSlot = i; return s; } }
   }
+  return migrateOldSave();
+}
+
+function migrateOldSave() {
+  try {
+    const raw = localStorage.getItem(SAVE_LEGACY_KEY);
+    if (!raw) return null;
+    const s = normalizeState(JSON.parse(raw));
+    s.saveSlot = 0; currentSlot = 0;
+    localStorage.setItem(slotKey(0), JSON.stringify(s));
+    localStorage.removeItem(SAVE_LEGACY_KEY);
+    updateSlotMeta(0);
+    return s;
+  } catch { return null; }
 }
 
 function save() {
-  if (state && !state.__ephemeral) localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+  if (state && !state.__ephemeral && currentSlot >= 0) {
+    state.saveSlot = currentSlot;
+    localStorage.setItem(slotKey(currentSlot), JSON.stringify(state));
+    updateSlotMeta(currentSlot);
+  }
 }
 
 function clearSave() {
-  localStorage.removeItem(SAVE_KEY);
+  if (currentSlot >= 0) {
+    localStorage.removeItem(slotKey(currentSlot));
+    clearSlotMeta(currentSlot);
+    currentSlot = -1;
+  }
 }
 
 function nextYear() {
   if (!state || state.dead || state.currentEvent || state.eventResult || state.pendingCaravan) return;
+  SFX.play("page");
   state.age += 1;
   state.year += 1;
   state.lastDeltas = [];
@@ -2010,6 +2128,7 @@ function applyAgeMilestones(deltas = []) {
   state.life ||= normalizeLife();
   for (const milestone of AGE_MILESTONES) {
     if (state.age !== milestone.age || state.life.milestones.includes(milestone.id)) continue;
+    SFX.play("milestone");
     state.life.milestones.push(milestone.id);
     for (const [stat, range] of Object.entries(milestone.effects || {})) changeStat(stat, rangeValue(range), deltas);
     if (milestone.tag && !state.tags.includes(milestone.tag)) state.tags.push(milestone.tag);
@@ -2295,6 +2414,7 @@ function chooseOption(index) {
 
 function finishEvent() {
   if (!state?.currentEvent) return;
+  SFX.play("event");
   addLog(state.currentEvent.title || "事件", fillPlaceholders(state.currentEvent.content || state.currentEvent.history || ""), state.lastDeltas);
   state.currentEvent = null;
   if (state.pendingActivity) return completePendingActivity();
@@ -2437,6 +2557,7 @@ function changeStat(stat, value, deltas) {
 
 function die(reason) {
   if (state.dead) return;
+  SFX.play("death");
   state.dead = true;
   state.deathReason = reason;
   state.currentEvent = null;
@@ -3415,6 +3536,7 @@ function finishGomokuGame(result) {
   let title = "五子棋";
   let text = "";
   if (result === "player") {
+    SFX.play("win");
     miniGames.record.gomokuWins += 1;
     const prize = randInt(12, 36);
     changeStat("mood", randInt(3, 7), deltas);
@@ -3652,6 +3774,7 @@ function finishXiangqiGame(result) {
   let title = "象棋";
   let text = "一局象棋罢了，席间仍在复盘。";
   if (result === "player") {
+    SFX.play("win");
     miniGames.record.xiangqiWins += 1;
     const prize = randInt(20, 70);
     changeStat("mood", randInt(3, 7), deltas);
@@ -5632,6 +5755,7 @@ function inheritFromChild(id) {
 
 function marryLover() {
   if (!state.family.lover || state.family.spouse || state.age < 16) return;
+  SFX.play("marry");
   const deltas = [];
   const cost = randInt(120, 420);
   const actualCost = Math.min(cost, Math.max(0, state.stats.money));
@@ -5983,6 +6107,7 @@ function submitExam() {
   }
 
   if (passed && current.extraType) {
+    SFX.play("exam-pass");
     if (!state.tags.includes(stage.title)) state.tags.push(stage.title);
     changeStat(stage.stat || "knowledge", randInt(3, 7), deltas);
     changeStat("mood", randInt(2, 7), deltas);
@@ -6000,6 +6125,7 @@ function submitExam() {
     changeStat("eq", randInt(1, 4), deltas);
     changeStat("money", current.type === "palace" ? randInt(120, 280) : randInt(30, 120), deltas);
   } else {
+    SFX.play("exam-fail");
     changeStat("mood", -randInt(4, 12), deltas);
     changeStat("knowledge", randInt(1, 3), deltas);
   }
@@ -6701,7 +6827,8 @@ initLightfallBackground();
 render();
 
 function renderCreate() {
-  const hasSave = !!loadSave();
+  const meta = loadSlotMeta();
+  const hasSave = meta.some((slot) => slot !== null);
   return `
     <main class="app-shell create-shell">
       <section class="create-panel">
@@ -6777,6 +6904,10 @@ function renderGame() {
           <button class="shortcut-btn guide-shortcut" data-action="open-onboarding" title="新手引导">
             ${icon("MainBook", "新手引导")}
             <span>引导</span>
+          </button>
+          <button class="shortcut-btn sfx-toggle" data-action="toggle-sfx" title="${SFX.isMuted() ? "开启音效" : "关闭音效"}">
+            <span class="sfx-icon">${SFX.isMuted() ? "🔇" : "🔊"}</span>
+            <span>${SFX.isMuted() ? "静音" : "音效"}</span>
           </button>
           ${TOP_SHORTCUTS.map((item) => `
             <button class="shortcut-btn" data-shortcut="${item.id}" title="${escapeHtml(item.label)}">
@@ -7000,6 +7131,7 @@ function centerContent() {
   if (view.page === "backpack") return backpackView();
   if (view.page === "ledger") return ledgerView();
   if (view.page === "menu") return menuView();
+  if (view.page === "save-manager") return saveManagerView();
   if (view.page === "codex") return codexView();
   if (view.page === "gamble") return gambleView();
   if (view.page === "miniGames") return miniGamesView();
@@ -7738,6 +7870,63 @@ function ledgerView() {
     </article>`;
 }
 
+function saveManagerView() {
+  const meta = loadSlotMeta();
+  const slots = [];
+  for (let i = 0; i < MAX_SLOTS; i++) {
+    const info = meta[i];
+    const isCurrent = currentSlot === i;
+    const isDead = state?.dead;
+    if (info) {
+      const timeStr = info.timestamp ? new Date(info.timestamp).toLocaleString("zh-CN", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }) : "";
+      slots.push(`<article class="save-slot ${isCurrent ? "current" : ""}">
+        <div class="save-slot-header">
+          <span class="save-slot-badge">存档位 ${i + 1}</span>
+          ${isCurrent ? `<span class="save-slot-current">当前</span>` : ""}
+        </div>
+        <div class="save-slot-body">
+          <strong>${escapeHtml(info.name)}</strong>
+          <span class="save-slot-meta">${info.age}岁 · ${info.title} · ${timeStr}</span>
+        </div>
+        <div class="save-slot-actions">
+          ${state && !isDead ? `<button class="text-btn" data-save-slot="${i}" data-save-action="overwrite">覆盖保存</button>` : ""}
+          <button class="text-btn" data-save-slot="${i}" data-save-action="load">读取</button>
+          <button class="text-btn" data-save-slot="${i}" data-save-action="export-slot">导出</button>
+          <button class="text-btn danger" data-save-slot="${i}" data-save-action="delete">删除</button>
+        </div>
+      </article>`);
+    } else {
+      slots.push(`<article class="save-slot empty">
+        <div class="save-slot-header">
+          <span class="save-slot-badge">存档位 ${i + 1}</span>
+          <span class="save-slot-empty">空</span>
+        </div>
+        <div class="save-slot-body">
+          <span class="save-slot-hint">空存档位</span>
+        </div>
+        <div class="save-slot-actions">
+          ${state && !isDead ? `<button class="text-btn" data-save-slot="${i}" data-save-action="save-here">保存到此处</button>` : ""}
+          <button class="text-btn" data-save-slot="${i}" data-save-action="import-slot">导入存档</button>
+        </div>
+      </article>`);
+    }
+  }
+  return `
+    <article class="play-card save-manager-card">
+      <p class="eyebrow">存档管理</p>
+      <h2>多槽位存档</h2>
+      <p>3 个存档位，可保存、读取、导入导出各局人生。</p>
+      <div class="save-slots">
+        ${slots.join("")}
+      </div>
+      <div class="main-actions">
+        <button class="ghost-btn" data-action="back-main">返回</button>
+        <button class="secondary-btn" data-action="import-file">从文件导入</button>
+      </div>
+      <input type="file" accept=".json" id="save-import-input" style="display:none" data-action="import-file-input">
+    </article>`;
+}
+
 function menuView() {
   return `
     <article class="play-card menu-card">
@@ -7746,9 +7935,9 @@ function menuView() {
       <p>保存、导出或重新开始当前人生。</p>
       <div class="button-list">
         <button class="list-btn" data-page="codex">${icon("MainBook", "图鉴")}<span>命格图鉴<small>查看人生阶段、目标与本局评分。</small></span></button>
-        <button class="list-btn" data-action="save">${icon("MenuButton0", "存档")}<span>保存进度<small>写入浏览器本地存档。</small></span></button>
+        <button class="list-btn" data-action="open-save-manager">${icon("MenuButton0", "存档")}<span>存档管理<small>多槽位保存、读取与导入导出。</small></span></button>
         <button class="list-btn" data-action="export">${icon("MenuButton1", "导出")}<span>导出存档<small>下载当前人生 JSON。</small></span></button>
-        <button class="list-btn danger" data-action="new-life">${icon("MenuButton2", "重开")}<span>重新开始<small>清空当前本地存档。</small></span></button>
+        <button class="list-btn danger" data-action="new-life">${icon("MenuButton2", "重开")}<span>重新开始<small>清空当前存档并开新档。</small></span></button>
       </div>
       <div class="main-actions"><button class="ghost-btn" data-action="back-main">返回</button></div>
     </article>`;
@@ -8771,12 +8960,8 @@ app.addEventListener("click", (event) => {
   if (!button) return;
 
   if (button.dataset.action === "continue-save") {
-    state = loadSave();
-    if (state) {
-      view.screen = "game";
-      view.overlay = state.onboarding?.seen ? "" : "onboarding";
-      render();
-    }
+    view.page = "save-manager";
+    render();
     return;
   }
   if (button.dataset.action === "start-life") return startLife();
@@ -8806,16 +8991,69 @@ app.addEventListener("click", (event) => {
     render();
     return;
   }
-  if (button.dataset.action === "save") {
-    save();
-    button.textContent = "已存档";
-    setTimeout(render, 600);
+  if (button.dataset.action === "open-save-manager") {
+    view.page = "save-manager";
+    render();
+    return;
+  }
+  if (button.dataset.saveSlot !== undefined && button.dataset.saveAction) {
+    const slot = Number(button.dataset.saveSlot);
+    const action = button.dataset.saveAction;
+    if (action === "overwrite" || action === "save-here") {
+      currentSlot = slot;
+      if (state) state.saveSlot = slot;
+      save();
+      render();
+      return;
+    }
+    if (action === "load") {
+      const loaded = loadSave(slot);
+      if (loaded) {
+        state = loaded;
+        currentSlot = slot;
+        state.saveSlot = slot;
+        view.screen = "game";
+        view.page = "main";
+        view.overlay = state.onboarding?.seen ? "" : "onboarding";
+        render();
+      }
+      return;
+    }
+    if (action === "export-slot") {
+      const slotState = loadSave(slot);
+      if (slotState) {
+        const blob = new Blob([JSON.stringify(slotState, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${slotState.name || "dynasty-life"}-存档位${slot + 1}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+      return;
+    }
+    if (action === "delete") {
+      localStorage.removeItem(slotKey(slot));
+      clearSlotMeta(slot);
+      if (currentSlot === slot) currentSlot = -1;
+      render();
+      return;
+    }
+    if (action === "import-slot") {
+      const input = document.getElementById("save-import-input");
+      if (input) { input.dataset.importTargetSlot = String(slot); input.click(); }
+      return;
+    }
+  }
+  if (button.dataset.action === "toggle-sfx") {
+    SFX.toggleMute();
+    render();
     return;
   }
   if (button.dataset.action === "new-life") {
     clearSave();
     state = null;
-    draft = newDraft();
+    draft = newDraft(draft?.gender);
     view = { screen: "create", page: "main", tab: "overview", activityId: "", placeId: "", overlay: "" };
     render();
     return;
@@ -8975,6 +9213,37 @@ app.addEventListener("input", (event) => {
   }
   if (target.dataset.field === "difficulty") draft.difficulty = target.value;
   if (target.dataset.touhuControl) setTouhuControl(target.dataset.touhuControl, target.value);
+});
+
+document.addEventListener("change", (event) => {
+  const input = event.target;
+  if (input.id !== "save-import-input" || !input.files?.length) return;
+  const file = input.files[0];
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const imported = JSON.parse(e.target.result);
+      if (!imported.name || !imported.stats) { alert("无效的存档文件"); return; }
+      const targetSlot = input.dataset.importTargetSlot !== "" ? Number(input.dataset.importTargetSlot) : -1;
+      if (targetSlot >= 0 && targetSlot < MAX_SLOTS) {
+        imported.saveSlot = targetSlot;
+        localStorage.setItem(slotKey(targetSlot), JSON.stringify(imported));
+        updateSlotMeta(targetSlot);
+        if (view.page === "save-manager") render();
+        else { state = normalizeState(imported); currentSlot = targetSlot; view.screen = "game"; view.page = "main"; render(); }
+      } else {
+        const meta = loadSlotMeta();
+        let slot = meta.findIndex((s) => s === null);
+        if (slot < 0) slot = 0;
+        imported.saveSlot = slot;
+        localStorage.setItem(slotKey(slot), JSON.stringify(imported));
+        updateSlotMeta(slot);
+        if (view.page === "save-manager") render();
+      }
+    } catch { alert("导入失败：存档文件格式有误"); }
+  };
+  reader.readAsText(file);
+  input.value = "";
 });
 
 app.addEventListener("click", (event) => {
