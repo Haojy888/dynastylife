@@ -444,6 +444,217 @@ const OFFICIAL_RANKS = [
   { grade: "正一品", office: "大学士", scope: "朝堂", duty: "入阁参赞机务，位极人臣，名入国史。" },
 ];
 const OFFICIAL_PROMOTION_MERIT = [0, 70, 155, 255, 375, 520, 690, 890, 1125, 1400, 1720, 2090, 2510, 2990, 3530, 4140, 4820, 5570, 6400];
+const OFFICIAL_TENDENCY = {
+  clean: { label: "清名", note: "百姓爱戴，升迁稍慢但身后评价更高" },
+  neutral: { label: "中正", note: "左右持平，考课风险较低" },
+  corrupt: { label: "浊名", note: "钱财与人脉来得快，也更易招弹劾" },
+};
+const OFFICIAL_NETWORK_SEEDS = [
+  { name: "张廷玉", relation: "座主", faction: "帝党", affection: 74, rank: 15 },
+  { name: "李卫", relation: "同年", faction: "实干派", affection: 66, rank: 9 },
+  { name: "陈梦雷", relation: "同乡", faction: "清流", affection: 58, rank: 7 },
+  { name: "沈其远", relation: "上司", faction: "中立", affection: 52, rank: 11 },
+  { name: "年羹尧", relation: "政敌", faction: "军功派", affection: -28, rank: 16 },
+  { name: "高士奇", relation: "幕友", faction: "词臣", affection: 48, rank: 8 },
+];
+const OFFICIAL_AFFAIRS = [
+  {
+    id: "archives",
+    label: "案牍",
+    minRank: 0,
+    icon: "Official",
+    primary: "eq",
+    secondary: "knowledge",
+    clean: 1,
+    merit: [8, 18],
+    note: "核对文书、排定考语，低阶官吏最常经手。",
+    stories: [
+      "吏房堆着历年黄册，你翻到一处里甲脱漏，顺藤摸瓜补齐了三村户籍。",
+      "上司催要考成册，你连夜分门别类，把积压案牍整理得可查可验。",
+      "有书吏偷换批语，你比对朱墨笔迹，留下暗记，待堂上再行揭破。",
+      "驿传文移迟误，几处公文互相推诿，你逐件追问，总算把责任厘清。",
+    ],
+  },
+  {
+    id: "tax",
+    label: "钱粮",
+    minRank: 2,
+    icon: "CashBox",
+    primary: "knowledge",
+    secondary: "virtue",
+    clean: 2,
+    merit: [10, 24],
+    note: "核算赋税、仓储与亏空，最考验清浊取舍。",
+    stories: [
+      "仓廪盘点时少了三百石陈粮，你先封存簿册，再召库丁对账，查出前任留下的亏空。",
+      "秋粮解运将启，豪户暗示愿代垫脚费，你没有立刻点头，先把乡约与保甲都叫来复核。",
+      "灾后田亩减产，税额仍按旧册催征，你据实改造册籍，替百姓缓了一口气。",
+      "银库交割时成色不齐，你请匠人验银，又命书吏当场重记，堵住了一条暗门。",
+    ],
+  },
+  {
+    id: "law",
+    label: "刑名",
+    minRank: 1,
+    icon: "PrisonHeader",
+    primary: "eq",
+    secondary: "virtue",
+    clean: 2,
+    merit: [12, 28],
+    note: "审案、缉捕、复核供词，严宽之间见官声。",
+    stories: [
+      "两姓争坟闹到堂前，你没有急着动刑，先验旧契与族谱，竟查出一桩二十年前的误记。",
+      "盗马案证词彼此抵牾，你让差役重走夜路，按脚印宽窄寻回真凶。",
+      "狱中囚犯喊冤，你顶着同僚埋怨复核供词，最终替其洗去重罪。",
+      "捕役押来惯偷，乡绅求你严办，你仍按律分辨轻重，免得一时痛快坏了法度。",
+    ],
+  },
+  {
+    id: "education",
+    label: "教化",
+    minRank: 4,
+    icon: "OfficialSchool",
+    primary: "knowledge",
+    secondary: "eq",
+    clean: 1,
+    merit: [10, 22],
+    note: "主持学政、修县志、整饬士风，能养长远名望。",
+    stories: [
+      "县学久缺祭器，你带生员整理旧藏，又亲自讲一场乡约，学风渐有起色。",
+      "岁试前有人递来关节条子，你当众封存，另出新题，士子虽惊，反多敬服。",
+      "修县志时豪族争抢列传名次，你按实事轻重编排，宁可得罪人也不乱史笔。",
+      "乡里争学田租佃，你请老儒、里正同议，定下轮佃章程。",
+    ],
+  },
+  {
+    id: "river",
+    label: "河工",
+    minRank: 7,
+    icon: "RepairCarriage",
+    primary: "physique",
+    secondary: "knowledge",
+    clean: 1,
+    risk: 0.24,
+    merit: [14, 34],
+    note: "修堤防洪、调徭役，有功大，也可能伤身破财。",
+    stories: [
+      "春汛将至，旧堤渗水，你穿蓑衣巡到三更，终于找到蚁穴与暗涌。",
+      "河夫怨工食被克扣，你没有只催工期，而是先查饭账，免得民怨压垮堤防。",
+      "上游忽报山洪，你连夜调木石堵口，脚下泥水没膝，文书也被雨打花了。",
+      "盐商愿捐银修桥，却要在桥头立私坊，你斟酌利害，另议公碑记名。",
+    ],
+  },
+  {
+    id: "military",
+    label: "兵备",
+    minRank: 8,
+    icon: "RepairCarriage",
+    primary: "physique",
+    secondary: "eq",
+    clean: 0,
+    risk: 0.18,
+    merit: [14, 32],
+    note: "操练乡勇、查军饷、处置边报，风险与声望并行。",
+    stories: [
+      "乡勇名册虚浮，你亲自点验弓矢甲械，裁掉空名，补足巡防。",
+      "边报传来盗匪流窜，你没有轻率出兵，先派老练捕役探清虚实。",
+      "军饷发放前有人夹带短秤，你令营伍列队复称，哗然之后反得军心。",
+      "驿路被劫，商旅不敢通行，你调民壮设卡，三日后擒住贼首。",
+    ],
+  },
+  {
+    id: "diplomacy",
+    label: "外交",
+    minRank: 11,
+    icon: "Relationship1",
+    primary: "eq",
+    secondary: "knowledge",
+    clean: 0,
+    merit: [16, 36],
+    note: "接待使节、处置边贸与争端，高阶官员方能经手。",
+    stories: [
+      "番邦使节带来贡物名册，却在礼节上故意试探，你以典故应答，既不失礼也不让步。",
+      "边民互市起争斗，你把两边译人分开询问，才知是度量衡不同引起误会。",
+      "邻省商帮争码头，你设席调停，暗中查清背后靠山，留足回旋余地。",
+      "朝廷新开边市，盐茶价格牵动各方，你连拟三道条陈，终于让上司点头。",
+    ],
+  },
+  {
+    id: "ministry",
+    label: "部务",
+    minRank: 17,
+    icon: "Official",
+    primary: "knowledge",
+    secondary: "eq",
+    clean: 1,
+    merit: [20, 44],
+    note: "入掌六部，议天下大政，成败都会写入国史。",
+    stories: [
+      "部中议天下漕粮改折，你翻检十年奏销，指出三处必乱之弊。",
+      "朝会上两派争论军饷，你没有急着附和座主，而是把边镇实数列在笏板后。",
+      "新律拟定，刑部与户部互不相让，你以民生为据，替条文留出宽严尺度。",
+      "皇帝问及荒政，你引旧例又补新法，殿中一时寂然。",
+    ],
+  },
+];
+const OFFICIAL_CASES = [
+  {
+    id: "silver-shortage",
+    title: "库银亏空",
+    minRank: 2,
+    prompt: "上司来查库银，发现少了三百两。你心知此事多半是前任遗留的窟窿，此刻如何处置？",
+    options: [
+      { id: "report", label: "如实上报", note: "清名增加，考课未必好看", merit: [12, 24], virtue: [3, 7], clean: 4, relation: [-2, 2], text: "你据实写明来龙去脉，又附上补救章程。上司面色不佳，却也挑不出你欺瞒之处。" },
+      { id: "cover", label: "设法填补", note: "花钱消灾，关系较稳", merit: [8, 18], money: [-180, -80], eq: [2, 5], clean: -1, relation: [2, 6], text: "你先垫银补齐账面，再慢慢追索旧欠。事情暂时压下，胥吏也知你会做人。" },
+      { id: "shift", label: "推给前任", note: "或可脱身，但德行受损", merit: [4, 14], virtue: [-5, -2], eq: [-3, 1], clean: -3, corruption: 2, text: "你把责任全推给前任旧班，上司暂且采信，可衙中旧人看你的眼神已有不同。" },
+      { id: "hide", label: "隐瞒不报", note: "来钱快，后患极大", merit: [-6, 8], money: [120, 320], virtue: [-8, -3], clean: -6, corruption: 6, impeachment: 0.28, text: "你改动账页暂掩亏空，还从中抽出一笔浮财。只是这道裂缝迟早会再透风。" },
+    ],
+  },
+  {
+    id: "bribe-gentry",
+    title: "豪绅递礼",
+    minRank: 3,
+    prompt: "本县大户为争水渠先后，夜里遣管家送来厚礼，言辞温软，只求你在批文上挪一挪次序。",
+    options: [
+      { id: "reject", label: "当面退回", note: "百姓称快，豪族记恨", merit: [10, 22], virtue: [3, 6], clean: 5, relation: [-5, -1], text: "你命管家把礼原封带回，又在堂上公开水渠章程，乡民暗中称快。" },
+      { id: "mediate", label: "召众公议", note: "稳妥中正", merit: [12, 24], eq: [2, 5], clean: 1, relation: [1, 4], text: "你召两村父老、豪绅与渠甲同议，按田亩远近排定时序，各方虽不尽满意，却都能接受。" },
+      { id: "accept", label: "收礼批文", note: "发财但浊名上涨", merit: [6, 16], money: [160, 420], virtue: [-7, -3], clean: -5, corruption: 5, impeachment: 0.2, text: "你收下厚礼，批文自然偏了几分。豪绅眉开眼笑，水尾小民却在背后骂了半月。" },
+    ],
+  },
+  {
+    id: "impeachment",
+    title: "政敌弹劾",
+    minRank: 5,
+    prompt: "御史台递来弹章，说你治下钱粮不清、任用私人。你知道背后多半有政敌推波助澜。",
+    options: [
+      { id: "defend", label: "具折自辩", note: "看学识与政绩", merit: [8, 20], knowledge: [1, 4], clean: 1, relation: [-3, 1], text: "你逐条列证，自辩不卑不亢。弹章虽未立刻撤下，朝中已有几人替你说话。" },
+      { id: "ask-mentor", label: "求座主援手", note: "消耗人情，较易过关", merit: [6, 16], eq: [1, 4], relation: [-4, 3], clean: -1, text: "你写信给座主求援。几日后风声稍缓，但这份人情日后总要偿还。" },
+      { id: "counter", label: "反参政敌", note: "风险高，成功则扬名", merit: [12, 30], eq: [-2, 5], clean: -2, corruption: 1, impeachment: 0.18, text: "你搜集对方旧案反参上去。朝堂顿时热闹，胜负未分之前，人人都与你保持距离。" },
+    ],
+  },
+  {
+    id: "famine",
+    title: "荒年赈济",
+    minRank: 6,
+    prompt: "连月不雨，乡民聚在县门前求粥。仓粮有限，上司又催你按额解送。",
+    options: [
+      { id: "open-granary", label: "开仓赈济", note: "民望大涨，仕途冒险", merit: [18, 34], virtue: [4, 8], favorability: [5, 10], clean: 5, relation: [-5, 0], text: "你开仓设粥棚，先救眼前饥民。百姓叩首称谢，上司的催文却一日紧似一日。" },
+      { id: "donation", label: "劝捐赈灾", note: "考验人脉", merit: [14, 28], eq: [2, 6], favorability: [3, 7], clean: 2, relation: [1, 5], text: "你请士绅富户入堂饮茶，把利害说透。众人虽肉疼，终究凑出一批米粮。" },
+      { id: "send-tax", label: "照额解送", note: "保官评，失民心", merit: [6, 16], virtue: [-6, -2], favorability: [-8, -3], clean: -2, corruption: 1, text: "你按额解粮，官样文章毫无破绽。只是县门外的哭声，在夜里仍能听见。" },
+    ],
+  },
+  {
+    id: "palace-visit",
+    title: "御前问政",
+    minRank: 15,
+    prompt: "新帝召对，忽然问起地方积弊。殿中诸臣屏息，你只得当场作答。",
+    options: [
+      { id: "truth", label: "直陈利弊", note: "清名高，可能越级受赏", merit: [24, 48], knowledge: [2, 6], clean: 4, favorability: [2, 6], relation: [-2, 4], text: "你直陈钱粮、刑名与河工三弊，语气虽峻，却句句有据。御前沉默片刻，终点头命你另呈条陈。" },
+      { id: "balanced", label: "折中陈奏", note: "稳健保身", merit: [16, 34], eq: [2, 6], clean: 1, relation: [2, 6], text: "你先称祖制，再言变通，既不伤旧臣颜面，也给新政留了余地。" },
+      { id: "flatter", label: "顺旨逢迎", note: "关系快，身后名差", merit: [10, 24], eq: [1, 5], virtue: [-5, -2], clean: -4, corruption: 3, relation: [3, 8], text: "你顺着圣意把话说得圆满，殿上气氛轻松许多，只是史笔未必喜欢这种圆滑。" },
+    ],
+  },
+];
 const GAMBLE_OPPONENT_ITEMS = ["孔雀华盖马车", "乌木折扇", "鎏金酒盏", "玉扣腰牌", "一匣银锭", "绣纹荷包"];
 const CHINESE_NUMS = ["零", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十", "十一", "十二"];
 const GOMOKU_SIZE = 15;
@@ -1428,6 +1639,21 @@ function defaultProfileAvatar(gender = state?.gender || "male") {
   return avatarOptions(gender)[0] || "";
 }
 
+function createOfficialState() {
+  return {
+    rank: 0,
+    merit: 0,
+    unlocked: false,
+    clean: 0,
+    corruption: 0,
+    network: [],
+    retired: false,
+    reviewLockUntil: 0,
+    reviewLockRank: 0,
+    records: { affairs: 0, cases: 0, impeachments: 0, delayed: 0, posthumous: "" },
+  };
+}
+
 function createFamily(familyName) {
   return {
     father: { name: `${familyName}${sample(DATA.database?.names?.male) || "父"}`, relation: "父亲", gender: "male", alive: true, age: randInt(28, 42), physique: randInt(58, 88), affection: randInt(72, 96) },
@@ -1511,7 +1737,7 @@ function startLife() {
     crickets: [],
     cricketRecord: { wins: 0, losses: 0, champion: 0 },
     femaleSkills: {},
-    official: { rank: 0, merit: 0 },
+    official: createOfficialState(),
     lineage: { generation: 1, familyName: draft.family, ancestors: [] },
     life: { milestones: [], goals: [] },
     study: { prep: 0, lastYear: -1 },
@@ -1592,10 +1818,7 @@ function normalizeState(raw) {
   next.cricketRecord.losses = Math.max(0, Number(next.cricketRecord.losses) || 0);
   next.cricketRecord.champion = Math.max(0, Number(next.cricketRecord.champion) || 0);
   next.femaleSkills = next.femaleSkills && typeof next.femaleSkills === "object" ? next.femaleSkills : {};
-  next.official = next.official && typeof next.official === "object" ? next.official : { rank: 0, merit: 0 };
-  next.official.rank = clamp(Math.round(Number(next.official.rank) || 0), 0, OFFICIAL_RANKS.length - 1);
-  next.official.merit = Math.max(0, Number(next.official.merit) || 0);
-  next.official.unlocked = !!next.official.unlocked;
+  next.official = normalizeOfficial(next.official);
   next.lineage = normalizeLineage(next.lineage, next.name.slice(0, 1));
   next.life = normalizeLife(next.life, next.age);
   next.study = normalizeStudy(next.study);
@@ -1760,6 +1983,55 @@ function normalizeFriend(friend) {
     lastMet: Number.isFinite(Number(source.lastMet)) ? Number(source.lastMet) : -1,
     debt: Math.max(0, Number(source.debt) || 0),
   };
+}
+
+function normalizeOfficial(source) {
+  const base = createOfficialState();
+  const official = source && typeof source === "object" ? { ...base, ...source } : base;
+  official.rank = clamp(Math.round(Number(official.rank) || 0), 0, OFFICIAL_RANKS.length - 1);
+  official.merit = Math.max(0, Number(official.merit) || 0);
+  official.unlocked = !!official.unlocked;
+  official.clean = clamp(Number(official.clean) || 0, -100, 100);
+  official.corruption = clamp(Number(official.corruption) || 0, 0, 100);
+  official.retired = !!official.retired;
+  official.reviewLockUntil = Math.max(0, Number(official.reviewLockUntil) || 0);
+  official.reviewLockRank = clamp(Math.round(Number(official.reviewLockRank) || 0), 0, OFFICIAL_RANKS.length - 1);
+  official.network = Array.isArray(official.network) ? official.network.map(normalizeOfficialContact).filter(Boolean).slice(0, 8) : [];
+  official.records = official.records && typeof official.records === "object" ? official.records : {};
+  official.records.affairs = Math.max(0, Number(official.records.affairs) || 0);
+  official.records.cases = Math.max(0, Number(official.records.cases) || 0);
+  official.records.impeachments = Math.max(0, Number(official.records.impeachments) || 0);
+  official.records.delayed = Math.max(0, Number(official.records.delayed) || 0);
+  official.records.posthumous = official.records.posthumous || "";
+  return official;
+}
+
+function normalizeOfficialContact(contact) {
+  if (!contact || typeof contact !== "object") return null;
+  const seed = OFFICIAL_NETWORK_SEEDS.find((item) => item.name === contact.name) || {};
+  const name = contact.name || seed.name || makePersonName("male");
+  return {
+    id: contact.id || `official-${name}`,
+    name,
+    relation: contact.relation || seed.relation || "同僚",
+    faction: contact.faction || seed.faction || "中立",
+    rank: clamp(Math.round(Number(contact.rank ?? seed.rank ?? 6)), 0, OFFICIAL_RANKS.length - 1),
+    affection: clamp(Number(contact.affection ?? seed.affection ?? 45), -100, 100),
+  };
+}
+
+function ensureOfficialNetwork() {
+  state.official ||= createOfficialState();
+  state.official.network = Array.isArray(state.official.network) ? state.official.network : [];
+  const desired = Math.min(5, 2 + Math.floor(officialRankIndex() / 5));
+  const existing = new Set(state.official.network.map((item) => item.name));
+  const seeds = OFFICIAL_NETWORK_SEEDS.filter((seed) => !existing.has(seed.name));
+  while (state.official.network.length < desired && seeds.length) {
+    const seed = seeds.splice(randInt(0, seeds.length - 1), 1)[0];
+    state.official.network.push(normalizeOfficialContact({ ...seed, affection: seed.affection + randInt(-8, 8) }));
+  }
+  state.official.network = state.official.network.map(normalizeOfficialContact).filter(Boolean).slice(0, 8);
+  return state.official.network;
 }
 
 function courtesanEntranceCost() {
@@ -2208,7 +2480,7 @@ function nextYear() {
     return;
   }
 
-  state.currentEvent = chooseEvent();
+  state.currentEvent = annualOfficialCaseEvent() || chooseEvent();
   if (!state.currentEvent) addLog("平年", "这一年无甚大事，日子仍照常向前。", state.lastDeltas);
   finishYear(false);
 }
@@ -2583,6 +2855,8 @@ function chooseOption(index) {
   const choice = event?.children?.[index];
   if (!choice || !conditionsPass(choice.conditions || [])) return;
 
+  if (event.kind === "officialCase") return resolveOfficialCase(event, choice);
+
   const deltas = applyResults(choice.results || []);
   state.lastDeltas = mergeDeltas(state.pendingActivity?.deltas, deltas);
   const resultText = fillPlaceholders(choice.content || choice.history || choice.title);
@@ -2933,7 +3207,9 @@ function takeCareer(index) {
   state.careerProgress[career.name] ||= { exp: 0, level: 1 };
   if (careerKind(career) === "official") {
     state.official.unlocked = true;
+    state.official.retired = false;
     state.official.rank = Math.max(officialRankIndex(), hasPalaceAppointment() ? 1 : 0);
+    ensureOfficialNetwork();
   }
   state.lastDeltas = [{ label: "营生", value: career.name }];
   addLog("谋职", careerJoinText(career), state.lastDeltas);
@@ -2967,6 +3243,7 @@ function careerKind(career = state.career) {
 function careerActions() {
   const kind = careerKind();
   const careerName = state.career?.name || "";
+  if (kind === "official") return officialCareerActions();
   if (CAREER_ACTION_OVERRIDES[careerName]) return CAREER_ACTION_OVERRIDES[careerName];
   const maps = {
     caravan: [
@@ -2974,10 +3251,6 @@ function careerActions() {
       ["route:merchant", "云州商路", "中等风险，收益更高。"],
       ["route:frontier", "边关重镖", "高风险高收益，可能受伤。"],
       ["route:night", "夜走险货", "极高风险，来钱最快，也最危险。"],
-    ],
-    official: [
-      ["routine", "处理政务", "积累政绩，兼得俸禄。"],
-      ["case", "断案巡察", "考验处世与德行，成败都有名望变化。"],
     ],
     craft: [
       ["routine", "接一单活", "靠手艺换钱，也磨砺体魄。"],
@@ -3012,24 +3285,13 @@ function performCareerAction(type) {
   if (!state.career || state.dead || state.currentEvent || state.eventResult || state.pendingCaravan || state.prisonYears > 0 || state.age < 15) return;
   const kind = careerKind();
   if (kind === "caravan") return performCaravanRoute(String(type || "").replace("route:", "") || "county");
+  if (kind === "official") return performOfficialAction(type);
   const deltas = [];
   const progress = (state.careerProgress[state.career.name] ||= { exp: 0, level: 1 });
   let title = state.career.name;
   let text = "";
   const levelBonus = Math.max(0, Number(progress.level) || 1);
-  if (kind === "official") {
-    const office = officialOffice();
-    const rankBonus = Math.floor(officialRankIndex() / 3);
-    const merit = (type === "case" ? randInt(12, 32) : randInt(7, 18)) + rankBonus;
-    state.official.merit += merit;
-    changeStat("eq", randInt(1, 5), deltas);
-    changeStat("virtue", type === "case" ? randInt(-2, 5) : randInt(-1, 3), deltas);
-    changeStat("money", randInt(25, 90) + levelBonus * 8 + rankBonus * 12, deltas);
-    text = type === "case"
-      ? `你以${office.office}身份审理疑案，斟酌人情法理，得政绩 ${merit}。`
-      : `你处理${office.scope}政务，${office.duty}得政绩 ${merit}。`;
-    text += applyOfficialPromotion(deltas);
-  } else {
+  {
     const risky = type === "risk" || type === "masterwork";
     const success = !risky || Math.random() + (state.stats.eq + state.stats.knowledge + levelBonus * 5) / 260 > 0.62;
     const basePay = {
@@ -3481,10 +3743,23 @@ function careerKindLabel(kind) {
 function officialCareerSummary() {
   const office = officialOffice();
   const need = nextOfficialMeritNeed();
+  const tendency = officialTendencyMeta();
+  const network = ensureOfficialNetwork();
+  const reviewText = Number(state.official.reviewLockUntil || 0) > Number(state.year || state.age)
+    ? `考课暂缓至 ${Math.round(state.official.reviewLockUntil)} 岁后`
+    : need ? `距 ${nextOfficialTitle()} 还差 ${need}` : "位极人臣";
   return `
       ${infoLine("官职", `${office.grade} · ${office.office}`)}
       ${infoLine("辖务", `${office.scope} · ${office.duty}`)}
-      ${infoLine("官评", `${Math.round(state.official.merit || 0)} 政绩${need ? ` · 距 ${nextOfficialTitle()} 还差 ${need}` : " · 位极人臣"}`)}`;
+      ${infoLine("官评", `${Math.round(state.official.merit || 0)} 政绩 · ${reviewText}`)}
+      ${infoLine("路线", `${tendency.label} · 清名 ${Math.round(state.official.clean || 0)} · 浊名 ${Math.round(state.official.corruption || 0)}`)}
+      <div class="official-network">
+        ${network.slice(0, 5).map((item) => `
+          <span class="${item.affection < 0 ? "bad" : item.affection >= 65 ? "good" : ""}">
+            <b>${escapeHtml(item.relation)}</b>${escapeHtml(item.name)} · ${escapeHtml(item.faction)} · ${Math.round(item.affection)}
+          </span>`).join("")}
+      </div>
+      <p class="official-note">${escapeHtml(tendency.note)}</p>`;
 }
 
 function annualAssetIncome() {
@@ -5906,7 +6181,7 @@ function inheritFromChild(id) {
     crickets: [],
     cricketRecord: { wins: 0, losses: 0, champion: 0 },
     femaleSkills: heir.gender === "female" ? { 诗书: Math.floor(heirStudy / 20) } : {},
-    official: { rank: 0, merit: 0 },
+    official: createOfficialState(),
     lineage: {
       generation: generation + 1,
       familyName,
@@ -5963,18 +6238,7 @@ function marryLover() {
 }
 
 function handleOfficialWork() {
-  if (!state.career || careerKind(state.career) !== "official") return;
-  const deltas = [];
-  const office = officialOffice();
-  const rankBonus = Math.floor(officialRankIndex() / 3);
-  const merit = randInt(8, 22) + Math.floor((state.stats.eq + state.stats.knowledge) / 30) + rankBonus;
-  state.official.merit += merit;
-  changeStat("eq", randInt(1, 4), deltas);
-  changeStat("virtue", randInt(-1, 3), deltas);
-  changeStat("money", randInt(20, 80) + rankBonus * 10, deltas);
-  let text = `你以${office.office}身份处理${office.scope}公务，${office.duty}得政绩 ${merit}。`;
-  text += applyOfficialPromotion(deltas);
-  finishAction("官府", text, deltas, "Official");
+  return performOfficialAction("affair:archives");
 }
 
 function officialRankIndex() {
@@ -6003,18 +6267,278 @@ function nextOfficialMeritNeed() {
   return Math.max(0, (OFFICIAL_PROMOTION_MERIT[rank + 1] || 0) - Math.round(state.official?.merit || 0));
 }
 
+function officialCareerActions() {
+  const rank = officialRankIndex();
+  const actions = OFFICIAL_AFFAIRS
+    .filter((affair) => rank >= affair.minRank)
+    .map((affair) => [`affair:${affair.id}`, affair.label, affair.note]);
+  const cases = OFFICIAL_CASES.filter((item) => rank >= item.minRank);
+  actions.push(["case:random", "官场要案", cases.length ? "进入带选择的官场剧情，处理得当可涨政绩，也可能招祸。" : "官阶尚低，暂以日常案牍为主。"]);
+  if (state.age >= 60 && !state.official?.retired) actions.push(["retire", "致仕归乡", "退下官身，回乡修谱、教导子孙，留下身后名。"]);
+  return actions;
+}
+
+function officialTendencyId() {
+  const clean = Number(state.official?.clean || 0);
+  const corrupt = Number(state.official?.corruption || 0);
+  if (corrupt >= 28 && corrupt - clean > 12) return "corrupt";
+  if (clean >= 24 && clean >= corrupt) return "clean";
+  return "neutral";
+}
+
+function officialTendencyMeta() {
+  return OFFICIAL_TENDENCY[officialTendencyId()] || OFFICIAL_TENDENCY.neutral;
+}
+
+function officialAffairById(id) {
+  return OFFICIAL_AFFAIRS.find((item) => item.id === id) || OFFICIAL_AFFAIRS[0];
+}
+
+function officialCasePool() {
+  const rank = officialRankIndex();
+  return OFFICIAL_CASES.filter((item) => rank >= item.minRank);
+}
+
+function performOfficialAction(type = "affair:archives") {
+  if (!state.career || careerKind(state.career) !== "official") return;
+  state.official = normalizeOfficial(state.official);
+  ensureOfficialNetwork();
+  if (state.official.retired) return finishAction("乡居", "你已致仕归乡，不再点卯办差。可在家中修谱、教导子孙，把官场旧事写入命册。", [], "Official");
+  const action = String(type || "");
+  if (action === "retire") return retireOfficial();
+  if (action.startsWith("case:")) return startOfficialCase();
+  return performOfficialAffair(action.replace("affair:", "") || "archives");
+}
+
+function performOfficialAffair(affairId) {
+  const affair = officialAffairById(affairId);
+  if (officialRankIndex() < affair.minRank) return;
+  const deltas = [];
+  const office = officialOffice();
+  const progress = (state.careerProgress[state.career.name] ||= { exp: 0, level: 1 });
+  const level = Math.max(1, Number(progress.level) || 1);
+  const statScore = Number(state.stats[affair.primary] || 50) + Number(state.stats[affair.secondary] || 50);
+  const success = Math.random() + statScore / 240 + level / 40 + Math.max(0, state.official.clean || 0) / 300 > 0.62;
+  const rankBonus = Math.floor(officialRankIndex() / 3);
+  const merit = Math.max(2, rangeValue(affair.merit) + rankBonus + Math.floor(statScore / 34) + (success ? randInt(4, 12) : -randInt(2, 8)));
+  state.official.merit += merit;
+  state.official.clean = clamp(Number(state.official.clean || 0) + Number(affair.clean || 0) + (success ? 1 : 0), -100, 100);
+  state.official.records.affairs += 1;
+  changeStat(affair.primary, success ? randInt(1, 4) : randInt(-2, 1), deltas);
+  if (affair.secondary !== affair.primary) changeStat(affair.secondary, randInt(0, 3), deltas);
+  changeStat("money", officialSalaryGain() + (success ? randInt(12, 44) : randInt(-24, 16)), deltas);
+  if (success) changeStat("favorability", randInt(1, 4), deltas);
+  if (affair.risk && Math.random() < affair.risk) changeStat("physique", -randInt(1, 6), deltas);
+  deltas.push({ label: "政绩", value: merit, stat: "officialMerit" });
+  if (affair.clean) deltas.push({ label: "清名", value: affair.clean + (success ? 1 : 0) });
+  const relationText = officialNetworkAfterAffair(affair, success, deltas);
+  let text = `你以${office.office}身份经手${affair.label}。${sample(affair.stories)}${success ? " 此事处置得当，案卷送上去时颇有分量。" : " 只是牵连甚广，收尾不算漂亮。"}得政绩 ${merit}。${relationText}`;
+  text += maybeOfficialImpeachment(deltas);
+  text += applyOfficialPromotion(deltas);
+  progress.exp = Math.max(0, Number(progress.exp || 0) + randInt(10, 24));
+  addLedger("官俸", deltas.filter((delta) => delta.stat === "money").reduce((sum, delta) => sum + Number(delta.value || 0), 0), text);
+  unlockLifeGoals();
+  finishAction(`官府 · ${affair.label}`, text, deltas, affair.icon || "Official");
+}
+
+function startOfficialCase() {
+  const pool = officialCasePool();
+  const item = sample(pool);
+  if (!item) return performOfficialAffair("archives");
+  state.currentEvent = officialCaseToEvent(item);
+  save();
+  render();
+}
+
+function officialCaseToEvent(item) {
+  if (!item) return null;
+  return {
+    kind: "officialCase",
+    id: item.id,
+    title: item.title,
+    content: item.prompt,
+    icon: "Official",
+    children: item.options.map((option) => ({
+      ...option,
+      title: option.label,
+      content: option.text,
+      children: [],
+      conditions: [],
+      results: [],
+    })),
+  };
+}
+
+function annualOfficialCaseEvent() {
+  if (!state.career || careerKind(state.career) !== "official" || state.official?.retired) return null;
+  const pool = officialCasePool();
+  if (!pool.length) return null;
+  const pressure = Math.min(0.18, Number(state.official?.corruption || 0) / 360 + Math.max(0, officialRankIndex() - 8) / 180);
+  if (Math.random() > 0.11 + pressure) return null;
+  return officialCaseToEvent(sample(pool));
+}
+
+function resolveOfficialCase(event, choice) {
+  const deltas = [];
+  state.official = normalizeOfficial(state.official);
+  ensureOfficialNetwork();
+  const merit = Math.max(-30, rangeValue(choice.merit || [0, 0]) + Math.floor(officialRankIndex() / 4));
+  state.official.merit = Math.max(0, Number(state.official.merit || 0) + merit);
+  state.official.clean = clamp(Number(state.official.clean || 0) + Number(choice.clean || 0), -100, 100);
+  state.official.corruption = clamp(Number(state.official.corruption || 0) + Number(choice.corruption || 0), 0, 100);
+  state.official.records.cases += 1;
+  if (merit) deltas.push({ label: "政绩", value: merit, stat: "officialMerit" });
+  if (choice.clean) deltas.push({ label: choice.clean > 0 ? "清名" : "浊名", value: Math.abs(choice.clean) });
+  if (choice.corruption) deltas.push({ label: "贪墨", value: choice.corruption });
+  for (const stat of ["mood", "physique", "looks", "eq", "knowledge", "virtue", "relationship", "favorability", "money"]) {
+    if (choice[stat]) changeStat(stat, rangeValue(choice[stat]), deltas);
+  }
+  const relationText = officialNetworkAfterCase(choice, deltas);
+  let text = `${choice.text || choice.content || choice.title}${relationText} ${merit >= 0 ? `得政绩 ${merit}。` : `政绩折损 ${Math.abs(merit)}。`}`;
+  if (choice.impeachment && Math.random() < choice.impeachment) text += triggerOfficialCensure(deltas, "此案风声未平，御史闻讯递来弹章。");
+  text += applyOfficialPromotion(deltas);
+  state.currentEvent = null;
+  state.eventResult = { title: choice.title || event.title || "官场要案", text, deltas, icon: "Official" };
+  state.lastDeltas = deltas;
+  addLog(event.title || "官场要案", text, deltas);
+  unlockLifeGoals();
+  save();
+  render();
+}
+
+function officialSalaryGain() {
+  return randInt(24, 76) + Math.floor(officialRankIndex() * 9) + Math.floor(Number(state.careerProgress?.[state.career?.name]?.level || 1) * 8);
+}
+
+function officialNetworkAfterAffair(affair, success, deltas) {
+  const contacts = ensureOfficialNetwork();
+  const contact = sample(contacts);
+  if (!contact) return "";
+  const shift = success ? randInt(1, 5) : -randInt(1, 4);
+  contact.affection = clamp(Number(contact.affection || 0) + shift, -100, 100);
+  deltas.push({ label: `${contact.relation}`, value: `${contact.name}${shift >= 0 ? "+" : ""}${shift}` });
+  if (contact.relation === "政敌" && success) return ` ${contact.name}见你政声渐起，表面称赞，暗地却添了几分忌惮。`;
+  if (shift >= 0) return ` ${contact.relation}${contact.name}读到案牍，觉得你办事尚稳。`;
+  return ` ${contact.relation}${contact.name}嫌你收尾粗疏，批语里留了两句冷话。`;
+}
+
+function officialNetworkAfterCase(choice, deltas) {
+  const contacts = ensureOfficialNetwork();
+  if (!contacts.length) return "";
+  const political = contacts.filter((item) => ["座主", "上司", "政敌", "同年"].includes(item.relation));
+  const contact = sample(political.length ? political : contacts);
+  const range = choice.relation || [0, 0];
+  const shift = rangeValue(range);
+  if (!shift) return "";
+  contact.affection = clamp(Number(contact.affection || 0) + shift, -100, 100);
+  deltas.push({ label: `${contact.relation}`, value: `${contact.name}${shift > 0 ? "+" : ""}${shift}` });
+  return shift > 0 ? ` ${contact.relation}${contact.name}因此对你多了几分照拂。` : ` ${contact.relation}${contact.name}听闻后颇不满意，关系冷了下来。`;
+}
+
+function maybeOfficialImpeachment(deltas) {
+  const corruptRisk = Number(state.official?.corruption || 0) / 260;
+  const enemy = ensureOfficialNetwork().find((item) => item.relation === "政敌" && item.affection < -20);
+  const risk = corruptRisk + (enemy ? 0.08 : 0) + (Number(state.official?.clean || 0) < -10 ? 0.06 : 0);
+  if (risk <= 0 || Math.random() > risk) return "";
+  return triggerOfficialCensure(deltas, enemy ? `${enemy.name}暗中递出弹章，说你治下多有不法。` : "朝中忽有风声，说你治下钱粮不清。");
+}
+
+function triggerOfficialCensure(deltas, intro) {
+  state.official.records.impeachments += 1;
+  const defense = Number(state.stats.eq || 50) + Number(state.stats.knowledge || 50) + Number(state.official.clean || 0) - Number(state.official.corruption || 0) + randInt(-30, 30);
+  if (defense >= 95) {
+    changeStat("favorability", randInt(1, 5), deltas);
+    state.official.clean = clamp(Number(state.official.clean || 0) + 2, -100, 100);
+    return ` ${intro}你具折自辩，证据周全，反使朝中知道你并非庸官。`;
+  }
+  if (defense >= 60) {
+    const loss = randInt(18, 48);
+    state.official.merit = Math.max(0, Number(state.official.merit || 0) - loss);
+    deltas.push({ label: "政绩", value: -loss, negative: true });
+    state.official.reviewLockUntil = Math.max(Number(state.official.reviewLockUntil || 0), state.year + 1);
+    state.official.records.delayed += 1;
+    return ` ${intro}你虽勉强脱身，考课却被压下一年，政绩也折了 ${loss}。`;
+  }
+  const oldTitle = officialTitle();
+  if (officialRankIndex() > 0) state.official.rank = officialRankIndex() - 1;
+  state.official.merit = Math.max(0, OFFICIAL_PROMOTION_MERIT[officialRankIndex()] || 0);
+  changeStat("favorability", -randInt(4, 10), deltas);
+  deltas.push({ label: "贬谪", value: officialTitle(), negative: true });
+  return ` ${intro}你自辩失据，由${oldTitle}降为${officialTitle()}。`;
+}
+
 function applyOfficialPromotion(deltas = []) {
   let text = "";
   while (officialRankIndex() < OFFICIAL_RANKS.length - 1 && state.official.merit >= OFFICIAL_PROMOTION_MERIT[officialRankIndex() + 1]) {
+    const review = officialReviewResult(deltas);
+    if (review.blocked) {
+      text += review.text;
+      break;
+    }
+    const oldTitle = officialTitle();
     state.official.rank = officialRankIndex() + 1;
+    ensureOfficialNetwork();
     const title = officialTitle();
-    text += ` 官评递进，升至 ${title}。`;
+    text += ` ${review.text}由${oldTitle}升至 ${title}。`;
     deltas.push({ label: "官阶", value: title, type: "text" });
   }
   if (officialRankIndex() >= OFFICIAL_RANKS.length - 1) {
     text += " 仕途已至正一品，位极人臣。";
   }
   return text;
+}
+
+function officialReviewResult(deltas = []) {
+  if (Number(state.official.reviewLockUntil || 0) > Number(state.year || state.age)) {
+    return { blocked: true, text: " 考课虽已够格，但上一桩弹章余波未平，升迁暂缓。" };
+  }
+  const tendency = officialTendencyId();
+  const network = ensureOfficialNetwork();
+  const patron = network.find((item) => ["座主", "上司"].includes(item.relation));
+  const enemy = network.find((item) => item.relation === "政敌");
+  const patronBonus = patron ? Math.floor(Number(patron.affection || 0) / 8) : 0;
+  const enemyPenalty = enemy && enemy.affection < 0 ? Math.floor(Math.abs(enemy.affection) / 10) : 0;
+  const score = Number(state.stats.eq || 50) + Number(state.stats.knowledge || 50) + Number(state.official.clean || 0) - Math.floor(Number(state.official.corruption || 0) * 0.75) + patronBonus - enemyPenalty + randInt(-26, 28);
+  if (score >= 112) {
+    changeStat("favorability", randInt(2, 6), deltas);
+    return { blocked: false, text: tendency === "clean" ? "考课上书称你清慎勤敏，吏治有声，" : tendency === "corrupt" ? "你打点得法，考语写得颇为圆熟，" : "考课列为上等，" };
+  }
+  if (score >= 74) return { blocked: false, text: "考课勉列中上，上司准你递补，" };
+  const loss = randInt(20, 55);
+  state.official.merit = Math.max(OFFICIAL_PROMOTION_MERIT[officialRankIndex()] || 0, Number(state.official.merit || 0) - loss);
+  state.official.reviewLockUntil = Number(state.year || state.age) + randInt(1, 2);
+  state.official.records.delayed += 1;
+  return { blocked: true, text: ` 考课未能服众，上司批你“才具尚待磨砺”，升迁延后，政绩折损 ${loss}。` };
+}
+
+function retireOfficial() {
+  if (!state.career || careerKind(state.career) !== "official" || state.official.retired || state.age < 60) return;
+  const deltas = [];
+  state.official.retired = true;
+  state.career = null;
+  const posthumous = officialPosthumousTitle();
+  state.official.records.posthumous = posthumous;
+  changeStat("mood", randInt(4, 10), deltas);
+  changeStat("relationship", randInt(3, 8), deltas);
+  changeStat("favorability", officialTendencyId() === "clean" ? randInt(3, 8) : randInt(-4, 2), deltas);
+  if (officialTendencyId() === "clean") {
+    for (const child of livingChildren()) child.study = clamp(Number(child.study || 0) + randInt(3, 8));
+  }
+  const text = `你上疏乞骸骨，朝廷准你以${officialTitle()}致仕。归乡后修族谱、置义田、教子孙读书。${posthumous}`;
+  unlockLifeGoals();
+  finishAction("致仕", text, deltas, "Official");
+}
+
+function officialPosthumousTitle() {
+  const rank = officialRankIndex();
+  const clean = Number(state.official?.clean || 0);
+  const corrupt = Number(state.official?.corruption || 0);
+  const merit = Number(state.official?.merit || 0);
+  if (corrupt >= 45 && corrupt > clean + 10) return "身后恐遭言官追论，子孙科名也会受些牵连。";
+  if (rank >= 15 && clean >= 32 && merit >= 4000) return "身后可望追赠太子太保，入祀乡贤祠。";
+  if (rank >= 11 && clean >= 20) return "乡人多称你弊绝风清，日后或可入地方名宦志。";
+  if (rank >= 8) return "一生官场有起有落，终归留下几卷案牍与些许政声。";
+  return "官虽不显，亦算有始有终。";
 }
 
 function finishAction(title, text, deltas, iconName) {
@@ -8824,6 +9348,7 @@ function endingCareerTitle() {
 }
 
 function endingTagList(score = lifeScore()) {
+  const officialRoute = state.official?.unlocked ? officialTendencyMeta().label : "";
   const tags = [
     lifeGrade(score),
     state.difficulty,
@@ -8834,6 +9359,9 @@ function endingTagList(score = lifeScore()) {
     state.career?.name || "",
     state.exam?.rank >= 0 ? EXAM_TITLES[state.exam.rank] : "",
     hasPalaceAppointment() ? "殿试及第" : "",
+    officialRoute,
+    state.official?.retired ? "致仕归乡" : "",
+    Number(state.official?.records?.impeachments || 0) ? "遭遇弹劾" : "",
     state.family?.spouse ? "成家立室" : "",
     livingChildren().length ? `${livingChildren().length}名子女` : "",
     (state.assets || []).length >= 5 ? "广置田宅" : (state.assets || []).length ? "置办家产" : "",
@@ -8889,6 +9417,15 @@ function endingShareData(score = lifeScore(), inheritedMoney = Math.max(20, Math
 }
 
 function endingEpitaph(data) {
+  if (state.official?.unlocked) {
+    const rank = officialRankIndex();
+    const clean = Number(state.official.clean || 0);
+    const corrupt = Number(state.official.corruption || 0);
+    if (corrupt >= 45 && corrupt > clean + 12) return "其为官多机巧而少仁恕，财货虽丰，身后却有言官追论，乡里谈及也多摇头。";
+    if (rank >= 15 && clean >= 32) return "公为官数十载，所到之处弊绝风清；身后可望追赠清衔，入祀乡贤，子孙亦蒙余荫。";
+    if (rank >= 11 && clean >= 20) return "公历州县省部，治事尚清，虽未尽免风波，百姓仍记其开仓、断狱与修堤诸事。";
+    if (state.official.retired) return "公晚年乞骸归里，修谱课孙，把半生案牍风波都收进家乘之中。";
+  }
   if (data.grade === "传奇") return `${data.name || state.name}此生跌宕而成传奇，功名、家业与人情皆有可书之处，足够后人茶余饭后反复谈起。`;
   if (data.careerTitle?.includes("大学士") || data.careerTitle?.includes("尚书") || data.careerTitle?.includes("总督")) return "此生入仕登高，案牍之间也曾牵动山河，身后名望仍在乡里官场流传。";
   if (data.examTitle === "进士") return "此生读书有成，金榜题名后留下一段士林故事，虽有遗憾，终不负寒窗。";
@@ -9246,15 +9783,19 @@ function examHistory() {
 
 function eventView(event) {
   const options = viableChildren(event);
+  const official = event.kind === "officialCase";
   return `
     <article class="play-card event-card">
-      <p class="eyebrow">事件</p>
+      <p class="eyebrow">${official ? "官场考验" : "事件"}</p>
       <h2>${escapeHtml(event.title || "事件")}</h2>
       <p>${formatText(fillPlaceholders(event.content || event.history || "", false))}</p>
       <div class="choice-list">
         ${
           options.length
-            ? options.map(({ child, index }) => `<button class="choice-btn" data-choice="${index}">${escapeHtml(child.title || "继续")}</button>`).join("")
+            ? options.map(({ child, index }) => `<button class="choice-btn ${official ? "official-choice" : ""}" data-choice="${index}">
+              <span>${escapeHtml(child.title || "继续")}</span>
+              ${official && child.note ? `<small>${escapeHtml(child.note)}</small>` : ""}
+            </button>`).join("")
             : `<button class="primary-btn" data-action="finish-event">继续</button>`
         }
       </div>

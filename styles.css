@@ -3459,6 +3459,63 @@ p {
   margin: 14px 0;
 }
 
+.official-network {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.official-network span {
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid rgba(47, 125, 109, 0.2);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.48);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.official-network b {
+  display: block;
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.official-network .good {
+  border-color: rgba(47, 125, 109, 0.34);
+  background: rgba(47, 125, 109, 0.1);
+}
+
+.official-network .bad {
+  border-color: rgba(192, 57, 43, 0.28);
+  background: rgba(192, 57, 43, 0.08);
+}
+
+.official-note {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.choice-btn.official-choice {
+  align-items: flex-start;
+  text-align: left;
+}
+
+.choice-btn.official-choice span,
+.choice-btn.official-choice small {
+  display: block;
+}
+
+.choice-btn.official-choice small {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
 .route-summary {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -4108,6 +4165,7 @@ p {
   .home-grid,
   .life-brief,
   .achievement-tier-summary,
+  .official-network,
   .route-summary,
   .caravan-status,
   .caravan-choice-grid,
