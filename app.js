@@ -84,6 +84,13 @@ const PREMIUM_ICON_OVERRIDES = {
   BambooHorse: "assets/premium-icons/bamboo-horse.webp",
   DisputesAmongCivilians: "assets/premium-icons/civil-dispute.webp",
   Relationship1: "assets/premium-icons/relation-token.webp",
+  FamilyFatherAvatar: "assets/premium-icons/family-father-avatar.webp",
+  FamilyMotherAvatar: "assets/premium-icons/family-mother-avatar.webp",
+  FamilyBrotherAvatar: "assets/premium-icons/family-brother-avatar.webp",
+  FamilySisterAvatar: "assets/premium-icons/family-sister-avatar.webp",
+  FamilySonAvatar: "assets/premium-icons/family-son-avatar.webp",
+  FamilyDaughterAvatar: "assets/premium-icons/family-daughter-avatar.webp",
+  FamilyFriendAvatar: "assets/premium-icons/family-friend-avatar.webp",
   Activity: "assets/premium-icons/activity-scroll.webp",
   Official: "assets/premium-icons/official-seal.webp",
   Restaurant: "assets/premium-icons/tea-inn.webp",
@@ -8465,7 +8472,7 @@ function childCard(child) {
   const physique = Math.round(Number(child.physique ?? 0));
   return `
     <article class="person-card">
-      <div class="person-avatar ${child.gender === "female" ? "female" : ""}">${icon(child.gender === "female" ? "Relationship2" : "Relationship1", child.relation)}</div>
+      <div class="person-avatar ${child.gender === "female" ? "female" : ""}">${icon(relativeAvatarIcon(child), child.relation)}</div>
       <div>
         <strong><span>${escapeHtml(child.relation || "子女")} · ${child.age}岁</span>${escapeHtml(child.name || "无名")}</strong>
         <div class="meter"><i style="width:${affection}%"></i></div>
@@ -8486,7 +8493,7 @@ function personCard(person, targetId = "") {
   const statusText = person.alive === false ? `已故${ageText}` : `${relationLabel(affection)}${ageText}${physiqueText}${debtText}`;
   return `
     <article class="person-card">
-      <div class="person-avatar ${person.gender === "female" ? "female" : ""}">${icon(person.gender === "female" ? "Relationship2" : "Relationship1", person.relation)}</div>
+      <div class="person-avatar ${person.gender === "female" ? "female" : ""}">${icon(relativeAvatarIcon(person), person.relation)}</div>
       <div>
         <strong><span>${escapeHtml(person.relation || "亲友")}</span>${escapeHtml(person.name || "无名")}</strong>
         <div class="meter"><i style="width:${affection}%"></i></div>
@@ -8494,6 +8501,20 @@ function personCard(person, targetId = "") {
         ${person.alive === false || !targetId ? "" : `<span class="mini-actions">${relationActionButtons(targetId)}</span>`}
       </div>
     </article>`;
+}
+
+function relativeAvatarIcon(person = {}) {
+  const relation = String(person.relation || "");
+  if (relation === "父亲") return "FamilyFatherAvatar";
+  if (relation === "母亲") return "FamilyMotherAvatar";
+  if (["哥哥", "弟弟", "兄长"].includes(relation)) return "FamilyBrotherAvatar";
+  if (["姐姐", "妹妹", "姊妹"].includes(relation)) return "FamilySisterAvatar";
+  if (relation === "儿子") return "FamilySonAvatar";
+  if (relation === "女儿") return "FamilyDaughterAvatar";
+  if (relation === "友人") return "FamilyFriendAvatar";
+  if (person.gender === "female") return "FamilySisterAvatar";
+  if (person.gender === "male") return "FamilyBrotherAvatar";
+  return "FamilyFriendAvatar";
 }
 
 function relationActionButtons(targetId) {
