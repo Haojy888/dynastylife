@@ -1151,17 +1151,59 @@ const AGE_MILESTONES = [
   },
 ];
 
+const ACHIEVEMENT_TIERS = {
+  bronze: { label: "铜", name: "铜章", scoreLabel: "初试锋芒" },
+  silver: { label: "银", name: "银章", scoreLabel: "立身有成" },
+  gold: { label: "金", name: "金章", scoreLabel: "传世奇闻" },
+};
+
 const LIFE_GOALS = [
-  { id: "first-career", title: "安身立命", icon: "CashBox", desc: "拥有一份固定营生。", score: 60, done: () => !!state.career, advice: "15 岁后到营生页谋一份差事。" },
-  { id: "first-exam", title: "童试入场", icon: "Book", desc: "参加一次正式科举。", score: 50, done: () => state.exam.attempts > 0, advice: "15 岁后去书院参加童试。" },
-  { id: "scholar", title: "金榜有名", icon: "MainBook", desc: "取得至少秀才功名。", score: 120, done: () => state.exam.rank >= 0, advice: "提高学识后继续科举。" },
-  { id: "jinshi", title: "殿试及第", icon: "Official", desc: "通过殿试成为进士。", score: 260, done: () => hasPalaceAppointment(), advice: "一路通过乡试、会试，再参加殿试。" },
-  { id: "career-level", title: "本业精熟", icon: "Craftsman", desc: "任一营生达到 3 级。", score: 120, done: () => Object.values(state.careerProgress || {}).some((item) => Number(item.level) >= 3), advice: "在营生页持续处理本业事务。" },
-  { id: "family", title: "成家立室", icon: "FamilyIcon", desc: "成婚或拥有子女。", score: 100, done: () => !!state.family.spouse || livingChildren().length > 0, advice: "16 岁后去媒人处相看，或经营亲友关系。" },
-  { id: "landed", title: "置办家产", icon: "House", desc: "拥有至少一处家产。", score: 110, done: () => (state.assets || []).length > 0, advice: "攒够钱后进入家产页置办田宅铺面。" },
-  { id: "network", title: "亲友满座", icon: "Relationship1", desc: "亲友记录达到 8 人。", score: 90, done: () => familyRows().length + state.friends.length + livingChildren().length >= 8, advice: "多去会友、酒楼、探亲，扩展人脉。" },
-  { id: "healthy", title: "身强体健", icon: "MedicineBag", desc: "体魄达到 85。", score: 80, done: () => state.stats.physique >= 85, advice: "去医馆调理，少碰风险活动。" },
-  { id: "renown", title: "一方闻名", icon: "Activity", desc: "名望达到 60。", score: 120, done: () => state.stats.favorability >= 60, advice: "处理官府事务、活动事件或积累善名。" },
+  { id: "first-career", tier: "bronze", title: "安身立命", icon: "CashBox", desc: "拥有一份固定营生。", score: 60, done: () => !!state.career, advice: "15 岁后到营生页谋一份差事。" },
+  { id: "first-exam", tier: "bronze", title: "童试入场", icon: "Book", desc: "参加一次正式科举。", score: 50, done: () => state.exam.attempts > 0 || officialExamHistory().length > 0, advice: "15 岁后去书院参加童试。" },
+  { id: "exam-fail", tier: "bronze", title: "名落孙山", icon: "Book", desc: "第一次科举未中。", score: 45, done: () => officialExamFailures() > 0, advice: "考试失利也会增长经验，温课后再来。" },
+  { id: "first-prison", tier: "bronze", title: "铁窗一梦", icon: "PrisonHeader", desc: "第一次入狱或留下牢狱记录。", score: 50, done: () => state.prisonYears > 0 || state.tags.includes("入狱") || logHas(/入狱|牢狱|余刑/), advice: "有些路走错一次，命册里也会记住。" },
+  { id: "first-friend", tier: "bronze", title: "结交一人", icon: "Relationship1", desc: "拥有第一位朋友。", score: 45, done: () => (state.friends || []).some((friend) => friend.alive !== false), advice: "去会友、酒楼或活动里认识新人。" },
+  { id: "first-child", tier: "bronze", title: "成家立室", icon: "FamilyIcon", desc: "成婚或拥有子女。", score: 100, done: () => !!state.family.spouse || livingChildren().length > 0, advice: "16 岁后去媒人处相看，或经营亲友关系。" },
+  { id: "landed", tier: "bronze", title: "置办家产", icon: "House", desc: "拥有至少一处家产。", score: 110, done: () => (state.assets || []).length > 0, advice: "攒够钱后进入家产页置办田宅铺面。" },
+  { id: "first-cricket", tier: "bronze", title: "草间听斗", icon: "Cricket", desc: "拥有促织或参加过斗促织。", score: 45, done: () => (state.crickets || []).length > 0 || cricketWins() + cricketLosses() > 0, advice: "10 岁后去促织处捕虫、斗虫。" },
+  { id: "first-gamble", tier: "bronze", title: "博坊试手", icon: "GamblingHouse", desc: "在博坊留下第一次赌局记录。", score: 45, done: () => logHas(/博坊|赌大小|叫骰|牌九|开盅|赌局/), advice: "15 岁后可去博坊，但要小心钱财。" },
+  { id: "first-minigame", tier: "bronze", title: "雅戏入席", icon: "BambooFlute", desc: "完成任一雅戏小游戏。", score: 45, done: () => miniGameRounds() > 0, advice: "去雅戏玩五子棋、投壶或象棋。" },
+  { id: "first-caravan", tier: "bronze", title: "走镖上路", icon: "RepairCarriage", desc: "完成第一次押镖或行商路线。", score: 65, done: () => caravanRuns() > 0, advice: "选择镖师行商营生后，挑一条路线出发。" },
+  { id: "medicine-visit", tier: "bronze", title: "问诊抓药", icon: "MedicineBag", desc: "去医馆调理或留下医药记录。", score: 40, done: () => logHas(/医馆|问诊|抓药|药|病症|痊愈/), advice: "体魄低时先去医馆，不要硬撑。" },
+  { id: "temple-fate", tier: "bronze", title: "香火因缘", icon: "Temple", desc: "在寺庙或德行事件中留下记录。", score: 40, done: () => state.tags.includes("寺庙因缘") || logHas(/寺庙|焚香|香火|佛|庙/), advice: "去寺庙修心，也能添些德行。" },
+  { id: "inventory-five", tier: "bronze", title: "行囊渐满", icon: "Backpack", desc: "行囊物品达到 5 件。", score: 45, done: () => inventoryCount() >= 5, advice: "去市集、黑市或活动中收集物品。" },
+
+  { id: "scholar", tier: "silver", title: "金榜有名", icon: "MainBook", desc: "取得至少秀才功名。", score: 120, done: () => state.exam.rank >= 0, advice: "提高学识后继续科举。" },
+  { id: "juren", tier: "silver", title: "乡试中举", icon: "Book", desc: "通过乡试成为举人。", score: 145, done: () => state.exam.rank >= 1, advice: "秀才之后继续备考乡试。" },
+  { id: "gongshi", tier: "silver", title: "会试登榜", icon: "BookStore", desc: "通过会试成为贡士。", score: 180, done: () => state.exam.rank >= 2, advice: "会试更看学识与备考积累。" },
+  { id: "jinshi", tier: "silver", title: "殿试及第", icon: "Official", desc: "通过殿试成为进士。", score: 260, done: () => hasPalaceAppointment(), advice: "一路通过乡试、会试，再参加殿试。" },
+  { id: "official-entry", tier: "silver", title: "初入流品", icon: "Official", desc: "官阶达到正九品或以上。", score: 130, done: () => officialRankIndex() >= 2, advice: "殿试后任官，积累政绩即可升迁。" },
+  { id: "career-level", tier: "silver", title: "本业精熟", icon: "Craftsman", desc: "任一营生达到 3 级。", score: 120, done: () => maxCareerLevel() >= 3, advice: "在营生页持续处理本业事务。" },
+  { id: "career-master", tier: "silver", title: "一门老手", icon: "Craftsman", desc: "任一营生达到 5 级。", score: 170, done: () => maxCareerLevel() >= 5, advice: "不要频繁换业，深耕一门更容易升级。" },
+  { id: "network", tier: "silver", title: "亲友满座", icon: "Relationship1", desc: "亲友记录达到 8 人。", score: 90, done: () => relationCount() >= 8, advice: "多去会友、酒楼、探亲，扩展人脉。" },
+  { id: "healthy", tier: "silver", title: "身强体健", icon: "MedicineBag", desc: "体魄达到 85。", score: 80, done: () => state.stats.physique >= 85, advice: "去医馆调理，少碰风险活动。" },
+  { id: "renown", tier: "silver", title: "一方闻名", icon: "Activity", desc: "名望达到 60。", score: 120, done: () => state.stats.favorability >= 60, advice: "处理官府事务、活动事件或积累善名。" },
+  { id: "assets-three", tier: "silver", title: "田宅成基", icon: "House", desc: "拥有 3 处家产。", score: 130, done: () => (state.assets || []).length >= 3, advice: "重复购置田宅铺面，家业会越来越稳。" },
+  { id: "assets-five", tier: "silver", title: "广置产业", icon: "Courtyard", desc: "拥有 5 处家产。", score: 165, done: () => (state.assets || []).length >= 5, advice: "钱财充足时继续置产，收益会滚起来。" },
+  { id: "wealthy", tier: "silver", title: "富甲一方", icon: "CashBox", desc: "钱财达到一万文或拥有 6 处家产。", score: 190, done: () => state.stats.money >= 10000 || (state.assets || []).length >= 6, advice: "营生、押镖和家产进项都能累积财富。" },
+  { id: "children-three", tier: "silver", title: "儿女绕膝", icon: "FamilyIcon", desc: "拥有 3 名在世子女。", score: 130, done: () => livingChildren().length >= 3, advice: "成婚后家中有机会逐年添丁。" },
+  { id: "cricket-winner", tier: "silver", title: "促织小魁", icon: "Cricket", desc: "促织累计胜 5 场。", score: 130, done: () => cricketWins() >= 5, advice: "挑选好促织参加斗虫，胜场会记入命册。" },
+  { id: "gomoku-winner", tier: "silver", title: "五子连珠", icon: "BambooFlute", desc: "五子棋累计胜 3 场。", score: 120, done: () => state.miniGames?.record?.gomokuWins >= 3, advice: "雅戏里多下五子棋，磨出棋路。" },
+  { id: "xiangqi-winner", tier: "silver", title: "楚河破阵", icon: "BambooFlute", desc: "象棋赢下一局。", score: 120, done: () => state.miniGames?.record?.xiangqiWins >= 1, advice: "雅戏中的象棋有中档 AI，先稳住子力。" },
+  { id: "touhu-three", tier: "silver", title: "投壶入礼", icon: "BambooFlute", desc: "投壶最佳成绩达到 3 矢。", score: 100, done: () => state.miniGames?.record?.touhuBest >= 3, advice: "角度接近 50、力道接近 62 会更稳。" },
+
+  { id: "triple-exam", tier: "gold", title: "连捷登科", icon: "Official", desc: "正式科举一路无败并通过殿试。", score: 360, done: () => hasPalaceAppointment() && officialExamFailures() === 0 && officialExamPassedCount() >= EXAM_STAGES.length, advice: "每一场都备足再考，尽量不要失手。" },
+  { id: "top-official", tier: "gold", title: "位极人臣", icon: "Official", desc: "官阶达到正一品。", score: 420, done: () => officialRankIndex() >= OFFICIAL_RANKS.length - 1, advice: "任官后长期处理公务，政绩足够即可升迁。" },
+  { id: "centenarian", tier: "gold", title: "百岁老人", icon: "MedicineBag", desc: "活到 100 岁。", score: 320, done: () => state.age >= 100, advice: "保住体魄，远离高风险事件。" },
+  { id: "descendants-full", tier: "gold", title: "子孙满堂", icon: "FamilyIcon", desc: "拥有 6 名在世子女。", score: 260, done: () => livingChildren().length >= 6, advice: "成婚、养家、保住体魄，后半生更容易开枝散叶。" },
+  { id: "clan-legacy", tier: "gold", title: "三世家声", icon: "FamilyIcon", desc: "家族传承到第 3 代。", score: 300, done: () => Number(state.lineage?.generation || 1) >= 3, advice: "死亡后选择子女承继，可以延续同一存档。" },
+  { id: "great-estate", tier: "gold", title: "广厦连甍", icon: "RoundDragonHouse", desc: "拥有 10 处家产或家产年入达到 600。", score: 300, done: () => (state.assets || []).length >= 10 || annualAssetIncome() >= 600, advice: "多买可重复房产，并逐步扩建。" },
+  { id: "gold-hoard", tier: "gold", title: "金满箱奁", icon: "CashBox", desc: "钱财达到三万文。", score: 300, done: () => state.stats.money >= 30000, advice: "把营生、押镖、家产和买卖结合起来。" },
+  { id: "all-stats", tier: "gold", title: "六艺俱优", icon: "MainBook", desc: "六项基础属性都达到 90。", score: 300, done: () => allStatsAt(90), advice: "读书、医馆、会友、活动要均衡经营。" },
+  { id: "cricket-champion", tier: "gold", title: "促织魁首", icon: "Cricket", desc: "赢得促织大赛冠军。", score: 240, done: () => Number(state.cricketRecord?.champion || 0) > 0, advice: "培养高品相促织，再参加大赛。" },
+  { id: "game-master", tier: "gold", title: "雅戏宗师", icon: "BambooFlute", desc: "五子棋 5 胜、象棋 3 胜，且投壶满矢。", score: 280, done: () => state.miniGames?.record?.gomokuWins >= 5 && state.miniGames?.record?.xiangqiWins >= 3 && state.miniGames?.record?.touhuBest >= 5, advice: "把雅戏三项都练到能赢。" },
+  { id: "caravan-master", tier: "gold", title: "万里镖路", icon: "RepairCarriage", desc: "押镖行商累计完成 5 趟。", score: 260, done: () => caravanRuns() >= 5, advice: "走熟路线会积累经验，也要控制风险。" },
+  { id: "legend-book", tier: "gold", title: "命册厚重", icon: "MainBook", desc: "命册记录达到 80 件。", score: 260, done: () => (state.log || []).length >= 80, advice: "多参与活动、经营亲友和家业，命册自然丰厚。" },
 ];
 
 const ONBOARDING_VERSION = 1;
@@ -1484,6 +1526,7 @@ function startLife() {
     pendingActivity: null,
     eventResult: null,
     pendingSurprise: null,
+    pendingAchievement: null,
     currentEvent: null,
     inventoryTab: "all",
     onboarding: { version: ONBOARDING_VERSION, seen: false },
@@ -1570,6 +1613,7 @@ function normalizeState(raw) {
   next.pendingActivity = next.pendingActivity || null;
   next.eventResult = next.eventResult || null;
   next.pendingSurprise = next.pendingSurprise || null;
+  next.pendingAchievement = next.pendingAchievement || null;
   next.inventoryTab = INVENTORY_CATEGORIES.some(([id]) => id === next.inventoryTab) ? next.inventoryTab : "all";
   next.onboarding = normalizeOnboarding(next.onboarding);
   next.lastDeltas = Array.isArray(next.lastDeltas) ? next.lastDeltas : [];
@@ -2201,11 +2245,25 @@ function applyAgeMilestones(deltas = []) {
 
 function unlockLifeGoals() {
   state.life ||= normalizeLife();
+  const unlocked = [];
   for (const goal of LIFE_GOALS) {
     if (state.life.goals.includes(goal.id) || !goal.done()) continue;
     state.life.goals.push(goal.id);
     if (!state.tags.includes(goal.title)) state.tags.push(goal.title);
-    addLog("人生目标", `达成「${goal.title}」：${goal.desc}`, [{ label: "目标", value: goal.title }]);
+    unlocked.push(goal);
+    addLog("成就解锁", `达成${achievementTierText(goal)}「${goal.title}」：${goal.desc}`, [{ label: ACHIEVEMENT_TIERS[goal.tier]?.name || "成就", value: goal.title }]);
+  }
+  if (unlocked.length) {
+    const best = unlocked.sort((a, b) => achievementTierRank(b.tier) - achievementTierRank(a.tier))[0];
+    state.pendingAchievement = {
+      id: best.id,
+      title: best.title,
+      desc: best.desc,
+      tier: best.tier || "bronze",
+      icon: best.icon || "MainBook",
+      count: unlocked.length,
+    };
+    SFX.play(best.tier === "gold" ? "win" : "milestone");
   }
 }
 
@@ -2214,11 +2272,80 @@ function lifePhase() {
 }
 
 function completedGoals() {
-  return LIFE_GOALS.filter((goal) => goal.done());
+  const doneIds = new Set(state.life?.goals || []);
+  return LIFE_GOALS.filter((goal) => doneIds.has(goal.id) || goal.done());
 }
 
 function nextGoals(limit = 3) {
-  return LIFE_GOALS.filter((goal) => !goal.done()).slice(0, limit);
+  const doneIds = new Set(state.life?.goals || []);
+  return LIFE_GOALS.filter((goal) => !doneIds.has(goal.id) && !goal.done()).slice(0, limit);
+}
+
+function achievementTierRank(tier = "bronze") {
+  return { bronze: 1, silver: 2, gold: 3 }[tier] || 1;
+}
+
+function achievementTierText(goal) {
+  const tier = ACHIEVEMENT_TIERS[goal?.tier || "bronze"] || ACHIEVEMENT_TIERS.bronze;
+  return `${tier.label}章`;
+}
+
+function achievementsByTier() {
+  const doneIds = new Set(completedGoals().map((goal) => goal.id));
+  return Object.keys(ACHIEVEMENT_TIERS).map((tier) => {
+    const goals = LIFE_GOALS.filter((goal) => (goal.tier || "bronze") === tier);
+    const done = goals.filter((goal) => doneIds.has(goal.id));
+    return { tier, meta: ACHIEVEMENT_TIERS[tier], goals, done };
+  });
+}
+
+function officialExamHistory() {
+  return (state.exam?.history || []).filter((item) => EXAM_STAGES.some((stage) => stage.name === item.stage));
+}
+
+function officialExamFailures() {
+  return officialExamHistory().filter((item) => !item.passed).length;
+}
+
+function officialExamPassedCount() {
+  return new Set(officialExamHistory().filter((item) => item.passed).map((item) => item.stage)).size;
+}
+
+function maxCareerLevel() {
+  return Object.values(state.careerProgress || {}).reduce((max, item) => Math.max(max, Number(item?.level) || 0), state.career ? 1 : 0);
+}
+
+function relationCount() {
+  return familyRows().filter((item) => item.alive !== false).length + (state.friends || []).filter((item) => item.alive !== false).length + livingChildren().length + (state.family.spouse ? 1 : 0);
+}
+
+function inventoryCount() {
+  return (state.inventory || []).length + (state.crickets || []).length + (state.diseases || []).length + Object.values(state.femaleSkills || {}).filter((level) => Number(level) > 0).length;
+}
+
+function miniGameRounds() {
+  const record = state.miniGames?.record || {};
+  return Number(record.gomokuWins || 0) + Number(record.gomokuLosses || 0) + Number(record.gomokuDraws || 0) + Number(record.xiangqiWins || 0) + Number(record.xiangqiLosses || 0) + (Number(record.touhuBest || 0) > 0 ? 1 : 0);
+}
+
+function caravanRuns() {
+  return Object.values(state.caravanMemory || {}).reduce((sum, memory) => sum + Math.max(0, Number(memory?.runs) || 0), 0);
+}
+
+function cricketWins() {
+  return Number(state.cricketRecord?.wins || 0) + (state.crickets || []).reduce((sum, item) => sum + Number(item?.wins || 0), 0);
+}
+
+function cricketLosses() {
+  return Number(state.cricketRecord?.losses || 0);
+}
+
+function allStatsAt(value) {
+  return STAT_DEFS.every(([key]) => Number(state.stats?.[key] || 0) >= value);
+}
+
+function logHas(pattern) {
+  return (state.log || []).some((item) => pattern.test(`${item.title || ""}${item.text || ""}`));
 }
 
 function lifeScore() {
@@ -2247,7 +2374,7 @@ function lifeInsight() {
   if (!state.career) return "还没有固定营生，先谋一份差事会让钱财更稳。";
   if (!(state.assets || []).length && state.stats.money >= 300) return "手头已有余钱，可以考虑置办家产。";
   const goal = nextGoals(1)[0];
-  return goal ? goal.advice : "这一世目标大多已成，继续补命册、攒声名即可。";
+  return goal ? goal.advice : "这一世成就大多已成，继续补命册、攒声名即可。";
 }
 
 function advanceFamilyYear(deltas) {
@@ -2626,6 +2753,7 @@ function die(reason) {
   state.currentEvent = null;
   state.pendingCaravan = null;
   addLog("身后事", `${state.name}于${state.age}岁${reason}。`);
+  unlockLifeGoals();
 }
 
 function getActivity(id) {
@@ -5803,6 +5931,7 @@ function inheritFromChild(id) {
     pendingActivity: null,
     eventResult: null,
     pendingSurprise: null,
+    pendingAchievement: null,
     pendingCaravan: null,
     currentEvent: null,
     inventoryTab: "all",
@@ -6446,7 +6575,7 @@ const BORDER_GLOW_TARGETS = [
     className: "glow-shell",
   },
   {
-    selector: ".play-card, .talent-card, .goal-card, .codex-item, .question-card, .exam-picks, .prep-panel, .record-item, .person-card, .item-card, .shop-block",
+    selector: ".play-card, .talent-card, .goal-card, .codex-item, .achievement-toast, .question-card, .exam-picks, .prep-panel, .record-item, .person-card, .item-card, .shop-block",
     className: "glow-soft",
   },
   {
@@ -7005,6 +7134,7 @@ function renderGame() {
         </aside>
       </div>
       ${overlayView()}
+      ${achievementToast()}
     </main>`;
 }
 
@@ -7181,6 +7311,26 @@ function surpriseOverlay() {
     </section>`;
 }
 
+function achievementToast() {
+  const item = state.pendingAchievement;
+  if (!item) return "";
+  const tier = item.tier || "bronze";
+  const meta = ACHIEVEMENT_TIERS[tier] || ACHIEVEMENT_TIERS.bronze;
+  return `
+    <aside class="achievement-toast ${tier}" role="status" aria-live="polite">
+      <div class="achievement-medal">${icon(item.icon || "MainBook", item.title || "成就")}</div>
+      <div class="achievement-copy">
+        <span>${escapeHtml(meta.name)}解锁${item.count > 1 ? ` · 另有 ${item.count - 1} 项` : ""}</span>
+        <strong>${escapeHtml(item.title || "新成就")}</strong>
+        <small>${escapeHtml(item.desc || "命册图鉴已记录。")}</small>
+      </div>
+      <div class="achievement-actions">
+        <button class="ghost-btn" data-action="open-achievement-codex">图鉴</button>
+        <button class="primary-btn" data-action="close-achievement">收下</button>
+      </div>
+    </aside>`;
+}
+
 function centerContent() {
   if (state.dead) return deathView();
   if (state.pendingCaravan) return caravanRunView();
@@ -7268,7 +7418,7 @@ function overviewView() {
           ${icon(goal.icon, goal.title)}
           <strong>${escapeHtml(goal.title)}</strong>
           <small>${escapeHtml(goal.advice)}</small>
-        </article>`).join("") || `<article class="goal-card complete"><strong>目标已满</strong><small>这一世大多经营妥当，继续补足命册即可。</small></article>`}
+        </article>`).join("") || `<article class="goal-card complete"><strong>成就已满</strong><small>这一世大多经营妥当，继续补足命册即可。</small></article>`}
     </section>
     <section class="door-grid">
       ${MAIN_DOORS.map((door) => `
@@ -7997,7 +8147,7 @@ function menuView() {
       <h2>设置</h2>
       <p>保存、导出或重新开始当前人生。</p>
       <div class="button-list">
-        <button class="list-btn" data-page="codex">${icon("MainBook", "图鉴")}<span>命格图鉴<small>查看人生阶段、目标与本局评分。</small></span></button>
+        <button class="list-btn" data-page="codex">${icon("MainBook", "图鉴")}<span>成就图鉴<small>查看铜银金成就、人生阶段与本局评分。</small></span></button>
         <button class="list-btn" data-action="open-save-manager">${icon("MenuButton0", "存档")}<span>存档管理<small>多槽位保存、读取与导入导出。</small></span></button>
         <button class="list-btn" data-action="export">${icon("MenuButton1", "导出")}<span>导出存档<small>下载当前人生 JSON。</small></span></button>
         <button class="list-btn danger" data-action="new-life">${icon("MenuButton2", "重开")}<span>重新开始<small>清空当前存档并开新档。</small></span></button>
@@ -8010,27 +8160,46 @@ function codexView() {
   const score = lifeScore();
   const doneIds = new Set(completedGoals().map((goal) => goal.id));
   const triggered = new Set(state.life?.milestones || []);
+  const tierGroups = achievementsByTier();
   return `
     <article class="play-card codex-card">
-      <p class="eyebrow">命格图鉴</p>
+      <p class="eyebrow">成就图鉴</p>
       <h2>${lifeGrade(score)} · ${score}</h2>
       <p>${escapeHtml(lifeInsight())}</p>
       <section class="score-grid">
         ${scoreTile("阶段", `${lifePhase().name} · ${lifePhase().focus}`)}
-        ${scoreTile("目标", `${doneIds.size}/${LIFE_GOALS.length}`)}
+        ${scoreTile("成就", `${doneIds.size}/${LIFE_GOALS.length}`)}
         ${scoreTile("命册", `${state.log.length} 件事`)}
         ${scoreTile("亲友", `${familyRows().length + state.friends.length + livingChildren().length} 人`)}
       </section>
       <section class="codex-section">
-        <div class="section-title"><h2>人生目标</h2></div>
-        <div class="codex-grid">
-          ${LIFE_GOALS.map((goal) => `
-            <article class="codex-item ${doneIds.has(goal.id) ? "done" : ""}">
-              ${icon(goal.icon, goal.title)}
-              <strong>${escapeHtml(goal.title)}</strong>
-              <small>${escapeHtml(doneIds.has(goal.id) ? goal.desc : goal.advice)}</small>
-            </article>`).join("")}
+        <div class="section-title"><h2>成就总览</h2><strong>${doneIds.size}/${LIFE_GOALS.length}</strong></div>
+        <div class="achievement-tier-summary">
+          ${tierGroups.map((group) => `
+            <span class="${group.tier}">
+              <b>${escapeHtml(group.meta.label)}章</b>
+              ${group.done.length}/${group.goals.length}
+            </span>`).join("")}
         </div>
+        ${tierGroups.map((group) => `
+          <section class="achievement-tier-block ${group.tier}">
+            <div class="section-title">
+              <h2>${escapeHtml(group.meta.name)}</h2>
+              <strong>${escapeHtml(group.meta.scoreLabel)} · ${group.done.length}/${group.goals.length}</strong>
+            </div>
+            <div class="codex-grid">
+              ${group.goals.map((goal) => {
+                const done = doneIds.has(goal.id);
+                return `
+                  <article class="codex-item achievement-item ${group.tier} ${done ? "done" : "locked"}">
+                    <span class="achievement-rank">${escapeHtml(group.meta.label)}</span>
+                    ${icon(goal.icon, goal.title)}
+                    <strong>${escapeHtml(done ? goal.title : "未解锁")}</strong>
+                    <small>${escapeHtml(done ? goal.desc : goal.advice)}</small>
+                  </article>`;
+              }).join("")}
+            </div>
+          </section>`).join("")}
       </section>
       <section class="codex-section">
         <div class="section-title"><h2>年龄节点</h2></div>
@@ -8950,7 +9119,7 @@ function buildEndingCardCanvas() {
   ctx.fillText("生成于 dynastylife.online", 160, 1293);
   ctx.fillStyle = "#9b7b35";
   ctx.font = `700 22px ${font}`;
-  ctx.fillText(`命册经历 ${data.logCount} 件 · 人生目标 ${data.goalCount}/${data.goalTotal}`, 612, 1293);
+  ctx.fillText(`命册经历 ${data.logCount} 件 · 成就 ${data.goalCount}/${data.goalTotal}`, 612, 1293);
   return canvas;
 }
 
@@ -9104,7 +9273,7 @@ function deathView() {
       <h2>${escapeHtml(state.name)}</h2>
       <p>${escapeHtml(state.name)}享年${state.age}岁，${escapeHtml(state.deathReason || "命数已尽")}。命格总评：${escapeHtml(lifeGrade(score))}，${score} 分。若有子女，可由下一代承继家业继续此存档。</p>
       <section class="score-grid">
-        ${scoreTile("达成目标", `${completedGoals().length}/${LIFE_GOALS.length}`)}
+        ${scoreTile("达成成就", `${completedGoals().length}/${LIFE_GOALS.length}`)}
         ${scoreTile("命册经历", `${state.log.length} 件`)}
         ${scoreTile("功名", state.exam.rank >= 0 ? EXAM_TITLES[state.exam.rank] : "白身")}
         ${scoreTile("家业", `${state.assets.length} 处`)}
@@ -9171,7 +9340,7 @@ function historyPanel() {
       <h2>命册</h2>
       <div class="life-summary">
         <strong>${escapeHtml(lifeGrade())} · ${lifeScore()} 分</strong>
-        <small>${completedGoals().length}/${LIFE_GOALS.length} 个目标 · ${state.log.length} 件经历</small>
+        <small>${completedGoals().length}/${LIFE_GOALS.length} 个成就 · ${state.log.length} 件经历</small>
       </div>
       <div class="record-list">${state.log.map(logItem).join("") || `<p class="empty-note">暂无记录</p>`}</div>
     </section>`;
@@ -9196,8 +9365,8 @@ function overviewPanel() {
       ${infoLine("亲友", `${familyRows().length + state.friends.length} 人`)}
       ${infoLine("经历", `${state.log.length} 件事`)}
       <div class="goal-mini">
-        <strong>已成目标 ${done.length}/${LIFE_GOALS.length}</strong>
-        ${done.slice(0, 4).map((goal) => `<span>${escapeHtml(goal.title)}</span>`).join("") || `<small>尚未达成目标</small>`}
+        <strong>已成成就 ${done.length}/${LIFE_GOALS.length}</strong>
+        ${done.slice(0, 4).map((goal) => `<span>${escapeHtml(goal.title)}</span>`).join("") || `<small>尚未达成成就</small>`}
       </div>
       <div class="goal-mini todo">
         <strong>眼前可做</strong>
@@ -9418,6 +9587,20 @@ app.addEventListener("click", (event) => {
   if (button.dataset.action === "close-surprise") {
     view.overlay = "";
     state.pendingSurprise = null;
+    save();
+    render();
+    return;
+  }
+  if (button.dataset.action === "close-achievement") {
+    state.pendingAchievement = null;
+    save();
+    render();
+    return;
+  }
+  if (button.dataset.action === "open-achievement-codex") {
+    state.pendingAchievement = null;
+    view.page = "codex";
+    view.overlay = "";
     save();
     render();
     return;
