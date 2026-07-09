@@ -6647,7 +6647,7 @@ function startExam() {
   const stage = EXAM_STAGES[stageIndex];
   markExamAttempt();
   if (stage.type === "palace") {
-    const topic = sample(palaceQuestionPool());
+    const topic = sample(palaceQuestionPool()) || normalizePalaceTopic(SUPPLEMENTAL_PALACE_TOPICS[0]);
     state.exam.current = {
       stageIndex,
       type: "palace",
@@ -6732,7 +6732,19 @@ function imperialQuestionPool() {
 }
 
 function palaceQuestionPool() {
-  return [...(DATA.database?.questions?.palace || []), ...SUPPLEMENTAL_PALACE_TOPICS];
+  return [...(DATA.database?.questions?.palace || []), ...SUPPLEMENTAL_PALACE_TOPICS].map(normalizePalaceTopic).filter((topic) => topic.themes.length && topic.writingStyles.length);
+}
+
+function normalizePalaceTopic(item = {}) {
+  const themes = Array.isArray(item.themes) ? item.themes : Array.isArray(item.theme) ? item.theme : [];
+  const writingStyles = Array.isArray(item.writingStyles) ? item.writingStyles : Array.isArray(item.styles) ? item.styles : Array.isArray(item.style) ? item.style : [];
+  return {
+    ...item,
+    topic: item.topic || item.title || "策问",
+    prompt: item.prompt || item.content || "主考官命你立意成文。",
+    themes,
+    writingStyles,
+  };
 }
 
 function femaleQuestionPool() {
@@ -6812,14 +6824,14 @@ function submitExam() {
     passed = score >= stage.pass;
     text = `${stage.name}放榜，答中 ${rawScore}/${current.questions.length} 题${prepBonus ? `，备考补益折作 ${score} 分` : ""}，${passed ? `取中${stage.title}` : "名落孙山"}。`;
   } else {
-    const topic = current.topic || sample(DATA.database?.questions?.palace || {});
+    const topic = normalizePalaceTopic(current.topic || sample(palaceQuestionPool()) || SUPPLEMENTAL_PALACE_TOPICS[0]);
     const knowledgeScore = Math.round((state.stats.knowledge || 0) * 0.55);
     const eqScore = Math.round((state.stats.eq || 0) * 0.25);
     const virtueScore = Math.round((state.stats.virtue || 0) * 0.2);
     score = clamp(knowledgeScore + eqScore + virtueScore + Math.min(12, prepBonus * 2) + randInt(-8, 12), 0, 100);
     passed = score >= stage.pass;
-    const resultText = Array.isArray(topic?.resultDescription?.[0]) ? topic.resultDescription[0].slice(0, 4).join("，") : "文理清通，颇得考官青眼";
-    text = `${stage.name}策问「${topic?.topic || "治世之道"}」，取${current.theme || "治国"}为旨，行文${current.writingStyle || "堂堂正正"}。${resultText}。${prepBonus ? "考前积累也添了几分底气。" : ""}评分 ${score}，${passed ? "金榜题名" : "仍待来年"}。`;
+    const resultText = topic.result || (Array.isArray(topic?.resultDescription?.[0]) ? topic.resultDescription[0].slice(0, 4).join("，") : "文理清通，颇得考官青眼");
+    text = `${stage.name}策问「${topic.topic || "治世之道"}」，取${current.theme || "治国"}为旨，行文${current.writingStyle || "堂堂正正"}。${resultText}。${prepBonus ? "考前积累也添了几分底气。" : ""}评分 ${score}，${passed ? "金榜题名" : "仍待来年"}。`;
   }
 
   if (passed && current.extraType) {
@@ -9748,12 +9760,12 @@ function choiceExamView(stage, current) {
 }
 
 function palaceExamView(stage, current) {
-  const topic = current.topic || {};
+  const topic = normalizePalaceTopic(current.topic || {});
   return `
     <article class="play-card exam-card">
       <p class="eyebrow">${escapeHtml(stage.name)}</p>
       <h2>${escapeHtml(topic.topic || "策问")}</h2>
-      <p>主考官命你立意成文。选题旨与文风后交卷。</p>
+      <p>${escapeHtml(topic.prompt || "主考官命你立意成文。")}选题旨与文风后交卷。</p>
       <section class="exam-picks">
         <h3>题旨</h3>
         <div class="answer-grid">
