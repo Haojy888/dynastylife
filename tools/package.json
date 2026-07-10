@@ -4,7 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node test.mjs",
+    "test:syntax": "node --check ../app.js && node --check ../game-data.js",
+    "test:smoke": "node test.mjs",
+    "test:visual": "node shoot.mjs",
+    "test:overflow": "node diag-overflow.mjs"
   },
   "keywords": [],
   "author": "",

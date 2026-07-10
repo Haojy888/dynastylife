@@ -2,6 +2,7 @@
 import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const root = path.resolve(import.meta.dirname, "..");
 const port = Number(process.argv[2] || 5199);
@@ -17,8 +18,8 @@ const types = {
   ".txt": "text/plain; charset=utf-8",
 };
 
-http
-  .createServer((req, res) => {
+export function createStaticServer() {
+  return http.createServer((req, res) => {
     const urlPath = decodeURIComponent(new URL(req.url, "http://x").pathname);
     let file = path.join(root, urlPath === "/" ? "index.html" : urlPath.slice(1));
     if (!file.startsWith(root)) {
@@ -33,5 +34,10 @@ http
       res.writeHead(200, { "content-type": types[path.extname(file)] || "application/octet-stream" });
       res.end(buf);
     });
-  })
-  .listen(port, "127.0.0.1", () => console.log(`serving ${root} on http://127.0.0.1:${port}`));
+  });
+}
+
+const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (isMain) {
+  createStaticServer().listen(port, "127.0.0.1", () => console.log(`serving ${root} on http://127.0.0.1:${port}`));
+}

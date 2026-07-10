@@ -34,6 +34,18 @@ python -m http.server 5174
 # 访问 http://127.0.0.1:5174/
 ```
 
+## 开发检查
+
+维护脚本位于 `tools/`。首次使用先安装依赖，之后可一键执行语法检查与浏览器主流程测试：
+
+```bash
+npm ci --prefix tools
+npm run test:syntax --prefix tools
+npm test --prefix tools
+```
+
+浏览器测试会验证移动端无横向溢出、新建人生、连续推进至 12 岁、多存档刷新恢复、桌面端渲染、JavaScript 错误与资源加载失败。推送和拉取请求也会通过 GitHub Actions 自动执行同一套检查。
+
 ## 部署
 
 推送到 main 分支后由 Vercel 自动部署。缓存策略见 `vercel.json`(资源长缓存,HTML/JS 即时更新)。
