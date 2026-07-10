@@ -78,7 +78,9 @@ try {
       for (const selector of selectors) {
         const button = await page.$(selector);
         if (!button) continue;
-        await button.click();
+        // 逻辑门禁直接触发 DOM 点击，避免 Linux 无头浏览器在长页面重排时
+        // 把物理点击落到浮层或已经移动的坐标上。布局手感由独立截图验证。
+        await button.evaluate((element) => element.click());
         await new Promise((resolve) => setTimeout(resolve, 60));
         clicked = true;
         break;
