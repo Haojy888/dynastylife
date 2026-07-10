@@ -1069,6 +1069,47 @@ const CAREER_STORY_OVERRIDES = {
   },
 };
 
+const CAREER_ADVANCED_CASE_DEFS = {
+  木匠: { title: "官宅危梁", prompt: "新修官宅上梁前忽见主梁内裂，东家催你按吉时完工，同行又怕担责。", choices: [["拆梁重作", "细查木性，宁误吉时也不留隐患。", "你逐寸验木，拆下暗裂主梁重新配榫。"], ["撑梁抢修", "凭体力与手艺当场加固，成败都在一线。", "你带众匠架起撑木，在吉时前完成换梁。"], ["劝主暂迁", "先安顿宅中老幼，再与东家讲明利害。", "你说服东家暂缓入住，也替同行争到返工余地。"]] },
+  画师: { title: "失真祖容", prompt: "大族请你重绘祖容，各房却对先祖相貌与衣冠各执一词。", choices: [["考据旧像", "查族谱旧画，以笔墨还原可信形貌。", "你翻检残卷旧像，重新厘定冠服与眉目。"], ["当堂写神", "抓住各房共述的神韵，大胆另起新稿。", "你不拘残像，以众人口述写出先祖气度。"], ["调和各房", "先听完家族旧事，再让画中细节兼顾人情。", "你把各房珍重的记忆化进画面，平息了争执。"]] },
+  玉匠: { title: "贡玉藏绺", prompt: "一块待琢贡玉外润内绺，强行开料可能尽毁，退料又会得罪货主。", choices: [["灯下辨绺", "慢磨细看，循石纹重新定形。", "你借灯透玉，沿暗绺改出一套小件。"], ["险刀取芯", "从裂隙间取正色玉芯，收益极高。", "你屏息下刀，直取玉心最净的一段。"], ["据实退料", "向货主讲明瑕疵，保住行规与客情。", "你当面标出每道暗绺，劝货主改作寻常器。"]] },
+  琴师: { title: "御前断弦", prompt: "贵宴演奏前名琴忽然断弦，满座已静，主人只给你半刻钟。", choices: [["重校宫商", "换弦定音，以最稳妥的旧曲开席。", "你迅速换弦校音，以一支古调稳住全场。"], ["借断弦成曲", "将意外化进新声，临席即兴。", "你顺着断弦余响改奏，反添金石萧瑟之意。"], ["请众乐和声", "协调乐工分担声部，不让一人独担风险。", "你请笛箫接过空缺，众乐相和完成一曲。"]] },
+  铁匠: { title: "军械急单", prompt: "边营催要一批刀枪，铁料却良莠不齐，交期与军士性命都压在炉前。", choices: [["逐件验火", "分料复锻，宁可慢些也保证刃口。", "你将杂铁重新分炉，逐件听声验刃。"], ["连炉抢锻", "昼夜不停开炉，以体力搏交期。", "你带徒弟轮班抡锤，炉火三日未熄。"], ["先修旧械", "先替急行军修好旧械，再补交新作。", "你先修复营中旧刀枪，让前队不至空手上阵。"]] },
+  跑堂: { title: "雅间密账", prompt: "贵客散席后遗下一本密账，掌柜想邀功，陌生人又重金求你交出。", choices: [["封账还客", "不翻内容，按席签找到失主。", "你将账册原样封好，循席签送还失主。"], ["借账换赏", "利用账中线索争一笔大赏，风险极高。", "你看懂其中商路关节，带着账册去谈条件。"], ["交由掌柜", "让店中共同见证处理，避免独自涉险。", "你召掌柜与账房一同封存，留下多人见证。"]] },
+  伙夫: { title: "百人中毒", prompt: "大宴开席前有人腹痛倒地，后厨众人都怀疑是新到的菌菇。", choices: [["封灶验食", "停席查料，逐锅排除问题。", "你立刻封灶留样，从砧板到汤锅逐一核查。"], ["另起百席", "弃掉全部成菜，以余料重做一桌。", "你推翻原席另起炉灶，带人从头赶制。"], ["先救食客", "先备解汤请医，再向宾客说明实情。", "你先熬解汤并请来郎中，稳住了慌乱宾客。"]] },
+  车夫: { title: "雪夜急驿", prompt: "暴雪封道，车上既有救命药材，也有一位病弱乘客，近路正穿过险坡。", choices: [["绕官道行", "多走二十里，路稳但可能误时。", "你沿驿碑绕行官道，时时查看车轴马蹄。"], ["闯雪坡", "凭控马本事抢过险坡，最快也最危险。", "你勒紧缰绳冲入雪坡，在风口辨着旧车辙前行。"], ["分车送药", "托同业先送药，自己照看病客慢行。", "你请轻骑带药先走，自己生火护着病客。"]] },
+  担夫: { title: "洪水断桥", prompt: "山洪冲断木桥，药铺急货必须送到对岸村中，同行都停在水边。", choices: [["结索渡货", "先探水势，架绳分批运送。", "你沿岸寻到老树结索，把药包一批批渡过。"], ["负重涉水", "趁水势未涨硬闯，速度快但伤身。", "你把货高高扎在背上，迎着急流一步步挪过去。"], ["组织乡民", "召集两岸人手搭便桥，共担风险。", "你喊来乡民递木传绳，很快搭起一条窄桥。"]] },
+  禅师: { title: "寺产之争", prompt: "灾年里寺中只剩一仓粮，住持要留作香火，山门外却聚满饥民。", choices: [["立册施粥", "清点余粮按户施放，兼顾寺中老弱。", "你逐斗登记粮数，在山门外按户设粥。"], ["尽开粮仓", "先救眼前饥民，日后生计再想办法。", "你打开仓门尽数施粮，让寺众一同承担后果。"], ["募粮共济", "联络乡绅商户，以寺名筹集更多粮食。", "你登门劝募，又请受粮者参与煮粥维持秩序。"]] },
+  厨娘: { title: "寿宴失味", prompt: "老夫人寿宴前忽染风寒，既不能食油腻，满堂宾客又等着体面席面。", choices: [["改制养生席", "按时令重排菜单，清淡而不失礼数。", "你以菌蔬鲜汤重排席面，滋味清雅层次分明。"], ["一灶双席", "同时做养生席与大宴，最考火候调度。", "你分开两灶掌火，让老夫人与宾客各得其味。"], ["问医定膳", "请郎中说明忌口，再劝主人简办。", "你请郎中列明禁忌，也说服主人不以铺张伤身。"]] },
+  歌姬: { title: "禁曲点唱", prompt: "权贵在席上重金点唱一支牵涉旧案的禁曲，班主不敢拒绝也不敢应承。", choices: [["改词换意", "保留曲调，将犯忌旧词化为新意。", "你临场改词，把旧怨唱成一段惜时劝和。"], ["原曲直唱", "以唱功压住全场，名利与祸患并存。", "你按原词开嗓，席间从喧闹渐至鸦雀无声。"], ["婉辞救场", "另献一支更合席意的新曲，替班中解围。", "你笑称旧曲不合吉宴，转而献上刚排的新声。"]] },
+  舞姬: { title: "临台折足", prompt: "领舞登台前扭伤脚踝，新舞阵势缺一人便会全乱。", choices: [["重排舞阵", "删去险步，以队形稳稳完成演出。", "你临场重排走位，让群舞掩住领舞空缺。"], ["带伤领舞", "忍痛完成最难一段，成则满堂惊艳。", "你束紧脚踝仍站上首位，将疼痛压进每次转身。"], ["启用新人", "把机会交给苦练已久的替补，并在幕后带拍。", "你推新人上场，自己在帘后击拍提醒。"]] },
+  绣娘: { title: "嫁衣错纹", prompt: "大婚前三日，主家才发现嫁衣纹样触犯族中忌讳，整件重绣已来不及。", choices: [["拆线改纹", "逐针拆改，以细功补回吉纹。", "你连夜拆去犯忌纹样，用同色丝线改成并蒂莲。"], ["覆绣新章", "以大幅新纹覆盖旧样，耗神但可能成名。", "你大胆覆绣百鸟朝枝，让旧纹完全隐入层次。"], ["说明旧典", "查清纹样来历，调和两家对礼俗的分歧。", "你找来旧样册说明出处，也替双方换了几处细节。"]] },
+  妆娘: { title: "宫宴失妆", prompt: "贵女入宫前突发红疹，厚粉会更伤皮肤，素面赴宴又恐失礼。", choices: [["薄妆遮瑕", "先护肤再以淡彩修饰，求稳妥自然。", "你用冷敷退红，只在眉眼与唇色上轻轻着笔。"], ["创制新妆", "借红疹改成花钿妆面，成败都很惹眼。", "你顺着红痕点出碎花钿，反成一套从未见过的新妆。"], ["坦言劝休", "以身体为重，劝贵女暂缓赴宴。", "你据实说明强妆之害，也替她备好告假礼数。"]] },
+  闺塾师: { title: "代笔风波", prompt: "学生家长暗示你代写才女诗稿，好让女儿在诗会上扬名。", choices: [["循序改稿", "只教章法，让学生自己完成。", "你逐句讲解起承转合，最终仍由学生亲笔定稿。"], ["以稿立名", "亲自操刀写成佳作，短期名声可观。", "你替她写下一首工整佳作，并安排在诗会亮相。"], ["开小诗会", "让全班互评互改，以共同进步化解攀比。", "你在塾中先办小诗会，让每个学生都讲自己的句子。"]] },
+  道士: { title: "古宅夜祟", prompt: "富户认定古宅闹祟，重金请你镇宅，你却在墙后听见活人的脚步声。", choices: [["勘宅查迹", "先查门窗地道，不急着谈鬼神。", "你沿墙灰与灯油痕迹查出一条暗道。"], ["设坛诱祟", "借法坛引暗中之人现身，稍有差池便会受伤。", "你故意将法事做得声势浩大，引得藏身者趁乱行动。"], ["安抚家眷", "先止住宅中恐慌，再联合乡邻守夜。", "你让家眷集中一处，安排乡邻分段巡守。"]] },
+  守墓人: { title: "新坟异响", prompt: "连雨之后新坟中传出敲击声，族人都说亡者不安，无人敢近。", choices: [["查土听声", "从土层与排水判断坟内情形。", "你贴地辨声，发现墓侧积水压住了空棺木板。"], ["开坟救急", "冒着犯忌与塌方风险立即开坟。", "你带人掘开侧土，循敲击处破开墓室。"], ["请族人见证", "召集族老共同勘验，免生后续猜疑。", "你请族老焚香见证，再按规矩开土检查。"]] },
+  摸金校尉: { title: "双门疑冢", prompt: "墓道尽头出现生死双门，一门有金气，一门却留着前人撤退的暗记。", choices: [["循记退探", "先读懂暗记与风向，保命为上。", "你逐个核对暗记，沿前人留下的安全线缓慢探查。"], ["破金门", "直取金气最盛之门，财险皆高。", "你定准金门机括，趁石锁回弹的一瞬钻入。"], ["封冢离开", "判断此墓凶险过甚，留下新记提醒后来人。", "你补全撤退暗记，封住盗洞并带同伴离开。"]] },
+  弈师: { title: "赌局残局", prompt: "豪商设下重金残局，要求你让三子应战，输者还要背上作弊之名。", choices: [["细算收官", "避开诱杀，以稳健官子拖入细棋。", "你不理会开局挑衅，一点点追回目数。"], ["弃子屠龙", "主动弃子换先手，胜负立见。", "你连弃数子诱敌深入，忽然反手围住大龙。"], ["揭明局套", "指出残局暗藏的手脚，维护在场棋客。", "你请人重摆棋子，当众指出一枚被移过位置。"]] },
+  茶师: { title: "贡茶受潮", prompt: "茶会前贡茶受潮生杂味，主人仍要你按原名奉客，免得失了体面。", choices: [["焙火醒茶", "分次低火复焙，尽量救回香气。", "你以文火反复醒茶，慢慢逼出湿气。"], ["调水斗茶", "用水温与器具掩去杂味，临席见真章。", "你改用山泉与厚盏，将涩杂压进回甘。"], ["换茶明说", "据实换用本地新茶，以诚意保住茶会。", "你向主人说明缘由，改奉一款清鲜本地茶。"]] },
+};
+
+const CAREER_KIND_SKILLS = {
+  craft: ["physique", "knowledge"],
+  art: ["knowledge", "looks"],
+  service: ["eq", "physique"],
+  labor: ["physique", "eq"],
+  mystic: ["virtue", "knowledge"],
+  female: ["looks", "eq"],
+  common: ["physique", "eq"],
+};
+
+const CAREER_SKILL_OVERRIDES = {
+  木匠: ["knowledge", "physique"], 玉匠: ["knowledge", "eq"], 铁匠: ["physique", "knowledge"],
+  画师: ["knowledge", "looks"], 琴师: ["knowledge", "eq"], 弈师: ["knowledge", "eq"], 茶师: ["eq", "knowledge"],
+  伙夫: ["physique", "knowledge"], 厨娘: ["knowledge", "eq"], 歌姬: ["looks", "eq"], 舞姬: ["physique", "looks"],
+  绣娘: ["knowledge", "looks"], 妆娘: ["looks", "eq"], 闺塾师: ["knowledge", "eq"],
+};
+
 const CAREER_ACTION_OVERRIDES = {
   县衙户房: [["routine", "核户清册", "清点户籍、田亩与钱粮，少错一笔便少一桩民怨。"], ["case", "查粮税案", "追查逃户冒籍、虚报田亩等疑案。"]],
   县衙吏房: [["routine", "整理官牒", "誊录札文、排定考课，衙门运转全靠这些细活。"], ["case", "查书吏弊", "有人在公文里做手脚，须从案卷中找破绽。"]],
@@ -1901,6 +1942,18 @@ function normalizeState(raw) {
   next.miniGames = normalizeMiniGames(next.miniGames);
   next.courtesanContest = normalizeCourtesanContest(next.courtesanContest);
   next.careerProgress = next.careerProgress && typeof next.careerProgress === "object" ? next.careerProgress : {};
+  for (const [name, source] of Object.entries(next.careerProgress)) {
+    const item = source && typeof source === "object" ? source : {};
+    next.careerProgress[name] = {
+      ...item,
+      exp: Math.max(0, Number(item.exp) || 0),
+      level: Math.max(1, Math.round(Number(item.level) || 1)),
+      records: {
+        cases: Math.max(0, Math.round(Number(item.records?.cases) || 0)),
+        successes: Math.max(0, Math.round(Number(item.records?.successes) || 0)),
+      },
+    };
+  }
   next.market = next.market && typeof next.market === "object" ? next.market : {};
   next.market.year = Number.isFinite(Number(next.market.year)) ? Number(next.market.year) : -1;
   next.market.factor = Number.isFinite(Number(next.market.factor)) ? Number(next.market.factor) : 1;
@@ -3324,6 +3377,7 @@ function chooseOption(index) {
 
   if (event.kind === "officialCase") return resolveOfficialCase(event, choice);
   if (event.kind === "familyStory") return resolveFamilyStory(event, choice);
+  if (event.kind === "careerCase") return resolveCareerCase(event, choice);
 
   const deltas = applyResults(choice.results || []);
   state.lastDeltas = mergeDeltas(state.pendingActivity?.deltas, deltas);
@@ -3672,7 +3726,7 @@ function takeCareer(index) {
   if (!career) return;
   if (careerLockedReason(career)) return;
   state.career = career;
-  state.careerProgress[career.name] ||= { exp: 0, level: 1 };
+  careerProgressFor(career.name);
   if (careerKind(career) === "official") {
     state.official.unlocked = true;
     state.official.retired = false;
@@ -3709,11 +3763,33 @@ function careerKind(career = state.career) {
   return "common";
 }
 
+function careerProgressFor(name = state.career?.name) {
+  if (!name) return { exp: 0, level: 1, records: { cases: 0, successes: 0 } };
+  state.careerProgress ||= {};
+  const source = state.careerProgress[name] && typeof state.careerProgress[name] === "object" ? state.careerProgress[name] : {};
+  source.exp = Math.max(0, Number(source.exp) || 0);
+  source.level = Math.max(1, Math.round(Number(source.level) || 1));
+  source.records = {
+    cases: Math.max(0, Math.round(Number(source.records?.cases) || 0)),
+    successes: Math.max(0, Math.round(Number(source.records?.successes) || 0)),
+  };
+  state.careerProgress[name] = source;
+  return source;
+}
+
+function careerSkillKeys(career = state.career) {
+  const name = career?.name || "";
+  return CAREER_SKILL_OVERRIDES[name] || CAREER_KIND_SKILLS[careerKind(career)] || CAREER_KIND_SKILLS.common;
+}
+
+function careerAdvancedCase(name = state.career?.name) {
+  return CAREER_ADVANCED_CASE_DEFS[name] || null;
+}
+
 function careerActions() {
   const kind = careerKind();
   const careerName = state.career?.name || "";
   if (kind === "official") return officialCareerActions();
-  if (CAREER_ACTION_OVERRIDES[careerName]) return CAREER_ACTION_OVERRIDES[careerName];
   const maps = {
     caravan: [
       ["route:county", "近郊短镖", "低风险短线，收益稳当。"],
@@ -3747,7 +3823,13 @@ function careerActions() {
     ],
     common: [["routine", "做工", "尽一日本分，得些薪钱。"]],
   };
-  return maps[kind] || maps.common;
+  const actions = (CAREER_ACTION_OVERRIDES[careerName] || maps[kind] || maps.common).map((item) => [...item]);
+  const advanced = careerAdvancedCase(careerName);
+  if (advanced) {
+    const level = careerProgressFor(careerName).level;
+    actions.push(["story:advanced", advanced.title, `${level >= 3 ? "名家委托" : "本业专案"} · 进入带检定与不同结果的职业剧情。`]);
+  }
+  return actions;
 }
 
 function performCareerAction(type) {
@@ -3755,14 +3837,17 @@ function performCareerAction(type) {
   const kind = careerKind();
   if (kind === "caravan") return performCaravanRoute(String(type || "").replace("route:", "") || "county");
   if (kind === "official") return performOfficialAction(type);
+  if (String(type || "").startsWith("story:")) return startCareerCase();
   const deltas = [];
-  const progress = (state.careerProgress[state.career.name] ||= { exp: 0, level: 1 });
+  const progress = careerProgressFor();
   let title = state.career.name;
   let text = "";
   const levelBonus = Math.max(0, Number(progress.level) || 1);
   {
     const risky = type === "risk" || type === "masterwork";
-    const success = !risky || Math.random() + (state.stats.eq + state.stats.knowledge + levelBonus * 5) / 260 > 0.62;
+    const [primary, secondary] = careerSkillKeys();
+    const skillScore = Number(state.stats[primary] || 0) * 0.68 + Number(state.stats[secondary] || 0) * 0.32;
+    const success = !risky || Math.random() + (skillScore + levelBonus * 5) / 260 > 0.62;
     const basePay = {
       craft: [55, 160],
       art: [45, 150],
@@ -3782,13 +3867,8 @@ function performCareerAction(type) {
     if (risky) changeStat("mood", success ? randInt(2, 6) : -randInt(3, 9), deltas);
     text = success ? `你在${state.career.name}一业上颇有所得，今日进账 ${moneyText(Math.max(0, pay))}。` : `这一桩差事不顺，折了心力，也没赚到什么。`;
   }
-  progress.exp = Math.max(0, Number(progress.exp || 0) + randInt(8, type === "routine" ? 18 : 32));
-  if (progress.exp >= progress.level * 80) {
-    progress.exp -= progress.level * 80;
-    progress.level += 1;
-    deltas.push({ label: "技艺", value: `${progress.level}级` });
-    text += ` 你的本业技艺升至 ${progress.level} 级。`;
-  }
+  const levelUpText = addCareerExperience(progress, randInt(8, type === "routine" ? 18 : 32), deltas);
+  if (levelUpText) text += levelUpText;
   text += careerIncident(kind, type, deltas, progress);
   addLedger(title, deltas.filter((delta) => delta.stat === "money").reduce((sum, delta) => sum + Number(delta.value || 0), 0), text);
   unlockLifeGoals();
@@ -3869,6 +3949,104 @@ function careerPersonalIncident(type, deltas, progress) {
   if ((type === "masterwork" || type === "case") && Math.random() > 0.48) changeStat("favorability", randInt(1, 3), deltas);
   if (type === "risk" && Math.random() > 0.55) changeStat("physique", -randInt(1, 5), deltas);
   return ` ${sample(pool)}`;
+}
+
+function addCareerExperience(progress, amount, deltas = []) {
+  progress.exp = Math.max(0, Number(progress.exp || 0) + Math.max(0, Number(amount) || 0));
+  let levels = 0;
+  while (progress.exp >= progress.level * 80 && levels < 10) {
+    progress.exp -= progress.level * 80;
+    progress.level += 1;
+    levels += 1;
+  }
+  if (!levels) return "";
+  deltas.push({ label: "技艺", value: `${progress.level}级` });
+  return ` 你的本业技艺升至 ${progress.level} 级。`;
+}
+
+function careerCaseToEvent(item, careerName = state.career?.name) {
+  if (!item || !careerName) return null;
+  const career = state.career?.name === careerName ? state.career : allCareers().find((candidate) => candidate.name === careerName) || { name: careerName };
+  const [primary, secondary] = careerSkillKeys(career);
+  const profiles = [
+    { stat: secondary, support: primary, difficulty: 58, profile: "steady" },
+    { stat: primary, support: secondary, difficulty: 78, profile: "bold" },
+    { stat: "eq", support: "virtue", difficulty: 65, profile: "humane" },
+  ];
+  return {
+    kind: "careerCase",
+    id: `career-case-${careerName}`,
+    careerName,
+    title: `${careerName} · ${item.title}`,
+    content: item.prompt,
+    icon: careerIcon(careerKind()),
+    children: item.choices.map(([label, note, text], index) => ({
+      title: label,
+      note: `${note} · 主看${STAT_LABELS[profiles[index].stat] || profiles[index].stat}`,
+      text,
+      ...profiles[index],
+      children: [],
+      conditions: [],
+      results: [],
+    })),
+  };
+}
+
+function startCareerCase() {
+  const item = careerAdvancedCase();
+  if (!item || !state.career) return;
+  state.currentEvent = careerCaseToEvent(item, state.career.name);
+  save();
+  render();
+}
+
+function resolveCareerCase(event, choice) {
+  if (!state.career || event.careerName !== state.career.name) {
+    state.currentEvent = null;
+    return finishAction("委托已失效", "你已经改换营生，这桩旧日委托只得作罢。", [], "Career");
+  }
+  const deltas = [];
+  const progress = careerProgressFor();
+  const level = Math.max(1, Number(progress.level) || 1);
+  const focus = Number(state.stats[choice.stat] || 0);
+  const support = Number(state.stats[choice.support] || 0);
+  const roll = randInt(1, 100) + Math.floor(focus / 5) + Math.floor(support / 10) + level * 3;
+  const success = roll >= Number(choice.difficulty || 65);
+  const profile = choice.profile || "steady";
+  const moneyRanges = {
+    steady: success ? [65, 135] : [-30, 20],
+    bold: success ? [145, 285] : [-120, -35],
+    humane: success ? [35, 95] : [-15, 25],
+  };
+  const experienceRanges = { steady: [18, 30], bold: [26, 42], humane: [16, 28] };
+  let money = rangeValue(moneyRanges[profile] || moneyRanges.steady);
+  if (success) money += level * (profile === "bold" ? 18 : 10);
+  changeStat("money", money, deltas);
+  changeStat(choice.stat, success ? randInt(1, 4) : randInt(0, 2), deltas);
+  if (profile === "steady") changeStat("favorability", success ? randInt(1, 4) : 0, deltas);
+  if (profile === "bold") {
+    changeStat("mood", success ? randInt(3, 8) : -randInt(3, 9), deltas);
+    if (!success) changeStat("physique", -randInt(1, 6), deltas);
+    if (success) changeStat("favorability", randInt(2, 6), deltas);
+  }
+  if (profile === "humane") {
+    changeStat("relationship", success ? randInt(3, 8) : randInt(0, 3), deltas);
+    changeStat("virtue", success ? randInt(1, 5) : 0, deltas);
+  }
+  const levelText = addCareerExperience(progress, rangeValue(experienceRanges[profile] || experienceRanges.steady), deltas);
+  progress.records.cases += 1;
+  if (success) progress.records.successes += 1;
+  const resultText = success
+    ? `${choice.text} 事情收得漂亮，你在${state.career.name}一业的名声又稳了一层。${levelText}`
+    : `${choice.text} 可惜临场处置未尽如人意，你赔了些本钱，也记下这次教训。${levelText}`;
+  state.currentEvent = null;
+  state.eventResult = { title: `${event.title} · ${success ? "办妥" : "失手"}`, text: resultText, deltas, icon: event.icon || careerIcon(careerKind()) };
+  state.lastDeltas = deltas;
+  addLedger(`${state.career.name}专案`, deltas.filter((delta) => delta.stat === "money").reduce((sum, delta) => sum + Number(delta.value || 0), 0), resultText);
+  addLog(event.title || `${state.career.name}专案`, resultText, deltas);
+  unlockLifeGoals();
+  save();
+  render();
 }
 
 function performCaravanRoute(routeId) {
@@ -4207,6 +4385,15 @@ function careerIcon(kind) {
 
 function careerKindLabel(kind) {
   return { official: "官府", craft: "匠作", art: "艺业", service: "店铺", labor: "脚力", caravan: "押镖行商", mystic: "玄门", female: "女业", common: "杂工" }[kind] || "杂工";
+}
+
+function careerPracticeSummary(progress = careerProgressFor()) {
+  if (!state.career || !careerAdvancedCase()) return "";
+  const [primary, secondary] = careerSkillKeys();
+  const records = progress.records || { cases: 0, successes: 0 };
+  return `
+      ${infoLine("专长", `${STAT_LABELS[primary]} ${Math.round(state.stats[primary] || 0)} · ${STAT_LABELS[secondary]} ${Math.round(state.stats[secondary] || 0)}`)}
+      ${infoLine("专案", `${records.cases || 0} 件 · 办妥 ${records.successes || 0} 件`)}`;
 }
 
 function normalizePartner(person, familyName = "李", relation = "配偶", fallbackId = "partner") {
@@ -10424,17 +10611,18 @@ function eventView(event) {
   const options = viableChildren(event);
   const official = event.kind === "officialCase";
   const familyStory = event.kind === "familyStory";
+  const careerCase = event.kind === "careerCase";
   return `
     <article class="play-card event-card">
-      <p class="eyebrow">${official ? "官场考验" : familyStory ? "家事流年" : "事件"}</p>
+      <p class="eyebrow">${official ? "官场考验" : familyStory ? "家事流年" : careerCase ? "本业专案" : "事件"}</p>
       <h2>${escapeHtml(event.title || "事件")}</h2>
       <p>${formatText(fillPlaceholders(event.content || event.history || "", false))}</p>
       <div class="choice-list">
         ${
           options.length
-            ? options.map(({ child, index }) => `<button class="choice-btn ${official ? "official-choice" : ""}" data-choice="${index}" ${child.disabled ? "disabled" : ""}>
+            ? options.map(({ child, index }) => `<button class="choice-btn ${official || careerCase ? "official-choice" : ""}" data-choice="${index}" ${child.disabled ? "disabled" : ""}>
               <span>${escapeHtml(child.title || "继续")}</span>
-              ${(official || familyStory) && child.note ? `<small>${escapeHtml(child.note)}</small>` : ""}
+              ${(official || familyStory || careerCase) && child.note ? `<small>${escapeHtml(child.note)}</small>` : ""}
             </button>`).join("")
             : `<button class="primary-btn" data-action="finish-event">继续</button>`
         }
@@ -10588,6 +10776,7 @@ function careerPanel() {
       ${state.career ? infoLine("本业", `${careerKindLabel(kind)} · ${Math.max(1, Number(progress.level) || 1)}级 · ${Math.round(Number(progress.exp) || 0)}经验`) : ""}
       ${officialCareer ? officialCareerSummary() : ""}
       ${kind === "caravan" ? caravanRouteSummary() : ""}
+      ${state.career && !officialCareer ? careerPracticeSummary(progress) : ""}
       ${state.age < 15 ? `<p class="empty-note">未满 15 岁，暂不能外出营生。</p>` : ""}
       ${state.prisonYears > 0 ? `<p class="empty-note">刑期未满，暂不能谋职。</p>` : ""}
       ${state.career ? `<div class="button-list career-actions">

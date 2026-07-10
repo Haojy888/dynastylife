@@ -387,6 +387,98 @@ try {
   assert.ok(persistedRomance.spouseIntimacy > 35, "妻子亲密状态没有持久化");
   assert.equal(persistedRomance.intimateRecords, 1, "亲密互动记录没有持久化");
 
+  console.log("quality gate: verifying advanced stories for non-official careers");
+  const careerCoverage = await page.evaluate(() => {
+    const names = Object.keys(CAREER_ADVANCED_CASE_DEFS);
+    return {
+      count: names.length,
+      uniqueTitles: new Set(names.map((name) => CAREER_ADVANCED_CASE_DEFS[name].title)).size,
+      valid: names.every((name) => {
+        const item = CAREER_ADVANCED_CASE_DEFS[name];
+        const event = careerCaseToEvent(item, name);
+        return item.prompt && item.choices?.length === 3 && event?.kind === "careerCase" && event.children.every((choice) => choice.note && choice.stat && choice.support);
+      }),
+      smithSkills: careerSkillKeys({ name: "铁匠", customKind: "craft" }),
+      cookSkills: careerSkillKeys({ name: "厨娘", customKind: "female" }),
+    };
+  });
+  assert.equal(careerCoverage.count, 21, "非官职职业专案覆盖数量异常");
+  assert.equal(careerCoverage.uniqueTitles, careerCoverage.count, "职业专案标题出现重复");
+  assert.equal(careerCoverage.valid, true, "存在无法生成三选一事件的职业专案");
+  assert.deepEqual(careerCoverage.smithSkills, ["physique", "knowledge"], "铁匠没有使用体魄与学识检定");
+  assert.deepEqual(careerCoverage.cookSkills, ["knowledge", "eq"], "厨娘没有使用学识与处世检定");
+
+  const carpenterSetup = await page.evaluate(() => {
+    state.currentEvent = null;
+    state.eventResult = null;
+    state.age = 35;
+    state.year = 35;
+    state.stats.money = 1600;
+    state.stats.knowledge = 72;
+    state.stats.physique = 76;
+    state.career = { name: "木匠", customKind: "craft", careerType: 1 };
+    state.careerProgress.木匠 = { exp: 45, level: 2 };
+    state = normalizeState(state);
+    view.page = "main";
+    view.tab = "career";
+    view.overlay = "";
+    save();
+    render();
+    return {
+      actions: careerActions().map(([type]) => type),
+      panel: document.querySelector(".panel-content")?.textContent || "",
+      records: state.careerProgress.木匠.records,
+    };
+  });
+  assert.ok(carpenterSetup.actions.includes("story:advanced"), "木匠未显示本业专案按钮");
+  assert.match(carpenterSetup.panel, /专长\s*学识\s*72\s*·\s*体魄\s*76/, "职业面板未显示对应专长");
+  assert.deepEqual(carpenterSetup.records, { cases: 0, successes: 0 }, "旧存档职业记录没有正确补全");
+
+  const carpenterButton = await page.$('[data-career-action="story:advanced"]:not([disabled])');
+  assert.ok(carpenterButton, "木匠专案按钮不可点击");
+  await carpenterButton.evaluate((element) => element.click());
+  const carpenterEvent = await page.evaluate(() => ({
+    kind: state.currentEvent?.kind,
+    title: state.currentEvent?.title,
+    choices: state.currentEvent?.children?.length,
+    notes: state.currentEvent?.children?.map((choice) => choice.note),
+  }));
+  assert.equal(carpenterEvent.kind, "careerCase", "点击木匠专案后没有进入职业剧情");
+  assert.match(carpenterEvent.title, /木匠.*官宅危梁/, "木匠触发了错误的职业剧情");
+  assert.equal(carpenterEvent.choices, 3, "木匠专案不是三选一事件");
+  assert.equal(carpenterEvent.notes.every((note) => /主看/.test(note)), true, "职业选项没有说明检定属性");
+  await page.$eval('.choice-btn[data-choice="0"]', (element) => element.click());
+  const carpenterResult = await page.evaluate(() => ({
+    title: state.eventResult?.title,
+    records: state.careerProgress.木匠.records,
+    exp: state.careerProgress.木匠.exp,
+    logged: state.log.some((item) => /木匠.*官宅危梁/.test(item.title || "")),
+  }));
+  assert.ok(carpenterResult.title, "木匠专案选择后没有产生结果");
+  assert.equal(carpenterResult.records.cases, 1, "木匠专案没有写入职业记录");
+  assert.ok(carpenterResult.exp > 45, "木匠专案没有增加职业经验");
+  assert.equal(carpenterResult.logged, true, "木匠专案没有写入命册");
+  await clearBlockingUi();
+
+  const taoistEvent = await page.evaluate(() => {
+    state.career = { name: "道士", customKind: "mystic", careerType: 3 };
+    state.careerProgress.道士 = { exp: 0, level: 4, records: { cases: 0, successes: 0 } };
+    state.currentEvent = null;
+    state.eventResult = null;
+    startCareerCase();
+    return {
+      title: state.currentEvent?.title,
+      choices: state.currentEvent?.children?.map((choice) => choice.title),
+      skills: careerSkillKeys(),
+    };
+  });
+  assert.match(taoistEvent.title, /道士.*古宅夜祟/, "道士触发了错误的职业剧情");
+  assert.deepEqual(taoistEvent.choices, ["勘宅查迹", "设坛诱祟", "安抚家眷"], "道士专案选项错误");
+  assert.deepEqual(taoistEvent.skills, ["virtue", "knowledge"], "道士没有使用德行与学识检定");
+  await page.$eval('.choice-btn[data-choice="1"]', (element) => element.click());
+  assert.equal(await page.evaluate(() => state.careerProgress.道士.records.cases), 1, "道士专案没有完成结算");
+  await clearBlockingUi();
+
   await page.setViewport({ width: 1440, height: 900, isMobile: false, hasTouch: false, deviceScaleFactor: 1 });
   const shell = await page.$(".game-shell");
   assert.ok(shell, "桌面端游戏主界面未渲染");
