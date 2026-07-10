@@ -253,6 +253,140 @@ try {
   assert.equal(childResult.child.educationPath, "academy", "子女教养道路未保留");
   assert.ok(childResult.child.educationOutcome, "子女教养结果未写入亲友状态");
 
+  console.log("quality gate: verifying rank-specific official posts and cases");
+  const officialSetup = await page.evaluate(() => {
+    state.age = 33;
+    state.year = 33;
+    state.career = { name: "县衙户房", customKind: "official", careerType: 5 };
+    state.careerProgress["县衙户房"] = { exp: 3021, level: 1 };
+    state.official = normalizeOfficial({ ...state.official, unlocked: true, rank: 18, merit: 6462 });
+    recordOfficialPost("测试任命");
+    state.currentEvent = null;
+    state.eventResult = null;
+    state.pendingSurprise = null;
+    state.pendingAchievement = null;
+    view.page = "main";
+    view.tab = "career";
+    view.overlay = "";
+    save();
+    render();
+    return {
+      title: currentCareerName(),
+      postCaseCount: OFFICIAL_POST_CASES.length,
+      rankCount: OFFICIAL_RANKS.length,
+      validCases: OFFICIAL_RANKS.every((_, rank) => {
+        const item = officialPostCase(rank);
+        return item?.minRank === rank && item?.maxRank === rank && item.options?.length === 3;
+      }),
+      panel: document.querySelector(".panel-content")?.textContent || "",
+    };
+  });
+  assert.equal(officialSetup.title, "正一品 · 大学士", "高阶官职仍被底层营生名称覆盖");
+  assert.equal(officialSetup.postCaseCount, officialSetup.rankCount, "并非每一级官职都有专属剧情");
+  assert.equal(officialSetup.validCases, true, "官职专属剧情与官阶没有一一对应");
+  assert.match(officialSetup.panel, /当前\s*正一品\s*·\s*大学士/, "营生面板未显示实际官职");
+  const postCaseButton = await page.$('[data-career-action="case:post"]:not([disabled])');
+  assert.ok(postCaseButton, "大学士专案按钮不可用");
+  await postCaseButton.evaluate((element) => element.click());
+  assert.equal(await page.evaluate(() => state.currentEvent?.id), "post-case-18", "未触发大学士对应的专属剧情");
+  await clearBlockingUi();
+
+  console.log("quality gate: verifying spouse and concubine interactions");
+  const romanceSetup = await page.evaluate(() => {
+    state.gender = "male";
+    state.age = 33;
+    state.year = 33;
+    state.stats.money = 2000;
+    state.family = normalizeFamily({
+      ...state.family,
+      spouse: "沈素音",
+      spouseAffection: 82,
+      spouseMeta: {
+        name: "沈素音",
+        relation: "妻子",
+        gender: "female",
+        age: 30,
+        alive: true,
+        affection: 82,
+        physique: 66,
+        intimacy: 35,
+        lastIntimateYear: -1,
+      },
+      concubines: [],
+      concubineCandidate: {
+        name: "顾清和",
+        relation: "相看之人",
+        gender: "female",
+        age: 24,
+        alive: true,
+        affection: 68,
+        physique: 65,
+      },
+    });
+    state.currentEvent = null;
+    state.eventResult = null;
+    view.page = "relations";
+    view.overlay = "";
+    save();
+    render();
+    return [...document.querySelectorAll('[data-relation-target="spouse"]')].map((button) => button.dataset.relationAction);
+  });
+  assert.deepEqual([...romanceSetup].sort(), ["care", "gift", "intimate", "outing", "talk"], "妻子互动按钮缺失");
+
+  const spouseBefore = await page.evaluate(() => state.family.spouseAffection);
+  await page.$eval('[data-relation-target="spouse"][data-relation-action="talk"]', (element) => element.click());
+  const spouseTalk = await page.evaluate(() => ({
+    title: state.eventResult?.title,
+    affection: state.family.spouseAffection,
+  }));
+  assert.ok(spouseTalk.title, "点击妻子夜话后没有产生互动结果");
+  assert.ok(spouseTalk.affection > spouseBefore, "妻子夜话没有提升感情");
+  await clearBlockingUi();
+
+  await page.$eval('[data-relation-target="spouse"][data-relation-action="intimate"]', (element) => element.click());
+  const intimacyResult = await page.evaluate(() => ({
+    title: state.eventResult?.title,
+    records: state.family.romanceRecords.intimate,
+    bonus: state.family.intimacyBonus,
+    year: state.family.spouseMeta.lastIntimateYear,
+  }));
+  assert.ok(intimacyResult.title, "点击同房后没有产生剧情结果");
+  assert.equal(intimacyResult.records, 1, "同房记录没有写入存档");
+  assert.ok(intimacyResult.bonus > 0, "同房没有影响后续生育判定");
+  assert.equal(intimacyResult.year, 33, "同房年份没有记录");
+  await clearBlockingUi();
+
+  await page.$eval('[data-action="take-concubine"]', (element) => element.click());
+  const concubineResult = await page.evaluate(() => ({
+    count: state.family.concubines.length,
+    candidate: state.family.concubineCandidate,
+    id: state.family.concubines[0]?.id,
+    title: state.eventResult?.title,
+  }));
+  assert.equal(concubineResult.count, 1, "纳入侧室后没有写入家族状态");
+  assert.equal(concubineResult.candidate, null, "已纳入的媒人名帖没有清除");
+  assert.ok(concubineResult.id, "侧室缺少可交互的稳定标识");
+  assert.ok(concubineResult.title, "纳妾没有产生结果剧情");
+  await clearBlockingUi();
+
+  const persistedRomance = await page.evaluate(() => {
+    view.page = "relations";
+    render();
+    const concubine = state.family.concubines[0];
+    const actions = [...document.querySelectorAll(`[data-relation-target="${concubine.id}"]`)].map((button) => button.dataset.relationAction);
+    const restored = normalizeState(JSON.parse(JSON.stringify(state)));
+    return {
+      actions,
+      count: restored.family.concubines.length,
+      spouseIntimacy: restored.family.spouseMeta.intimacy,
+      intimateRecords: restored.family.romanceRecords.intimate,
+    };
+  });
+  assert.deepEqual([...persistedRomance.actions].sort(), ["care", "gift", "intimate", "outing", "talk"], "侧室互动按钮缺失");
+  assert.equal(persistedRomance.count, 1, "旧档兼容流程丢失侧室");
+  assert.ok(persistedRomance.spouseIntimacy > 35, "妻子亲密状态没有持久化");
+  assert.equal(persistedRomance.intimateRecords, 1, "亲密互动记录没有持久化");
+
   await page.setViewport({ width: 1440, height: 900, isMobile: false, hasTouch: false, deviceScaleFactor: 1 });
   const shell = await page.$(".game-shell");
   assert.ok(shell, "桌面端游戏主界面未渲染");

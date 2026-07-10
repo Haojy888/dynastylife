@@ -662,6 +662,39 @@ const OFFICIAL_CASES = [
     ],
   },
 ];
+const OFFICIAL_POST_CASE_DEFS = [
+  { title: "朱批错漏", prompt: "一封发往乡里的公文抄错了赈粮数目，若照文执行会少发数十石。上司催你立刻封缄送出。", clean: "你拆封重校，主动领下迟误之责，赶在驿卒出城前改正文书。", balanced: "你让熟识书吏暗中换页，既补了错漏，也没有惊动满衙。", risky: "你照旧发文，打算把日后的亏空推给经手书吏。" },
+  { title: "夜缉盐枭", prompt: "典史手下探得私盐船今夜靠岸，线报却可能是豪户借刀杀人。", clean: "你先验货路与船牌，再分两队包抄，擒到真犯而未扰无辜。", balanced: "你扣船审人，给几名受雇船工留了自首退路。", risky: "你与盐枭暗通消息，放走头目，只拿几个替罪者交差。" },
+  { title: "户籍疑云", prompt: "主簿案头出现数十户同日迁入的户籍，背后似有人借名吞田。", clean: "你逐村核验保甲与旧契，查出豪族冒名占田的证据。", balanced: "你先冻结争议田亩，再请县令会同族老缓查。", risky: "你收下说情礼，把可疑户籍压进旧档。" },
+  { title: "县仓霉粮", prompt: "县丞巡仓时发现新粮下面尽是霉谷，仓官却说开仓会耽误秋解。", clean: "你当众启仓重验，封存霉粮并追查采买亏空。", balanced: "你先调好粮顶上解额，再暗查仓官账簿。", risky: "你让仓官补一份孝敬，仍把霉粮混入解运。" },
+  { title: "县学舞弊", prompt: "岁试前夕，有生员家长托人送来一份与考题相近的文章。", clean: "你当夜另拟考题，并将关节条子封存备查。", balanced: "你更换半数题目，私下警告涉事教习收手。", risky: "你默认文章流传，从中换取士绅支持。" },
+  { title: "州狱积案", prompt: "州狱关押多人多年未审，旧卷残缺，属县又互相推诿。", clean: "你逐案复核口供与拘票，先释放证据不足者。", balanced: "你限属县一月补卷，挑最紧要的几案先结。", risky: "你按旧口供草草定罪，只求清空积案数字。" },
+  { title: "灾民围衙", prompt: "水灾后饥民围在县衙外求粮，而上解漕粮的期限就在明日。", clean: "你开仓赈急并具文自请处分，先保百姓活命。", balanced: "你劝城中富户出粮，官仓只补不足之数。", risky: "你命差役驱散灾民，照额封船解粮。" },
+  { title: "漕船梗阻", prompt: "数十艘漕船堵在州河，船户与河工互指对方索费误期。", clean: "你亲到河口丈量淤塞，重排船次并公开工食。", balanced: "你让商帮垫资疏浚，许其来年优先过闸。", risky: "你把过闸次序卖给出价最高的船帮。" },
+  { title: "府州会审", prompt: "一桩命案三次翻供，知府催你在会审前给出定论。", clean: "你重勘现场与尸格，终于找出被忽略的时辰矛盾。", balanced: "你保留两说，请上官追加关键证人后再判。", risky: "你顺着权贵属意的方向定案，换取升迁荐语。" },
+  { title: "盐引争夺", prompt: "两家大商争夺盐引，一家有部院靠山，一家能解地方燃眉之急。", clean: "你按资本、运力与历年信用公开核给盐引。", balanced: "你将盐引拆分，使两家相互牵制又都能办差。", risky: "你把大半盐引给了送礼最厚的一家。" },
+  { title: "数县疫灾", prompt: "辖下三县疫病并起，药材不足，民间开始传言官府隐瞒死者。", clean: "你设医棚、报实数、禁哄抬药价，并请邻州驰援。", balanced: "你先封锁重疫乡里，再分批调药稳定城中。", risky: "你压下疫情文书，优先把药材供给富户大族。" },
+  { title: "属县抗令", prompt: "两名知县联名拖延新政，声称地方财力已到极限。", clean: "你亲查两县钱粮，以实数修正过苛条目，也处分借口敷衍者。", balanced: "你准许分年施行，换取两县先办最急事项。", risky: "你借机勒索属县，谁送礼便替谁缓办。" },
+  { title: "河盐兵备", prompt: "道内河工、盐务与兵备同时告急，三处都来争同一笔银子。", clean: "你按灾险轻重分配款项，并把账目张榜示众。", balanced: "你先救河工与兵备，令盐商垫付盐务周转。", risky: "你把款项拨给能替你在京中说话的一方。" },
+  { title: "大狱翻案", prompt: "十年前的重案忽有新证，若翻案将牵连数名现任官员。", clean: "你封存原卷、保护证人，具奏请求彻查到底。", balanced: "你先秘密复审，待证据闭合再惊动朝廷。", risky: "你销毁新证，与涉案官员结成利益同盟。" },
+  { title: "省库亏空", prompt: "藩库年终盘点少银数十万，历任交接文书却都写着无亏。", clean: "你冻结库门，分账复核并奏报历年积弊。", balanced: "你先追缴可追回的欠项，再给朝廷呈递补救章程。", risky: "你摊派各府填窟窿，自己也从中截下一份。" },
+  { title: "封疆急报", prompt: "边地兵变与腹地水灾同日急报，朝廷只准先调一处钱粮。", clean: "你据军情与灾情实数分出轻重，同时自筹第二路赈饷。", balanced: "你先稳兵变，再命属省官绅合力救灾。", risky: "你选择最能替自己邀功的一路，另一处只发空文。" },
+  { title: "数省军饷", prompt: "总督辖下数省军饷层层克扣，边军已有哗变之兆。", clean: "你越级查饷，裁撤空名，把现银直接发到营头。", balanced: "你与各省督抚议定限期补饷，暂不扩大追责。", risky: "你接受藩司分润，只查办几个无靠山的小官。" },
+  { title: "六部新政", prompt: "尚书任上，皇帝命你拟一项牵动天下赋役的新政，朝中两派争执不下。", clean: "你调取各省实数，先行试点，再据成效修订成法。", balanced: "你保留旧制骨架，只在积弊最重处渐次改动。", risky: "你迎合圣意仓促铺开，并替亲信预留经办肥缺。" },
+  { title: "内阁定策", prompt: "边战、灾荒与储位流言同时压到内阁，任何一句票拟都可能改变国运。", clean: "你以社稷为先，分别列明军国急务与不可逾越的法度。", balanced: "你联合数位阁臣拟出折中票旨，先稳朝局再图后策。", risky: "你借机排挤异己，把国事变成巩固权位的筹码。" },
+];
+const OFFICIAL_POST_CASES = OFFICIAL_POST_CASE_DEFS.map((item, rank) => ({
+  id: `post-case-${rank}`,
+  title: `${OFFICIAL_RANKS[rank].office} · ${item.title}`,
+  minRank: rank,
+  maxRank: rank,
+  prompt: item.prompt,
+  options: [
+    { id: "upright", label: "秉公担责", note: "清名与政绩最佳，也可能得罪权势", merit: [14 + rank, 28 + rank * 2], virtue: [2, 6], clean: 4, favorability: [1, 5], relation: [-3, 2], text: item.clean },
+    { id: "pragmatic", label: "权衡处置", note: "风险较低，政绩与人情较均衡", merit: [10 + rank, 22 + rank * 2], eq: [2, 5], clean: 1, relation: [1, 5], text: item.balanced },
+    { id: "selfish", label: "借势谋私", note: "钱财与关系来得快，但可能遭弹劾", merit: [4, 12 + rank], money: [80 + rank * 12, 180 + rank * 24], virtue: [-7, -3], clean: -5, corruption: 5, relation: [2, 7], impeachment: Math.min(0.42, 0.12 + rank * 0.012), text: item.risky },
+  ],
+}));
 const GAMBLE_OPPONENT_ITEMS = ["孔雀华盖马车", "乌木折扇", "鎏金酒盏", "玉扣腰牌", "一匣银锭", "绣纹荷包"];
 const CHINESE_NUMS = ["零", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十", "十一", "十二"];
 const GOMOKU_SIZE = 15;
@@ -1290,6 +1323,35 @@ const RELATION_ACTIONS = {
   gift: { label: "送礼", cost: 120, relationship: [2, 6], affection: [8, 16], mood: [0, 3], icon: "Jade" },
   borrow: { label: "借钱", cost: 0, relationship: [-6, -2], affection: [-10, -3], money: [80, 220], icon: "CashBox" },
   care: { label: "照料", cost: 60, relationship: [2, 6], affection: [6, 14], physique: [1, 4], icon: "MedicineBag" },
+  talk: { label: "夜话", cost: 0, relationship: [1, 4], affection: [4, 9], mood: [2, 6], icon: "SendLetter", partnerOnly: true },
+  outing: { label: "同游", cost: 45, relationship: [2, 6], affection: [5, 11], mood: [3, 8], icon: "RepairCarriage", partnerOnly: true },
+  intimate: { label: "同房", cost: 0, relationship: [1, 4], affection: [5, 12], mood: [4, 9], icon: "ArrangeMarriage", partnerOnly: true },
+};
+
+const PARTNER_STORIES = {
+  talk: [
+    "灯下只留一盏茶，你们说起家中收支、儿女功课与近日烦忧，许多隔阂在夜话里慢慢散去。",
+    "夜深后院寂静，对方把白日里不便说的话一一讲给你听，你也难得放下身份认真回应。",
+    "你们翻看旧日家书，说到初识时的窘态都笑了起来，屋中气氛比往日温柔。",
+  ],
+  outing: [
+    "你们换了便服去逛灯市，同看杂耍、共尝新点心，回程时一路还有说不完的话。",
+    "城外春色正好，你们沿堤缓行，在柳荫下歇脚，把官场家事暂时抛在身后。",
+    "你带对方去瓦舍听了一折旧戏，曲终后两人仍为戏中人物争论不休。",
+  ],
+  gift: [
+    "你挑了一件合心意的礼物送去，对方嘴上说你破费，收下时眉眼却藏不住欢喜。",
+    "这份礼不算奢华，却正是对方念叨许久的小物，显然你把那些闲话都记在心里。",
+  ],
+  care: [
+    "对方近来精神不济，你请医问药又亲自照看，几日后气色终于好了些。",
+    "你推掉外间应酬留在家中照料，对方把这份体贴记得很深。",
+  ],
+  intimate: [
+    "红烛低照，你们洗去一日疲惫，是夜同房，共度良宵。次日醒来，彼此更多了几分亲近。",
+    "夜雨敲窗，你留宿房中与对方相拥而眠。帘外风声不断，屋内却难得安稳。",
+    "你们屏退侍从，关门共叙枕边话，随后同房歇下。这一夜不谈外事，只作寻常夫妻。",
+  ],
 };
 
 const FEMALE_SKILLS = [
@@ -1657,6 +1719,7 @@ function createOfficialState() {
     retired: false,
     reviewLockUntil: 0,
     reviewLockRank: 0,
+    postHistory: [],
     records: { affairs: 0, cases: 0, impeachments: 0, delayed: 0, posthumous: "" },
   };
 }
@@ -1667,6 +1730,10 @@ function createFamily(familyName) {
     mother: { name: `${sample(DATA.database?.names?.last) || "王"}${sample(DATA.database?.names?.female) || "氏"}`, relation: "母亲", gender: "female", alive: true, age: randInt(25, 39), physique: randInt(55, 86), affection: randInt(72, 96) },
     siblings: makeSiblings(familyName),
     lover: false,
+    concubines: [],
+    concubineCandidate: null,
+    intimacyBonus: 0,
+    romanceRecords: { intimate: 0, outings: 0, conflicts: 0 },
     children: [],
   };
 }
@@ -1906,6 +1973,9 @@ function normalizeFamily(family, familyName) {
     children = Array.from({ length: Math.max(0, Math.min(8, Math.round(children))) }, () => makeChild(familyName, randInt(0, 12)));
   }
   if (!Array.isArray(children)) children = [];
+  const concubines = Array.isArray(source.concubines) ? source.concubines : [];
+  const spouseRelation = source.spouseRelation || "配偶";
+  const romanceRecords = source.romanceRecords && typeof source.romanceRecords === "object" ? source.romanceRecords : {};
   return {
     father: normalizeParent({ relation: "父亲", gender: "male", alive: true, affection: randInt(68, 96), ...father }, "father"),
     mother: normalizeParent({ relation: "母亲", gender: "female", alive: true, affection: randInt(68, 96), ...mother }, "mother"),
@@ -1913,8 +1983,16 @@ function normalizeFamily(family, familyName) {
     lover: source.lover || false,
     loverMeta: source.lover ? normalizeRelative({ name: typeof source.lover === "string" ? source.lover : source.lover?.name, relation: "相看之人", gender: source.loverGender, alive: true, affection: 64, ...source.loverMeta }, familyName, "partner") : null,
     spouse: source.spouse || null,
-    spouseMeta: source.spouse ? normalizeRelative({ name: typeof source.spouse === "string" ? source.spouse : source.spouse?.name, relation: "配偶", gender: source.spouseGender, alive: true, affection: source.spouseAffection ?? 78, ...source.spouseMeta }, familyName, "partner") : null,
+    spouseMeta: source.spouse ? normalizePartner({ name: typeof source.spouse === "string" ? source.spouse : source.spouse?.name, relation: spouseRelation, gender: source.spouseGender, alive: true, affection: source.spouseAffection ?? 78, ...source.spouseMeta }, familyName, spouseRelation) : null,
     spouseAffection: clamp(Number(source.spouseAffection ?? 78)),
+    concubines: concubines.map((item, index) => normalizePartner(typeof item === "string" ? { name: item } : item, familyName, "妾室", `concubine-${index}`)),
+    concubineCandidate: source.concubineCandidate ? normalizePartner(source.concubineCandidate, familyName, "待纳侧室", "concubine-candidate") : null,
+    intimacyBonus: clamp(Number(source.intimacyBonus || 0), 0, 0.45),
+    romanceRecords: {
+      intimate: Math.max(0, Math.round(Number(romanceRecords.intimate) || 0)),
+      outings: Math.max(0, Math.round(Number(romanceRecords.outings) || 0)),
+      conflicts: Math.max(0, Math.round(Number(romanceRecords.conflicts) || 0)),
+    },
     children: children.map((item) => normalizeChild(item, familyName)),
   };
 }
@@ -1998,6 +2076,7 @@ function normalizeChild(child, familyName) {
     trait: base.trait || sample(CHILD_TRAITS) || "聪慧",
     educationPath: ["academy", "craft", "home"].includes(base.educationPath) ? base.educationPath : "",
     educationOutcome: String(base.educationOutcome || ""),
+    otherParent: String(base.otherParent || ""),
   };
 }
 
@@ -2027,6 +2106,9 @@ function normalizeOfficial(source) {
   official.retired = !!official.retired;
   official.reviewLockUntil = Math.max(0, Number(official.reviewLockUntil) || 0);
   official.reviewLockRank = clamp(Math.round(Number(official.reviewLockRank) || 0), 0, OFFICIAL_RANKS.length - 1);
+  official.postHistory = Array.isArray(official.postHistory)
+    ? official.postHistory.map((item) => ({ rank: clamp(Math.round(Number(item?.rank) || 0), 0, OFFICIAL_RANKS.length - 1), year: Math.max(0, Math.round(Number(item?.year) || 0)), reason: String(item?.reason || "任命") })).slice(-20)
+    : [];
   official.network = Array.isArray(official.network) ? official.network.map(normalizeOfficialContact).filter(Boolean).slice(0, 8) : [];
   official.records = official.records && typeof official.records === "object" ? official.records : {};
   official.records.affairs = Math.max(0, Number(official.records.affairs) || 0);
@@ -2502,6 +2584,7 @@ function nextYear() {
   advanceFamilyYear(state.lastDeltas);
   advanceCricketYear(state.lastDeltas);
   annualRelationEvent(state.lastDeltas);
+  annualPartnerEvent(state.lastDeltas);
   annualSurpriseEvent(state.lastDeltas);
 
   if (shouldDie()) {
@@ -2619,7 +2702,11 @@ function maxCareerLevel() {
 }
 
 function relationCount() {
-  return familyRows().filter((item) => item.alive !== false).length + (state.friends || []).filter((item) => item.alive !== false).length + livingChildren().length + (state.family.spouse ? 1 : 0);
+  return familyRows().filter((item) => item.alive !== false).length
+    + (state.friends || []).filter((item) => item.alive !== false).length
+    + livingChildren().length
+    + (state.family.spouse ? 1 : 0)
+    + (state.family.concubines || []).filter((item) => item.alive !== false).length;
 }
 
 function inventoryCount() {
@@ -2654,7 +2741,7 @@ function logHas(pattern) {
 function lifeScore() {
   const statScore = Math.round((state.stats.mood + state.stats.physique + state.stats.eq + state.stats.knowledge + state.stats.virtue + state.stats.looks) / 6);
   const wealthScore = Math.min(180, Math.round(Math.max(0, state.stats.money) / 18) + (state.assets || []).length * 35);
-  const relationScore = Math.min(140, (familyRows().length + state.friends.length + livingChildren().length) * 12);
+  const relationScore = Math.min(140, relationCount() * 12);
   const examScore = Math.max(0, state.exam.rank + 1) * 70;
   const careerScore = Object.values(state.careerProgress || {}).reduce((sum, item) => sum + Math.max(1, Number(item.level) || 1) * 18, state.career ? 40 : 0);
   const goalScore = completedGoals().reduce((sum, goal) => sum + goal.score, 0);
@@ -2973,6 +3060,8 @@ function advanceFamilyYear(deltas) {
   for (const sibling of state.family.siblings || []) advanceRelationYear(sibling, deltas, "sibling");
   if (state.family.spouseMeta) advanceRelationYear(state.family.spouseMeta, deltas, "spouse");
   if (state.family.loverMeta) advanceRelationYear(state.family.loverMeta, deltas, "lover");
+  for (const concubine of state.family.concubines || []) advanceRelationYear(concubine, deltas, "spouse");
+  if (state.family.concubineCandidate) advanceRelationYear(state.family.concubineCandidate, deltas, "lover");
   for (const friend of state.friends || []) advanceRelationYear(friend, deltas, "friend");
 
   for (const child of state.family.children || []) {
@@ -3003,13 +3092,15 @@ function advanceFamilyYear(deltas) {
     }
   }
 
-  if (canHaveChildThisYear()) {
+  const childParent = childbearingPartnerThisYear();
+  if (childParent) {
     const child = makeChild(state.name.slice(0, 1), 0);
+    child.otherParent = childParent.name;
     state.family.children.push(child);
     changeStat("mood", randInt(4, 12), deltas);
     changeStat("relationship", randInt(3, 8), deltas);
     deltas.push({ label: "添丁", value: child.name });
-    addLog("添丁", `家中添了${child.relation}${child.name}，乳名未定，眉眼间已有几分${child.trait}。`, [{ label: "子女", value: child.name }]);
+    addLog("添丁", `${childParent.name}为家中添了${child.relation}${child.name}，乳名未定，眉眼间已有几分${child.trait}。`, [{ label: "子女", value: child.name }]);
   }
 }
 
@@ -3049,6 +3140,7 @@ function annualRelationEvent(deltas = []) {
     ...(state.family.siblings || []),
     ...(state.friends || []),
     ...(livingChildren() || []),
+    ...(state.family.concubines || []),
   ].filter((person) => person && person.alive !== false);
   if (state.family.spouse && state.family.spouseMeta?.alive !== false) candidates.push({ ...state.family.spouseMeta, name: state.family.spouse, relation: "配偶", affection: state.family.spouseAffection || state.family.spouseMeta.affection || 78, spouseProxy: true });
   const person = sample(candidates);
@@ -3104,6 +3196,7 @@ function annualSurpriseEvent(deltas = []) {
     state.family.mother,
     ...(state.family.siblings || []),
     ...(state.friends || []),
+    ...(state.family.concubines || []),
   ].filter((person) => person && person.alive !== false);
   if (state.family.spouse) candidates.push({ name: state.family.spouse, relation: "配偶" });
   const giver = sample(candidates);
@@ -3126,15 +3219,70 @@ function annualSurpriseEvent(deltas = []) {
   addLog(received ? "亲友赠礼" : "行囊已满", text, deltas);
 }
 
-function canHaveChildThisYear() {
-  if (!state.family.spouse || state.prisonYears > 0) return false;
-  if (state.family.spouseMeta?.alive === false) return false;
-  if (state.age < 16 || state.age > 52) return false;
-  if (state.gender === "female" && state.age > 45) return false;
+function annualPartnerEvent(deltas = []) {
+  const spouse = state.family.spouse && state.family.spouseMeta?.alive !== false ? state.family.spouseMeta : null;
+  const concubines = (state.family.concubines || []).filter((item) => item.alive !== false);
+  if ((!spouse && !concubines.length) || Math.random() > 0.28) return;
+
+  if (spouse && concubines.length && Math.random() < 0.42) {
+    const concubine = sample(concubines);
+    state.family.romanceRecords.conflicts += 1;
+    const steady = Number(state.stats.eq || 0) + Number(state.family.spouseAffection || spouse.affection || 0) / 2 + randInt(-20, 20) >= 85;
+    if (steady) {
+      state.family.spouseAffection = clamp(Number(state.family.spouseAffection || 0) + randInt(1, 4));
+      spouse.affection = state.family.spouseAffection;
+      concubine.affection = clamp(Number(concubine.affection || 0) + randInt(0, 3));
+      changeStat("eq", randInt(1, 3), deltas);
+      addLog("内宅调停", `${state.family.spouse}与${concubine.name}因月例和房中安排起了口角。你没有偏听，重新定下规矩，两边总算各退一步。`, [{ label: "内宅", value: "暂归和顺" }]);
+    } else {
+      state.family.spouseAffection = clamp(Number(state.family.spouseAffection || 0) - randInt(3, 8));
+      spouse.affection = state.family.spouseAffection;
+      concubine.jealousy = clamp(Number(concubine.jealousy || 0) + randInt(5, 12), 0, 100);
+      changeStat("mood", -randInt(2, 6), deltas);
+      addLog("内宅生隙", `${state.family.spouse}与${concubine.name}为你近日偏向谁而争执。你处置得不够周全，几日里后院都冷着脸。`, [{ label: "夫妻情分", value: state.family.spouseAffection, negative: true }]);
+    }
+    return;
+  }
+
+  const partner = spouse ? { ...spouse, name: state.family.spouse, spouseProxy: true } : sample(concubines);
+  if (!partner) return;
+  const roll = Math.random();
+  if (roll < 0.38) {
+    changeStat("mood", randInt(2, 6), deltas);
+    changeStat("relationship", randInt(1, 4), deltas);
+    if (partner.spouseProxy) state.family.spouseAffection = clamp(Number(state.family.spouseAffection || 0) + randInt(2, 5));
+    else partner.affection = clamp(Number(partner.affection || 0) + randInt(2, 5));
+    addLog("枕边夜话", `${partner.name}等你卸下外衣，与你说起家事和近来的心绪。你难得耐心听完，彼此更亲近了。`, [{ label: partner.relation || "姻缘", value: partner.name }]);
+  } else if (roll < 0.72) {
+    const cost = Math.min(Math.max(0, state.stats.money), randInt(18, 70));
+    if (cost) {
+      changeStat("money", -cost, deltas);
+      addLedger("内宅用度", -cost, `为${partner.name}添置衣物药材。`);
+    }
+    addLog("内宅照拂", `${partner.name}近日有些劳累，你拨出用度，又让人少派些杂事，家中气氛随之和缓。`, [{ label: "用度", value: cost ? moneyText(-cost, { signed: true }) : "照料" }]);
+  } else {
+    state.family.intimacyBonus = clamp(Number(state.family.intimacyBonus || 0) + 0.08, 0, 0.45);
+    if (partner.spouseProxy) state.family.spouseAffection = clamp(Number(state.family.spouseAffection || 0) + randInt(1, 4));
+    else partner.intimacy = clamp(Number(partner.intimacy || 0) + randInt(2, 6));
+    addLog("夫妻相伴", `夜深后你留在${partner.name}房中，共叙枕边话，随后同房歇下。晨起时，两人心绪都比往日安稳。`, [{ label: "亲密", value: partner.name }]);
+  }
+}
+
+function childbearingPartnerThisYear() {
+  if (state.prisonYears > 0 || state.age < 16 || state.age > 52) return null;
+  if (state.gender === "female" && state.age > 45) return null;
+  const partners = [];
+  if (state.family.spouse && state.family.spouseMeta?.alive !== false) partners.push({ ...state.family.spouseMeta, name: state.family.spouse, primary: true });
+  if (state.gender === "male") partners.push(...(state.family.concubines || []).filter((item) => item.alive !== false));
+  if (!partners.length) return null;
   const living = livingChildren();
-  if (living.length >= 8) return false;
-  const chance = living.length ? 0.16 : 0.36;
-  return Math.random() < chance;
+  if (living.length >= 8) return null;
+  const bonus = clamp(Number(state.family.intimacyBonus || 0), 0, 0.45);
+  state.family.intimacyBonus = 0;
+  const chance = (living.length ? 0.14 : 0.32) + bonus;
+  if (Math.random() >= chance) return null;
+  const weighted = partners.flatMap((partner) => Array.from({ length: Math.max(1, Math.ceil(Number(partner.affection || 50) / 25)) }, () => partner));
+  return sample(weighted) || partners[0];
 }
 
 function livingChildren() {
@@ -3530,6 +3678,7 @@ function takeCareer(index) {
     state.official.retired = false;
     state.official.rank = Math.max(officialRankIndex(), hasPalaceAppointment() ? 1 : 0);
     ensureOfficialNetwork();
+    recordOfficialPost("入仕");
   }
   state.lastDeltas = [{ label: "营生", value: career.name }];
   addLog("谋职", careerJoinText(career), state.lastDeltas);
@@ -4060,6 +4209,23 @@ function careerKindLabel(kind) {
   return { official: "官府", craft: "匠作", art: "艺业", service: "店铺", labor: "脚力", caravan: "押镖行商", mystic: "玄门", female: "女业", common: "杂工" }[kind] || "杂工";
 }
 
+function normalizePartner(person, familyName = "李", relation = "配偶", fallbackId = "partner") {
+  const base = normalizeRelative({ relation, alive: true, ...person }, familyName, "partner");
+  return {
+    ...base,
+    id: person?.id || `${fallbackId}-${base.name}`,
+    relation,
+    intimacy: clamp(Number(person?.intimacy ?? 35)),
+    jealousy: clamp(Number(person?.jealousy ?? 0), 0, 100),
+    lastIntimateYear: Number.isFinite(Number(person?.lastIntimateYear)) ? Number(person.lastIntimateYear) : -1,
+  };
+}
+
+function currentCareerName() {
+  if (!state.career) return "";
+  return careerKind(state.career) === "official" ? officialTitle() : state.career.name;
+}
+
 function officialCareerSummary() {
   const office = officialOffice();
   const need = nextOfficialMeritNeed();
@@ -4073,6 +4239,7 @@ function officialCareerSummary() {
       ${infoLine("辖务", `${office.scope} · ${office.duty}`)}
       ${infoLine("官评", `${Math.round(state.official.merit || 0)} 政绩 · ${reviewText}`)}
       ${infoLine("路线", `${tendency.label} · 清名 ${Math.round(state.official.clean || 0)} · 浊名 ${Math.round(state.official.corruption || 0)}`)}
+      ${state.official.postHistory?.length ? infoLine("履历", state.official.postHistory.slice(-3).reverse().map((item) => `${item.year}岁 ${officialOffice(item.rank).office}`).join(" → ")) : ""}
       <div class="official-network">
         ${network.slice(0, 5).map((item) => `
           <span class="${item.affection < 0 ? "bad" : item.affection >= 65 ? "good" : ""}">
@@ -4233,11 +4400,26 @@ function useSpecialPlace(id) {
     text = "你走动亲友，席间闲谈让彼此更亲近。";
   } else if (id === "matchmaker") {
     const name = makePersonName(state.gender === "male" ? "female" : "male");
-    state.family.lover = name;
-    state.family.loverMeta = normalizeRelative({ name, relation: "相看之人", gender: state.gender === "male" ? "female" : "male", affection: 64 }, state.name.slice(0, 1), "partner");
-    changeStat("relationship", randInt(3, 8), deltas);
-    title = "媒人";
-    text = `媒人替你相看了${name}，说是颇有缘分。`;
+    if (state.family.spouse && state.gender === "male") {
+      if ((state.family.concubines || []).length >= 3) {
+        title = "媒人";
+        text = "媒人见你已有三房侧室，劝你先把内宅人情料理妥当，不肯再递新人名帖。";
+      } else {
+        state.family.concubineCandidate = normalizePartner({ name, relation: "待纳侧室", gender: "female", affection: randInt(48, 68), intimacy: 12 }, state.name.slice(0, 1), "待纳侧室", "concubine-candidate");
+        changeStat("relationship", randInt(2, 6), deltas);
+        title = "媒人递帖";
+        text = `媒人听说你已有正妻，又递来${name}的名帖。若有意纳为侧室，可回亲友页再作决定。`;
+      }
+    } else if (state.family.spouse) {
+      title = "媒人";
+      text = "媒人知道你已有婚配，只与你说了几户亲友近况，没有再替你另牵姻缘。";
+    } else {
+      state.family.lover = name;
+      state.family.loverMeta = normalizeRelative({ name, relation: "相看之人", gender: state.gender === "male" ? "female" : "male", affection: 64 }, state.name.slice(0, 1), "partner");
+      changeStat("relationship", randInt(3, 8), deltas);
+      title = "媒人";
+      text = `媒人替你相看了${name}，说是颇有缘分。`;
+    }
   } else if (id === "blackMarket") {
     return openBlackMarket();
   }
@@ -6314,6 +6496,7 @@ function interactRelation(id, actionId) {
   const action = RELATION_ACTIONS[actionId];
   const target = findRelationTarget(id);
   if (!action || !target || state.dead || state.prisonYears > 0) return;
+  if (target.kind === "spouse" || target.kind === "concubine") return interactPartner(target, actionId);
   if (action.cost && state.stats.money < action.cost) return;
   const deltas = [];
   if (action.cost) {
@@ -6338,6 +6521,48 @@ function interactRelation(id, actionId) {
   target.person.lastMet = state.age;
   const followup = relationFollowup(target, actionId, deltas);
   finishAction(action.label, `${action.label}${target.name}，情分有了新的冷暖。${followup}`, deltas, action.icon);
+}
+
+function interactPartner(target, actionId) {
+  const action = RELATION_ACTIONS[actionId];
+  if (!action || !target?.person || target.person.alive === false) return;
+  if (action.partnerOnly !== true && !["gift", "care"].includes(actionId)) return;
+  if (action.cost && state.stats.money < action.cost) return;
+  const affection = target.kind === "spouse" ? Number(state.family.spouseAffection ?? target.person.affection ?? 78) : Number(target.person.affection ?? 60);
+  if (actionId === "intimate" && (state.age < 18 || affection < 25)) return;
+  if (actionId === "intimate" && Number(target.person.lastIntimateYear) === Number(state.year)) {
+    return finishAction("枕边相伴", `你今岁已多次留在${target.name}房中。对方劝你保重精神，来日再好好相伴。`, [], "ArrangeMarriage");
+  }
+
+  const deltas = [];
+  if (action.cost) {
+    changeStat("money", -action.cost, deltas);
+    addLedger(actionId === "outing" ? "夫妻同游" : "内宅用度", -action.cost, `${action.label}${target.name}。`);
+  }
+  changeStat("relationship", rangeValue(action.relationship || [0, 0]), deltas);
+  if (action.mood) changeStat("mood", rangeValue(action.mood), deltas);
+  const affectionGain = rangeValue(action.affection || [0, 0]);
+  target.person.affection = clamp(affection + affectionGain);
+  if (target.kind === "spouse") state.family.spouseAffection = target.person.affection;
+
+  if (actionId === "care") {
+    const boost = randInt(3, 8);
+    target.person.physique = clamp(Number(target.person.physique || 55) + boost);
+    deltas.push({ label: `${target.name}体魄`, value: boost });
+  }
+  if (actionId === "outing") state.family.romanceRecords.outings += 1;
+  if (actionId === "intimate") {
+    state.family.romanceRecords.intimate += 1;
+    target.person.lastIntimateYear = state.year;
+    target.person.intimacy = clamp(Number(target.person.intimacy || 0) + randInt(6, 14));
+    state.family.intimacyBonus = clamp(Number(state.family.intimacyBonus || 0) + 0.16, 0, 0.45);
+    if (target.kind === "concubine" && state.family.spouseMeta) {
+      state.family.spouseMeta.jealousy = clamp(Number(state.family.spouseMeta.jealousy || 0) + randInt(1, 5), 0, 100);
+    }
+  }
+  target.person.lastMet = state.age;
+  const story = sample(PARTNER_STORIES[actionId] || []) || `${action.label}${target.name}，两人的情分更近了一步。`;
+  finishAction(action.label, story, deltas, action.icon);
 }
 
 function relationFollowup(target, actionId, deltas) {
@@ -6383,18 +6608,16 @@ function findRelationTarget(id) {
   if (id === "mother") return { kind: "family", name: state.family.mother?.name, person: state.family.mother };
   if (id === "spouse" && state.family.spouse) {
     state.family.spouseAffection = clamp(Number(state.family.spouseAffection ?? 78));
-    state.family.spouseMeta = normalizeRelative({ relation: "配偶", gender: state.gender === "female" ? "male" : "female", alive: true, affection: state.family.spouseAffection, ...state.family.spouseMeta, name: state.family.spouse }, state.name.slice(0, 1), "partner");
-    Object.defineProperty(state.family.spouseMeta, "affection", {
-      configurable: true,
-      get() { return state.family.spouseAffection; },
-      set(value) { state.family.spouseAffection = clamp(Number(value ?? 78)); },
-    });
+    const relation = state.gender === "male" ? "妻子" : "夫君";
+    state.family.spouseMeta = normalizePartner({ relation, gender: state.gender === "female" ? "male" : "female", alive: true, ...state.family.spouseMeta, name: state.family.spouse, affection: state.family.spouseAffection }, state.name.slice(0, 1), relation, "spouse");
     return { kind: "spouse", name: state.family.spouse, person: state.family.spouseMeta };
   }
   if (id === "lover" && state.family.lover) {
     state.family.loverMeta = normalizeRelative({ relation: "相看之人", gender: state.gender === "female" ? "male" : "female", alive: true, affection: 64, ...state.family.loverMeta, name: state.family.lover }, state.name.slice(0, 1), "partner");
     return { kind: "lover", name: state.family.lover, person: state.family.loverMeta };
   }
+  const concubine = (state.family.concubines || []).find((person) => person.id === id || person.name === id);
+  if (concubine) return { kind: "concubine", name: concubine.name, person: concubine };
   const sibling = (state.family.siblings || []).find((person) => person.name === id || person.id === id);
   if (sibling) return { kind: "family", name: sibling.name, person: sibling };
   const friend = state.friends.find((person) => person.id === id || person.name === id);
@@ -6520,6 +6743,10 @@ function inheritFromChild(id) {
       siblings,
       lover: false,
       spouse: null,
+      concubines: [],
+      concubineCandidate: null,
+      intimacyBonus: 0,
+      romanceRecords: { intimate: 0, outings: 0, conflicts: 0 },
       children: [],
     },
     exam: { rank: -1, attempts: 0, history: [], current: null, lastYear: -1 },
@@ -6550,11 +6777,33 @@ function marryLover() {
   changeStat("mood", randInt(8, 16), deltas);
   changeStat("relationship", randInt(6, 14), deltas);
   state.family.spouse = state.family.lover;
-  state.family.spouseMeta = normalizeRelative({ ...state.family.loverMeta, name: state.family.spouse, relation: "配偶", affection: state.family.spouseAffection || 82 }, state.name.slice(0, 1), "partner");
+  const relation = state.gender === "male" ? "妻子" : "夫君";
+  state.family.spouseAffection = clamp(Number(state.family.loverMeta?.affection ?? state.family.spouseAffection ?? 82));
+  state.family.spouseMeta = normalizePartner({ ...state.family.loverMeta, name: state.family.spouse, relation, affection: state.family.spouseAffection, intimacy: 28 }, state.name.slice(0, 1), relation, "spouse");
   state.family.lover = false;
   state.family.loverMeta = null;
   addLedger("婚仪", -actualCost, `与${state.family.spouse}成婚。`);
   finishAction("成婚", `红烛高照，你与${state.family.spouse}成礼，自此家中多了一位同路人。`, deltas, "ArrangeMarriage");
+}
+
+function takeConcubine() {
+  const candidate = state.family.concubineCandidate;
+  if (!candidate || !state.family.spouse || state.gender !== "male" || state.age < 18 || (state.family.concubines || []).length >= 3) return;
+  const cost = 220;
+  if (state.stats.money < cost) return;
+  const deltas = [];
+  changeStat("money", -cost, deltas);
+  changeStat("relationship", randInt(2, 6), deltas);
+  const concubine = normalizePartner({ ...candidate, id: `concubine-${Date.now()}-${Math.random().toString(16).slice(2)}`, relation: "妾室", affection: clamp(Number(candidate.affection || 58) + 8), intimacy: 20 }, state.name.slice(0, 1), "妾室", "concubine");
+  state.family.concubines.push(concubine);
+  state.family.concubineCandidate = null;
+  if (state.family.spouseMeta) {
+    state.family.spouseAffection = clamp(Number(state.family.spouseAffection || 78) - randInt(2, 7));
+    state.family.spouseMeta.affection = state.family.spouseAffection;
+    state.family.spouseMeta.jealousy = clamp(Number(state.family.spouseMeta.jealousy || 0) + randInt(5, 12), 0, 100);
+  }
+  addLedger("纳妾仪礼", -cost, `纳${concubine.name}入府为侧室。`);
+  finishAction("纳入侧室", `你备下仪礼，将${concubine.name}纳入府中。正妻虽维持体面，内宅从此多了一层需要经营的人情。`, deltas, "ArrangeMarriage");
 }
 
 function handleOfficialWork() {
@@ -6589,10 +6838,12 @@ function nextOfficialMeritNeed() {
 
 function officialCareerActions() {
   const rank = officialRankIndex();
+  const office = officialOffice(rank);
   const actions = OFFICIAL_AFFAIRS
     .filter((affair) => rank >= affair.minRank)
     .map((affair) => [`affair:${affair.id}`, affair.label, affair.note]);
-  const cases = OFFICIAL_CASES.filter((item) => rank >= item.minRank);
+  actions.push(["case:post", `${office.office}专案`, `处理只属于${office.office}这一官职的高级剧情。`]);
+  const cases = officialCasePool();
   actions.push(["case:random", "官场要案", cases.length ? "进入带选择的官场剧情，处理得当可涨政绩，也可能招祸。" : "官阶尚低，暂以日常案牍为主。"]);
   if (state.age >= 60 && !state.official?.retired) actions.push(["retire", "致仕归乡", "退下官身，回乡修谱、教导子孙，留下身后名。"]);
   return actions;
@@ -6616,7 +6867,20 @@ function officialAffairById(id) {
 
 function officialCasePool() {
   const rank = officialRankIndex();
-  return OFFICIAL_CASES.filter((item) => rank >= item.minRank);
+  return [...OFFICIAL_CASES.filter((item) => rank >= item.minRank), ...OFFICIAL_POST_CASES.filter((item) => item.minRank === rank)];
+}
+
+function officialPostCase(rank = officialRankIndex()) {
+  return OFFICIAL_POST_CASES.find((item) => item.minRank === rank) || null;
+}
+
+function recordOfficialPost(reason = "任命") {
+  state.official = normalizeOfficial(state.official);
+  const rank = officialRankIndex();
+  const latest = state.official.postHistory[state.official.postHistory.length - 1];
+  if (latest?.rank === rank) return;
+  state.official.postHistory.push({ rank, year: Math.round(Number(state.age) || 0), reason });
+  state.official.postHistory = state.official.postHistory.slice(-20);
 }
 
 function performOfficialAction(type = "affair:archives") {
@@ -6626,7 +6890,8 @@ function performOfficialAction(type = "affair:archives") {
   if (state.official.retired) return finishAction("乡居", "你已致仕归乡，不再点卯办差。可在家中修谱、教导子孙，把官场旧事写入命册。", [], "Official");
   const action = String(type || "");
   if (action === "retire") return retireOfficial();
-  if (action.startsWith("case:")) return startOfficialCase();
+  if (action === "case:post") return startOfficialCase("post");
+  if (action.startsWith("case:")) return startOfficialCase("random");
   return performOfficialAffair(action.replace("affair:", "") || "archives");
 }
 
@@ -6661,9 +6926,9 @@ function performOfficialAffair(affairId) {
   finishAction(`官府 · ${affair.label}`, text, deltas, affair.icon || "Official");
 }
 
-function startOfficialCase() {
+function startOfficialCase(mode = "random") {
   const pool = officialCasePool();
-  const item = sample(pool);
+  const item = mode === "post" ? officialPostCase() : sample(pool);
   if (!item) return performOfficialAffair("archives");
   state.currentEvent = officialCaseToEvent(item);
   save();
@@ -6780,7 +7045,10 @@ function triggerOfficialCensure(deltas, intro) {
     return ` ${intro}你虽勉强脱身，考课却被压下一年，政绩也折了 ${loss}。`;
   }
   const oldTitle = officialTitle();
-  if (officialRankIndex() > 0) state.official.rank = officialRankIndex() - 1;
+  if (officialRankIndex() > 0) {
+    state.official.rank = officialRankIndex() - 1;
+    recordOfficialPost("贬谪");
+  }
   state.official.merit = Math.max(0, OFFICIAL_PROMOTION_MERIT[officialRankIndex()] || 0);
   changeStat("favorability", -randInt(4, 10), deltas);
   deltas.push({ label: "贬谪", value: officialTitle(), negative: true });
@@ -6798,6 +7066,7 @@ function applyOfficialPromotion(deltas = []) {
     const oldTitle = officialTitle();
     state.official.rank = officialRankIndex() + 1;
     ensureOfficialNetwork();
+    recordOfficialPost("升迁");
     const title = officialTitle();
     text += ` ${review.text}由${oldTitle}升至 ${title}。`;
     deltas.push({ label: "官阶", value: title, type: "text" });
@@ -7967,7 +8236,7 @@ function renderGame() {
 
       <section class="status-strip">
         ${resourcePill("钱财", moneyText(state.stats.money, { compact: true }))}
-        ${resourcePill("营生", state.career?.name || "无")}
+        ${resourcePill("营生", currentCareerName() || "无")}
         ${state.prisonYears > 0 ? resourcePill("牢狱", `余刑 ${state.prisonYears} 年`, "bad") : ""}
         ${state.diseases.map((item) => resourcePill("病症", item, "bad")).join("")}
         ${state.tags.slice(0, 4).map((item) => resourcePill("记号", item)).join("")}
@@ -8108,7 +8377,7 @@ function profileAvatarPicker() {
 }
 
 function profileCard() {
-  const title = state.career?.name || (state.exam.rank >= 0 ? EXAM_TITLES[state.exam.rank] : "布衣");
+  const title = currentCareerName() || (state.exam.rank >= 0 ? EXAM_TITLES[state.exam.rank] : "布衣");
   const handle = `${state.lineage?.familyName || state.name.slice(0, 1)}氏第${Math.max(1, Number(state.lineage?.generation) || 1)}代`;
   const status = state.prisonYears > 0 ? `牢狱余刑 ${state.prisonYears} 年` : state.diseases.length ? state.diseases[0] : statDesc("mood", state.stats.mood || 0);
   const statKeys = ["mood", "physique", "knowledge"];
@@ -8754,8 +9023,11 @@ function assetCard(asset, index) {
 function relationsView() {
   const family = familyRows();
   const partnerGender = state.gender === "female" ? "male" : "female";
-  const spouse = state.family.spouse ? [{ id: "spouse", relation: "配偶", gender: partnerGender, alive: true, affection: state.family.spouseAffection || 82, ...state.family.spouseMeta, name: state.family.spouse }] : [];
-  const lover = state.family.lover ? [{ id: "lover", relation: "相看之人", gender: partnerGender, alive: true, affection: 64, ...state.family.loverMeta, name: state.family.lover }] : [];
+  const spouseRelation = state.gender === "male" ? "妻子" : "夫君";
+  const spouse = state.family.spouse ? [{ gender: partnerGender, alive: true, ...state.family.spouseMeta, id: "spouse", relation: spouseRelation, name: state.family.spouse, affection: state.family.spouseAffection || state.family.spouseMeta?.affection || 82 }] : [];
+  const lover = state.family.lover ? [{ gender: partnerGender, alive: true, affection: 64, ...state.family.loverMeta, id: "lover", relation: "相看之人", name: state.family.lover }] : [];
+  const concubines = (state.family.concubines || []).filter((item) => item.alive !== false);
+  const concubineCandidate = state.family.concubineCandidate ? [{ ...state.family.concubineCandidate, relation: "待纳侧室" }] : [];
   const children = livingChildren();
   const friends = state.friends.filter((friend) => friend.alive !== false);
   return `
@@ -8770,11 +9042,14 @@ function relationsView() {
         <div class="person-list">${family.filter((person) => person.relation !== "父亲" && person.relation !== "母亲").map((person) => personCard(person, person.id || person.name)).join("")}</div>
       ` : `<p class="empty-note">暂未刷新到哥哥姐姐。</p>`}
       ${spouse.length || lover.length ? `<h2 class="subhead">姻缘</h2><div class="person-list">${[...spouse, ...lover].map((person) => personCard(person, person.id || person.name)).join("")}</div>` : ""}
+      ${concubines.length ? `<h2 class="subhead">侧室</h2><div class="person-list">${concubines.map((person) => personCard(person, person.id)).join("")}</div>` : ""}
+      ${concubineCandidate.length ? `<h2 class="subhead">媒人名帖</h2><div class="person-list">${concubineCandidate.map((person) => personCard(person)).join("")}</div>` : ""}
       ${children.length ? `<h2 class="subhead">子女</h2><div class="person-list">${children.map(childCard).join("")}</div>` : state.family.spouse ? `<p class="empty-note">尚无子女。</p>` : ""}
       ${friends.length ? `<h2 class="subhead">友人</h2><div class="person-list">${friends.map((person) => personCard(person, person.id)).join("")}</div>` : ""}
       <div class="main-actions">
         <button class="secondary-btn" data-action="send-letter">发送书信</button>
         ${state.family.lover && !state.family.spouse ? `<button class="primary-btn" data-action="marry-lover" ${state.age < 16 ? "disabled" : ""}>成婚</button>` : ""}
+        ${state.family.concubineCandidate ? `<button class="primary-btn" data-action="take-concubine" ${state.age < 18 || state.stats.money < 220 ? "disabled" : ""}>纳入侧室 · ${moneyText(220)}</button>` : ""}
         <button class="ghost-btn" data-action="back-main">返回</button>
       </div>
     </article>`;
@@ -8789,7 +9064,7 @@ function childCard(child) {
       <div>
         <strong><span>${escapeHtml(child.relation || "子女")} · ${child.age}岁</span>${escapeHtml(child.name || "无名")}</strong>
         <div class="meter"><i style="width:${affection}%"></i></div>
-        <small>${escapeHtml(child.trait || "聪慧")} · 体魄 ${physique} · 学业 ${Math.round(child.study || 0)} · 德行 ${Math.round(child.virtue || 0)}${childEducationLabel(child) ? ` · ${escapeHtml(childEducationLabel(child))}` : ""}${familyStoryStatus(child)}</small>
+        <small>${escapeHtml(child.trait || "聪慧")} · 体魄 ${physique} · 学业 ${Math.round(child.study || 0)} · 德行 ${Math.round(child.virtue || 0)}${child.otherParent ? ` · 生母/父 ${escapeHtml(child.otherParent)}` : ""}${childEducationLabel(child) ? ` · ${escapeHtml(childEducationLabel(child))}` : ""}${familyStoryStatus(child)}</small>
         <span class="mini-actions">
           ${child.age < 15 ? `<button class="text-btn inline-action" data-teach-child="${escapeHtml(child.id)}" ${state.stats.money < CHILD_EDU_COST ? "disabled" : ""}>延师教养</button>` : `<small>已成丁，可承继家业。</small>`}
           ${relationActionButtons(child.id)}
@@ -8803,7 +9078,7 @@ function personCard(person, targetId = "") {
   const ageText = Number.isFinite(Number(person.age)) ? ` · ${Math.round(Number(person.age))}岁` : "";
   const physiqueText = Number.isFinite(Number(person.physique)) ? ` · 体魄 ${Math.round(Number(person.physique))}` : "";
   const debtText = person.debt ? ` · 欠情 ${moneyText(person.debt)}` : "";
-  const statusText = person.alive === false ? `已故${ageText}` : `${relationLabel(affection)}${ageText}${physiqueText}${debtText}${familyStoryStatus(person)}`;
+  const statusText = person.alive === false ? `已故${ageText}` : `${relationLabel(affection)}${ageText}${physiqueText}${debtText}${partnerStatusText(person)}${familyStoryStatus(person)}`;
   return `
     <article class="person-card">
       <div class="person-avatar ${person.gender === "female" ? "female" : ""}">${icon(relativeAvatarIcon(person), person.relation)}</div>
@@ -8825,15 +9100,33 @@ function relativeAvatarIcon(person = {}) {
   if (relation === "儿子") return "FamilySonAvatar";
   if (relation === "女儿") return "FamilyDaughterAvatar";
   if (relation === "友人") return "FamilyFriendAvatar";
+  if (["妻子", "妾室", "待纳侧室"].includes(relation)) return "FamilyMotherAvatar";
+  if (relation === "夫君") return "FamilyFatherAvatar";
   if (person.gender === "female") return "FamilySisterAvatar";
   if (person.gender === "male") return "FamilyBrotherAvatar";
   return "FamilyFriendAvatar";
 }
 
 function relationActionButtons(targetId) {
+  const partner = targetId === "spouse" || (state.family.concubines || []).some((item) => item.id === targetId);
+  const lover = targetId === "lover";
+  const allowed = partner ? ["talk", "outing", "gift", "care", "intimate"] : lover ? ["visit", "gift"] : ["visit", "gift", "borrow", "care"];
+  const target = partner ? findRelationTarget(targetId) : null;
   return Object.entries(RELATION_ACTIONS)
-    .map(([id, item]) => `<button class="text-btn inline-action" data-relation-action="${id}" data-relation-target="${escapeHtml(targetId)}" ${item.cost && state.stats.money < item.cost ? "disabled" : ""}>${escapeHtml(item.label)}</button>`)
+    .filter(([id]) => allowed.includes(id))
+    .map(([id, item]) => {
+      const intimateLocked = id === "intimate" && (state.age < 18 || Number(target?.person?.affection || 0) < 25);
+      return `<button class="text-btn inline-action" data-relation-action="${id}" data-relation-target="${escapeHtml(targetId)}" ${intimateLocked || (item.cost && state.stats.money < item.cost) ? "disabled" : ""}>${escapeHtml(item.label)}</button>`;
+    })
     .join("");
+}
+
+function partnerStatusText(person) {
+  if (!["妻子", "夫君", "妾室", "配偶"].includes(person.relation)) return "";
+  const intimacy = Math.round(Number(person.intimacy || 0));
+  const last = Number(person.lastIntimateYear) >= 0 ? ` · 上次同房 ${Math.round(person.lastIntimateYear)}岁` : "";
+  const jealousy = Number(person.jealousy || 0) >= 35 ? " · 心有妒意" : "";
+  return ` · 亲密 ${intimacy}${last}${jealousy}`;
 }
 
 function relationLabel(value) {
@@ -9040,7 +9333,7 @@ function codexView() {
         ${scoreTile("阶段", `${lifePhase().name} · ${lifePhase().focus}`)}
         ${scoreTile("成就", `${doneIds.size}/${LIFE_GOALS.length}`)}
         ${scoreTile("命册", `${state.log.length} 件事`)}
-        ${scoreTile("亲友", `${familyRows().length + state.friends.length + livingChildren().length} 人`)}
+        ${scoreTile("亲友", `${relationCount()} 人`)}
       </section>
       <section class="codex-section">
         <div class="section-title"><h2>成就总览</h2><strong>${doneIds.size}/${LIFE_GOALS.length}</strong></div>
@@ -9702,7 +9995,7 @@ function endingTagList(score = lifeScore()) {
     state.age >= 80 ? "高寿" : "",
     state.age <= 35 ? "英年" : "",
     state.career ? careerKindLabel(careerKind(state.career)) : "",
-    state.career?.name || "",
+    currentCareerName(),
     state.exam?.rank >= 0 ? EXAM_TITLES[state.exam.rank] : "",
     hasPalaceAppointment() ? "殿试及第" : "",
     officialRoute,
@@ -10246,11 +10539,11 @@ function overviewPanel() {
       ${infoLine("命格", state.coreTalent?.name || "无")}
       ${infoLine("天赋", state.talents.map((item) => item.name).join("、") || "无")}
       ${infoLine("功名", state.exam.rank >= 0 ? EXAM_TITLES[state.exam.rank] : "白身")}
-      ${infoLine("姻缘", state.family.spouse ? `已婚：${state.family.spouse}` : state.family.lover ? `相看：${state.family.lover}` : "未定")}
+      ${infoLine("姻缘", state.family.spouse ? `已婚：${state.family.spouse}${state.family.concubines?.length ? ` · 侧室 ${state.family.concubines.length} 人` : ""}` : state.family.lover ? `相看：${state.family.lover}` : "未定")}
       ${infoLine("子女", `${livingChildren().length} 人${eligibleHeirs().length ? ` · 可承继 ${eligibleHeirs().length}` : ""}`)}
       ${infoLine("促织", `${state.crickets.length} 只 · 胜 ${state.cricketRecord.wins || 0}`)}
       ${state.career && careerKind(state.career) === "official" ? infoLine("官评", `${officialTitle()} · 政绩 ${state.official.merit || 0}`) : ""}
-      ${infoLine("亲友", `${familyRows().length + state.friends.length} 人`)}
+      ${infoLine("亲友", `${relationCount()} 人`)}
       ${infoLine("经历", `${state.log.length} 件事`)}
       <div class="goal-mini">
         <strong>已成成就 ${done.length}/${LIFE_GOALS.length}</strong>
@@ -10291,7 +10584,7 @@ function careerPanel() {
   return `
     <section class="panel-content">
       <h2>营生</h2>
-      ${state.career ? infoLine("当前", state.career.name) : `<p class="empty-note">尚无固定营生</p>`}
+      ${state.career ? infoLine("当前", currentCareerName()) : `<p class="empty-note">尚无固定营生</p>`}
       ${state.career ? infoLine("本业", `${careerKindLabel(kind)} · ${Math.max(1, Number(progress.level) || 1)}级 · ${Math.round(Number(progress.exp) || 0)}经验`) : ""}
       ${officialCareer ? officialCareerSummary() : ""}
       ${kind === "caravan" ? caravanRouteSummary() : ""}
@@ -10320,7 +10613,8 @@ function careerPanel() {
 function relationsPanel() {
   const rows = [
     ...familyRows().map((person) => [person.name, relationSummary(person)]),
-    ...(state.family.spouse ? [[state.family.spouse, relationSummary({ relation: "配偶", affection: state.family.spouseAffection || 78, ...state.family.spouseMeta, name: state.family.spouse })]] : []),
+    ...(state.family.spouse ? [[state.family.spouse, relationSummary({ ...state.family.spouseMeta, relation: state.gender === "male" ? "妻子" : "夫君", name: state.family.spouse, affection: state.family.spouseAffection || 78 })]] : []),
+    ...(state.family.concubines || []).filter((item) => item.alive !== false).map((item) => [item.name, relationSummary(item)]),
     ...(state.family.lover ? [[state.family.lover, relationSummary({ relation: "相看之人", affection: 64, ...state.family.loverMeta, name: state.family.lover })]] : []),
     ...livingChildren().map((child) => [child.name, `${child.relation} · ${child.age}岁 · 体魄 ${Math.round(child.physique || 0)} · 学业 ${Math.round(child.study || 0)}`]),
     ...state.friends.filter((friend) => friend.alive !== false).map((friend) => [friend.name, relationSummary(friend)]),
@@ -10705,6 +10999,7 @@ app.addEventListener("click", (event) => {
   if (button.dataset.relationAction) return interactRelation(button.dataset.relationTarget, button.dataset.relationAction);
   if (button.dataset.action === "send-letter") return sendLetter();
   if (button.dataset.action === "marry-lover") return marryLover();
+  if (button.dataset.action === "take-concubine") return takeConcubine();
   if (button.dataset.action === "official-work") return handleOfficialWork();
   if (button.dataset.assetAction) return manageAsset(button.dataset.assetIndex, button.dataset.assetAction);
   if (button.dataset.buyAsset !== undefined) return buyAsset(button.dataset.buyAsset);
