@@ -37,6 +37,7 @@ try {
   });
 
   await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
+  console.log("quality gate: loading create screen");
   await page.goto(origin, { waitUntil: "domcontentloaded", timeout: 30000 });
   await page.waitForSelector('[data-action="start-life"]', { timeout: 10000 });
 
@@ -51,6 +52,7 @@ try {
   await page.click('[data-action="start-life"]');
   await page.waitForSelector('[data-action="onboarding-next-year"]', { timeout: 10000 });
   await page.click('[data-action="onboarding-next-year"]');
+  console.log("quality gate: life started");
 
   async function savedAge() {
     return page.evaluate(() => {
@@ -89,6 +91,7 @@ try {
   await clearBlockingUi();
   while ((await savedAge()) < 12) {
     const before = await savedAge();
+    console.log(`quality gate: advancing age ${before}`);
     const next = await page.$('[data-action="next-year"]:not([disabled])');
     assert.ok(next, `${before} 岁时找不到可用的“下一年”按钮`);
     await next.click();
@@ -99,9 +102,154 @@ try {
   }
 
   const ageBeforeReload = await savedAge();
+  console.log("quality gate: verifying save reload");
   await page.reload({ waitUntil: "domcontentloaded", timeout: 30000 });
   await page.waitForSelector(".game-shell", { timeout: 10000 });
   assert.equal(await savedAge(), ageBeforeReload, "刷新页面后存档年龄发生变化");
+
+  console.log("quality gate: verifying family story compatibility");
+  const normalizedStories = await page.evaluate(() => {
+    const meta = JSON.parse(localStorage.getItem("dynasty-life-save-meta") || "[]");
+    const slot = meta.findIndex(Boolean);
+    const key = `dynasty-life-slot-${slot}`;
+    const saved = JSON.parse(localStorage.getItem(key) || "{}");
+    delete saved.familyStories;
+    saved.age = 16;
+    saved.year = 16;
+    saved.stats.money = 1000;
+    saved.currentEvent = null;
+    saved.eventResult = null;
+    saved.pendingSurprise = null;
+    saved.pendingAchievement = null;
+    saved.family.father = { ...saved.family.father, alive: true, age: 60, physique: 45 };
+    state = normalizeState(saved);
+    save();
+    render();
+    return {
+      active: state.familyStories.active,
+      completed: state.familyStories.completed,
+      lastTriggerYear: state.familyStories.lastTriggerYear,
+    };
+  });
+  assert.deepEqual(normalizedStories, { active: null, completed: [], lastTriggerYear: -1 }, "旧存档未正确补全家事状态");
+
+  await page.evaluate(() => {
+    state.familyStories = {
+      active: {
+        type: "parentIllness",
+        targetId: "father",
+        stage: "intro",
+        choice: "",
+        score: 0,
+        dueYear: 17,
+        key: "parent-illness-father",
+      },
+      completed: [],
+      lastTriggerYear: 16,
+    };
+    save();
+    render();
+  });
+  const storyNext = await page.$('[data-action="next-year"]:not([disabled])');
+  assert.ok(storyNext, "家事测试无法推进到触发年份");
+  await storyNext.click();
+  await page.waitForSelector('.choice-btn:not([disabled])', { timeout: 10000 });
+  const introKind = await page.evaluate(() => {
+    const meta = JSON.parse(localStorage.getItem("dynasty-life-save-meta") || "[]");
+    const slot = meta.findIndex(Boolean);
+    return JSON.parse(localStorage.getItem(`dynasty-life-slot-${slot}`) || "{}").currentEvent?.kind;
+  });
+  assert.equal(introKind, "familyStory", "未触发父母疾病家事");
+  await clearBlockingUi();
+
+  let storyState = await page.evaluate(() => {
+    const meta = JSON.parse(localStorage.getItem("dynasty-life-save-meta") || "[]");
+    const slot = meta.findIndex(Boolean);
+    return JSON.parse(localStorage.getItem(`dynasty-life-slot-${slot}`) || "{}").familyStories;
+  });
+  assert.equal(storyState.active?.stage, "followup", "家事选择后未进入跨年阶段");
+  assert.equal(storyState.active?.choice, "doctor", "家事选择没有写入存档");
+
+  const followupNext = await page.$('[data-action="next-year"]:not([disabled])');
+  assert.ok(followupNext, "家事测试无法推进到结果年份");
+  await followupNext.click();
+  await page.waitForSelector('.choice-btn:not([disabled])', { timeout: 10000 });
+  await clearBlockingUi();
+  storyState = await page.evaluate(() => {
+    const meta = JSON.parse(localStorage.getItem("dynasty-life-save-meta") || "[]");
+    const slot = meta.findIndex(Boolean);
+    return JSON.parse(localStorage.getItem(`dynasty-life-slot-${slot}`) || "{}").familyStories;
+  });
+  assert.equal(storyState.active, null, "跨年家事完成后仍处于进行中");
+  assert.ok(storyState.completed.includes("parent-illness-father"), "跨年家事未写入完成记录");
+
+  console.log("quality gate: verifying sibling and child story paths");
+  await page.evaluate(() => {
+    const sibling = normalizeRelative({ name: `${state.name.slice(0, 1)}承平`, gender: "male", relation: "哥哥", age: 25, physique: 75, alive: true, affection: 65 }, state.name.slice(0, 1), "sibling");
+    state.family.siblings = [sibling];
+    state.familyStories.active = {
+      type: "siblingDivision",
+      targetId: sibling.id,
+      stage: "intro",
+      choice: "",
+      score: 0,
+      dueYear: state.year + 1,
+      key: `sibling-division-${sibling.id}`,
+    };
+    save();
+    render();
+  });
+  let nextStoryYear = await page.$('[data-action="next-year"]:not([disabled])');
+  assert.ok(nextStoryYear, "兄弟分家测试无法推进");
+  await nextStoryYear.click();
+  await page.waitForSelector('.choice-btn:not([disabled])', { timeout: 10000 });
+  await clearBlockingUi();
+  storyState = await page.evaluate(() => state.familyStories);
+  assert.equal(storyState.active?.choice, "mediate", "兄弟分家选择未写入存档");
+  nextStoryYear = await page.$('[data-action="next-year"]:not([disabled])');
+  await nextStoryYear.click();
+  await page.waitForSelector('.choice-btn:not([disabled])', { timeout: 10000 });
+  await clearBlockingUi();
+  const siblingResult = await page.evaluate(() => ({ stories: state.familyStories, separated: state.family.siblings[0]?.householdSeparated }));
+  assert.equal(siblingResult.stories.active, null, "兄弟分家事件未完成");
+  assert.equal(siblingResult.separated, true, "兄弟分家结果未写入亲友状态");
+
+  await page.evaluate(() => {
+    const child = makeChild(state.name.slice(0, 1), 6);
+    state.family.children = [child];
+    state.familyStories.active = {
+      type: "childEducation",
+      targetId: child.id,
+      stage: "intro",
+      choice: "",
+      score: 0,
+      dueYear: state.year + 1,
+      key: `child-education-${child.id}`,
+    };
+    save();
+    render();
+  });
+  nextStoryYear = await page.$('[data-action="next-year"]:not([disabled])');
+  assert.ok(nextStoryYear, "子女教养测试无法推进");
+  await nextStoryYear.click();
+  await page.waitForSelector('.choice-btn:not([disabled])', { timeout: 10000 });
+  await clearBlockingUi();
+  storyState = await page.evaluate(() => state.familyStories);
+  assert.equal(storyState.active?.choice, "academy", "子女教养道路未写入存档");
+
+  nextStoryYear = await page.$('[data-action="next-year"]:not([disabled])');
+  await nextStoryYear.click();
+  await new Promise((resolve) => setTimeout(resolve, 80));
+  await clearBlockingUi();
+  nextStoryYear = await page.$('[data-action="next-year"]:not([disabled])');
+  assert.ok(nextStoryYear, "子女教养测试无法推进到结果年份");
+  await nextStoryYear.click();
+  await page.waitForSelector('.choice-btn:not([disabled])', { timeout: 10000 });
+  await clearBlockingUi();
+  const childResult = await page.evaluate(() => ({ stories: state.familyStories, child: state.family.children[0] }));
+  assert.equal(childResult.stories.active, null, "子女教养事件未完成");
+  assert.equal(childResult.child.educationPath, "academy", "子女教养道路未保留");
+  assert.ok(childResult.child.educationOutcome, "子女教养结果未写入亲友状态");
 
   await page.setViewport({ width: 1440, height: 900, isMobile: false, hasTouch: false, deviceScaleFactor: 1 });
   const shell = await page.$(".game-shell");

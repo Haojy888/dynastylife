@@ -1755,6 +1755,7 @@ function startLife() {
     caravanMemory: {},
     pendingCaravan: null,
     family: createFamily(draft.family),
+    familyStories: { active: null, completed: [], lastTriggerYear: -1 },
     exam: { rank: -1, attempts: 0, history: [], current: null, lastYear: -1 },
     pendingActivity: null,
     eventResult: null,
@@ -1839,6 +1840,7 @@ function normalizeState(raw) {
   next.caravanMemory = normalizeCaravanMemory(next.caravanMemory);
   next.pendingCaravan = normalizeCaravanRun(next.pendingCaravan, next.age);
   next.family = normalizeFamily(next.family, next.name.slice(0, 1));
+  next.familyStories = normalizeFamilyStories(next.familyStories);
   next.exam = normalizeExam(next.exam);
   next.pendingActivity = next.pendingActivity || null;
   next.eventResult = next.eventResult || null;
@@ -1863,6 +1865,26 @@ function normalizeOnboarding(onboarding) {
   return {
     version,
     seen: !!source.seen && version >= ONBOARDING_VERSION,
+  };
+}
+
+function normalizeFamilyStories(stories) {
+  const source = stories && typeof stories === "object" ? stories : {};
+  const active = source.active && typeof source.active === "object" ? source.active : null;
+  return {
+    active: active
+      ? {
+          type: ["parentIllness", "siblingDivision", "childEducation"].includes(active.type) ? active.type : "",
+          targetId: String(active.targetId || ""),
+          stage: active.stage === "followup" ? "followup" : "intro",
+          choice: String(active.choice || ""),
+          score: Number.isFinite(Number(active.score)) ? Number(active.score) : 0,
+          dueYear: Math.max(0, Math.round(Number(active.dueYear) || 0)),
+          key: String(active.key || ""),
+        }
+      : null,
+    completed: Array.isArray(source.completed) ? [...new Set(source.completed.map(String).filter(Boolean))].slice(-30) : [],
+    lastTriggerYear: Number.isFinite(Number(source.lastTriggerYear)) ? Number(source.lastTriggerYear) : -1,
   };
 }
 
@@ -1974,6 +1996,8 @@ function normalizeChild(child, familyName) {
     study: clamp(Number(base.study ?? 0)),
     virtue: clamp(Number(base.virtue ?? 50)),
     trait: base.trait || sample(CHILD_TRAITS) || "聪慧",
+    educationPath: ["academy", "craft", "home"].includes(base.educationPath) ? base.educationPath : "",
+    educationOutcome: String(base.educationOutcome || ""),
   };
 }
 
@@ -2487,7 +2511,7 @@ function nextYear() {
     return;
   }
 
-  state.currentEvent = annualOfficialCaseEvent() || chooseEvent();
+  state.currentEvent = annualFamilyStoryEvent() || annualOfficialCaseEvent() || chooseEvent();
   if (!state.currentEvent) addLog("平年", "这一年无甚大事，日子仍照常向前。", state.lastDeltas);
   finishYear(false);
 }
@@ -2654,6 +2678,294 @@ function lifeInsight() {
   if (!(state.assets || []).length && state.stats.money >= 300) return "手头已有余钱，可以考虑置办家产。";
   const goal = nextGoals(1)[0];
   return goal ? goal.advice : "这一世成就大多已成，继续补命册、攒声名即可。";
+}
+
+function annualFamilyStoryEvent() {
+  state.familyStories = normalizeFamilyStories(state.familyStories);
+  const stories = state.familyStories;
+  if (state.dead || state.prisonYears > 0) return null;
+
+  if (stories.active) {
+    const target = familyStoryTarget(stories.active);
+    if (!target || target.alive === false) {
+      completeFamilyStory(stories.active);
+      return null;
+    }
+    if (stories.active.dueYear > state.year) return null;
+    return buildFamilyStoryEvent(stories.active, target);
+  }
+
+  if (state.year - stories.lastTriggerYear < 2 || Math.random() > 0.32) return null;
+  const candidates = familyStoryCandidates();
+  const candidate = sample(candidates);
+  if (!candidate) return null;
+  stories.active = {
+    type: candidate.type,
+    targetId: candidate.targetId,
+    stage: "intro",
+    choice: "",
+    score: 0,
+    dueYear: state.year,
+    key: candidate.key,
+  };
+  stories.lastTriggerYear = state.year;
+  return buildFamilyStoryEvent(stories.active, candidate.target);
+}
+
+function familyStoryCandidates() {
+  const completed = new Set(state.familyStories?.completed || []);
+  const candidates = [];
+  for (const [targetId, parent] of [["father", state.family.father], ["mother", state.family.mother]]) {
+    const key = `parent-illness-${targetId}`;
+    if (state.age >= 10 && parent?.alive !== false && !completed.has(key) && (parent.age >= 48 || parent.physique <= 58)) {
+      candidates.push({ type: "parentIllness", targetId, key, target: parent });
+    }
+  }
+  for (const sibling of state.family.siblings || []) {
+    const key = `sibling-division-${sibling.id || sibling.name}`;
+    if (state.age >= 16 && sibling.alive !== false && sibling.age >= 18 && !sibling.householdSeparated && !completed.has(key)) {
+      candidates.push({ type: "siblingDivision", targetId: sibling.id || sibling.name, key, target: sibling });
+    }
+  }
+  for (const child of livingChildren()) {
+    const key = `child-education-${child.id}`;
+    if (child.age >= 6 && child.age <= 13 && !child.educationPath && !completed.has(key)) {
+      candidates.push({ type: "childEducation", targetId: child.id, key, target: child });
+    }
+  }
+  return candidates;
+}
+
+function familyStoryTarget(story) {
+  if (!story) return null;
+  if (story.type === "parentIllness") return story.targetId === "mother" ? state.family.mother : state.family.father;
+  if (story.type === "siblingDivision") return (state.family.siblings || []).find((person) => person.id === story.targetId || person.name === story.targetId) || null;
+  if (story.type === "childEducation") return (state.family.children || []).find((person) => person.id === story.targetId) || null;
+  return null;
+}
+
+function buildFamilyStoryEvent(story, target) {
+  if (story.type === "parentIllness") {
+    if (story.stage === "followup") {
+      return {
+        kind: "familyStory",
+        title: `${target.name}病后一年`,
+        content: `${target.name}调养已有一年。医药、照料与自身底子，如今都到了见分晓的时候。`,
+        children: [{ title: "问候病况", note: "查看这一年的调养结果", familyEffect: "complete" }],
+      };
+    }
+    return {
+      kind: "familyStory",
+      title: `${target.name}卧病`,
+      content: `${target.name}近来咳喘乏力，体魄只余 ${Math.round(target.physique || 0)}。家中人心惶惶，都等你拿个主意。`,
+      children: [
+        { title: "请医延药", note: "花费 120 铜钱，治疗最稳妥", familyEffect: "doctor", disabled: state.stats.money < 120 },
+        { title: "亲自侍奉", note: "耗费自身精力，尽一份孝心", familyEffect: "care" },
+        { title: "暂且静养", note: "不花钱，但病情可能反复", familyEffect: "rest" },
+      ],
+    };
+  }
+  if (story.type === "siblingDivision") {
+    if (story.stage === "followup") {
+      return {
+        kind: "familyStory",
+        title: `${target.name}分家之后`,
+        content: "一年过去，新灶新门都已安顿。旧日的一场商量，也终于显出它留在手足情分里的分量。",
+        children: [{ title: "登门看看", note: "查看分家后的手足关系", familyEffect: "complete" }],
+      };
+    }
+    return {
+      kind: "familyStory",
+      title: `${target.name}提出分家`,
+      content: `${target.name}已经成人，想另立门户。父母舍不得，妯娌亲族也各有说法，这件家事落到了你面前。`,
+      children: [
+        { title: "按家产公断", note: "花费 60 铜钱置办文契，尽量两全", familyEffect: "mediate", disabled: state.stats.money < 60 },
+        { title: "赠资成全", note: "拿出 120 铜钱扶持手足自立", familyEffect: "support", disabled: state.stats.money < 120 },
+        { title: "挽留同住", note: "保住眼前团聚，也可能积下怨气", familyEffect: "hold" },
+      ],
+    };
+  }
+  if (story.stage === "followup") {
+    return {
+      kind: "familyStory",
+      title: `${target.name}学业初成`,
+      content: `${target.name}沿着你安排的道路走了两年，如今性情、本事与志向都有了新的模样。`,
+      children: [{ title: "听孩子说志向", note: "查看教养道路的阶段结果", familyEffect: "complete" }],
+    };
+  }
+  return {
+    kind: "familyStory",
+    title: `为${target.name}择一条路`,
+    content: `${target.name}已到开蒙立志的年纪。是走书卷功名、拜师学艺，还是留在家中慢慢教养，需要你来决定。`,
+    children: [
+      { title: "送入书院", note: "花费 160 铜钱，重学识与科举", familyEffect: "academy", disabled: state.stats.money < 160 },
+      { title: "拜师学艺", note: "花费 80 铜钱，重手艺与历练", familyEffect: "craft", disabled: state.stats.money < 80 },
+      { title: "留家教养", note: "亲自教导，重德行与亲情", familyEffect: "home" },
+    ],
+  };
+}
+
+function resolveFamilyStory(event, choice) {
+  const story = state.familyStories?.active;
+  const target = familyStoryTarget(story);
+  if (!story || !target || choice.disabled) return;
+  const deltas = [];
+  let title = choice.title || event.title || "家事";
+  let text = "这件家事有了新的进展。";
+
+  if (story.stage === "followup" || choice.familyEffect === "complete") {
+    ({ title, text } = finishFamilyStoryOutcome(story, target, deltas));
+    completeFamilyStory(story);
+  } else {
+    const effect = choice.familyEffect || "";
+    story.choice = effect;
+    if (story.type === "parentIllness") {
+      if (effect === "doctor") {
+        changeStat("money", -120, deltas);
+        addLedger("父母医药", -120, `为${target.name}延医用药。`);
+        target.physique = clamp(Number(target.physique || 0) + 18);
+        target.affection = clamp(Number(target.affection || 0) + 8);
+        story.score = 3;
+        text = `你请来医者细细诊治，又照方抓药。${target.name}的气色渐渐稳住。`;
+      } else if (effect === "care") {
+        changeStat("physique", -4, deltas);
+        changeStat("mood", -2, deltas);
+        changeStat("virtue", 3, deltas);
+        target.physique = clamp(Number(target.physique || 0) + 10);
+        target.affection = clamp(Number(target.affection || 0) + 14);
+        story.score = 2;
+        text = `你守在榻前煎药喂饭，虽然自己熬得疲惫，${target.name}却把这份孝心记在心里。`;
+      } else {
+        target.physique = clamp(Number(target.physique || 0) - 8);
+        target.affection = clamp(Number(target.affection || 0) - 5);
+        story.score = 0;
+        text = `你让${target.name}先在家静养，省下了医药钱，心里却始终悬着。`;
+      }
+      story.stage = "followup";
+      story.dueYear = state.year + 1;
+    } else if (story.type === "siblingDivision") {
+      if (effect === "mediate") {
+        changeStat("money", -60, deltas);
+        changeStat("eq", 2, deltas);
+        target.affection = clamp(Number(target.affection || 0) + 6);
+        story.score = 2;
+        text = `你请族老作证，把田契、器物与奉养父母的责任逐项写清。`;
+      } else if (effect === "support") {
+        changeStat("money", -120, deltas);
+        changeStat("relationship", 3, deltas);
+        target.affection = clamp(Number(target.affection || 0) + 14);
+        story.score = 3;
+        text = `你拿出一笔钱帮${target.name}置办新家，手足间虽分门户，情分反而更厚。`;
+      } else {
+        target.affection = clamp(Number(target.affection || 0) - 10);
+        changeStat("relationship", -2, deltas);
+        story.score = 0;
+        text = `你劝${target.name}暂缓分家。人是留下了，饭桌上的话却少了。`;
+      }
+      story.stage = "followup";
+      story.dueYear = state.year + 1;
+    } else {
+      target.educationPath = effect;
+      if (effect === "academy") {
+        changeStat("money", -160, deltas);
+        target.study = clamp(Number(target.study || 0) + 18);
+        target.aptitude = clamp(Number(target.aptitude || 0) + 3);
+        story.score = 3;
+        text = `你将${target.name}送进书院，从描红、背书到习文，一样样扎下根基。`;
+      } else if (effect === "craft") {
+        changeStat("money", -80, deltas);
+        target.study = clamp(Number(target.study || 0) + 8);
+        target.virtue = clamp(Number(target.virtue || 0) + 4);
+        story.score = 2;
+        text = `你替${target.name}寻了一位性情端正的师傅，先学规矩，再学吃饭的本事。`;
+      } else {
+        target.study = clamp(Number(target.study || 0) + Math.max(4, Math.floor(state.stats.knowledge / 12)));
+        target.virtue = clamp(Number(target.virtue || 0) + 8);
+        target.affection = clamp(Number(target.affection || 0) + 8);
+        story.score = state.stats.knowledge >= 65 ? 2 : 1;
+        text = `你把${target.name}留在身边，日日教字、讲理，也让孩子多看家中人情冷暖。`;
+      }
+      story.stage = "followup";
+      story.dueYear = state.year + 2;
+    }
+  }
+
+  state.lastDeltas = deltas;
+  addLog(title, text, deltas);
+  state.currentEvent = null;
+  state.eventResult = { title, text, deltas, icon: resultIcon(choice, event) };
+  unlockLifeGoals();
+  save();
+  render();
+}
+
+function finishFamilyStoryOutcome(story, target, deltas) {
+  if (story.type === "parentIllness") {
+    const recovered = story.score >= 2 || Number(target.physique || 0) >= 58;
+    if (recovered) {
+      target.physique = clamp(Number(target.physique || 0) + 10);
+      target.chronicIllness = false;
+      changeStat("mood", 5, deltas);
+      changeStat("relationship", 3, deltas);
+      return { title: "病体渐安", text: `${target.name}终于能下床走动。经这一场病，家人更知道彼此可贵。` };
+    }
+    target.physique = clamp(Number(target.physique || 0) - 10);
+    target.chronicIllness = true;
+    changeStat("mood", -5, deltas);
+    return { title: "旧疾缠身", text: `${target.name}的病没有痊愈，从此遇到寒暑都要格外调养。` };
+  }
+  if (story.type === "siblingDivision") {
+    if (story.score >= 2) {
+      target.householdSeparated = true;
+      changeStat("relationship", 3, deltas);
+      return { title: "分门不分心", text: `${target.name}的新家已经安稳，逢年过节仍常回来走动，手足之间并未因分家疏远。` };
+    }
+    target.householdSeparated = false;
+    target.affection = clamp(Number(target.affection || 0) - 8);
+    changeStat("mood", -3, deltas);
+    return { title: "同檐生隙", text: `${target.name}仍住在家中，却开始另起炉灶、少问家事，亲近里多了一层隔阂。` };
+  }
+  const path = story.choice || target.educationPath || "home";
+  if (path === "academy") {
+    const gain = 10 + Math.round(Number(target.aptitude || 0) / 12);
+    target.study = clamp(Number(target.study || 0) + gain);
+    target.educationOutcome = target.study >= 65 ? "书院出众" : "书院稳进";
+    return { title: "书声渐成", text: `${target.name}已经能独立读文作答，先生说只要不懈怠，日后可望应试。` };
+  }
+  if (path === "craft") {
+    target.study = clamp(Number(target.study || 0) + 6);
+    target.virtue = clamp(Number(target.virtue || 0) + 8);
+    target.educationOutcome = "手艺入门";
+    return { title: "手艺入门", text: `${target.name}跟着师傅跑前跑后，已经能独自做些小活，也更懂得持家辛苦。` };
+  }
+  target.study = clamp(Number(target.study || 0) + 8);
+  target.virtue = clamp(Number(target.virtue || 0) + 10);
+  target.affection = clamp(Number(target.affection || 0) + 6);
+  target.educationOutcome = "家学有成";
+  return { title: "家学有成", text: `${target.name}未入远门，却从你的言传身教里学会读书、做人和照看家人。` };
+}
+
+function completeFamilyStory(story) {
+  state.familyStories = normalizeFamilyStories(state.familyStories);
+  if (story?.key && !state.familyStories.completed.includes(story.key)) state.familyStories.completed.push(story.key);
+  state.familyStories.completed = state.familyStories.completed.slice(-30);
+  state.familyStories.active = null;
+}
+
+function familyStoryStatus(person) {
+  const active = state.familyStories?.active;
+  const target = familyStoryTarget(active);
+  if (target === person && active?.type === "parentIllness") return " · 调养中";
+  if (target === person && active?.type === "siblingDivision") return " · 商议分家中";
+  if (target === person && active?.type === "childEducation") return " · 教养规划中";
+  if (person.chronicIllness) return " · 久病需调养";
+  if (person.householdSeparated) return " · 已分家另居";
+  return "";
+}
+
+function childEducationLabel(child) {
+  const labels = { academy: "书院求学", craft: "拜师学艺", home: "家中教养" };
+  return child.educationOutcome || labels[child.educationPath] || "";
 }
 
 function advanceFamilyYear(deltas) {
@@ -2863,6 +3175,7 @@ function chooseOption(index) {
   if (!choice || !conditionsPass(choice.conditions || [])) return;
 
   if (event.kind === "officialCase") return resolveOfficialCase(event, choice);
+  if (event.kind === "familyStory") return resolveFamilyStory(event, choice);
 
   const deltas = applyResults(choice.results || []);
   state.lastDeltas = mergeDeltas(state.pendingActivity?.deltas, deltas);
@@ -8476,7 +8789,7 @@ function childCard(child) {
       <div>
         <strong><span>${escapeHtml(child.relation || "子女")} · ${child.age}岁</span>${escapeHtml(child.name || "无名")}</strong>
         <div class="meter"><i style="width:${affection}%"></i></div>
-        <small>${escapeHtml(child.trait || "聪慧")} · 体魄 ${physique} · 学业 ${Math.round(child.study || 0)} · 德行 ${Math.round(child.virtue || 0)}</small>
+        <small>${escapeHtml(child.trait || "聪慧")} · 体魄 ${physique} · 学业 ${Math.round(child.study || 0)} · 德行 ${Math.round(child.virtue || 0)}${childEducationLabel(child) ? ` · ${escapeHtml(childEducationLabel(child))}` : ""}${familyStoryStatus(child)}</small>
         <span class="mini-actions">
           ${child.age < 15 ? `<button class="text-btn inline-action" data-teach-child="${escapeHtml(child.id)}" ${state.stats.money < CHILD_EDU_COST ? "disabled" : ""}>延师教养</button>` : `<small>已成丁，可承继家业。</small>`}
           ${relationActionButtons(child.id)}
@@ -8490,7 +8803,7 @@ function personCard(person, targetId = "") {
   const ageText = Number.isFinite(Number(person.age)) ? ` · ${Math.round(Number(person.age))}岁` : "";
   const physiqueText = Number.isFinite(Number(person.physique)) ? ` · 体魄 ${Math.round(Number(person.physique))}` : "";
   const debtText = person.debt ? ` · 欠情 ${moneyText(person.debt)}` : "";
-  const statusText = person.alive === false ? `已故${ageText}` : `${relationLabel(affection)}${ageText}${physiqueText}${debtText}`;
+  const statusText = person.alive === false ? `已故${ageText}` : `${relationLabel(affection)}${ageText}${physiqueText}${debtText}${familyStoryStatus(person)}`;
   return `
     <article class="person-card">
       <div class="person-avatar ${person.gender === "female" ? "female" : ""}">${icon(relativeAvatarIcon(person), person.relation)}</div>
@@ -9817,17 +10130,18 @@ function examHistory() {
 function eventView(event) {
   const options = viableChildren(event);
   const official = event.kind === "officialCase";
+  const familyStory = event.kind === "familyStory";
   return `
     <article class="play-card event-card">
-      <p class="eyebrow">${official ? "官场考验" : "事件"}</p>
+      <p class="eyebrow">${official ? "官场考验" : familyStory ? "家事流年" : "事件"}</p>
       <h2>${escapeHtml(event.title || "事件")}</h2>
       <p>${formatText(fillPlaceholders(event.content || event.history || "", false))}</p>
       <div class="choice-list">
         ${
           options.length
-            ? options.map(({ child, index }) => `<button class="choice-btn ${official ? "official-choice" : ""}" data-choice="${index}">
+            ? options.map(({ child, index }) => `<button class="choice-btn ${official ? "official-choice" : ""}" data-choice="${index}" ${child.disabled ? "disabled" : ""}>
               <span>${escapeHtml(child.title || "继续")}</span>
-              ${official && child.note ? `<small>${escapeHtml(child.note)}</small>` : ""}
+              ${(official || familyStory) && child.note ? `<small>${escapeHtml(child.note)}</small>` : ""}
             </button>`).join("")
             : `<button class="primary-btn" data-action="finish-event">继续</button>`
         }
