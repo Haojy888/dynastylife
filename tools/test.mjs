@@ -407,6 +407,16 @@ try {
   assert.equal(careerCoverage.valid, true, "存在无法生成三选一事件的职业专案");
   assert.deepEqual(careerCoverage.smithSkills, ["physique", "knowledge"], "铁匠没有使用体魄与学识检定");
   assert.deepEqual(careerCoverage.cookSkills, ["knowledge", "eq"], "厨娘没有使用学识与处世检定");
+  const completeCareerCoverage = await page.evaluate(() => {
+    const careers = allCareers();
+    return {
+      count: careers.length,
+      covered: careers.filter((career) => careerAdvancedCase(career.name)?.choices?.length === 3).length,
+      generated: careers.filter((career) => !CAREER_ADVANCED_CASE_DEFS[career.name]).map((career) => careerAdvancedCase(career.name)?.title),
+    };
+  });
+  assert.equal(completeCareerCoverage.covered, completeCareerCoverage.count, "仍有职业缺少三选一专属剧情");
+  assert.equal(completeCareerCoverage.generated.every(Boolean), true, "通用职业专案生成失败");
 
   const carpenterSetup = await page.evaluate(() => {
     state.currentEvent = null;
@@ -477,6 +487,32 @@ try {
   assert.deepEqual(taoistEvent.skills, ["virtue", "knowledge"], "道士没有使用德行与学识检定");
   await page.$eval('.choice-btn[data-choice="1"]', (element) => element.click());
   assert.equal(await page.evaluate(() => state.careerProgress.道士.records.cases), 1, "道士专案没有完成结算");
+  await clearBlockingUi();
+
+  console.log("quality gate: verifying mandatory resignation and cinematic result");
+  const careerSwitching = await page.evaluate(() => {
+    state.currentEvent = null;
+    state.eventResult = null;
+    state.career = { name: "道士", customKind: "mystic", careerType: 3 };
+    const targetIndex = allCareers().findIndex((career) => career.name === "木匠");
+    takeCareer(targetIndex);
+    const blockedCareer = state.career?.name;
+    const blockedTitle = state.eventResult?.title;
+    state.eventResult = null;
+    resignCareer();
+    const resigned = state.career === null;
+    const history = state.careerHistory.at(-1);
+    const cinematic = eventResultView();
+    state.eventResult = null;
+    takeCareer(targetIndex);
+    return { blockedCareer, blockedTitle, resigned, history, cinematic, newCareer: state.career?.name };
+  });
+  assert.equal(careerSwitching.blockedCareer, "道士", "未辞职时仍能直接切换职业");
+  assert.equal(careerSwitching.blockedTitle, "须先辞职", "转职阻止提示不明确");
+  assert.equal(careerSwitching.resigned, true, "辞职操作没有清空当前职业");
+  assert.equal(careerSwitching.history.name, "道士", "辞职没有写入职业履历");
+  assert.match(careerSwitching.cinematic, /cinematic-stage/, "活动结果没有渲染过场动画舞台");
+  assert.equal(careerSwitching.newCareer, "木匠", "辞职后仍无法选择新职业");
   await clearBlockingUi();
 
   console.log("quality gate: verifying partner portraits and brothel companion flow");
@@ -564,6 +600,28 @@ try {
   await clearBlockingUi();
   await page.waitForNetworkIdle({ idleTime: 100, timeout: 5000 }).catch(() => {});
 
+  console.log("quality gate: verifying expanded daily stories");
+  const expandedDaily = await page.evaluate(() => {
+    state.age = 36;
+    state.year = 36;
+    state.currentEvent = null;
+    state.eventResult = null;
+    const pool = expandedDailyEvents().filter((event) => state.age >= event.minAge && state.age <= event.maxAge);
+    state.currentEvent = pool[0];
+    chooseOption(0);
+    return {
+      total: expandedDailyEvents().length,
+      valid: expandedDailyEvents().every((event) => event.children.length === 2 && event.children.every((choice) => choice.content && choice.effects)),
+      result: state.eventResult,
+      logged: state.log.some((item) => item.title?.startsWith("日常 ·")),
+    };
+  });
+  assert.ok(expandedDaily.total >= 18, "新增日常剧情数量不足");
+  assert.equal(expandedDaily.valid, true, "新增日常剧情存在缺失选项或结果");
+  assert.ok(expandedDaily.result?.scene, "日常剧情结果没有匹配过场动画");
+  assert.equal(expandedDaily.logged, true, "新增日常剧情没有写入命册");
+  await clearBlockingUi();
+
   console.log("quality gate: verifying descendant marriage, inheritance, remarriage, fortune and redemption");
   const familyExpansion = await page.evaluate(() => {
     state.gender = "male";
@@ -588,7 +646,8 @@ try {
   assert.ok(["女婿", "儿媳"].includes(familyExpansion.spouseRelation), "成年子女成婚后没有生成女婿或儿媳");
   assert.equal(familyExpansion.marriageYear, 58, "子女婚年没有写入存档");
   assert.ok(["孙子", "孙女"].includes(familyExpansion.grandchildRelation), "子女婚后没有生成正确孙辈关系");
-  assert.deepEqual(familyExpansion.heirs.map((item) => item.kind), ["child", "grandchild"], "孙辈没有进入遗产继承候选");
+  assert.equal(familyExpansion.heirs.some((item) => item.kind === "child"), true, "子女没有进入遗产继承候选");
+  assert.equal(familyExpansion.heirs.some((item) => item.kind === "grandchild"), true, "孙辈没有进入遗产继承候选");
   assert.match(familyExpansion.relationHtml, /女婿与儿媳/, "亲友页没有显示姻亲分区");
   assert.match(familyExpansion.relationHtml, /孙辈/, "亲友页没有显示孙辈分区");
 
@@ -608,6 +667,30 @@ try {
   assert.equal(grandInheritance.name, grandInheritance.expectedName, "选择孙辈后没有切换到孙辈存档");
   assert.equal(grandInheritance.generation, grandInheritance.expectedGeneration, "隔代继承没有正确推进两代");
   assert.ok(grandInheritance.father && grandInheritance.mother, "孙辈继承后父母关系缺失");
+
+  const spouseInheritance = await page.evaluate(() => {
+    const previous = JSON.parse(JSON.stringify(state));
+    state.gender = "male";
+    state.family.spouse = "沈清照";
+    state.family.spouseMeta = normalizePartner({ name: "沈清照", relation: "妻子", gender: "female", age: 48, physique: 72, affection: 88, study: 64, virtue: 70 }, state.name.slice(0, 1), "妻子", "spouse");
+    const wifeHeir = eligibleHeirs().find((item) => item.heirKind === "spouse");
+    const generation = state.lineage.generation;
+    const childNames = livingChildren().map((item) => item.name);
+    state.dead = true;
+    state.deathReason = "测试寿终";
+    inheritFromChild(wifeHeir.id);
+    const result = { name: state.name, gender: state.gender, generation: state.lineage.generation, expectedGeneration: generation, children: livingChildren().map((item) => item.name), tags: state.tags, former: state.family.spouseHistory.map((item) => item.name), expectedChildren: childNames };
+    state = normalizeState(previous);
+    save();
+    render();
+    return result;
+  });
+  assert.equal(spouseInheritance.name, "沈清照", "选择妻子后没有切换为妻子的新人生");
+  assert.equal(spouseInheritance.gender, "female", "妻子继承后的角色性别错误");
+  assert.equal(spouseInheritance.generation, spouseInheritance.expectedGeneration, "妻子继承不应推进家族世代");
+  assert.deepEqual(spouseInheritance.children, spouseInheritance.expectedChildren, "妻子继承后原有子女丢失");
+  assert.ok(spouseInheritance.tags.includes("未亡人承业"), "妻子继承没有写入专属身份");
+  assert.ok(spouseInheritance.former.length > 0, "妻子继承后亡夫没有进入故配记录");
 
   const remarriage = await page.evaluate(() => {
     state.eventResult = null;

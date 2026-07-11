@@ -1125,6 +1125,39 @@ const CAREER_ADVANCED_CASE_DEFS = {
   茶师: { title: "贡茶受潮", prompt: "茶会前贡茶受潮生杂味，主人仍要你按原名奉客，免得失了体面。", choices: [["焙火醒茶", "分次低火复焙，尽量救回香气。", "你以文火反复醒茶，慢慢逼出湿气。"], ["调水斗茶", "用水温与器具掩去杂味，临席见真章。", "你改用山泉与厚盏，将涩杂压进回甘。"], ["换茶明说", "据实换用本地新茶，以诚意保住茶会。", "你向主人说明缘由，改奉一款清鲜本地茶。"]] },
 };
 
+const EXPANDED_DAILY_EVENT_DEFS = [
+  [3, 8, "檐下燕巢", "春燕在檐下衔泥筑巢，一只雏燕却跌进院中。", [["搭梯送回", "你扶梯把雏燕送回巢里，袖口沾满泥点，心里却很安稳。", { virtue: 3, mood: 3 }], ["做个竹笼", "你把雏燕养在竹笼里日日照看，也因此懂得几分鸟兽习性。", { knowledge: 2, relationship: 1 }]]],
+  [5, 12, "河灯失约", "伙伴约你夜里去河边放灯，家中长辈却叮嘱不可晚归。", [["早去早回", "你与伙伴趁暮色放了河灯，月上柳梢前便赶回家中。", { mood: 5, relationship: 3 }], ["留在家中", "你留下替长辈收拾院子，窗外灯影虽美，家中也很温暖。", { virtue: 4, mood: 1 }]]],
+  [6, 14, "私塾罚站", "同窗把先生砚台碰落，却央你不要说出实情。", [["替他分担", "你与同窗一同认错罚站，从此他把你当作可信之人。", { relationship: 5, virtue: 1 }], ["据实说明", "你把经过说得清楚，先生未重罚任何人，只教你们各自担责。", { eq: 3, virtue: 3 }]]],
+  [8, 16, "旧书夹信", "你在旧书摊翻到一本残卷，书页间夹着一封多年未寄出的家书。", [["寻访收信人", "你循着落款走了半座城，终于把迟到多年的家书送到白发老人手中。", { virtue: 5, relationship: 4, money: -8 }], ["留下研读", "你把残卷买回，信中旧事与书中批注让你读了许多个夜晚。", { knowledge: 5, money: -12 }]]],
+  [12, 20, "雨夜借伞", "骤雨封街，屋檐下有一位陌生人冻得发抖，而你手中只有一把伞。", [["结伴同行", "你与对方共伞走过长街，一路谈起各自见闻。", { relationship: 4, eq: 3, mood: 2 }], ["将伞相赠", "你把伞留下，自己冒雨跑回家，次日却收到一包谢礼。", { virtue: 4, physique: -2, money: 25 }]]],
+  [15, 28, "城门榜文", "城门新贴了一张招募告示，围观者都说此事报酬丰厚却来路不明。", [["细问来历", "你向守门兵、脚夫和商贩分别打听，发现告示背后另有一层盘算。", { eq: 5, knowledge: 2 }], ["揭榜一试", "你凭胆气接下差事，奔波数日，总算带着报酬平安归来。", { money: 90, physique: -3, mood: 3 }]]],
+  [16, 35, "邻里夜争", "隔壁两家为一堵院墙争到深夜，族老也被吵得没了主意。", [["量地调解", "你找来旧契，又亲自量过墙基，替两家划出都能接受的界线。", { eq: 5, relationship: 5 }], ["闭门不理", "你不愿卷入邻里纷争，只把门窗关紧，任争吵持续到天亮。", { mood: -2, virtue: -1 }]]],
+  [18, 45, "故友来投", "多年不见的旧友忽然登门，说生意失手，想借一笔盘缠东山再起。", [["借钱相助", "你把钱交给旧友，也请他写下用途与归期，情分之外仍留分寸。", { money: -80, relationship: 6, eq: 2 }], ["安排差事", "你没有直接给钱，而是替他找到一份短工，让他靠自己重新站稳。", { relationship: 4, virtue: 4 }]]],
+  [18, 50, "市井冒名", "市集有人打着你的名号招摇买卖，已有商户登门追问。", [["当面对质", "你带着商户找到冒名之人，当街说清证据，也保住自己的名声。", { favorability: 4, eq: 4 }], ["暗中查访", "你不急着惊动对方，沿着货单查出背后一整条假货路子。", { knowledge: 3, money: 65 }]]],
+  [20, 55, "荒年米价", "连日阴雨后米价忽涨，家中存粮尚足，邻巷穷户却已揭不开锅。", [["平价分粮", "你按户分出余粮，只收平日价钱，邻里都记下这份情。", { money: -60, virtue: 7, relationship: 5 }], ["留粮自保", "你把粮仓看得更紧，家中无虞，却不敢再听门外求借之声。", { mood: -3, virtue: -2 }]]],
+  [22, 60, "酒楼错账", "酒楼结账时，伙计少算了你一大笔酒钱，同行朋友都没有察觉。", [["提醒伙计", "你叫住伙计补齐账目，掌柜后来特意送来一壶好酒致谢。", { virtue: 4, favorability: 2, money: -25 }], ["顺势离开", "你没有回头，省下一笔钱，夜里却总想起伙计焦急翻账的样子。", { money: 55, virtue: -4, mood: -2 }]]],
+  [25, 65, "祖宅旧匣", "修整祖宅时，墙缝里掉出一只上锁木匣，匣上刻着陌生姓名。", [["召集亲族开匣", "你请亲族共同见证，匣中旧契补全了一段几乎失传的家史。", { knowledge: 5, relationship: 4 }], ["独自收存", "你独自打开木匣，里面除几件旧物，还有一小包前朝钱币。", { money: 120, mood: 2 }]]],
+  [30, 70, "桥头义诊", "游方郎中在桥头义诊，却被药铺伙计指责坏了行规。", [["出钱买药", "你买下一批药材供郎中施用，也劝药铺把旧药平价出清。", { money: -90, virtue: 6, relationship: 3 }], ["居中定规", "你请双方约定每月义诊一日，其余时候照常经营，争执终于平息。", { eq: 6, favorability: 3 }]]],
+  [35, 75, "冬夜失火", "更深时远处忽起火光，风正把火星吹向密集民宅。", [["提水救火", "你带人拆开火巷、接力提水，直到天亮才压住火势。", { physique: -5, virtue: 7, favorability: 5 }], ["护送老幼", "你不冒险冲进火场，只守住巷口把老人孩子一一送走。", { virtue: 5, relationship: 5 }]]],
+  [40, 80, "旧怨登门", "一位多年未见的旧识带着当年的误会登门，言语仍不肯退让。", [["把话说开", "你取出旧信旧物逐件说明，两人沉默许久，终于肯各退一步。", { eq: 5, mood: 5, relationship: 3 }], ["以茶送客", "你没有再争旧事，只敬一盏茶送客，也算替往事画下句点。", { mood: 3, virtue: 2 }]]],
+  [45, 90, "族谱缺页", "修族谱时发现一支旁系被整页抹去，族中老人对此讳莫如深。", [["追查旧事", "你走访数名老人，终于知道那一页背后是一场被掩盖的冤屈。", { knowledge: 6, virtue: 3 }], ["补名入谱", "你不再追究谁是谁非，只把失落姓名重新写回族谱。", { relationship: 6, virtue: 5 }]]],
+  [55, 99, "少年问路", "一名迷惘少年登门请教，问你这一生究竟靠什么才走到今日。", [["讲成功之道", "你把几次得意与关键选择说给他听，也提醒运气从来不可复制。", { favorability: 4, knowledge: 2 }], ["讲失败之处", "你没有夸耀成就，只细说那些走错的路，少年听得格外认真。", { virtue: 5, mood: 3 }]]],
+  [60, 99, "庭前旧物", "整理旧箱时，你翻出年轻时常带在身边的一件小物，许多往事忽然清晰。", [["留给晚辈", "你把旧物与它的故事交给晚辈，叮嘱他不必走与你完全相同的路。", { relationship: 6, mood: 4 }], ["独自珍藏", "你将旧物擦拭干净收回箱底，静坐半日，心中悲喜终于归于平静。", { mood: 7, virtue: 2 }]]],
+];
+
+const CAREER_KIND_ADVANCED_CASES = {
+  official: ["民情与成例", "一桩牵动百姓生计的旧案压到案头，成例、人情和上命彼此冲突。", [["循例细查", "先把案卷证据逐项核实。", "你没有急着定论，而是逐页复核旧案与地方成例。"], ["担责变通", "以官声和前程押一次大胆处置。", "你主动担责，绕开积弊替百姓争出一条活路。"], ["召集公议", "请乡老与同僚共同商议。", "你召集各方当堂陈情，让决定经得起众人追问。"]]],
+  craft: ["名器与期限", "一位大主顾送来难得材料，却要求在极短期限内做成，同行都等着看成败。", [["拆解工序", "以经验稳稳推进每一步。", "你重新排定工序，宁可少睡也不省一道手艺。"], ["大胆试技", "用新法挑战材料极限。", "你把多年揣摩的新法用在这一件作品上。"], ["坦言协作", "联合同行共同完成。", "你请来最合适的同行分工，约定名利也按贡献分配。"]]],
+  art: ["雅集争名", "城中雅集只留一个压轴席位，两位名家各有所长，主人要你当场拿出新作。", [["守住本色", "以最熟的技法稳住场面。", "你不逐浮名，只把最见功底的一段呈给众人。"], ["临席创新", "以新意博满堂惊艳。", "你顺着席间气氛临场改作，作品出人意料。"], ["合艺共演", "邀请另一位名家共同登场。", "你把争席变成合演，让彼此长处在一场作品中相映。"]]],
+  service: ["满堂贵客", "店中同时来了官差、商队与寻常街坊，后厨堂前乱成一团。", [["分席定序", "先理清轻重缓急。", "你按来客所需重新分席，让每桌都有人照应。"], ["亲自周旋", "凭眼色在各桌之间救场。", "你一人穿梭堂前，把几场将起的争执都按了下去。"], ["照顾弱客", "先安顿老人孩子与病客。", "你先给最需要的人送上热汤，也请其他客人稍候。"]]],
+  labor: ["险路重托", "一件急货必须穿过刚遭风雨的险路，货主加价催行，同行却劝你等待。", [["勘路再行", "先查路况再稳妥出发。", "你轻装探路，标出每一处塌方与歇脚点。"], ["抢时硬闯", "凭筋骨和经验争取高额报酬。", "你趁雨势稍歇立刻出发，咬牙闯过最险一段。"], ["召集同行", "分担货物与风险。", "你联合同行分段接力，让重货不必压在一人肩上。"]]],
+  caravan: ["商路暗局", "一批高价货物的来历含糊，买家催你连夜启程，关卡又忽然增派人手。", [["验货改道", "先查货契，再选稳妥路线。", "你开箱验货、补齐契纸，宁可少赚也不留把柄。"], ["夜闯关道", "赌速度换取巨利。", "你趁换岗空隙催队疾行，把风险全押在一夜脚程上。"], ["联商作保", "请可靠商号共同担保。", "你找来旧商号验货作保，也把收益分出一份。"]]],
+  mystic: ["真假异事", "一户人家重金求你处理怪事，你却发现恐惧、骗局与难言家事纠缠在一起。", [["察迹辨伪", "先查现场与人证。", "你从香灰、脚印与门锁处逐一找出人为痕迹。"], ["设局试探", "借仪式逼暗中之人露面。", "你故意设下声势浩大的仪式，引得作怪者自乱阵脚。"], ["安人心结", "先让家中众人说出隐情。", "你把众人请到一处，让压了多年的话终于说出口。"]]],
+  female: ["名门急请", "大户在重要宴会前急请你献艺，既许重赏，也提出一项有损同行的条件。", [["守艺守约", "按本分完成委托，不涉同行是非。", "你只以技艺说话，把分内之事做到无可挑剔。"], ["借势扬名", "抓住机会推出从未示人的绝艺。", "你把压箱底的本事拿出来，一举成为席间焦点。"], ["替同行留路", "拒绝排挤条件，提出共同完成。", "你请同行一同入席，让这场委托不必靠踩人得名。"]]],
+  common: ["东家难题", "东家临时交下一件棘手差事，做成有赏，做砸便要有人担责。", [["按部就班", "先理清步骤再动手。", "你把差事拆成数步，逐项完成没有留下纰漏。"], ["主动担责", "以个人本事争取更大回报。", "你把最难部分揽到自己身上，凭经验解决了意外。"], ["众人合力", "协调同伴共同处理。", "你把每个人擅长之处分配清楚，最终一同把差事办妥。"]]],
+};
+
 const CAREER_KIND_SKILLS = {
   craft: ["physique", "knowledge"],
   art: ["knowledge", "looks"],
@@ -1874,6 +1907,7 @@ function startLife() {
     coreTalent: draft.coreTalent,
     career: null,
     careerProgress: {},
+    careerHistory: [],
     friends: [],
     tags: [],
     diseases: [],
@@ -1956,6 +1990,7 @@ function normalizeState(raw) {
   next.talents = Array.isArray(next.talents) ? next.talents : [];
   next.coreTalent = next.coreTalent || null;
   next.career = next.career || null;
+  next.careerHistory = Array.isArray(next.careerHistory) ? next.careerHistory.slice(-20) : [];
   next.friends = Array.isArray(next.friends) ? next.friends.map(normalizeFriend) : [];
   next.tags = Array.isArray(next.tags) ? next.tags : [];
   next.diseases = Array.isArray(next.diseases) ? next.diseases : [];
@@ -3529,13 +3564,20 @@ function adultChildren() {
 }
 
 function eligibleHeirs() {
+  const spouseHeir = state.gender === "male" && state.family.spouse && state.family.spouseMeta?.alive !== false
+    ? [{ ...state.family.spouseMeta, id: "spouse-heir", name: state.family.spouse, relation: "妻子", gender: "female", heirKind: "spouse", study: Number(state.family.spouseMeta.study || 35), virtue: Number(state.family.spouseMeta.virtue || 55), aptitude: Number(state.family.spouseMeta.aptitude || 55) }]
+    : [];
+  const order = { spouse: 0, child: 1, grandchild: 2 };
   return [
+    ...spouseHeir,
     ...livingChildren().map((child) => ({ ...child, heirKind: "child" })),
     ...livingGrandchildren(),
-  ].sort((a, b) => (a.heirKind === b.heirKind ? 0 : a.heirKind === "child" ? -1 : 1) || b.age - a.age || (b.aptitude + b.study + b.virtue) - (a.aptitude + a.study + a.virtue));
+  ].sort((a, b) => order[a.heirKind] - order[b.heirKind] || b.age - a.age || (b.aptitude + b.study + b.virtue) - (a.aptitude + a.study + a.virtue));
 }
 
 function chooseEvent() {
+  const expanded = expandedDailyEvents().filter((event) => state.age >= event.minAge && state.age <= event.maxAge);
+  if (expanded.length && Math.random() < 0.58) return cloneEvent(sample(expanded));
   const candidates = (DATA.randomEvents || []).filter((event) => {
     if (!bucketMatchesAge(event.bucket, state.age)) return false;
     if (event.category === "male" && state.gender !== "male") return false;
@@ -3543,6 +3585,18 @@ function chooseEvent() {
     return conditionsPass(event.conditions || []);
   });
   return cloneEvent(sample(candidates));
+}
+
+function expandedDailyEvents() {
+  return EXPANDED_DAILY_EVENT_DEFS.map(([minAge, maxAge, title, content, choices], index) => ({
+    kind: "dailyStory",
+    id: `expanded-daily-${index}`,
+    minAge,
+    maxAge,
+    title,
+    content,
+    children: choices.map(([choiceTitle, choiceContent, effects]) => ({ title: choiceTitle, content: choiceContent, effects, conditions: [], children: [] })),
+  }));
 }
 
 function bucketMatchesAge(bucket, age) {
@@ -3564,6 +3618,7 @@ function chooseOption(index) {
   if (event.kind === "familyStory") return resolveFamilyStory(event, choice);
   if (event.kind === "careerCase") return resolveCareerCase(event, choice);
   if (event.kind === "fortuneEvent") return resolveFortuneEvent(event, choice);
+  if (event.kind === "dailyStory") return resolveDailyStory(event, choice);
 
   const deltas = applyResults(choice.results || []);
   state.lastDeltas = mergeDeltas(state.pendingActivity?.deltas, deltas);
@@ -3582,6 +3637,26 @@ function chooseOption(index) {
   }
   save();
   render();
+}
+
+function resolveDailyStory(event, choice) {
+  const deltas = [];
+  for (const [stat, amount] of Object.entries(choice.effects || {})) changeStat(stat, amount, deltas);
+  state.currentEvent = null;
+  state.lastDeltas = deltas;
+  addLog(`日常 · ${event.title}`, choice.content, deltas);
+  state.eventResult = { title: choice.title, text: choice.content, deltas, icon: resultIcon(choice, event), scene: dailySceneFor(event) };
+  save();
+  render();
+}
+
+function dailySceneFor(event) {
+  const text = `${event?.title || ""}${event?.content || ""}`;
+  if (/雨|河|桥|水/.test(text)) return "travel";
+  if (/灯|宴|酒|故友/.test(text)) return "lantern";
+  if (/书|私塾|族谱|旧匣/.test(text)) return "ink";
+  if (/火|险|榜文/.test(text)) return "ember";
+  return "petal";
 }
 
 function finishEvent() {
@@ -3910,6 +3985,7 @@ function takeCareer(index) {
   if (!state || state.dead || state.prisonYears > 0 || state.age < 15) return;
   const career = allCareers()[Number(index)];
   if (!career) return;
+  if (state.career) return finishAction("须先辞职", `你现在仍在${currentCareerName()}任职。若要改换营生，须先在当前职业操作中正式辞去这份差事。`, [{ label: "转职", value: "尚未辞职", negative: true }], "Career");
   if (careerLockedReason(career)) return;
   state.career = career;
   careerProgressFor(career.name);
@@ -3969,7 +4045,16 @@ function careerSkillKeys(career = state.career) {
 }
 
 function careerAdvancedCase(name = state.career?.name) {
-  return CAREER_ADVANCED_CASE_DEFS[name] || null;
+  if (CAREER_ADVANCED_CASE_DEFS[name]) return CAREER_ADVANCED_CASE_DEFS[name];
+  const career = state.career?.name === name ? state.career : allCareers().find((item) => item.name === name);
+  if (!career) return null;
+  const template = CAREER_KIND_ADVANCED_CASES[careerKind(career)] || CAREER_KIND_ADVANCED_CASES.common;
+  const [title, prompt, choices] = template;
+  return {
+    title: `${name} · ${title}`,
+    prompt: `你以${name}身份遇到一桩难事：${prompt}`,
+    choices: choices.map(([label, note, text]) => [label, note, `${text} 此事也让旁人重新衡量你在${name}一业中的本事与为人。`]),
+  };
 }
 
 function careerActions() {
@@ -4015,15 +4100,17 @@ function careerActions() {
     const level = careerProgressFor(careerName).level;
     actions.push(["story:advanced", advanced.title, `${level >= 3 ? "名家委托" : "本业专案"} · 进入带检定与不同结果的职业剧情。`]);
   }
+  actions.push(["resign", "辞去营生", `正式离开${currentCareerName()}；辞职完成后才可选择其他职业。`]);
   return actions;
 }
 
 function performCareerAction(type) {
   if (!state.career || state.dead || state.currentEvent || state.eventResult || state.pendingCaravan || state.prisonYears > 0 || state.age < 15) return;
+  if (type === "resign") return resignCareer();
   const kind = careerKind();
+  if (String(type || "").startsWith("story:")) return startCareerCase();
   if (kind === "caravan") return performCaravanRoute(String(type || "").replace("route:", "") || "county");
   if (kind === "official") return performOfficialAction(type);
-  if (String(type || "").startsWith("story:")) return startCareerCase();
   const deltas = [];
   const progress = careerProgressFor();
   let title = state.career.name;
@@ -4059,6 +4146,26 @@ function performCareerAction(type) {
   addLedger(title, deltas.filter((delta) => delta.stat === "money").reduce((sum, delta) => sum + Number(delta.value || 0), 0), text);
   unlockLifeGoals();
   finishAction(title, text, deltas, careerIcon(kind));
+}
+
+function resignCareer() {
+  if (!state.career || state.dead || state.currentEvent || state.pendingCaravan || state.prisonYears > 0) return;
+  const career = state.career;
+  const name = currentCareerName();
+  const kind = careerKind(career);
+  const progress = careerProgressFor(career.name);
+  const deltas = [];
+  changeStat("mood", kind === "official" ? -3 : 1, deltas);
+  if (kind === "official") {
+    state.official.retired = true;
+    recordOfficialPost("辞官");
+    changeStat("favorability", -2, deltas);
+  }
+  state.careerHistory ||= [];
+  state.careerHistory.push({ name: career.name, displayName: name, kind, year: state.year, level: progress.level, reason: kind === "official" ? "辞官" : "辞职" });
+  state.careerHistory = state.careerHistory.slice(-20);
+  state.career = null;
+  finishAction(kind === "official" ? "辞官归身" : "辞去营生", `你向${kind === "official" ? "朝廷递上辞呈，交清印信案卷" : "东家与同行交清账目、工具和未完差事"}，正式离开${name}。旧日技艺经验仍会保留，此后可在营生页另择职业。`, deltas, kind === "official" ? "Official" : "CashBox");
 }
 
 function careerIncident(kind, type, deltas, progress) {
@@ -4111,7 +4218,7 @@ function careerIncident(kind, type, deltas, progress) {
 
 function careerPersonalIncident(type, deltas, progress) {
   const story = careerStory();
-  if (!story || Math.random() > 0.72) return "";
+  if (!story || Math.random() > 0.5) return "";
   const kind = careerKind();
   const key = story[type] ? type : type === "case" && story.routine ? "routine" : type === "masterwork" && story.routine ? "routine" : type === "risk" && story.risk ? "risk" : "routine";
   const pool = story[key] || story.routine || [];
@@ -7228,6 +7335,7 @@ function marryChild(id) {
 function inheritFromChild(id) {
   const heir = eligibleHeirs().find((item) => item.id === id);
   if (!state.dead || !heir) return;
+  if (heir.heirKind === "spouse") return inheritFromSpouse(heir);
   const oldName = state.name;
   const oldLog = [...state.log];
   const oldGender = state.gender;
@@ -7367,6 +7475,107 @@ function inheritFromChild(id) {
   render();
 }
 
+function inheritFromSpouse(heir) {
+  if (!state.dead || !heir || heir.heirKind !== "spouse") return;
+  const old = state;
+  const oldName = old.name;
+  const oldLog = [...old.log];
+  const oldScore = lifeScore();
+  const oldGrade = lifeGrade(oldScore);
+  const generation = Math.max(1, Number(old.lineage?.generation) || 1);
+  const inheritedMoney = Math.max(20, Math.round(Math.max(0, old.stats.money || 0) * 0.88));
+  const inheritedAssets = (old.assets || []).map((asset) => ({ ...asset, inherited: true, owner: heir.name }));
+  const familyName = heir.name.slice(0, 1) || old.name.slice(0, 1);
+  const heirAge = Math.max(16, Math.round(Number(heir.age) || Math.max(18, old.age - 3)));
+  const children = (old.family.children || []).map((child) => normalizeChild({ ...child, otherParent: child.otherParent || oldName }, child.name?.slice(0, 1) || oldName.slice(0, 1)));
+  const ancestors = [{
+    name: oldName,
+    age: old.age,
+    reason: old.deathReason || "命数已尽",
+    score: oldScore,
+    grade: oldGrade,
+    exam: old.exam.rank >= 0 ? EXAM_TITLES[old.exam.rank] : "白身",
+    assets: (old.assets || []).length,
+    money: Math.round(old.stats.money || 0),
+  }, ...((old.lineage?.ancestors || []).slice(0, 11))];
+  const spouseMemory = normalizePartner({ name: oldName, relation: "故配", gender: "male", age: old.age, physique: 0, alive: false, affection: old.family.spouseAffection || 78 }, oldName.slice(0, 1), "故配", "former-spouse");
+  state = normalizeState({
+    name: heir.name,
+    gender: "female",
+    profileAvatar: defaultProfileAvatar("female"),
+    difficulty: "承继",
+    age: heirAge,
+    year: heirAge,
+    location: old.location,
+    stats: {
+      mood: clamp(48 + Math.floor(Number(heir.affection || 70) / 12)),
+      physique: clamp(Number(heir.physique || 60)),
+      looks: clamp(Number(heir.looks || 58)),
+      eq: clamp(Number(heir.eq || 55)),
+      knowledge: clamp(Number(heir.knowledge || heir.study || 42)),
+      virtue: clamp(Number(heir.virtue || 55)),
+      relationship: clamp(38 + Math.min(20, children.length * 4)),
+      favorability: Math.max(0, Math.round(Number(old.stats.favorability || 0) * 0.25)),
+      money: inheritedMoney,
+    },
+    talents: pickMany(DATA.database?.talents || [], 3),
+    coreTalent: sample(DATA.database?.coreTalents || []),
+    career: null,
+    careerProgress: {},
+    careerHistory: [],
+    friends: [],
+    tags: ["未亡人承业", "承继家业"],
+    diseases: [],
+    inventory: [...new Set([...(old.inventory || []), "亡夫家书"])].slice(0, 18),
+    log: [
+      { age: heirAge, title: "妻承夫业", text: `${oldName}身后，妻子${heir.name}没有让门户散去。她接过账册、田契与家中诸事，以未亡人身份继续第 ${generation} 代人生。` },
+      { age: heirAge, title: "家族命册", text: `${heir.name}将${oldName}一生旧事收进命册，也决定从此以自己的名字续写后半生。` },
+      ...oldLog.slice(0, 42).map((item) => ({ ...item, inherited: true })),
+    ],
+    biography: `${heir.name}原为${oldName}之妻。夫亡之后，她承接家业、抚育子女，成为这一门第 ${generation} 代新的主事人。`,
+    assets: inheritedAssets,
+    ledger: [{ age: heirAge, title: "妻承夫业", amount: inheritedMoney, text: `接掌${oldName}遗下的钱财与产业。` }, ...(old.ledger || []).slice(0, 80).map((item) => ({ ...item, inherited: true }))],
+    crickets: [],
+    cricketRecord: { wins: 0, losses: 0, champion: 0 },
+    femaleSkills: { 诗书: Math.max(0, Math.floor(Number(heir.study || 35) / 20)) },
+    official: createOfficialState(),
+    lineage: { generation, familyName: old.lineage?.familyName || oldName.slice(0, 1), ancestors },
+    life: { milestones: [], goals: [] },
+    study: { prep: Math.floor(Number(heir.study || 35) / 5), lastYear: -1 },
+    family: {
+      father: { name: `${familyName}${sample(DATA.database?.names?.male) || "父"}`, relation: "父亲", gender: "male", alive: heirAge < 55, age: heirAge + randInt(18, 28), physique: heirAge < 55 ? randInt(38, 68) : 0, affection: 65 },
+      mother: { name: `${sample(DATA.database?.names?.last) || "王"}${sample(DATA.database?.names?.female) || "氏"}`, relation: "母亲", gender: "female", alive: heirAge < 52, age: heirAge + randInt(17, 25), physique: heirAge < 52 ? randInt(38, 68) : 0, affection: 68 },
+      siblings: [],
+      lover: false,
+      spouse: null,
+      spouseMeta: null,
+      spouseHistory: [spouseMemory],
+      concubines: [],
+      concubineCandidate: null,
+      intimacyBonus: 0,
+      romanceRecords: { intimate: 0, outings: 0, conflicts: 0 },
+      children,
+    },
+    familyStories: { active: null, completed: [], lastTriggerYear: -1 },
+    templeFortune: { active: null, history: [], lastDrawYear: -1 },
+    exam: { rank: -1, attempts: 0, history: [], current: null, lastYear: -1 },
+    pendingActivity: null,
+    eventResult: null,
+    pendingSurprise: null,
+    pendingAchievement: null,
+    pendingCaravan: null,
+    currentEvent: null,
+    inventoryTab: "all",
+    lastDeltas: [{ label: "承继", value: `${heir.name} · 妻承夫业` }],
+    dead: false,
+    deathReason: "",
+    prisonYears: 0,
+  });
+  view = { screen: "game", page: "main", tab: "overview", activityId: "", placeId: "", overlay: "" };
+  save();
+  render();
+}
+
 function marryLover() {
   if (!state.family.lover || (state.family.spouse && state.family.spouseMeta?.alive !== false) || state.age < 16) return;
   SFX.play("marry");
@@ -7445,7 +7654,8 @@ function officialCareerActions() {
   actions.push(["case:post", `${office.office}专案`, `处理只属于${office.office}这一官职的高级剧情。`]);
   const cases = officialCasePool();
   actions.push(["case:random", "官场要案", cases.length ? "进入带选择的官场剧情，处理得当可涨政绩，也可能招祸。" : "官阶尚低，暂以日常案牍为主。"]);
-  if (state.age >= 60 && !state.official?.retired) actions.push(["retire", "致仕归乡", "退下官身，回乡修谱、教导子孙，留下身后名。"]);
+  if (state.age >= 60 && !state.official?.retired) actions.push(["retire", "致仕归乡", `退下官身，回乡修谱、教导子孙，留下身后名。`]);
+  actions.push(["resign", "辞去官职", `交还${office.office}印信，离开官场；之后方可改换其他营生。`]);
   return actions;
 }
 
@@ -7732,10 +7942,22 @@ function officialPosthumousTitle() {
 
 function finishAction(title, text, deltas, iconName) {
   state.lastDeltas = deltas;
-  state.eventResult = { title, text, deltas, icon: iconName || resultIcon({ title, content: text }, null) };
+  const iconNameResolved = iconName || resultIcon({ title, content: text }, null);
+  state.eventResult = { title, text, deltas, icon: iconNameResolved, scene: activitySceneFor(iconNameResolved, title, text) };
   addLog(title, text, deltas);
   save();
   render();
+}
+
+function activitySceneFor(iconName, title = "", text = "") {
+  const source = `${iconName || ""}${title}${text}`;
+  if (/Temple|Elixir|祈福|求签|法事|玄门/.test(source)) return "incense";
+  if (/ArrangeMarriage|Whorehouse|Flower|婚|宴|瓦舍|琴|歌|舞/.test(source)) return "lantern";
+  if (/Book|Exam|书|试|学|画/.test(source)) return "ink";
+  if (/RepairCarriage|Agriculture|出行|押镖|车|路|桥/.test(source)) return "travel";
+  if (/Official|官|案|衙/.test(source)) return "seal";
+  if (/Medicine|医|病/.test(source)) return "herb";
+  return "petal";
 }
 
 function addFriend() {
@@ -7801,6 +8023,7 @@ function hasPalaceAppointment() {
 }
 
 function careerLockedReason(career) {
+  if (state.career) return state.career.name === career?.name ? "当前营生" : `须先辞去${currentCareerName()}`;
   const genderRequire = Number(career?.genderRequire ?? career?.GenderRequire);
   if (genderRequire === 1 && state.gender !== "female") return "女子可任";
   if (careerKind(career) === "official" && !hasPalaceAppointment()) return "殿试后可任职";
@@ -9340,11 +9563,16 @@ function brothelCompanionCard(candidate) {
 
 function eventResultView() {
   const result = state.eventResult || {};
+  const scene = result.scene || activitySceneFor(result.icon, result.title, result.text);
   return `
-    <article class="play-card result-card">
+    <article class="play-card result-card scene-${escapeHtml(scene)}">
       <p class="eyebrow">结果</p>
       <h2>${escapeHtml(result.title || "结果")}</h2>
-      <div class="result-illustration">${icon(result.icon || "MainBook", result.title || "结果")}</div>
+      <div class="cinematic-stage" aria-hidden="true">
+        <span class="scene-orbit orbit-one"></span><span class="scene-orbit orbit-two"></span>
+        <span class="scene-particle particle-one"></span><span class="scene-particle particle-two"></span><span class="scene-particle particle-three"></span>
+        <div class="result-illustration">${icon(result.icon || "MainBook", result.title || "结果")}</div>
+      </div>
       <p>${formatText(result.text || "事情有了结果。")}</p>
       ${result.caravan ? caravanResultHtml(result.caravan) : ""}
       <div class="delta-list result-deltas">${deltaHtml()}</div>
@@ -11152,7 +11380,7 @@ function deathView() {
     <article class="play-card death-card">
       <p class="eyebrow">身后事</p>
       <h2>${escapeHtml(state.name)}</h2>
-      <p>${escapeHtml(state.name)}享年${state.age}岁，${escapeHtml(state.deathReason || "命数已尽")}。命格总评：${escapeHtml(lifeGrade(score))}，${score} 分。若有子孙，可由后人承继家业继续此存档。</p>
+      <p>${escapeHtml(state.name)}享年${state.age}岁，${escapeHtml(state.deathReason || "命数已尽")}。命格总评：${escapeHtml(lifeGrade(score))}，${score} 分。若妻子尚在或有子孙，可由家人承继家业继续此存档。</p>
       <section class="score-grid">
         ${scoreTile("达成成就", `${completedGoals().length}/${LIFE_GOALS.length}`)}
         ${scoreTile("命册经历", `${state.log.length} 件`)}
@@ -11163,12 +11391,12 @@ function deathView() {
       </section>
       ${endingSharePanel(share)}
       <section class="inherit-section">
-        <div class="section-title"><h2>选择子孙承继</h2></div>
+        <div class="section-title"><h2>选择妻子或子孙承继</h2></div>
         ${heirs.length ? `<div class="button-list">${heirs.map((child) => `
           <button class="list-btn inherit-btn" data-inherit-child="${escapeHtml(child.id)}">
             ${icon(child.gender === "female" ? "Relationship2" : "Relationship1", child.name)}
-            <span>${escapeHtml(child.name)}承继家业<small>${escapeHtml(child.relation || (child.gender === "female" ? "女儿" : "儿子"))} · ${child.age}岁 · 学业 ${Math.round(child.study || 0)} · 德行 ${Math.round(child.virtue || 0)} · 继承 ${moneyText(inheritedMoney)}与 ${state.assets.length} 处家产</small></span>
-          </button>`).join("")}</div>` : `<p class="empty-note">没有活着的子孙可承继家业，只能另开新档。</p>`}
+            <span>${escapeHtml(child.name)}承继家业<small>${escapeHtml(child.relation || (child.gender === "female" ? "女儿" : "儿子"))} · ${child.age}岁 · 学业 ${Math.round(child.study || 0)} · 德行 ${Math.round(child.virtue || 0)} · 继承 ${moneyText(child.heirKind === "spouse" ? Math.max(20, Math.round(Math.max(0, state.stats.money || 0) * 0.88)) : inheritedMoney)}与 ${state.assets.length} 处家产</small></span>
+          </button>`).join("")}</div>` : `<p class="empty-note">没有活着的妻子或子孙可承继家业，只能另开新档。</p>`}
       </section>
       <div class="main-actions">
         <button class="${heirs.length ? "ghost-btn danger" : "primary-btn"}" data-action="new-life">另开新档</button>
@@ -11286,6 +11514,7 @@ function careerPanel() {
       <h2>营生</h2>
       ${state.career ? infoLine("当前", currentCareerName()) : `<p class="empty-note">尚无固定营生</p>`}
       ${state.career ? infoLine("本业", `${careerKindLabel(kind)} · ${Math.max(1, Number(progress.level) || 1)}级 · ${Math.round(Number(progress.exp) || 0)}经验`) : ""}
+      ${(state.careerHistory || []).length ? infoLine("履历", `历任 ${(state.careerHistory || []).slice(-3).map((item) => item.displayName || item.name).join("、")}`) : ""}
       ${officialCareer ? officialCareerSummary() : ""}
       ${kind === "caravan" ? caravanRouteSummary() : ""}
       ${state.career && !officialCareer ? careerPracticeSummary(progress) : ""}
