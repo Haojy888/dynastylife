@@ -4763,7 +4763,91 @@ p {
 .travel-history article.bad { background: rgba(170,70,58,.07); }
 .travel-history span { color: var(--muted); font-size: 12px; }
 
+/* 科场暗门、离奇案件与江湖奇术 */
+.underworld-card,
+.mystery-card,
+.jianghu-card {
+  gap: 16px;
+  overflow: hidden;
+}
+
+.dark-system-hero,
+.mystery-hero {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 16px;
+  align-items: center;
+  margin: -2px -2px 0;
+  padding: 20px;
+  border-radius: 17px;
+  color: #f7eddb;
+  background: radial-gradient(circle at 78% 20%, rgba(184, 123, 62, .3), transparent 32%), linear-gradient(125deg, #182d29, #3b2424 65%, #161b1a);
+  box-shadow: inset 0 0 0 1px rgba(238, 210, 164, .16), 0 12px 30px rgba(31, 30, 24, .12);
+}
+
+.mystery-hero { grid-template-columns: auto 1fr; background: radial-gradient(circle at 15% 20%, rgba(189, 61, 46, .22), transparent 32%), linear-gradient(125deg, #1c2928, #252323); }
+.dark-system-hero > div,
+.mystery-hero > div { width: 64px; height: 64px; display: grid; place-items: center; border-radius: 50%; background: rgba(255,255,255,.09); }
+.dark-system-hero img,
+.mystery-hero img { width: 46px; height: 46px; object-fit: contain; }
+.dark-system-hero span,
+.mystery-hero span { display: grid; gap: 4px; }
+.dark-system-hero h2,
+.dark-system-hero p,
+.mystery-hero h2,
+.mystery-hero p { margin: 0; color: inherit; }
+.dark-system-hero > b { align-self: start; padding: 8px 11px; border: 1px solid rgba(244,205,143,.3); border-radius: 999px; color: #f0c987; white-space: nowrap; }
+
+.dark-warning,
+.mentor-invite,
+.prophecy-slip,
+.dark-record {
+  margin: 0;
+  padding: 13px 15px;
+  border: 1px solid rgba(139, 88, 62, .2);
+  border-radius: 12px;
+  background: rgba(118, 71, 48, .07);
+  color: var(--muted);
+}
+.mentor-invite { display: grid; gap: 8px; }
+.mentor-invite h3,
+.mentor-invite p,
+.prophecy-slip p { margin: 0; }
+.prophecy-slip { position: relative; border-style: dashed; background: #f4e9c9; color: #574c37; transform: rotate(-.35deg); }
+.dark-record { display: flex; justify-content: space-between; gap: 12px; }
+
+.dark-method-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.dark-method { display: grid; align-content: start; gap: 9px; min-height: 140px; padding: 14px; border: 1px solid rgba(62, 83, 75, .16); border-radius: 13px; background: rgba(255,253,245,.7); }
+.dark-method.learned { border-color: rgba(46, 124, 105, .35); background: rgba(46, 124, 105, .07); }
+.dark-method > span { display: flex; justify-content: space-between; gap: 8px; }
+.dark-method em { color: #9a6939; font-size: 12px; font-style: normal; }
+.dark-method p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.55; }
+
+.case-board { position: relative; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding: 16px; border-radius: 15px; background: #eee4cc; box-shadow: inset 0 0 20px rgba(80, 58, 40, .08); }
+.case-board article { position: relative; z-index: 1; min-height: 96px; padding: 12px; border: 1px solid rgba(105, 72, 48, .18); border-radius: 5px; background: #fffaf0; box-shadow: 0 3px 8px rgba(63,47,32,.08); }
+.case-board article:nth-of-type(even) { transform: rotate(.5deg); }
+.case-board article:nth-of-type(odd) { transform: rotate(-.4deg); }
+.case-board p { margin: 6px 0 0; color: #665b4e; font-size: 13px; line-height: 1.55; }
+.case-thread { position: absolute; inset: 30% 18%; border: 2px dashed rgba(161, 49, 42, .24); transform: rotate(-4deg); }
+.investigation-grid,
+.suspect-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
+.investigation-action { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 11px; padding: 13px; text-align: left; border: 1px solid var(--line); border-radius: 13px; background: rgba(255,253,246,.82); color: var(--ink); }
+.investigation-action img { width: 40px; height: 40px; object-fit: contain; }
+.investigation-action span { display: grid; gap: 3px; }
+.investigation-action small { color: var(--muted); line-height: 1.45; }
+.suspect-section { display: grid; gap: 10px; }
+.suspect-grid button { display: grid; gap: 4px; padding: 13px; border: 1px solid rgba(159,61,50,.23); border-radius: 11px; text-align: left; background: rgba(159,61,50,.06); color: var(--ink); }
+.suspect-grid span { color: var(--muted); font-size: 12px; }
+
 @media (max-width: 760px) {
+  .dark-system-hero,
+  .mystery-hero { grid-template-columns: 1fr; text-align: left; }
+  .dark-system-hero > b { justify-self: start; }
+  .dark-method-grid,
+  .case-board,
+  .investigation-grid,
+  .suspect-grid { grid-template-columns: 1fr; }
+  .dark-record { display: grid; }
   .travel-hero,
   .carriage-garage,
   .selected-route-card,

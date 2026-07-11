@@ -821,6 +821,153 @@ try {
   assert.equal(travelMobileOverflow.cards, 8, "车马页面没有显示全部旅行目的地");
   assert.equal(travelMobileOverflow.supplies, 3, "车马页面缺少行囊选择");
 
+  console.log("quality gate: verifying exam underworld, mysteries and jianghu systems");
+  const darkSaveCompatibility = await page.evaluate(() => {
+    const saved = JSON.parse(JSON.stringify(state));
+    delete saved.underworld;
+    delete saved.mystery;
+    delete saved.jianghu;
+    const restored = normalizeState(saved);
+    return {
+      heat: restored.underworld.heat,
+      attempts: restored.underworld.records.attempts,
+      mystery: restored.mystery.active,
+      skills: restored.jianghu.skills.length,
+      prophecies: restored.jianghu.records.prophecies,
+    };
+  });
+  assert.deepEqual(darkSaveCompatibility, { heat: 0, attempts: 0, mystery: null, skills: 0, prophecies: 0 }, "旧存档没有补全黑灰、奇案或江湖状态");
+
+  const examUnderworld = await page.evaluate(() => {
+    state.age = 24;
+    state.year = 70;
+    state.prisonYears = 0;
+    state.stats.money = 10000;
+    state.stats.eq = 100;
+    state.exam.current = null;
+    state.exam.lastYear = -1;
+    state.underworld = createUnderworldState();
+    state.underworld.broker = { name: "铁算盘", trust: 60, lastYear: state.year };
+    const oldRandom = Math.random;
+    Math.random = () => 0.99;
+    state.underworld.activeCheat = { id: "buyExam", genuine: true, boughtYear: state.year };
+    const genuine = examCheatResolution(EXAM_STAGES[0], { type: "choice", questions: [{}, {}, {}, {}, {}] }, 0, false);
+    state.underworld.activeCheat = { id: "buyExam", genuine: false, boughtYear: state.year };
+    const fake = examCheatResolution(EXAM_STAGES[0], { type: "choice", questions: [{}, {}, {}, {}, {}] }, 5, true);
+    Math.random = oldRandom;
+    state.underworld.activeCheat = null;
+    view.page = "examUnderworld";
+    render();
+    return {
+      genuinePassed: genuine.passed,
+      fakePassed: fake.passed,
+      fakeText: fake.prefix,
+      methodButtons: document.querySelectorAll("[data-exam-cheat]").length,
+      hasBack: Boolean(document.querySelector('[data-action="back-exam"]')),
+    };
+  });
+  assert.equal(examUnderworld.genuinePassed, true, "真题买卖没有显著提高科举结果");
+  assert.equal(examUnderworld.fakePassed, false, "假题骗局没有导致落榜");
+  assert.match(examUnderworld.fakeText, /伪造|嘲笑/, "假题中介没有专属反馈");
+  assert.equal(examUnderworld.methodButtons, 5, "贡院暗门缺少五种舞弊手段");
+  assert.equal(examUnderworld.hasBack, true, "贡院暗门缺少返回明场交互");
+
+  const mysteryResolution = await page.evaluate(() => {
+    state.eventResult = null;
+    state.currentEvent = null;
+    state.mystery = { active: { caseId: "locked-room", round: 0, clues: [], actionsUsed: [] }, completed: [] };
+    const beforeMerit = state.official.merit;
+    investigateMystery("autopsy");
+    investigateMystery("witness");
+    investigateMystery("scene");
+    const clueCount = state.mystery.active.clues.length;
+    const html = mysteryCaseView();
+    accuseMystery("steward");
+    return {
+      clueCount,
+      canAccuse: /data-mystery-accuse/.test(html),
+      correct: state.mystery.completed[0]?.correct,
+      meritGain: state.official.merit > beforeMerit,
+      cleared: state.mystery.active === null,
+    };
+  });
+  assert.equal(mysteryResolution.clueCount, 3, "离奇案件未按轮次积累线索");
+  assert.equal(mysteryResolution.canAccuse, true, "取得三条线索后仍无法指认嫌犯");
+  assert.equal(mysteryResolution.correct, true, "密室案正确嫌犯没有结案");
+  assert.equal(mysteryResolution.meritGain, true, "正确破案没有增加政绩");
+  assert.equal(mysteryResolution.cleared, true, "结案后仍残留进行中案件");
+  await clearBlockingUi();
+
+  const examinerBribe = await page.evaluate(() => {
+    state.stats.money = 1000;
+    state.currentEvent = null;
+    state.eventResult = null;
+    state.underworld.extortion = null;
+    const soldBefore = state.underworld.records.soldQuestions;
+    const moneyBefore = state.stats.money;
+    const oldRandom = Math.random;
+    Math.random = () => 0.99;
+    startExaminerBribe();
+    chooseOption(0);
+    Math.random = oldRandom;
+    return { sold: state.underworld.records.soldQuestions > soldBefore, money: state.stats.money > moneyBefore, heat: state.underworld.heat };
+  });
+  assert.equal(examinerBribe.sold, true, "官员卖题没有写入暗账");
+  assert.equal(examinerBribe.money, true, "官员卖题没有取得银钱");
+  assert.ok(examinerBribe.heat > 0, "官员卖题没有增加风声");
+  await clearBlockingUi();
+
+  const jianghuMeta = await page.evaluate(() => {
+    state.year = 80;
+    state.eventResult = null;
+    state.currentEvent = null;
+    state.jianghu = createJianghuState();
+    state.jianghu.mentor = { name: "赛半仙", affection: 70 };
+    state.jianghu.skills = ["fortune", "qian"];
+    const oldRandom = Math.random;
+    Math.random = () => 0.2;
+    useJianghuSkill("fortune");
+    const dueYear = state.jianghu.prophecy?.dueYear;
+    const prophecyType = state.jianghu.prophecy?.type;
+    state.eventResult = null;
+    state.year = dueYear;
+    const event = annualJianghuEvent();
+    state.currentEvent = event;
+    chooseOption(0);
+    Math.random = oldRandom;
+    return { dueYear, prophecyType, eventKind: event?.kind, cleared: state.jianghu.prophecy === null, trueCount: state.jianghu.records.trueProphecies };
+  });
+  assert.equal(jianghuMeta.dueYear, 83, "算命预言没有安排在三年后");
+  assert.ok(["blood", "wealth", "noble"].includes(jianghuMeta.prophecyType), "算命没有生成有效预言类型");
+  assert.equal(jianghuMeta.eventKind, "jianghuProphecy", "三年后没有触发预言事件");
+  assert.equal(jianghuMeta.cleared, true, "预言应验后没有结清");
+  assert.equal(jianghuMeta.trueCount, 1, "真实预言没有写入江湖旧账");
+  await clearBlockingUi();
+
+  const qianGamble = await page.evaluate(() => {
+    state.age = 30;
+    state.prisonYears = 0;
+    state.stats.money = 1000;
+    state.underworld.heat = 0;
+    state.jianghu.heat = 0;
+    state.jianghu.skills = ["qian"];
+    state.jianghu.enabledQian = true;
+    state.gamble = createGambleRound(50);
+    state.gamble.playerDice = [6, 6, 6, 6, 6];
+    state.gamble.opponentDice = [6, 6, 6, 6, 6];
+    state.gamble.currentBid = { count: 1, face: 6 };
+    state.gamble.turn = "player";
+    const oldRandom = Math.random;
+    Math.random = () => 0.5;
+    revealGamble("player");
+    Math.random = oldRandom;
+    return { win: state.gamble.result.playerWin, text: state.gamble.result.text, consumed: !state.jianghu.enabledQian, heat: state.jianghu.heat };
+  });
+  assert.equal(qianGamble.win, true, "千术没有把博坊败局翻成胜局");
+  assert.match(qianGamble.text, /暗记|胜局/, "千术翻盘缺少专属叙事");
+  assert.equal(qianGamble.consumed, true, "一次千术没有在开盅后消耗");
+  assert.ok(qianGamble.heat > 0, "赌场出千没有增加江湖风声");
+
   const underageGuard = await page.evaluate(() => {
     state.age = 17;
     state.year = 17;
