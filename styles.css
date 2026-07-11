@@ -618,6 +618,92 @@ p {
 .result-card {
   justify-items: center;
   text-align: center;
+  overflow: hidden;
+  animation: scene-card-arrive 0.52s cubic-bezier(.2,.75,.25,1) both;
+}
+
+.event-card {
+  animation: scene-card-arrive 0.42s cubic-bezier(.2,.75,.25,1) both;
+}
+
+.cinematic-stage {
+  position: relative;
+  width: min(310px, 82vw);
+  height: 164px;
+  display: grid;
+  place-items: center;
+  margin: 2px auto 12px;
+  isolation: isolate;
+}
+
+.cinematic-stage::before,
+.cinematic-stage::after {
+  content: "";
+  position: absolute;
+  inset: 18px 30px;
+  border-radius: 50%;
+  opacity: .46;
+  filter: blur(18px);
+  z-index: -2;
+  animation: scene-breathe 2.4s ease-in-out infinite alternate;
+}
+
+.cinematic-stage::after {
+  inset: 42px 76px;
+  opacity: .7;
+  filter: blur(28px);
+  animation-delay: -.8s;
+}
+
+.scene-incense .cinematic-stage::before { background: radial-gradient(circle, rgba(91,139,121,.5), transparent 68%); }
+.scene-lantern .cinematic-stage::before { background: radial-gradient(circle, rgba(220,145,70,.58), transparent 68%); }
+.scene-ink .cinematic-stage::before { background: radial-gradient(circle, rgba(73,100,119,.45), transparent 70%); }
+.scene-travel .cinematic-stage::before { background: radial-gradient(circle, rgba(72,146,154,.48), transparent 70%); }
+.scene-seal .cinematic-stage::before { background: radial-gradient(circle, rgba(155,65,55,.45), transparent 68%); }
+.scene-herb .cinematic-stage::before { background: radial-gradient(circle, rgba(100,153,82,.48), transparent 68%); }
+.scene-petal .cinematic-stage::before { background: radial-gradient(circle, rgba(194,129,143,.45), transparent 70%); }
+
+.scene-orbit {
+  position: absolute;
+  width: 142px;
+  height: 142px;
+  border: 1px solid rgba(55, 85, 78, .22);
+  border-radius: 50%;
+  animation: scene-orbit 7s linear infinite;
+}
+
+.orbit-two {
+  width: 190px;
+  height: 92px;
+  border-style: dashed;
+  animation-direction: reverse;
+  animation-duration: 9s;
+}
+
+.scene-particle {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  border-radius: 70% 20% 70% 20%;
+  background: rgba(190, 122, 69, .62);
+  animation: scene-particle-rise 2.8s ease-in-out infinite;
+}
+
+.particle-one { left: 22%; bottom: 22%; }
+.particle-two { right: 24%; bottom: 12%; animation-delay: -.9s; transform: scale(.7); }
+.particle-three { right: 35%; top: 18%; animation-delay: -1.7s; transform: scale(.5); }
+.scene-incense .scene-particle { width: 5px; height: 18px; border-radius: 50%; background: rgba(91,139,121,.45); filter: blur(2px); }
+.scene-ink .scene-particle { border-radius: 50%; background: rgba(47,65,76,.42); }
+.scene-travel .scene-particle { width: 18px; height: 4px; border-radius: 50%; background: rgba(72,146,154,.42); }
+.scene-seal .scene-particle { background: rgba(157,62,52,.52); }
+.scene-herb .scene-particle { background: rgba(85,139,69,.55); }
+
+.cinematic-stage .result-illustration {
+  position: relative;
+  z-index: 2;
+  margin: 0;
+  animation: scene-icon-reveal .72s cubic-bezier(.16,.9,.28,1.2) both;
+  filter: drop-shadow(0 12px 18px rgba(43,58,52,.16));
 }
 
 .result-illustration {
@@ -632,6 +718,43 @@ p {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
+}
+
+@keyframes scene-card-arrive {
+  from { opacity: 0; transform: translateY(16px) scale(.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes scene-icon-reveal {
+  0% { opacity: 0; transform: scale(.55) rotate(-6deg); }
+  65% { opacity: 1; transform: scale(1.06) rotate(1deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0); }
+}
+
+@keyframes scene-breathe {
+  from { transform: scale(.88); opacity: .3; }
+  to { transform: scale(1.08); opacity: .62; }
+}
+
+@keyframes scene-orbit {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes scene-particle-rise {
+  0%, 100% { opacity: 0; transform: translateY(18px) rotate(0deg); }
+  35% { opacity: .75; }
+  75% { opacity: .2; }
+  100% { transform: translateY(-70px) rotate(150deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .result-card,
+  .event-card,
+  .cinematic-stage *,
+  .cinematic-stage::before,
+  .cinematic-stage::after {
+    animation: none !important;
+  }
 }
 
 .result-deltas {
