@@ -517,7 +517,7 @@ try {
     startCourtesanParlor(true);
     return {
       page: view.page,
-      candidates: state.courtesanVisit.candidates.map((item) => ({ id: item.id, name: item.name, portrait: item.portrait, age: item.age })),
+      candidates: state.courtesanVisit.candidates.map((item) => ({ id: item.id, name: item.name, portrait: item.portrait, specialty: item.specialty, age: item.age })),
       buttons: document.querySelectorAll("[data-brothel-action]").length,
       heading: document.querySelector(".brothel-card h2")?.textContent,
     };
@@ -527,7 +527,13 @@ try {
   assert.equal(brothelSetup.candidates.length, 4, "美人雅座没有生成四位可选人物");
   assert.equal(brothelSetup.buttons, 12, "每位美人没有提供三种消遣方式");
   assert.equal(brothelSetup.candidates.every((item) => item.age >= 18 && item.portrait), true, "青楼人物年龄或头像无效");
-  assert.ok(brothelSetup.candidates.some((item) => /brothel-pipa-v1\.webp$/.test(item.portrait)), "新生成的琴姬头像未接入页面");
+  assert.deepEqual(brothelSetup.candidates.map((item) => item.portrait), [
+    "assets/brothel-pipa-v1.webp",
+    "assets/brothel-dancer-v1.webp",
+    "assets/brothel-poet-v1.webp",
+    "assets/brothel-huakui-v1.webp",
+  ], "琴姬、舞姬、诗伎和花魁头像没有按顺序接入页面");
+  assert.deepEqual(brothelSetup.candidates.map((item) => item.specialty), ["琵琶", "舞袖", "诗词", "花魁"], "美人头像与人物身份没有一一对应");
   await page.waitForNetworkIdle({ idleTime: 100, timeout: 5000 }).catch(() => {});
 
   const firstCompanion = brothelSetup.candidates[0];
