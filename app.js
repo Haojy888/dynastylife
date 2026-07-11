@@ -907,6 +907,31 @@ const MAIN_DOORS = [
   { id: "activities", label: "活动", icon: "Activity" },
 ];
 
+const EXAM_CHEAT_METHODS = [
+  { id: "carry", name: "夹带小抄", cost: 35, boost: 1, risk: 22, heat: 12, note: "花费最低，只能多答一题；入场搜检最容易露馅。" },
+  { id: "clerk", name: "买通书吏", cost: 180, boost: 2, risk: 16, heat: 20, extortion: 0.48, note: "书吏可替换号舍或递暗号，事后也可能拿把柄敲诈。" },
+  { id: "substitute", name: "雇人顶替", cost: 680, boost: 99, risk: 20, heat: 45, severe: true, note: "成功几乎必取中；冒名一旦查出，会入狱并牵连家声。" },
+  { id: "connections", name: "打通关节", cost: 1380, boost: 99, risk: 9, heat: 38, requireExaminer: true, note: "须先有足够人脉接近考官；考官仍可能临阵翻脸。" },
+  { id: "buyExam", name: "中介买题", cost: 920, boost: 99, risk: 13, heat: 32, broker: true, note: "真假只在中介一念之间。真题可直上金榜，假题会让你满盘皆输。" },
+];
+
+const MYSTERY_CASES = [
+  { id: "locked-room", title: "密室刺史", intro: "县令被发现死在反锁书房，窗栓完好，案上墨迹未干。妾室、师爷与管家各执一词。", guilty: "steward", suspects: [["concubine", "柳氏", "妾室"], ["adviser", "周师爷", "师爷"], ["steward", "何管家", "管家"]], clues: { autopsy: "伤口自下而上，凶器很可能藏在送炭的长钳中。", witness: "小厮听见管家在案发前以送炭为由进入书房。", scene: "门闩上缠着一根穿过墙洞的细丝，能从门外拉落。", records: "管家私吞公款，昨夜正要被县令发落。" } },
+  { id: "ghost-bride", title: "鬼新娘", intro: "迎亲当日，新娘在轿中离奇死去，脸上带笑，喜服没有挣扎痕迹。", guilty: "doctor", suspects: [["groom", "裴新郎", "新郎"], ["maid", "阿绫", "陪嫁侍女"], ["doctor", "杜郎中", "郎中"]], clues: { autopsy: "死者齿间有甜杏气味，笑容是毒发后肌肉痉挛。", witness: "侍女说郎中送来一丸“定心丹”。", scene: "轿底发现蜡封药纸，印着杜家药铺暗记。", records: "郎中曾求娶被拒，并购入大量苦杏仁。" } },
+  { id: "twins", title: "双生换命", intro: "一对双生兄弟一死一逃，活着的人自称弟弟，邻里却无法分辨。", guilty: "elder", suspects: [["elder", "顾伯安", "自称弟弟者"], ["wife", "秦氏", "兄长之妻"], ["partner", "陆掌柜", "生意伙伴"]], clues: { autopsy: "死者右手有常年握笔薄茧，应是从不识字的弟弟。", witness: "塾师记得兄长幼时左耳被戒尺划伤。", scene: "活人左耳果然有一道极淡旧疤。", records: "兄长欠下巨债，弟弟名下却刚继承田产。" } },
+  { id: "gu", title: "蛊毒奇案", intro: "富商腹中发现异虫，家人认定是蛊术害命，南货铺与苗医都被围堵。", guilty: "cook", suspects: [["healer", "乌娘", "苗医"], ["cook", "郑厨子", "家厨"], ["merchant", "洪掌柜", "南货商"]], clues: { autopsy: "所谓蛊虫其实来自未熟河鱼，真正死因却是慢性砒毒。", witness: "厨下学徒见郑厨子每晚独自清洗药罐。", scene: "灶灰中筛出带砒霜气味的碎瓷。", records: "郑厨子之父二十年前被富商逼死。" } },
+  { id: "headless", title: "无头河尸", intro: "河滩出现无头尸，三户人家同时认领。衣物、伤疤和失踪时间彼此矛盾。", guilty: "boatman", suspects: [["widow", "韩寡妇", "认尸妇人"], ["boatman", "蒋船户", "船户"], ["brother", "罗二", "结义兄弟"]], clues: { autopsy: "尸体脚底有长期踩湿船板形成的裂纹。", witness: "渡口孩童见蒋船户深夜独自拖走一只沉重麻袋。", scene: "衣内暗袋藏着另一家盐号的铜牌。", records: "死者真实身份是查私盐的暗差，蒋船户正在替盐枭运货。" } },
+  { id: "old-revenge", title: "株连旧案", intro: "二十年前冤案相关者接连收到血字判词，其中一人已经死在祖祠。", guilty: "scribe", suspects: [["descendant", "沈遗孤", "旧案遗孤"], ["scribe", "范书吏", "旧案书吏"], ["priest", "玄尘", "游方道士"]], clues: { autopsy: "死者先被迷香放倒，血字写成时间晚于死亡。", witness: "守祠人看见范书吏持旧钥进入后门。", scene: "香炉底藏着被撕去一角的旧供词。", records: "范书吏当年伪造口供，如今杀人是为灭掉最后知情者。" } },
+];
+
+const JIANGHU_SKILLS = [
+  { id: "qian", name: "千术", cost: 260, note: "可在博坊暗中出千，提高翻盘机会；被识破会重伤并入狱。" },
+  { id: "face", name: "相面", cost: 180, note: "在街头替人相面，套出身份与心事，可赚人情或攀附权贵。" },
+  { id: "fortune", name: "泄命卦", cost: 320, note: "批下一句三年后的命数。预言有真有假，兑现前无法确定。" },
+  { id: "fakeMedicine", name: "假药局", cost: 220, note: "短期获利极快，也可能吃坏人后被苦主追查。" },
+  { id: "impersonate", name: "冒充官差", cost: 360, note: "需备一身官差衣冠，招摇得利；被识破即按诈官入狱。" },
+];
+
 const ACTIVITY_PLACES = [
   { id: "medicine", label: "医馆", icon: "MedicineBag", minAge: 6, note: "问诊、养生、研读医书。", activities: ["medicine"] },
   { id: "inn", label: "客栈", icon: "Restaurant", minAge: 6, note: "吃酒小坐，也能听见四方消息。", activities: ["restaurant", "news", "flowerwine"] },
@@ -918,6 +943,7 @@ const ACTIVITY_PLACES = [
   { id: "friends", label: "会友", icon: "FamilyIcon", minAge: 6, note: "探亲访友，关系冷暖都在往来。", activities: ["family", "sister", "restaurant"], special: "friend" },
   { id: "academy", label: "书院", icon: "Book", minAge: 8, note: "温书求学，也可由此参加科举。", activities: ["academy"], exam: true },
   { id: "temple", label: "寺庙", icon: "Temple", minAge: 6, note: "焚香问卜，修身也修心。", activities: ["temple"] },
+  { id: "jianghu", label: "江湖暗门", icon: "GamblingHouse", minAge: 15, note: "老千、相士与游方术士出没之处，来钱快，风声也紧。", special: "jianghu" },
   { id: "farm", label: "农田", icon: "Agriculture", minAge: 6, note: "查问农桑，体会民生。", activities: ["agriculture"] },
   { id: "alchemy", label: "丹房", icon: "Elixir", minAge: 15, note: "炉火药烟，成败皆有风险。", activities: ["alchemy"] },
   { id: "cricket", label: "促织", icon: "Cricket", minAge: 10, note: "捕虫、斗虫、参加促织大赛。", special: "cricket" },
@@ -1960,6 +1986,9 @@ function startLife() {
     family: createFamily(draft.family),
     familyStories: { active: null, completed: [], lastTriggerYear: -1 },
     templeFortune: { active: null, history: [], lastDrawYear: -1 },
+    underworld: createUnderworldState(),
+    mystery: { active: null, completed: [] },
+    jianghu: createJianghuState(),
     exam: { rank: -1, attempts: 0, history: [], current: null, lastYear: -1 },
     pendingActivity: null,
     eventResult: null,
@@ -2066,6 +2095,9 @@ function normalizeState(raw) {
   next.family = normalizeFamily(next.family, next.name.slice(0, 1));
   next.familyStories = normalizeFamilyStories(next.familyStories);
   next.templeFortune = normalizeTempleFortune(next.templeFortune);
+  next.underworld = normalizeUnderworld(next.underworld);
+  next.mystery = normalizeMysteryState(next.mystery);
+  next.jianghu = normalizeJianghuState(next.jianghu);
   next.exam = normalizeExam(next.exam);
   next.pendingActivity = next.pendingActivity || null;
   next.eventResult = next.eventResult || null;
@@ -2167,6 +2199,53 @@ function normalizeTempleFortune(fortune) {
     } : null,
     history: Array.isArray(source.history) ? source.history.slice(-12) : [],
     lastDrawYear: Number.isFinite(Number(source.lastDrawYear)) ? Number(source.lastDrawYear) : -1,
+  };
+}
+
+function createUnderworldState() {
+  return { heat: 0, broker: null, activeCheat: null, extortion: null, examinerOffer: null, records: { attempts: 0, successes: 0, exposed: 0, soldQuestions: 0 } };
+}
+
+function normalizeUnderworld(source) {
+  const base = source && typeof source === "object" ? source : {};
+  return {
+    heat: clamp(Number(base.heat || 0)),
+    broker: base.broker && typeof base.broker === "object" ? { name: String(base.broker.name || "铁算盘"), trust: clamp(Number(base.broker.trust ?? 45)), lastYear: Number(base.broker.lastYear ?? -1) } : null,
+    activeCheat: base.activeCheat && EXAM_CHEAT_METHODS.some((item) => item.id === base.activeCheat.id) ? { id: base.activeCheat.id, genuine: base.activeCheat.genuine !== false, boughtYear: Number(base.activeCheat.boughtYear ?? -1) } : null,
+    extortion: base.extortion && typeof base.extortion === "object" ? { amount: Math.max(0, Number(base.extortion.amount) || 0), dueYear: Math.max(0, Number(base.extortion.dueYear) || 0), name: String(base.extortion.name || "书吏") } : null,
+    examinerOffer: base.examinerOffer && typeof base.examinerOffer === "object" ? base.examinerOffer : null,
+    records: {
+      attempts: Math.max(0, Number(base.records?.attempts) || 0),
+      successes: Math.max(0, Number(base.records?.successes) || 0),
+      exposed: Math.max(0, Number(base.records?.exposed) || 0),
+      soldQuestions: Math.max(0, Number(base.records?.soldQuestions) || 0),
+    },
+  };
+}
+
+function normalizeMysteryState(source) {
+  const base = source && typeof source === "object" ? source : {};
+  const active = base.active && MYSTERY_CASES.some((item) => item.id === base.active.caseId) ? base.active : null;
+  return {
+    active: active ? { caseId: active.caseId, round: Math.max(0, Number(active.round) || 0), clues: Array.isArray(active.clues) ? active.clues.slice(0, 6) : [], actionsUsed: Array.isArray(active.actionsUsed) ? [...new Set(active.actionsUsed)] : [] } : null,
+    completed: Array.isArray(base.completed) ? base.completed.slice(-20) : [],
+  };
+}
+
+function createJianghuState() {
+  return { mentor: null, skills: [], heat: 0, enabledQian: false, prophecy: null, pursuit: null, records: { cons: 0, caught: 0, prophecies: 0, trueProphecies: 0 } };
+}
+
+function normalizeJianghuState(source) {
+  const base = source && typeof source === "object" ? source : {};
+  return {
+    mentor: base.mentor && typeof base.mentor === "object" ? { name: String(base.mentor.name || "无影手"), affection: clamp(Number(base.mentor.affection ?? 55)) } : null,
+    skills: Array.isArray(base.skills) ? [...new Set(base.skills.filter((id) => JIANGHU_SKILLS.some((item) => item.id === id)))] : [],
+    heat: clamp(Number(base.heat || 0)),
+    enabledQian: !!base.enabledQian,
+    prophecy: base.prophecy && typeof base.prophecy === "object" ? { type: String(base.prophecy.type || "blood"), truthful: base.prophecy.truthful !== false, dueYear: Math.max(0, Number(base.prophecy.dueYear) || 0), text: String(base.prophecy.text || "") } : null,
+    pursuit: base.pursuit && typeof base.pursuit === "object" ? { dueYear: Math.max(0, Number(base.pursuit.dueYear) || 0), reason: String(base.pursuit.reason || "旧账追来") } : null,
+    records: { cons: Math.max(0, Number(base.records?.cons) || 0), caught: Math.max(0, Number(base.records?.caught) || 0), prophecies: Math.max(0, Number(base.records?.prophecies) || 0), trueProphecies: Math.max(0, Number(base.records?.trueProphecies) || 0) },
   };
 }
 
@@ -2886,7 +2965,9 @@ function nextYear() {
     return;
   }
 
-  state.currentEvent = annualFortuneEvent() || annualFamilyStoryEvent() || annualOfficialCaseEvent() || chooseEvent();
+  state.currentEvent = annualUnderworldEvent() || annualJianghuEvent() || annualFortuneEvent() || annualFamilyStoryEvent() || annualOfficialCaseEvent() || chooseEvent();
+  if (state.underworld) state.underworld.heat = clamp(Number(state.underworld.heat || 0) - randInt(2, 6));
+  if (state.jianghu) state.jianghu.heat = clamp(Number(state.jianghu.heat || 0) - randInt(2, 6));
   if (!state.currentEvent) addLog("平年", "这一年无甚大事，日子仍照常向前。", state.lastDeltas);
   finishYear(false);
 }
@@ -3690,6 +3771,9 @@ function chooseOption(index) {
   if (event.kind === "careerCase") return resolveCareerCase(event, choice);
   if (event.kind === "fortuneEvent") return resolveFortuneEvent(event, choice);
   if (event.kind === "dailyStory") return resolveDailyStory(event, choice);
+  if (event.kind === "examinerBribe") return resolveExaminerBribe(choice);
+  if (event.kind === "underworldConsequence") return resolveUnderworldConsequence(event, choice);
+  if (event.kind === "jianghuProphecy") return resolveJianghuProphecy(event, choice);
 
   const deltas = applyResults(choice.results || []);
   state.lastDeltas = mergeDeltas(state.pendingActivity?.deltas, deltas);
@@ -5110,6 +5194,11 @@ function useSpecialPlace(id) {
   } else if (id === "miniGames") {
     state.miniGames = normalizeMiniGames(state.miniGames);
     view.page = "miniGames";
+    render();
+    return;
+  } else if (id === "jianghu") {
+    state.jianghu = normalizeJianghuState(state.jianghu);
+    view.page = "jianghu";
     render();
     return;
   } else if (id === "theater") {
@@ -6695,17 +6784,39 @@ function revealGamble(opener = "player") {
   if (money < GAMBLE_MIN_STAKE) return;
   const actual = gambleFaceCount(bid.face);
   const bidTrue = actual >= bid.count;
-  const playerWin = opener === "player" ? !bidTrue : bidTrue;
+  let playerWin = opener === "player" ? !bidTrue : bidTrue;
+  let qianText = "";
+  let caughtQian = false;
+  if (state.jianghu?.enabledQian && state.jianghu.skills?.includes("qian")) {
+    state.jianghu.enabledQian = false;
+    const totalHeat = Number(state.jianghu.heat || 0) + Number(state.underworld?.heat || 0);
+    caughtQian = Math.random() < 0.1 + totalHeat / 260;
+    if (caughtQian) {
+      playerWin = false;
+      state.jianghu.records.caught += 1;
+      state.jianghu.heat = clamp(state.jianghu.heat + 28);
+      state.prisonYears = Math.max(state.prisonYears, randInt(1, 3));
+      qianText = "你刚换过暗记，庄家便扣住手腕。袖中机关当场败露，你被打伤手指并押入牢中。";
+    } else if (!playerWin && Math.random() < 0.68) {
+      playerWin = true;
+      state.jianghu.heat = clamp(state.jianghu.heat + 10);
+      qianText = "你借开盅的一瞬换过暗记，原本的败局被悄悄扳成胜局。";
+    } else {
+      state.jianghu.heat = clamp(state.jianghu.heat + 4);
+      qianText = "你摸到袖中暗记，却发现没有必要冒险，最终未动机关。";
+    }
+  }
   const amount = playerWin ? stake : -stake;
   const deltas = [];
   changeStat("money", amount, deltas);
   changeStat("mood", playerWin ? randInt(2, 6) : -randInt(2, 6), deltas);
+  if (caughtQian) changeStat("physique", -randInt(8, 16), deltas);
   if (!playerWin && Math.random() > 0.68) changeStat("virtue", -randInt(1, 2), deltas);
   state.gamble.revealed = true;
   state.gamble.turn = "";
   state.gamble.result = {
     speaker: opener === "player" ? "你" : "对方",
-    text: `${opener === "player" ? "你" : state.gamble.opponentName}开盅。双方共有 ${actual} 个 ${bid.face} 点，${gambleBidText(bid)}${bidTrue ? "成立" : "不成立"}，你${playerWin ? "赢下" : "输掉"} ${moneyText(stake)}。`,
+    text: `${opener === "player" ? "你" : state.gamble.opponentName}开盅。双方共有 ${actual} 个 ${bid.face} 点，${gambleBidText(bid)}${bidTrue ? "成立" : "不成立"}，你${playerWin ? "赢下" : "输掉"} ${moneyText(stake)}。${qianText ? ` ${qianText}` : ""}`,
     playerWin,
     amount,
     actual,
@@ -7491,6 +7602,82 @@ function drawTempleFortune() {
   finishAction(`${lot.grade} · ${lot.title}`, `${lot.verse}\n\n解签：${lot.interpretation} 这支签会在下一流年的具体剧情中应验。`, deltas, lot.icon);
 }
 
+function annualUnderworldEvent() {
+  const extortion = state.underworld?.extortion;
+  if (!extortion || state.year < extortion.dueYear) return null;
+  return {
+    kind: "underworldConsequence",
+    consequence: "extortion",
+    title: "旧把柄 · 再次索银",
+    content: `${extortion.name}拿着当年科场暗记登门，索要 ${moneyText(extortion.amount)}，否则便把证据送进贡院。`,
+    children: [
+      { title: "付钱封口", note: `损失 ${moneyText(extortion.amount)}，风声略降`, content: "你交出银钱，对方收起暗记，却没有保证这是最后一次。", choice: "pay" },
+      { title: "拒绝受制", note: "保住钱财，赌对方不敢同归于尽", content: "你拒绝再付一文，并警告对方若告发便是同罪。", choice: "refuse" },
+    ],
+  };
+}
+
+function resolveUnderworldConsequence(event, choice) {
+  const deltas = [];
+  const extortion = state.underworld.extortion;
+  if (choice.choice === "pay" && extortion) {
+    const amount = Math.min(state.stats.money, extortion.amount);
+    changeStat("money", -amount, deltas);
+    state.underworld.heat = clamp(state.underworld.heat - 8);
+  } else if (Math.random() < 0.48 + state.underworld.heat / 200) {
+    changeStat("favorability", -randInt(8, 16), deltas);
+    state.underworld.records.exposed += 1;
+    if (state.career && careerKind(state.career) === "official") state.official.merit = Math.max(0, state.official.merit - randInt(80, 180));
+  } else {
+    changeStat("eq", 3, deltas);
+  }
+  state.underworld.extortion = null;
+  state.currentEvent = null;
+  addLog(event.title, choice.content, deltas);
+  state.eventResult = { title: choice.title, text: choice.content, deltas, icon: "PrisonHeader" };
+  save();
+  render();
+}
+
+function annualJianghuEvent() {
+  const pursuit = state.jianghu?.pursuit;
+  if (pursuit && state.year >= pursuit.dueYear) {
+    return { kind: "jianghuProphecy", prophecyType: "pursuit", title: "苦主追门", content: `${pursuit.reason}。几名壮汉已经堵在巷口。`, children: [{ title: "赔钱息事", note: "破财消灾", content: "你赔出一笔药钱，请中人作保平息此事。", choice: "pay" }, { title: "翻墙脱身", note: "体魄检定，失败可能入狱", content: "你从后窗翻墙，沿屋脊甩开追来的人。", choice: "run" }] };
+  }
+  const prophecy = state.jianghu?.prophecy;
+  if (!prophecy || state.year < prophecy.dueYear) return null;
+  const truthful = prophecy.truthful;
+  const configs = {
+    blood: { title: "三年卦应 · 血光", content: truthful ? "无灯巷中突然冲出持刀仇家，卦中那句血光之灾真的来了。" : "三年前所说的血光之期已到，日子却平静得出奇。", choices: truthful ? [{ title: "转身迎敌", note: "体魄抵挡", content: "你早有戒心，抓起木杖迎住刀锋。", choice: "bold" }, { title: "舍财脱身", note: "花钱雇人护送", content: "你把钱袋抛向另一侧，趁乱退入巡夜人群。", choice: "safe" }] : [{ title: "原是虚言", content: "你终于明白那只是一句碰运气的江湖套话。", choice: "false" }] },
+    wealth: { title: "三年卦应 · 旧物生财", content: truthful ? "东门果然有人送来一张旧契，祖宅墙外竟还有一间漏记铺面。" : "你守着东门等了一整日，只有卖饼小贩经过。", choices: [{ title: truthful ? "接下旧契" : "收起卦纸", content: truthful ? "你核验契纸，意外收回一笔旧产。" : "预言没有应验，你把卦纸压进箱底。", choice: truthful ? "wealth" : "false" }] },
+    noble: { title: "三年卦应 · 贵人叩门", content: truthful ? "一位青衣官员登门，正要寻能办一桩难事的人。" : "三年之期已过，所谓青衣贵人始终没有出现。", choices: [{ title: truthful ? "开门相迎" : "一笑置之", content: truthful ? "你接下引荐，前程忽然多出一条路。" : "你不再把江湖批命放在心上。", choice: truthful ? "noble" : "false" }] },
+  };
+  const config = configs[prophecy.type] || configs.blood;
+  return { kind: "jianghuProphecy", prophecyType: prophecy.type, truthful, ...config, children: config.choices };
+}
+
+function resolveJianghuProphecy(event, choice) {
+  const deltas = [];
+  if (event.prophecyType === "pursuit") {
+    if (choice.choice === "pay") changeStat("money", -Math.min(state.stats.money, randInt(120, 320)), deltas);
+    else if (Math.random() + state.stats.physique / 150 < 0.8) { state.prisonYears = Math.max(state.prisonYears, 1); changeStat("physique", -randInt(4, 10), deltas); }
+    else changeStat("mood", 3, deltas);
+    state.jianghu.pursuit = null;
+  } else {
+    if (event.truthful) state.jianghu.records.trueProphecies += 1;
+    if (choice.choice === "bold") changeStat("physique", Math.random() < 0.6 ? -3 : -10, deltas);
+    if (choice.choice === "safe") changeStat("money", -Math.min(state.stats.money, 100), deltas);
+    if (choice.choice === "wealth") changeStat("money", randInt(350, 800), deltas);
+    if (choice.choice === "noble") { changeStat("relationship", 8, deltas); changeStat("favorability", 5, deltas); }
+    state.jianghu.prophecy = null;
+  }
+  state.currentEvent = null;
+  addLog(event.title, choice.content, deltas);
+  state.eventResult = { title: choice.title, text: choice.content, deltas, icon: "Temple" };
+  save();
+  render();
+}
+
 function annualFortuneEvent() {
   const active = state.templeFortune?.active;
   if (!active || state.year < active.dueYear) return null;
@@ -7900,6 +8087,8 @@ function officialCareerActions() {
   actions.push(["case:post", `${office.office}专案`, `处理只属于${office.office}这一官职的高级剧情。`]);
   const cases = officialCasePool();
   actions.push(["case:random", "官场要案", cases.length ? "进入带选择的官场剧情，处理得当可涨政绩，也可能招祸。" : "官阶尚低，暂以日常案牍为主。"]);
+  actions.push(["case:mystery", "离奇疑案", "多轮验尸、问证、搜查与翻卷，最后亲自指认真凶。"]);
+  if (rank >= 4) actions.push(["exam:bribe", "贡院暗局", "有人带重金求购考题；卖题来钱极快，也会留下毁官把柄。"]);
   if (state.age >= 60 && !state.official?.retired) actions.push(["retire", "致仕归乡", `退下官身，回乡修谱、教导子孙，留下身后名。`]);
   actions.push(["resign", "辞去官职", `交还${office.office}印信，离开官场；之后方可改换其他营生。`]);
   return actions;
@@ -7946,6 +8135,8 @@ function performOfficialAction(type = "affair:archives") {
   if (state.official.retired) return finishAction("乡居", "你已致仕归乡，不再点卯办差。可在家中修谱、教导子孙，把官场旧事写入命册。", [], "Official");
   const action = String(type || "");
   if (action === "retire") return retireOfficial();
+  if (action === "case:mystery") return startMysteryCase();
+  if (action === "exam:bribe") return startExaminerBribe();
   if (action === "case:post") return startOfficialCase("post");
   if (action.startsWith("case:")) return startOfficialCase("random");
   return performOfficialAffair(action.replace("affair:", "") || "archives");
@@ -8299,6 +8490,256 @@ function canOpenExtraExam(type) {
   return extraExamQuestions(type).length > 0;
 }
 
+function meetJianghuMentor() {
+  if (state.jianghu.mentor || state.stats.money < 80) return;
+  const deltas = [];
+  changeStat("money", -80, deltas);
+  state.jianghu.mentor = { name: sample(["无影手", "赛半仙", "铁算盘婆", "过江狐"]), affection: randInt(48, 70) };
+  changeStat("eq", 3, deltas);
+  finishAction("拜入江湖门", `你在后巷茶棚连过三道试探，终于见到${state.jianghu.mentor.name}。对方收下茶钱，只说：“术可以学，命得自己担。”`, deltas, "GamblingHouse");
+}
+
+function learnJianghuSkill(id) {
+  const skill = JIANGHU_SKILLS.find((item) => item.id === id);
+  if (!skill || !state.jianghu.mentor || state.jianghu.skills.includes(id) || state.stats.money < skill.cost) return;
+  const deltas = [];
+  changeStat("money", -skill.cost, deltas);
+  changeStat("virtue", -randInt(1, 4), deltas);
+  state.jianghu.skills.push(id);
+  state.jianghu.mentor.affection = clamp(state.jianghu.mentor.affection + 5);
+  finishAction(`学会 · ${skill.name}`, `${state.jianghu.mentor.name}没有教你口诀，只让你在三场真局里自己看懂门道。从今以后，你可以施展“${skill.name}”。`, deltas, "GamblingHouse");
+}
+
+function useJianghuSkill(id) {
+  if (!state.jianghu.skills.includes(id) || state.dead || state.prisonYears > 0) return;
+  const deltas = [];
+  state.jianghu.records.cons += 1;
+  if (id === "qian") {
+    state.jianghu.enabledQian = !state.jianghu.enabledQian;
+    return finishAction("千术暗记", state.jianghu.enabledQian ? "你在袖口藏好暗记。下一次博坊开盅时，千术可能替你翻盘，也可能被当场识破。" : "你拆去袖口暗记，暂不在博坊出千。", [], "GamblingHouse");
+  }
+  if (id === "face") {
+    const success = Math.random() + state.stats.eq / 160 > 0.62;
+    changeStat("money", success ? randInt(45, 130) : randInt(5, 25), deltas);
+    changeStat("relationship", success ? randInt(3, 7) : 1, deltas);
+    if (success && Math.random() < 0.35) addFriend();
+    return finishAction("街头相面", success ? "你从衣料、口音与手上薄茧推中来客身份，又顺着话头说中一件心事。对方惊疑之余奉上卦金。" : "你只说中几句人人都能对上的套话，来客听完笑笑便走。", deltas, "Relationship1");
+  }
+  if (id === "fortune") {
+    if (state.jianghu.prophecy) return;
+    const type = sample(["blood", "wealth", "noble"]);
+    const texts = { blood: "三年之后，西南有血光，莫走无灯之路。", wealth: "三年之后，旧物生财，东门有人送契。", noble: "三年之后，青衣贵人叩门，一句话能改你的前程。" };
+    state.jianghu.prophecy = { type, truthful: Math.random() < 0.58, dueYear: state.year + 3, text: texts[type] };
+    state.jianghu.records.prophecies += 1;
+    return finishAction("泄命一卦", `你以铜钱排出卦象，忽然说出：“${texts[type]}”这句话会不会成真，要等整整三年。`, [{ label: "预言", value: "三年后" }], "Temple");
+  }
+  if (id === "fakeMedicine") {
+    const gain = randInt(160, 420);
+    changeStat("money", gain, deltas);
+    changeStat("virtue", -randInt(5, 11), deltas);
+    state.jianghu.heat = clamp(state.jianghu.heat + randInt(18, 35));
+    if (Math.random() < 0.58) state.jianghu.pursuit = { dueYear: state.year + 1, reason: "假药吃坏了人，苦主循着药包寻来" };
+    return finishAction("走江湖卖药", `你把寻常药粉装进描金瓷瓶，靠一番口舌卖出 ${moneyText(gain)}。散场后却有人捂着肚子追问药方。`, deltas, "Elixir");
+  }
+  if (id === "impersonate") {
+    if (!state.inventory.includes("官差衣冠")) return;
+    const caught = Math.random() < 0.22 + state.jianghu.heat / 180;
+    if (caught) {
+      state.prisonYears = Math.max(state.prisonYears, randInt(1, 4));
+      state.jianghu.records.caught += 1;
+      state.jianghu.heat = clamp(state.jianghu.heat + 30);
+      changeStat("favorability", -randInt(7, 14), deltas);
+      return finishAction("诈官败露", "你披着官差衣冠沿街索取酒食，却被真正巡役认出腰牌制式不对，当场押入牢中。", deltas, "PrisonHeader");
+    }
+    const gain = randInt(90, 260);
+    changeStat("money", gain, deltas);
+    changeStat("virtue", -randInt(4, 9), deltas);
+    state.jianghu.heat = clamp(state.jianghu.heat + 22);
+    return finishAction("假差巡街", `你穿官差衣冠在码头“查验”，商户不敢细问，奉上 ${moneyText(gain)} 求个清静。`, deltas, "Official");
+  }
+}
+
+function buyJianghuCostume() {
+  if (state.inventory.includes("官差衣冠") || state.stats.money < 180) return;
+  const deltas = [];
+  changeStat("money", -180, deltas);
+  addInventoryItem("官差衣冠", deltas);
+  finishAction("购得旧衣冠", "旧货商从箱底取出一身退役差人的衣冠，腰牌却是仿制品。", deltas, "Official");
+}
+
+function startExaminerBribe() {
+  const amount = randInt(650, 1800) + officialRankIndex() * 70;
+  state.currentEvent = {
+    kind: "examinerBribe",
+    title: "贡院暗局 · 重金买题",
+    content: `夜里，一名自称替江南豪族办事的中间人送来 ${moneyText(amount)}，只求你透露今科题眼。他暗示银票之外，还能替你打通别处门路。`,
+    children: [
+      { title: "收银卖题", note: `得 ${moneyText(amount)}，大涨贪墨与风声`, content: "你默写题眼交给中间人，又收下没有落款的银票。" , amount },
+      { title: "设局反查", note: "拒绝交易，可能查出幕后考生", content: "你留下银票拓印，命心腹暗跟中间人，顺藤摸瓜查到数名涉案士子。", amount: 0 },
+      { title: "焚信拒见", note: "保全清名，但得罪暗中势力", content: "你把来信投入灯火，只让门房回一句贡院无私门。", amount: 0 },
+    ],
+  };
+  save();
+  render();
+}
+
+function resolveExaminerBribe(choice) {
+  const deltas = [];
+  if (choice.amount) {
+    changeStat("money", choice.amount, deltas);
+    changeStat("virtue", -randInt(8, 16), deltas);
+    state.official.corruption = clamp(Number(state.official.corruption || 0) + randInt(12, 24), -100, 100);
+    state.underworld.heat = clamp(state.underworld.heat + randInt(28, 45));
+    state.underworld.records.soldQuestions += 1;
+    if (Math.random() < 0.45) state.underworld.extortion = { amount: randInt(420, 950), dueYear: state.year + 1, name: "买题豪族" };
+  } else if (/反查/.test(choice.title)) {
+    state.official.merit += randInt(35, 75);
+    state.official.clean = clamp(Number(state.official.clean || 0) + 8, -100, 100);
+    changeStat("favorability", randInt(3, 7), deltas);
+  } else {
+    state.official.clean = clamp(Number(state.official.clean || 0) + 4, -100, 100);
+    changeStat("virtue", 4, deltas);
+  }
+  state.currentEvent = null;
+  state.lastDeltas = deltas;
+  addLog("贡院暗局", choice.content, deltas);
+  state.eventResult = { title: choice.title, text: choice.content, deltas, icon: "Official", scene: "seal" };
+  save();
+  render();
+}
+
+function startMysteryCase() {
+  if (state.mystery.active) return;
+  const available = MYSTERY_CASES.filter((item) => !state.mystery.completed.some((done) => done.caseId === item.id));
+  const item = sample(available.length ? available : MYSTERY_CASES);
+  state.mystery.active = { caseId: item.id, round: 0, clues: [], actionsUsed: [] };
+  state.currentEvent = null;
+  state.eventResult = null;
+  save();
+  render();
+}
+
+function activeMysteryCase() {
+  return MYSTERY_CASES.find((item) => item.id === state.mystery?.active?.caseId) || null;
+}
+
+function investigateMystery(action) {
+  const active = state.mystery?.active;
+  const item = activeMysteryCase();
+  if (!active || !item || active.actionsUsed.includes(action) || active.round >= 4) return;
+  const labels = { autopsy: "验尸", witness: "问证人", scene: "搜查现场", records: "查阅旧卷" };
+  active.actionsUsed.push(action);
+  active.clues.push({ action, label: labels[action], text: item.clues[action] });
+  active.round += 1;
+  const deltas = [];
+  if (action === "autopsy") changeStat("knowledge", randInt(1, 3), deltas);
+  if (action === "witness") changeStat("eq", randInt(1, 3), deltas);
+  if (action === "scene") changeStat("physique", randInt(-1, 2), deltas);
+  if (action === "records") changeStat("knowledge", randInt(1, 3), deltas);
+  state.lastDeltas = deltas;
+  save();
+  render();
+}
+
+function accuseMystery(suspectId) {
+  const active = state.mystery?.active;
+  const item = activeMysteryCase();
+  if (!active || !item || active.clues.length < 3) return;
+  const suspect = item.suspects.find(([id]) => id === suspectId);
+  if (!suspect) return;
+  const correct = suspectId === item.guilty;
+  const deltas = [];
+  if (correct) {
+    state.official.merit += randInt(90, 180);
+    state.official.records.cases += 1;
+    changeStat("favorability", randInt(6, 12), deltas);
+    changeStat("virtue", randInt(3, 7), deltas);
+  } else {
+    state.official.merit = Math.max(0, state.official.merit - randInt(45, 100));
+    changeStat("favorability", -randInt(5, 12), deltas);
+    changeStat("virtue", -randInt(7, 14), deltas);
+  }
+  const text = correct ? `你以${active.clues.map((clue) => clue.label).join("、")}所得线索层层对证，最终指认${suspect[1]}。真凶无法自圆其说，奇案告破。` : `你指认${suspect[1]}，但关键证据彼此冲突。真正的凶手借机脱身，这桩错案成为你官声上的污点。`;
+  state.mystery.completed.push({ caseId: item.id, title: item.title, correct, accused: suspect[1], year: state.year });
+  state.mystery.active = null;
+  state.lastDeltas = deltas;
+  addLog(`奇案 · ${item.title}`, text, deltas);
+  state.eventResult = { title: `${item.title} · ${correct ? "真相大白" : "铸成错案"}`, text, deltas, icon: correct ? "Official" : "PrisonHeader", scene: "seal" };
+  save();
+  render();
+}
+
+function openExamUnderworld() {
+  if (state.age < MAIN_EXAM_MIN_AGE || state.dead || state.prisonYears > 0) return;
+  state.underworld = normalizeUnderworld(state.underworld);
+  if (!state.underworld.broker) state.underworld.broker = { name: sample(["铁算盘", "陆三眼", "贡院鼠", "白纸扇"]), trust: randInt(28, 72), lastYear: state.year };
+  view.page = "examUnderworld";
+  save();
+  render();
+}
+
+function canUseExamCheat(method) {
+  if (!method || state.stats.money < method.cost || state.exam.current || examTakenThisYear()) return false;
+  if (method.requireExaminer && !(state.stats.relationship >= 70 || state.friends.some((item) => /考官|学政|官员/.test(item.relation || "")))) return false;
+  return true;
+}
+
+function prepareExamCheat(id) {
+  const method = EXAM_CHEAT_METHODS.find((item) => item.id === id);
+  if (!canUseExamCheat(method)) return;
+  const deltas = [];
+  changeStat("money", -method.cost, deltas);
+  changeStat("virtue", -randInt(2, method.severe ? 9 : 5), deltas);
+  state.underworld.heat = clamp(state.underworld.heat + method.heat);
+  const genuine = method.id !== "buyExam" || Math.random() < (0.42 + Number(state.underworld.broker?.trust || 45) / 220);
+  state.underworld.activeCheat = { id: method.id, genuine, boughtYear: state.year };
+  state.underworld.records.attempts += 1;
+  addLedger("科场暗门", -method.cost, `筹备${method.name}。`);
+  finishAction("暗局已定", `你通过${state.underworld.broker?.name || "中间人"}布置了“${method.name}”。银钱已经交割，真假成败只有入场后才知道。`, deltas, "PrisonHeader");
+}
+
+function examCheatResolution(stage, current, score, passed) {
+  const active = state.underworld?.activeCheat;
+  if (!active || current.extraType) return { score, passed, prefix: "", detected: false };
+  const method = EXAM_CHEAT_METHODS.find((item) => item.id === active.id);
+  if (!method) return { score, passed, prefix: "", detected: false };
+  const detectionChance = clamp(method.risk + state.underworld.heat * 0.22 - state.stats.eq * 0.08, 4, 72) / 100;
+  const detected = Math.random() < detectionChance;
+  state.underworld.activeCheat = null;
+  if (detected) {
+    state.underworld.records.exposed += 1;
+    state.underworld.heat = clamp(state.underworld.heat + 24);
+    changeStat("favorability", -randInt(8, 18));
+    changeStat("virtue", -randInt(5, 12));
+    if (method.severe) {
+      state.prisonYears = Math.max(state.prisonYears, randInt(3, 7));
+      if (!state.tags.includes("科场案犯")) state.tags.push("科场案犯");
+      for (const child of livingChildren()) child.affection = clamp(child.affection - randInt(3, 10));
+    }
+    return { score: 0, passed: false, detected: true, prefix: `搜检官当场查出你以“${method.name}”舞弊，试卷作废，革去资格。${method.severe ? "冒名重罪牵连门户，你被押入牢中。" : "贡院将你的姓名记入黜籍。"} ` };
+  }
+  let nextScore = score;
+  let nextPassed = passed;
+  let prefix = "";
+  if (method.id === "buyExam" && !active.genuine) {
+    nextScore = Math.max(0, score - 4);
+    nextPassed = false;
+    prefix = `中介给你的所谓“真题”全是伪造，放榜后${state.underworld.broker?.name || "中介"}还托人嘲笑你贪捷径。 `;
+    if (state.underworld.broker) state.underworld.broker.trust = clamp(state.underworld.broker.trust - 25);
+  } else if (method.boost >= 99) {
+    nextScore = current.type === "choice" ? current.questions.length : 96;
+    nextPassed = true;
+    prefix = method.id === "buyExam" ? "中介所售竟是真题，你在考场落笔如有神助，名次直入前列。 " : `${method.name}的暗线顺利运转，你的卷子被稳稳送进取中之列。 `;
+  } else {
+    nextScore = current.type === "choice" ? Math.min(current.questions.length, score + method.boost) : Math.min(100, score + method.boost * 8);
+    nextPassed = nextScore >= stage.pass;
+    prefix = `${method.name}替你补上了最要紧的几处缺口。 `;
+  }
+  state.underworld.records.successes += nextPassed ? 1 : 0;
+  if (method.extortion && Math.random() < method.extortion) state.underworld.extortion = { amount: randInt(180, 520), dueYear: state.year + 1, name: "递卷书吏" };
+  return { score: nextScore, passed: nextPassed, detected: false, prefix };
+}
+
 function startExam() {
   if (!canOpenExam()) return;
   const stageIndex = Math.min(state.exam.rank + 1, EXAM_STAGES.length - 1);
@@ -8491,6 +8932,11 @@ function submitExam() {
     const resultText = topic.result || (Array.isArray(topic?.resultDescription?.[0]) ? topic.resultDescription[0].slice(0, 4).join("，") : "文理清通，颇得考官青眼");
     text = `${stage.name}策问「${topic.topic || "治世之道"}」，取${current.theme || "治国"}为旨，行文${current.writingStyle || "堂堂正正"}。${resultText}。${prepBonus ? "考前积累也添了几分底气。" : ""}评分 ${score}，${passed ? "金榜题名" : "仍待来年"}。`;
   }
+
+  const cheatResolution = examCheatResolution(stage, current, score, passed);
+  score = cheatResolution.score;
+  passed = cheatResolution.passed;
+  if (cheatResolution.prefix) text = `${cheatResolution.prefix}最终${stage.name}${passed ? `取中${stage.title}` : "名落孙山"}，计分 ${score}。`;
 
   if (passed && current.extraType) {
     SFX.play("exam-pass");
@@ -9306,6 +9752,7 @@ function renderGame() {
       <section class="status-strip">
         ${resourcePill("钱财", moneyText(state.stats.money, { compact: true }))}
         ${resourcePill("营生", currentCareerName() || "无")}
+        ${(Number(state.underworld?.heat || 0) + Number(state.jianghu?.heat || 0)) > 0 ? resourcePill("风声", Math.round(Number(state.underworld?.heat || 0) + Number(state.jianghu?.heat || 0)), "bad") : ""}
         ${state.prisonYears > 0 ? resourcePill("牢狱", `余刑 ${state.prisonYears} 年`, "bad") : ""}
         ${state.diseases.map((item) => resourcePill("病症", item, "bad")).join("")}
         ${state.tags.slice(0, 4).map((item) => resourcePill("记号", item)).join("")}
@@ -9527,6 +9974,7 @@ function achievementToast() {
 
 function centerContent() {
   if (state.dead) return deathView();
+  if (state.mystery?.active) return mysteryCaseView();
   if (state.pendingTravel) return travelRunView();
   if (state.pendingCaravan) return caravanRunView();
   if (state.eventResult) return eventResultView();
@@ -9547,6 +9995,8 @@ function centerContent() {
   if (view.page === "courtesanParlor") return courtesanParlorView();
   if (view.page === "activity") return activityView();
   if (view.page === "exam") return examView();
+  if (view.page === "examUnderworld") return examUnderworldView();
+  if (view.page === "jianghu") return jianghuView();
   return overviewView();
 }
 
@@ -11592,6 +12042,55 @@ function activityEventPreview(activity) {
     </section>`;
 }
 
+function examUnderworldView() {
+  state.underworld = normalizeUnderworld(state.underworld);
+  const broker = state.underworld.broker || { name: "贡院鼠", trust: 40 };
+  const active = EXAM_CHEAT_METHODS.find((item) => item.id === state.underworld.activeCheat?.id);
+  return `
+    <article class="play-card underworld-card">
+      <header class="dark-system-hero"><div>${icon("PrisonHeader", "贡院暗门")}</div><span><p class="eyebrow">科举 · 黑灰门路</p><h2>${escapeHtml(broker.name)}的密室</h2><p>这里没有稳妥买卖。银钱、把柄与功名一起过手，风声越高，搜检与翻脸的概率越大。</p></span><b>风声 ${Math.round(state.underworld.heat)}</b></header>
+      ${active ? `<p class="dark-warning">已布置：${escapeHtml(active.name)}。下一次正科交卷时自动生效，入场前无法撤回。</p>` : ""}
+      <div class="dark-method-grid">${EXAM_CHEAT_METHODS.map((method) => {
+        const gated = method.requireExaminer && !(state.stats.relationship >= 70 || state.friends.some((item) => /考官|学政|官员/.test(item.relation || "")));
+        return `<article class="dark-method"><span><b>${escapeHtml(method.name)}</b><em>风险 ${method.risk}% · 风声 +${method.heat}</em></span><p>${escapeHtml(method.note)}</p><button class="text-btn inline-action" data-exam-cheat="${method.id}" ${active || gated || !canUseExamCheat(method) ? "disabled" : ""}>${gated ? "尚不认识考官" : `交 ${moneyText(method.cost)} 布局`}</button></article>`;
+      }).join("")}</div>
+      <section class="dark-record"><b>暗账</b><span>尝试 ${state.underworld.records.attempts} · 得手 ${state.underworld.records.successes} · 败露 ${state.underworld.records.exposed} · 卖题 ${state.underworld.records.soldQuestions}</span></section>
+      <div class="main-actions"><button class="primary-btn" data-action="back-exam">回到明场</button></div>
+    </article>`;
+}
+
+function mysteryCaseView() {
+  const active = state.mystery.active;
+  const item = activeMysteryCase();
+  if (!active || !item) return overviewView();
+  const actions = [["autopsy", "验尸", "从伤口、毒物与尸体现象判断死因", "MedicineBag"], ["witness", "问证人", "拆分口供，寻找时间与措辞矛盾", "Relationship1"], ["scene", "搜查现场", "勘门窗、器物、脚印与被移动的细节", "MainBook"], ["records", "查阅卷宗", "追旧案、债务、亲缘与不为人知的动机", "Book"]];
+  return `
+    <article class="play-card mystery-card">
+      <header class="mystery-hero"><div>${icon("PrisonHeader", item.title)}</div><span><p class="eyebrow">离奇案件 · 第 ${active.round + 1} 轮</p><h2>${escapeHtml(item.title)}</h2><p>${escapeHtml(item.intro)}</p></span></header>
+      <section class="case-board"><div class="case-thread"></div>${active.clues.map((clue, index) => `<article><b>线索 ${index + 1} · ${escapeHtml(clue.label)}</b><p>${escapeHtml(clue.text)}</p></article>`).join("") || `<p class="empty-note">案卷刚刚展开，尚无可靠线索。</p>`}</section>
+      ${active.round < 4 ? `<div class="investigation-grid">${actions.map(([id, label, note, iconName]) => `<button class="investigation-action" data-mystery-investigate="${id}" ${active.actionsUsed.includes(id) ? "disabled" : ""}>${icon(iconName, label)}<span><b>${label}</b><small>${note}</small></span></button>`).join("")}</div>` : ""}
+      ${active.clues.length >= 3 ? `<section class="suspect-section"><div class="section-title"><h2>指认真凶</h2><small>一经落笔便不能反悔</small></div><div class="suspect-grid">${item.suspects.map(([id, name, role]) => `<button data-mystery-accuse="${id}"><b>${escapeHtml(name)}</b><span>${escapeHtml(role)}</span></button>`).join("")}</div></section>` : `<p class="dark-warning">至少取得三条线索后，才能正式指认嫌犯。</p>`}
+    </article>`;
+}
+
+function jianghuView() {
+  state.jianghu = normalizeJianghuState(state.jianghu);
+  return `
+    <article class="play-card jianghu-card">
+      <header class="dark-system-hero"><div>${icon("GamblingHouse", "江湖")}</div><span><p class="eyebrow">江湖 · 奇术与骗术</p><h2>${state.jianghu.mentor ? `${escapeHtml(state.jianghu.mentor.name)}门下` : "后巷茶棚"}</h2><p>术能窥人心，也能反噬自己。江湖风声与科场风声彼此相加，越出名越难全身而退。</p></span><b>风声 ${Math.round(state.jianghu.heat + state.underworld.heat)}</b></header>
+      ${!state.jianghu.mentor ? `<section class="mentor-invite"><h3>有人在等一个敢入局的徒弟</h3><p>交茶钱、过眼力关，随机结识一位江湖师父。</p><button class="primary-btn" data-action="jianghu-mentor" ${state.stats.money < 80 ? "disabled" : ""}>递茶拜师 · ${moneyText(80)}</button></section>` : `<p class="dark-warning">师父 ${escapeHtml(state.jianghu.mentor.name)} · 信任 ${Math.round(state.jianghu.mentor.affection)}</p>`}
+      <div class="dark-method-grid">${JIANGHU_SKILLS.map((skill) => {
+        const learned = state.jianghu.skills.includes(skill.id);
+        const lockedUse = skill.id === "impersonate" && !state.inventory.includes("官差衣冠");
+        return `<article class="dark-method ${learned ? "learned" : ""}"><span><b>${escapeHtml(skill.name)}</b><em>${learned ? "已学会" : `学费 ${moneyText(skill.cost)}`}</em></span><p>${escapeHtml(skill.note)}</p>${learned ? `<button class="text-btn inline-action" data-jianghu-use="${skill.id}" ${lockedUse ? "disabled" : ""}>${skill.id === "qian" ? (state.jianghu.enabledQian ? "收起千术" : "博坊启用") : lockedUse ? "缺官差衣冠" : "施展此术"}</button>` : `<button class="text-btn inline-action" data-jianghu-learn="${skill.id}" ${!state.jianghu.mentor || state.stats.money < skill.cost ? "disabled" : ""}>向师父学</button>`}</article>`;
+      }).join("")}</div>
+      ${state.jianghu.skills.includes("impersonate") && !state.inventory.includes("官差衣冠") ? `<button class="secondary-btn" data-action="jianghu-costume" ${state.stats.money < 180 ? "disabled" : ""}>买旧官差衣冠 · ${moneyText(180)}</button>` : ""}
+      ${state.jianghu.prophecy ? `<section class="prophecy-slip"><b>未应之卦 · ${state.jianghu.prophecy.dueYear - state.year} 年后</b><p>${escapeHtml(state.jianghu.prophecy.text)}</p></section>` : ""}
+      <section class="dark-record"><b>江湖旧账</b><span>设局 ${state.jianghu.records.cons} · 被擒 ${state.jianghu.records.caught} · 批命 ${state.jianghu.records.prophecies} · 应真 ${state.jianghu.records.trueProphecies}</span></section>
+      <div class="main-actions"><button class="ghost-btn" data-action="back-places">离开暗门</button></div>
+    </article>`;
+}
+
 function examView() {
   const current = state.exam.current;
   if (!current) {
@@ -11615,6 +12114,7 @@ function examView() {
           <button class="secondary-btn" data-exam-extra="female-sore" ${canOpenExtraExam("female-sore") ? "" : "disabled"}>疮疡</button>
           <button class="secondary-btn" data-exam-extra="female-one" ${canOpenExtraExam("female-one") ? "" : "disabled"}>总论一</button>
           <button class="secondary-btn" data-exam-extra="female-two" ${canOpenExtraExam("female-two") ? "" : "disabled"}>总论二</button>
+          <button class="ghost-btn danger" data-action="open-exam-underworld" ${state.age < MAIN_EXAM_MIN_AGE || examTakenThisYear() ? "disabled" : ""}>贡院暗门</button>
           <button class="ghost-btn" data-action="back-activity">返回书院</button>
         </div>
         ${examStatusNote()}
@@ -11691,9 +12191,11 @@ function eventView(event) {
   const familyStory = event.kind === "familyStory";
   const careerCase = event.kind === "careerCase";
   const fortuneEvent = event.kind === "fortuneEvent";
+  const darkEvent = ["examinerBribe", "underworldConsequence", "jianghuProphecy"].includes(event.kind);
+  const eyebrow = event.kind === "examinerBribe" ? "贡院暗局" : event.kind === "underworldConsequence" ? "旧账追门" : event.kind === "jianghuProphecy" ? "江湖命数" : official ? "官场考验" : familyStory ? "家事流年" : careerCase ? "本业专案" : fortuneEvent ? "签运应验" : "事件";
   return `
     <article class="play-card event-card">
-      <p class="eyebrow">${official ? "官场考验" : familyStory ? "家事流年" : careerCase ? "本业专案" : fortuneEvent ? "签运应验" : "事件"}</p>
+      <p class="eyebrow">${eyebrow}</p>
       <h2>${escapeHtml(event.title || "事件")}</h2>
       <p>${formatText(fillPlaceholders(event.content || event.history || "", false))}</p>
       <div class="choice-list">
@@ -11701,7 +12203,7 @@ function eventView(event) {
           options.length
             ? options.map(({ child, index }) => `<button class="choice-btn ${official || careerCase ? "official-choice" : ""}" data-choice="${index}" ${child.disabled ? "disabled" : ""}>
               <span>${escapeHtml(child.title || "继续")}</span>
-              ${(official || familyStory || careerCase || fortuneEvent) && child.note ? `<small>${escapeHtml(child.note)}</small>` : ""}
+              ${(official || familyStory || careerCase || fortuneEvent || darkEvent) && child.note ? `<small>${escapeHtml(child.note)}</small>` : ""}
             </button>`).join("")
             : `<button class="primary-btn" data-action="finish-event">继续</button>`
         }
@@ -12163,6 +12665,12 @@ app.addEventListener("click", (event) => {
   if (button.dataset.action === "start-exam") return startExam();
   if (button.dataset.action === "prepare-exam") return prepareExam();
   if (button.dataset.action === "submit-exam") return submitExam();
+  if (button.dataset.action === "open-exam-underworld") return openExamUnderworld();
+  if (button.dataset.action === "back-exam") {
+    view.page = "exam";
+    render();
+    return;
+  }
   if (button.dataset.action === "cancel-exam") {
     state.exam.current = null;
     view.page = "activity";
@@ -12218,6 +12726,13 @@ app.addEventListener("click", (event) => {
     return;
   }
   if (button.dataset.choice !== undefined) return chooseOption(Number(button.dataset.choice));
+  if (button.dataset.examCheat) return prepareExamCheat(button.dataset.examCheat);
+  if (button.dataset.mysteryInvestigate) return investigateMystery(button.dataset.mysteryInvestigate);
+  if (button.dataset.mysteryAccuse) return accuseMystery(button.dataset.mysteryAccuse);
+  if (button.dataset.jianghuLearn) return learnJianghuSkill(button.dataset.jianghuLearn);
+  if (button.dataset.jianghuUse) return useJianghuSkill(button.dataset.jianghuUse);
+  if (button.dataset.action === "jianghu-mentor") return meetJianghuMentor();
+  if (button.dataset.action === "jianghu-costume") return buyJianghuCostume();
   if (button.dataset.homeAction) return performHomeAction(button.dataset.homeAction);
   if (button.dataset.activity) return openActivity(button.dataset.activity);
   if (button.dataset.gambleAdjust) {
