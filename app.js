@@ -848,15 +848,15 @@ const COURTESAN_PORTRAITS = [
 ];
 const BROTHEL_PORTRAITS = [
   "assets/brothel-pipa-v1.webp",
-  "assets/courtesan-avatar-2.webp",
-  "assets/courtesan-avatar-3.webp",
-  "assets/courtesan-avatar-4.webp",
+  "assets/brothel-dancer-v1.webp",
+  "assets/brothel-poet-v1.webp",
+  "assets/brothel-huakui-v1.webp",
 ];
 const BROTHEL_ARCHETYPES = [
   { specialty: "琵琶", icon: "BambooFlute", specialtyText: "指下急雨落银瓶，最擅一曲边塞旧调。", background: "出身梨园，自幼随师学艺，最看重知音二字。" },
   { specialty: "舞袖", icon: "FlowerChiefTitle", specialtyText: "长袖回风，步步踩在鼓点与灯影里。", background: "随舞班辗转诸城，身段轻盈，也最懂席间分寸。" },
   { specialty: "诗词", icon: "Book", specialtyText: "临席成句，善把离合悲欢写进短笺。", background: "家道中落后入坊，仍藏着几卷旧书与一身傲气。" },
-  { specialty: "昆曲", icon: "Activity", specialtyText: "唱腔婉转，水袖一翻，满堂都静了下来。", background: "被鸨母悉心栽培，唱念俱佳，场面功夫也十分圆熟。" },
+  { specialty: "花魁", icon: "FlowerChiefTitle", specialtyText: "琴棋书画俱精，最擅在谈笑间照顾满席宾客。", background: "连任数季花魁，见惯富贵场面，却很少向人说起真心话。" },
 ];
 const BROTHEL_ACTIONS = {
   listen: { label: "听曲小坐", multiplier: 0.75, icon: "BambooFlute", diseaseRisk: 0 },
