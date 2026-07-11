@@ -479,6 +479,96 @@ try {
   assert.equal(await page.evaluate(() => state.careerProgress.道士.records.cases), 1, "道士专案没有完成结算");
   await clearBlockingUi();
 
+  console.log("quality gate: verifying partner portraits and brothel companion flow");
+  const partnerPortraits = await page.evaluate(() => ({
+    wife: relativeAvatarIcon({ relation: "妻子", gender: "female" }),
+    concubine: relativeAvatarIcon({ relation: "妾室", gender: "female" }),
+    candidate: relativeAvatarIcon({ relation: "待纳侧室", gender: "female" }),
+    husband: relativeAvatarIcon({ relation: "夫君", gender: "male" }),
+    mother: relativeAvatarIcon({ relation: "母亲", gender: "female" }),
+    wifePath: pathFor(relativeAvatarIcon({ relation: "妻子", gender: "female" })),
+  }));
+  assert.equal(partnerPortraits.wife, "FamilyWifeAvatar", "妻子仍在使用错误头像类型");
+  assert.equal(partnerPortraits.concubine, "FamilyConcubineAvatar", "侧室仍在使用错误头像类型");
+  assert.equal(partnerPortraits.candidate, "FamilyBetrothedAvatar", "待纳侧室仍在使用错误头像类型");
+  assert.equal(partnerPortraits.husband, "FamilyHusbandAvatar", "夫君没有使用伴侣头像类型");
+  assert.notEqual(partnerPortraits.wife, partnerPortraits.mother, "妻子头像仍与母亲头像相同");
+  assert.match(partnerPortraits.wifePath, /courtesan-avatar-1\.webp$/, "妻子头像没有指向年轻伴侣立绘");
+
+  const oldBrothelSave = await page.evaluate(() => {
+    const saved = JSON.parse(JSON.stringify(state));
+    delete saved.courtesanVisit;
+    delete saved.brothelRecords;
+    const restored = normalizeState(saved);
+    return { visit: restored.courtesanVisit, records: restored.brothelRecords };
+  });
+  assert.equal(oldBrothelSave.visit, null, "旧存档未正确补全青楼雅座状态");
+  assert.deepEqual(oldBrothelSave.records, { visits: 0, favorites: [] }, "旧存档未正确补全风月记录");
+
+  const brothelSetup = await page.evaluate(() => {
+    state.age = 28;
+    state.year = 28;
+    state.stats.money = 10000;
+    state.currentEvent = null;
+    state.eventResult = null;
+    state.courtesanVisit = null;
+    state.brothelRecords = { visits: 0, favorites: [] };
+    view.overlay = "";
+    startCourtesanParlor(true);
+    return {
+      page: view.page,
+      candidates: state.courtesanVisit.candidates.map((item) => ({ id: item.id, name: item.name, portrait: item.portrait, age: item.age })),
+      buttons: document.querySelectorAll("[data-brothel-action]").length,
+      heading: document.querySelector(".brothel-card h2")?.textContent,
+    };
+  });
+  assert.equal(brothelSetup.page, "courtesanParlor", "成年角色无法进入美人雅座");
+  assert.equal(brothelSetup.heading, "美人雅座", "青楼雅座页面标题错误");
+  assert.equal(brothelSetup.candidates.length, 4, "美人雅座没有生成四位可选人物");
+  assert.equal(brothelSetup.buttons, 12, "每位美人没有提供三种消遣方式");
+  assert.equal(brothelSetup.candidates.every((item) => item.age >= 18 && item.portrait), true, "青楼人物年龄或头像无效");
+  assert.ok(brothelSetup.candidates.some((item) => /brothel-pipa-v1\.webp$/.test(item.portrait)), "新生成的琴姬头像未接入页面");
+  await page.waitForNetworkIdle({ idleTime: 100, timeout: 5000 }).catch(() => {});
+
+  const firstCompanion = brothelSetup.candidates[0];
+  const moneyBeforeListen = await page.evaluate(() => state.stats.money);
+  await page.$eval(`[data-brothel-id="${firstCompanion.id}"][data-brothel-action="listen"]`, (element) => element.click());
+  const listenResult = await page.evaluate((id) => {
+    const companion = state.courtesanVisit.candidates.find((item) => item.id === id);
+    return { title: state.eventResult?.title, money: state.stats.money, visits: state.brothelRecords.visits, companionVisits: companion?.visits };
+  }, firstCompanion.id);
+  assert.match(listenResult.title, /听曲小坐/, "选择美人听曲后没有产生结果");
+  assert.ok(listenResult.money < moneyBeforeListen, "美人雅座没有扣除花费");
+  assert.equal(listenResult.visits, 1, "风月往来次数没有写入记录");
+  assert.equal(listenResult.companionVisits, 1, "所选美人的往来次数没有写入记录");
+  await clearBlockingUi();
+  await page.waitForNetworkIdle({ idleTime: 100, timeout: 5000 }).catch(() => {});
+
+  await page.$eval(`[data-brothel-id="${firstCompanion.id}"][data-brothel-action="banquet"]`, (element) => element.click());
+  const banquetResult = await page.evaluate((name) => ({
+    title: state.eventResult?.title,
+    visits: state.brothelRecords.visits,
+    favorite: state.brothelRecords.favorites.includes(name),
+    friend: state.friends.some((item) => item.name === name && item.relation === "风月知己"),
+  }), firstCompanion.name);
+  assert.match(banquetResult.title, /夜宴谈心/, "选择美人夜宴后没有产生结果");
+  assert.equal(banquetResult.visits, 2, "第二次风月往来没有累计");
+  assert.equal(banquetResult.favorite, true, "多次往来的美人没有记入知己簿");
+  assert.equal(banquetResult.friend, true, "多次往来没有形成风月知己");
+  await clearBlockingUi();
+  await page.waitForNetworkIdle({ idleTime: 100, timeout: 5000 }).catch(() => {});
+
+  const underageGuard = await page.evaluate(() => {
+    state.age = 17;
+    state.year = 17;
+    state.courtesanVisit = null;
+    view.page = "place";
+    startCourtesanParlor(true);
+    return { page: view.page, visit: state.courtesanVisit };
+  });
+  assert.equal(underageGuard.page, "place", "未成年角色仍能进入美人雅座");
+  assert.equal(underageGuard.visit, null, "未成年角色生成了青楼人物状态");
+
   await page.setViewport({ width: 1440, height: 900, isMobile: false, hasTouch: false, deviceScaleFactor: 1 });
   const shell = await page.$(".game-shell");
   assert.ok(shell, "桌面端游戏主界面未渲染");

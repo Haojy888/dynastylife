@@ -1552,6 +1552,25 @@ p {
   white-space: nowrap;
 }
 
+.brothel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.brothel-actions .inline-action {
+  min-height: 36px;
+  padding: 7px 11px;
+  border: 1px solid rgba(47, 125, 109, 0.24);
+  border-radius: 8px;
+  background: rgba(47, 125, 109, 0.09);
+  font-weight: 800;
+}
+
+.brothel-person .courtesan-avatar {
+  border-color: rgba(185, 85, 76, 0.72);
+}
+
 .courtesan-log {
   display: grid;
   gap: 8px;
@@ -4377,6 +4396,11 @@ p {
   }
 
   .courtesan-card-foot .primary-btn {
+    width: 100%;
+  }
+
+  .brothel-actions,
+  .brothel-actions .inline-action {
     width: 100%;
   }
 }

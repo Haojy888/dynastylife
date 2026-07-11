@@ -86,6 +86,10 @@ const PREMIUM_ICON_OVERRIDES = {
   Relationship1: "assets/premium-icons/relation-token.webp",
   FamilyFatherAvatar: "assets/premium-icons/family-father-avatar.webp",
   FamilyMotherAvatar: "assets/premium-icons/family-mother-avatar.webp",
+  FamilyWifeAvatar: "assets/courtesan-avatar-1.webp",
+  FamilyConcubineAvatar: "assets/courtesan-avatar-2.webp",
+  FamilyBetrothedAvatar: "assets/courtesan-avatar-3.webp",
+  FamilyHusbandAvatar: "assets/player-avatar-male-1.webp",
   FamilyBrotherAvatar: "assets/premium-icons/family-brother-avatar.webp",
   FamilySisterAvatar: "assets/premium-icons/family-sister-avatar.webp",
   FamilySonAvatar: "assets/premium-icons/family-son-avatar.webp",
@@ -842,6 +846,23 @@ const COURTESAN_PORTRAITS = [
   "assets/courtesan-avatar-3.webp",
   "assets/courtesan-avatar-4.webp",
 ];
+const BROTHEL_PORTRAITS = [
+  "assets/brothel-pipa-v1.webp",
+  "assets/courtesan-avatar-2.webp",
+  "assets/courtesan-avatar-3.webp",
+  "assets/courtesan-avatar-4.webp",
+];
+const BROTHEL_ARCHETYPES = [
+  { specialty: "琵琶", icon: "BambooFlute", specialtyText: "指下急雨落银瓶，最擅一曲边塞旧调。", background: "出身梨园，自幼随师学艺，最看重知音二字。" },
+  { specialty: "舞袖", icon: "FlowerChiefTitle", specialtyText: "长袖回风，步步踩在鼓点与灯影里。", background: "随舞班辗转诸城，身段轻盈，也最懂席间分寸。" },
+  { specialty: "诗词", icon: "Book", specialtyText: "临席成句，善把离合悲欢写进短笺。", background: "家道中落后入坊，仍藏着几卷旧书与一身傲气。" },
+  { specialty: "昆曲", icon: "Activity", specialtyText: "唱腔婉转，水袖一翻，满堂都静了下来。", background: "被鸨母悉心栽培，唱念俱佳，场面功夫也十分圆熟。" },
+];
+const BROTHEL_ACTIONS = {
+  listen: { label: "听曲小坐", multiplier: 0.75, icon: "BambooFlute", diseaseRisk: 0 },
+  banquet: { label: "夜宴谈心", multiplier: 1.25, icon: "Wine1", diseaseRisk: 0.03 },
+  intimate: { label: "共度良宵", multiplier: 2, icon: "Whorehouse", diseaseRisk: 0.18 },
+};
 const PLAYER_AVATARS = {
   male: [
     "assets/player-avatar-male-1.webp",
@@ -1859,6 +1880,8 @@ function startLife() {
     gamble: createGambleRound(50),
     miniGames: createMiniGamesState(),
     courtesanContest: null,
+    courtesanVisit: null,
+    brothelRecords: { visits: 0, favorites: [] },
     market: { year: -1, factor: 1 },
     caravanMemory: {},
     pendingCaravan: null,
@@ -1941,6 +1964,11 @@ function normalizeState(raw) {
   next.gamble = normalizeGamble(next.gamble);
   next.miniGames = normalizeMiniGames(next.miniGames);
   next.courtesanContest = normalizeCourtesanContest(next.courtesanContest);
+  next.courtesanVisit = normalizeCourtesanVisit(next.courtesanVisit);
+  next.brothelRecords = {
+    visits: Math.max(0, Math.round(Number(next.brothelRecords?.visits) || 0)),
+    favorites: Array.isArray(next.brothelRecords?.favorites) ? next.brothelRecords.favorites.slice(0, 8) : [],
+  };
   next.careerProgress = next.careerProgress && typeof next.careerProgress === "object" ? next.careerProgress : {};
   for (const [name, source] of Object.entries(next.careerProgress)) {
     const item = source && typeof source === "object" ? source : {};
@@ -2280,6 +2308,35 @@ function normalizeCourtesanContest(contest) {
     startedYear: Number.isFinite(Number(contest.startedYear)) ? Number(contest.startedYear) : 0,
     candidates,
     log: Array.isArray(contest.log) ? contest.log.slice(-8) : [],
+  };
+}
+
+function createCourtesanVisit() {
+  return normalizeCourtesanVisit({
+    id: `brothel-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    startedYear: Number(state?.year ?? state?.age ?? 0),
+    candidates: Array.from({ length: 4 }, (_, index) => ({
+      ...createCourtesanCandidate(index),
+      ...BROTHEL_ARCHETYPES[index],
+      portrait: BROTHEL_PORTRAITS[index % BROTHEL_PORTRAITS.length],
+      price: randInt(70, 135) + index * 25,
+      visits: 0,
+    })),
+  });
+}
+
+function normalizeCourtesanVisit(visit) {
+  if (!visit || typeof visit !== "object" || !Array.isArray(visit.candidates)) return null;
+  const candidates = visit.candidates.slice(0, 4).map((candidate, index) => ({
+    ...normalizeCourtesanCandidate({ ...candidate, portrait: candidate.portrait || BROTHEL_PORTRAITS[index % BROTHEL_PORTRAITS.length] }, index),
+    price: clampNumber(candidate.price, 60, 600, 100 + index * 30),
+    visits: Math.max(0, Math.round(Number(candidate.visits) || 0)),
+  }));
+  if (!candidates.length) return null;
+  return {
+    id: visit.id || `brothel-${Date.now()}`,
+    startedYear: Number.isFinite(Number(visit.startedYear)) ? Number(visit.startedYear) : 0,
+    candidates,
   };
 }
 
@@ -6325,10 +6382,74 @@ function finishCourtesanContest() {
   finishAction("花魁竞选", text, deltas, "FlowerChiefTitle");
 }
 
+function startCourtesanParlor(forceNew = false) {
+  if (!state || state.dead || state.prisonYears > 0 || state.age < COURTESAN_MIN_AGE) return;
+  const currentYear = Number(state.year ?? state.age ?? 0);
+  const existing = normalizeCourtesanVisit(state.courtesanVisit);
+  state.courtesanVisit = !forceNew && existing?.startedYear === currentYear ? existing : createCourtesanVisit();
+  view.page = "courtesanParlor";
+  view.placeId = "theater";
+  save();
+  render();
+}
+
+function chooseBrothelCompanion(candidateId, actionId) {
+  if (!state || state.dead || state.prisonYears > 0 || state.age < COURTESAN_MIN_AGE) return;
+  const visit = normalizeCourtesanVisit(state.courtesanVisit);
+  const action = BROTHEL_ACTIONS[actionId];
+  const candidate = visit?.candidates.find((item) => item.id === candidateId);
+  if (!visit || !action || !candidate) return;
+  const cost = Math.max(40, Math.round(candidate.price * action.multiplier));
+  if (state.stats.money < cost) return finishAction("囊中羞涩", `请${candidate.name}作陪需花费 ${moneyText(cost)}，你只得改日再来。`, [{ label: "钱财", value: "不足", negative: true }], "CashBox");
+  const deltas = [];
+  changeStat("money", -cost, deltas);
+  changeStat("mood", actionId === "listen" ? randInt(4, 9) : actionId === "banquet" ? randInt(6, 12) : randInt(8, 15), deltas);
+  changeStat("relationship", actionId === "listen" ? randInt(1, 4) : randInt(3, 8), deltas);
+  if (actionId === "listen") changeStat("knowledge", randInt(1, 4), deltas);
+  if (actionId === "banquet") changeStat("eq", randInt(2, 5), deltas);
+  if (actionId === "intimate") changeStat("virtue", -randInt(2, 6), deltas);
+  candidate.affection = clamp(Number(candidate.affection || 50) + (actionId === "intimate" ? randInt(8, 15) : randInt(4, 10)));
+  candidate.visits = Math.max(0, Number(candidate.visits) || 0) + 1;
+  state.courtesanVisit = visit;
+  state.brothelRecords ||= { visits: 0, favorites: [] };
+  state.brothelRecords.visits = Math.max(0, Number(state.brothelRecords.visits) || 0) + 1;
+  if (candidate.visits >= 2 && !state.brothelRecords.favorites.includes(candidate.name)) state.brothelRecords.favorites.push(candidate.name);
+
+  let text = "";
+  if (actionId === "listen") text = `${candidate.name}在帘下为你演了一段${candidate.specialty}，又讲起曲中典故。你静坐听完，觉得这一晚并非只有酒色。`;
+  if (actionId === "banquet") text = `你请${candidate.name}在雅间作陪。二人对坐小酌，从${candidate.specialty}谈到城中见闻，席散时已近更深。`;
+  if (actionId === "intimate") text = `烛影渐低，${candidate.name}遣退侍儿，与你在后楼共度良宵。天明后彼此不问承诺，只留下一张写着名字的花笺。`;
+
+  if (Math.random() < action.diseaseRisk) {
+    const disease = sample(["风寒", "花柳暗疾", "惊悸"]);
+    if (!state.diseases.includes(disease)) state.diseases.push(disease);
+    deltas.push({ label: "病症", value: disease, negative: true });
+    text += ` 回府后你渐觉不适，染上了${disease}。`;
+  }
+  if (state.family.spouse && actionId !== "listen" && Math.random() < 0.34) {
+    state.family.spouseAffection = clamp(Number(state.family.spouseAffection || 78) - randInt(3, 9));
+    if (state.family.spouseMeta) {
+      state.family.spouseMeta.affection = state.family.spouseAffection;
+      state.family.spouseMeta.jealousy = clamp(Number(state.family.spouseMeta.jealousy || 0) + randInt(4, 12));
+    }
+    changeStat("favorability", -randInt(0, 3), deltas);
+    text += " 只是风声传回家中，枕边人难免心生芥蒂。";
+  }
+  if (candidate.visits >= 2 && !state.friends.some((friend) => friend.name === candidate.name)) {
+    state.friends.push(normalizeFriend({ name: candidate.name, relation: "风月知己", gender: "female", age: candidate.age, physique: randInt(48, 76), affection: candidate.affection, lastMet: state.age }));
+    text += ` 数次往来后，${candidate.name}愿把你当作一位可说真话的风月知己。`;
+  }
+  if (state.brothelRecords.visits >= 3 && !state.tags.includes("瓦舍常客")) state.tags.push("瓦舍常客");
+  addLedger("青楼雅座", -cost, `${action.label} · ${candidate.name}`);
+  addLog(`瓦舍 · ${candidate.name}`, text, deltas);
+  finishAction(`${candidate.name} · ${action.label}`, `${text} 此番花销 ${moneyText(cost)}。`, deltas, action.icon);
+}
+
 function performPlaceAction(id) {
   if (!state || state.dead || state.prisonYears > 0) return;
   if (id === "prepareExam") return prepareExam();
   if (id === "courtesanContest") return startCourtesanContest();
+  if (id === "courtesanParlor") return startCourtesanParlor();
   const deltas = [];
   let title = "去处";
   let text = "";
@@ -6922,6 +7043,8 @@ function inheritFromChild(id) {
     gamble: createGambleRound(50),
     miniGames: createMiniGamesState(),
     courtesanContest: null,
+    courtesanVisit: null,
+    brothelRecords: { visits: 0, favorites: [] },
     market: { year: -1, factor: 1 },
     caravanMemory: normalizeCaravanMemory(state.caravanMemory),
     family: {
@@ -8661,6 +8784,7 @@ function centerContent() {
   if (view.page === "gamble") return gambleView();
   if (view.page === "miniGames") return miniGamesView();
   if (view.page === "courtesanContest") return courtesanContestView();
+  if (view.page === "courtesanParlor") return courtesanParlorView();
   if (view.page === "activity") return activityView();
   if (view.page === "exam") return examView();
   return overviewView();
@@ -8857,6 +8981,70 @@ function courtesanCandidateCard(candidate, index, round, finished, giftCost) {
     </article>`;
 }
 
+function courtesanParlorView() {
+  const visit = normalizeCourtesanVisit(state.courtesanVisit);
+  if (!visit) {
+    return `
+      <article class="play-card courtesan-card">
+        <p class="eyebrow">瓦舍风月 · 仅限成年</p>
+        <h2>美人雅座</h2>
+        <p>后楼今夜尚未点灯。入座后可从琴姬、舞姬、诗伎等人中择一作陪。</p>
+        <div class="main-actions">
+          <button class="primary-btn" data-action="brothel-refresh">请鸨母开席</button>
+          <button class="ghost-btn" data-action="back-places">返回瓦舍</button>
+        </div>
+      </article>`;
+  }
+  return `
+    <article class="play-card courtesan-card brothel-card">
+      <div class="courtesan-hero">
+        <div>
+          <p class="eyebrow">瓦舍风月 · 仅限成年</p>
+          <h2>美人雅座</h2>
+          <p>先选一位美人，再决定听曲、夜宴或共度良宵。花销越高，欢愉与人情越多，染病、失德和家宅生隙的风险也越大。</p>
+        </div>
+        <div class="courtesan-preview">
+          <span>风月簿</span>
+          <strong>${Math.round(state.brothelRecords?.visits || 0)} 次</strong>
+          <small>知己 ${(state.brothelRecords?.favorites || []).length} 人</small>
+        </div>
+      </div>
+      <section class="courtesan-list brothel-list">
+        ${visit.candidates.map(brothelCompanionCard).join("")}
+      </section>
+      <div class="main-actions">
+        <button class="secondary-btn" data-action="brothel-refresh">换一批美人</button>
+        <button class="ghost-btn" data-action="back-places">返回瓦舍</button>
+      </div>
+    </article>`;
+}
+
+function brothelCompanionCard(candidate) {
+  const stats = [["才艺", candidate.talent], ["机智", candidate.wit], ["姿容", candidate.looks], ["亲近", candidate.affection]];
+  return `
+    <article class="courtesan-person brothel-person">
+      <div class="courtesan-avatar">
+        <img class="courtesan-portrait" src="${escapeHtml(candidate.portrait)}" alt="${escapeHtml(candidate.name)}" loading="eager">
+      </div>
+      <div class="courtesan-body">
+        <header>
+          <div><small>${candidate.age} 岁 · ${escapeHtml(candidate.specialty)}</small><h3>${escapeHtml(candidate.name)}</h3></div>
+          <b>起价 ${moneyText(candidate.price)}</b>
+        </header>
+        <p>${escapeHtml(candidate.background)}</p>
+        <p class="courtesan-talent">${escapeHtml(candidate.specialty)} · ${escapeHtml(candidate.specialtyText)}</p>
+        <div class="courtesan-bars">${stats.map(([label, value]) => `<span><em>${label}</em><i><b style="width:${clampNumber(value, 0, 100, 0)}%"></b></i><strong>${value}</strong></span>`).join("")}</div>
+        <div class="brothel-actions">
+          ${Object.entries(BROTHEL_ACTIONS).map(([id, action]) => {
+            const cost = Math.max(40, Math.round(candidate.price * action.multiplier));
+            return `<button class="text-btn inline-action" data-brothel-action="${id}" data-brothel-id="${escapeHtml(candidate.id)}" ${state.stats.money < cost ? "disabled" : ""}>${escapeHtml(action.label)} · ${moneyText(cost)}</button>`;
+          }).join("")}
+        </div>
+        <small>已作陪 ${candidate.visits || 0} 次${candidate.visits >= 2 ? " · 风月知己" : ""}</small>
+      </div>
+    </article>`;
+}
+
 function eventResultView() {
   const result = state.eventResult || {};
   return `
@@ -9041,6 +9229,7 @@ function placeActionButtons(place, locked) {
     theater: [
       ["theaterWatch", "听曲看戏", "消磨半日，心情舒展。", "Activity"],
       ["pleasureRisk", "花酒消遣", "18 岁后可入，快意花费，也有损德染病之险", "Whorehouse", 18],
+      ["courtesanParlor", "美人雅座", "18 岁后可入，挑选美人听曲、夜宴或共度良宵", "FlowerChiefTitle", COURTESAN_MIN_AGE],
       ["courtesanContest", "佳丽竞选", "18 岁后可入，赏才问答，评出一夜花魁", "FlowerChiefTitle", COURTESAN_MIN_AGE],
     ],
     temple: [["templePray", "焚香祈福", "添德行、安心绪", "Temple"]],
@@ -9287,8 +9476,10 @@ function relativeAvatarIcon(person = {}) {
   if (relation === "儿子") return "FamilySonAvatar";
   if (relation === "女儿") return "FamilyDaughterAvatar";
   if (relation === "友人") return "FamilyFriendAvatar";
-  if (["妻子", "妾室", "待纳侧室"].includes(relation)) return "FamilyMotherAvatar";
-  if (relation === "夫君") return "FamilyFatherAvatar";
+  if (["妻子", "配偶"].includes(relation) && person.gender !== "male") return "FamilyWifeAvatar";
+  if (relation === "妾室") return "FamilyConcubineAvatar";
+  if (["待纳侧室", "相看之人", "花魁知己"].includes(relation) && person.gender !== "male") return "FamilyBetrothedAvatar";
+  if (relation === "夫君" || (relation === "配偶" && person.gender === "male")) return "FamilyHusbandAvatar";
   if (person.gender === "female") return "FamilySisterAvatar";
   if (person.gender === "male") return "FamilyBrotherAvatar";
   return "FamilyFriendAvatar";
@@ -11152,6 +11343,7 @@ app.addEventListener("click", (event) => {
   if (button.dataset.guessKind) return chooseGuessKind(button.dataset.guessKind);
   if (button.dataset.guessValue) return chooseGuessValue(button.dataset.guessValue);
   if (button.dataset.guessRounds) return setGuessRounds(button.dataset.guessRounds);
+  if (button.dataset.brothelAction) return chooseBrothelCompanion(button.dataset.brothelId, button.dataset.brothelAction);
   if (button.dataset.courtesanAction) return chooseCourtesanAction(button.dataset.courtesanId, button.dataset.courtesanAction);
   if (button.dataset.paiGowTile !== undefined) return selectPaiGowTile(button.dataset.paiGowTile);
   if (button.dataset.paiGowAuto) return autoPaiGowSplit(button.dataset.paiGowAuto);
@@ -11174,6 +11366,7 @@ app.addEventListener("click", (event) => {
   if (button.dataset.action === "big-small-new") return newBigSmallRound();
   if (button.dataset.action === "courtesan-contest-start") return startCourtesanContest(true);
   if (button.dataset.action === "courtesan-contest-finish") return finishCourtesanContest();
+  if (button.dataset.action === "brothel-refresh") return startCourtesanParlor(true);
   if (button.dataset.specialPlace) return useSpecialPlace(button.dataset.specialPlace);
   if (button.dataset.placeAction) return performPlaceAction(button.dataset.placeAction);
   if (button.dataset.cricketAction) return cricketAction(button.dataset.cricketAction, button.dataset.cricketId || "");
