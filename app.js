@@ -1330,11 +1330,35 @@ const PROPERTY_CATALOG = [
 ];
 
 const TRAVEL_DESTINATIONS = [
-  { name: "清平县", cost: 8, note: "县中街巷熟门熟路。", stat: "mood" },
-  { name: "云州", cost: 35, note: "商旅云集，消息灵通。", stat: "eq" },
-  { name: "洛城", cost: 55, note: "书院林立，适合访学。", stat: "knowledge" },
-  { name: "江陵", cost: 45, note: "水路繁华，适合会友。", stat: "relationship" },
-  { name: "梁都", cost: 80, note: "京畿气象，见闻最广。", stat: "virtue" },
+  { id: "qingping", name: "清平县", cost: 8, days: 1, risk: 5, note: "县中街巷熟门熟路。", stat: "mood", icon: "Restaurant", landmark: "南市灯街", souvenir: "清平竹哨", story: "南市灯街入夜后摊火相连，最适合慢慢闲逛。" },
+  { id: "yunzhou", name: "云州", cost: 35, days: 3, risk: 18, note: "商旅云集，消息灵通。", stat: "eq", icon: "CarShop", landmark: "九门商栈", souvenir: "云州商牌", story: "九门商栈里口音纷杂，货单与传闻一样多。" },
+  { id: "luocheng", name: "洛城", cost: 55, days: 4, risk: 16, note: "书院林立，适合访学。", stat: "knowledge", icon: "BookStore", landmark: "白鹿书院", souvenir: "洛城拓片", story: "城西书院沿河而建，旧碑与藏书吸引四方士子。" },
+  { id: "jiangling", name: "江陵", cost: 45, days: 4, risk: 20, note: "水路繁华，适合会友。", stat: "relationship", icon: "BambooFlute", landmark: "十里水埠", souvenir: "江陵绢扇", story: "十里水埠舟楫不断，夜里还有沿河弦歌。" },
+  { id: "liangdu", name: "梁都", cost: 80, days: 6, risk: 25, note: "京畿气象，见闻最广。", stat: "virtue", icon: "Official", landmark: "朱雀御街", souvenir: "梁都宫笺", story: "朱雀御街宽阔笔直，官署、行会与百年老店并立。" },
+  { id: "kunbei", name: "昆北府", cost: 68, days: 6, risk: 34, note: "北地雄城，胡汉商旅交错。", stat: "physique", icon: "RepairCarriage", landmark: "朔风马市", souvenir: "昆北马铃", story: "马市终日尘土飞扬，塞外皮货与良驹在此交易。" },
+  { id: "sudi", name: "苏堤水乡", cost: 62, days: 5, risk: 14, note: "桥多水密，园林与丝坊闻名。", stat: "looks", icon: "Courtyard", landmark: "烟雨画桥", souvenir: "苏堤香囊", story: "画桥两岸粉墙黛瓦，雨落河面时最有江南意趣。" },
+  { id: "qingya", name: "青崖山", cost: 48, days: 4, risk: 38, note: "山寺、药谷与险峰相连。", stat: "virtue", icon: "Temple", landmark: "云顶古寺", souvenir: "青崖平安结", story: "石阶穿云而上，半山药香与钟声常被雾气送来。" },
+];
+
+const TRAVEL_CARRIAGES = [
+  { level: 1, name: "轻便驿车", comfort: 0, safety: 0, icon: "RepairCarriage", note: "车身轻，走近路尚可，遇烂路便颠簸。" },
+  { level: 2, name: "四轮篷车", comfort: 6, safety: 8, price: 480, icon: "CarShop", note: "带篷布与储物格，远行更稳，也能多备行囊。" },
+  { level: 3, name: "雕花暖车", comfort: 12, safety: 16, price: 1280, icon: "CarShop", note: "双马曳车、软垫暖炉，长途风雨也能从容。" },
+];
+
+const TRAVEL_SUPPLIES = [
+  { id: "light", name: "轻装赶路", cost: 0, safety: 0, comfort: 0, note: "只带水囊干粮，省钱但应变有限。" },
+  { id: "steady", name: "稳妥行囊", cost: 35, safety: 8, comfort: 3, note: "药囊、雨具、干粮齐备，适合普通远游。" },
+  { id: "luxury", name: "锦囊暖食", cost: 95, safety: 14, comfort: 9, note: "带足热食、毯褥与备用车件，花费高却舒适。" },
+];
+
+const TRAVEL_ROUTE_EVENTS = [
+  { id: "fork", title: "古驿岔路", prompt: "旧驿道在林前分成两支，一边路碑清楚却绕远，另一边留着新鲜车辙。", choices: [["循碑走官道", "knowledge", 42, "你按路碑与旧图稳稳走上官道。", "旧碑倒伏，你仍绕了半日。", { mood: -1 }, { mood: -3 }, 4], ["沿车辙抄近道", "eq", 58, "你问清沿途樵夫，近道果然省下脚程。", "车辙把你引到封闭山坳。", { mood: 3 }, { physique: -3 }, 7], ["停车辨方向", "knowledge", 35, "你登高看水势与炊烟，重新定下方向。", "雾气太重，只能回到原路。", { knowledge: 2 }, { mood: -1 }, 3]] },
+  { id: "rain", title: "山雨压车", prompt: "乌云突然压过山脊，前方泥坡已经有车轮打滑。", choices: [["披蓑慢行", "physique", 45, "众人压住车尾，一步步挪过泥坡。", "车轮陷泥，费了许多气力才拖出。", { physique: 1 }, { physique: -4 }, 4], ["投宿避雨", "eq", 35, "你找到一户农家借宿，还听到不少乡间见闻。", "附近没有人家，只得在车中熬夜。", { relationship: 2, mood: 2 }, { mood: -2 }, 3], ["用银雇人护车", "eq", 28, "附近脚夫收下工钱，熟练地护车过坡。", "临时雇来的人手仍不够用。", { money: -18 }, { money: -18, physique: -2 }, 6]] },
+  { id: "inn", title: "荒村客店", prompt: "天色将晚，路边客店灯火昏黄。掌柜热情招呼，同行却说此店从未见过。", choices: [["验过门牌再住", "knowledge", 46, "你看出店中虽旧，官验木牌却是真的。", "门牌是旧物挪用，夜里仍被偷去盘缠。", { knowledge: 2, mood: 2 }, { money: -35 }, 5], ["与商队合住", "eq", 42, "你与商队互相照应，还结识一位远方客商。", "商队自己也争吵不休，一夜未眠。", { relationship: 3 }, { mood: -2 }, 5], ["车中守夜", "physique", 48, "你守着车马平安熬到天明。", "夜寒入骨，次日精神不济。", { virtue: 1 }, { physique: -3 }, 3]] },
+  { id: "festival", title: "途中乡会", prompt: "沿途村镇正逢乡会，社火、百戏与货摊堵住了驿道。", choices: [["停车看会", "mood", 30, "你随人群看完社火，也尝到当地吃食。", "人潮拥挤，随身小物被挤丢了。", { mood: 5, money: -12 }, { money: -25 }, 6], ["帮忙疏通车道", "eq", 44, "你帮乡老分开人车，两边都顺利通行。", "众人各说各话，车道反而更乱。", { favorability: 2, relationship: 2 }, { mood: -2 }, 6], ["绕村而过", "knowledge", 38, "你沿田埂找到一条清静小路。", "田埂尽头水渠阻路，只得折返。", { knowledge: 1 }, { mood: -2 }, 3]] },
+  { id: "shrine", title: "古道小祠", prompt: "古道旁有一座无名小祠，香火虽淡，檐下却挂满过路人的平安牌。", choices: [["添香祈路", "virtue", 30, "你添香留名，心绪安稳许多。", "山风吹灭香火，只余一缕青烟。", { virtue: 2, mood: 2, money: -8 }, { money: -8 }, 4], ["查看旧碑", "knowledge", 45, "碑阴记着旧驿路线，恰好能避开前方险滩。", "碑文漫漶，你只辨出几个地名。", { knowledge: 3 }, { knowledge: 1 }, 6], ["替祠堂补瓦", "physique", 48, "你顺手补好漏瓦，守祠老人赠你一枚平安结。", "瓦片湿滑，忙了许久也未补牢。", { virtue: 3, relationship: 1 }, { physique: -2 }, 5]] },
+  { id: "broken", title: "车轴异响", prompt: "车行半途，左轮车轴忽然发出细碎异响，再走下去可能折在荒野。", choices: [["就地检修", "knowledge", 48, "你卸轮加楔，把松动处重新箍紧。", "检修不彻底，车况又坏了几分。", { knowledge: 2 }, {}, 6], ["减载慢行", "physique", 38, "众人分担行李，车马轻装抵达下一驿。", "脚程拖慢，所有人都十分疲惫。", { physique: 1 }, { mood: -3 }, 4], ["赶往车马铺", "eq", 32, "你谈妥修价，老师傅很快换好车楔。", "最近车铺坐地起价，仍得咬牙修车。", { money: -28 }, { money: -48 }, 7]] },
 ];
 
 const SHOP_GOODS = [
@@ -1929,6 +1953,8 @@ function startLife() {
     courtesanVisit: null,
     brothelRecords: { visits: 0, favorites: [] },
     market: { year: -1, factor: 1 },
+    travelSystem: createTravelSystem(),
+    pendingTravel: null,
     caravanMemory: {},
     pendingCaravan: null,
     family: createFamily(draft.family),
@@ -2033,6 +2059,8 @@ function normalizeState(raw) {
   next.market = next.market && typeof next.market === "object" ? next.market : {};
   next.market.year = Number.isFinite(Number(next.market.year)) ? Number(next.market.year) : -1;
   next.market.factor = Number.isFinite(Number(next.market.factor)) ? Number(next.market.factor) : 1;
+  next.travelSystem = normalizeTravelSystem(next.travelSystem);
+  next.pendingTravel = normalizeTravelRun(next.pendingTravel);
   next.caravanMemory = normalizeCaravanMemory(next.caravanMemory);
   next.pendingCaravan = normalizeCaravanRun(next.pendingCaravan, next.age);
   next.family = normalizeFamily(next.family, next.name.slice(0, 1));
@@ -2052,8 +2080,51 @@ function normalizeState(raw) {
   if (next.dead) {
     next.currentEvent = null;
     next.pendingCaravan = null;
+    next.pendingTravel = null;
   }
   return next;
+}
+
+function createTravelSystem() {
+  return { carriageLevel: 1, condition: 100, selectedDestination: "yunzhou", companionId: "alone", supplyId: "steady", memories: {}, stamps: [], totalTrips: 0 };
+}
+
+function normalizeTravelSystem(source) {
+  const base = source && typeof source === "object" ? source : {};
+  const memories = base.memories && typeof base.memories === "object" ? base.memories : {};
+  return {
+    carriageLevel: clamp(Math.round(Number(base.carriageLevel) || 1), 1, TRAVEL_CARRIAGES.length),
+    condition: clamp(Number(base.condition ?? 100), 0, 100),
+    selectedDestination: TRAVEL_DESTINATIONS.some((item) => item.id === base.selectedDestination) ? base.selectedDestination : "yunzhou",
+    companionId: String(base.companionId || "alone"),
+    supplyId: TRAVEL_SUPPLIES.some((item) => item.id === base.supplyId) ? base.supplyId : "steady",
+    memories: Object.fromEntries(TRAVEL_DESTINATIONS.map((destination) => {
+      const memory = memories[destination.id] && typeof memories[destination.id] === "object" ? memories[destination.id] : {};
+      return [destination.id, { trips: Math.max(0, Math.round(Number(memory.trips) || 0)), bestQuality: clamp(Number(memory.bestQuality || 0)), lastCompanion: String(memory.lastCompanion || ""), lastActivity: String(memory.lastActivity || "") }];
+    })),
+    stamps: Array.isArray(base.stamps) ? [...new Set(base.stamps.map(String))].slice(0, 20) : [],
+    totalTrips: Math.max(0, Math.round(Number(base.totalTrips) || 0)),
+  };
+}
+
+function normalizeTravelRun(run) {
+  if (!run || typeof run !== "object") return null;
+  const destination = TRAVEL_DESTINATIONS.find((item) => item.id === run.destinationId);
+  if (!destination) return null;
+  const events = Array.isArray(run.events) ? run.events.filter((id) => TRAVEL_ROUTE_EVENTS.some((item) => item.id === id)) : [];
+  return {
+    id: run.id || `travel-${Date.now()}`,
+    destinationId: destination.id,
+    origin: String(run.origin || state?.location || "清平县"),
+    index: clamp(Math.round(Number(run.index) || 0), 0, events.length),
+    events,
+    companionId: String(run.companionId || "alone"),
+    companionName: String(run.companionName || "独行"),
+    supplyId: TRAVEL_SUPPLIES.some((item) => item.id === run.supplyId) ? run.supplyId : "steady",
+    quality: clamp(Number(run.quality ?? 55)),
+    spent: Math.max(0, Math.round(Number(run.spent) || 0)),
+    history: Array.isArray(run.history) ? run.history.slice(-10) : [],
+  };
 }
 
 function normalizeOnboarding(onboarding) {
@@ -2764,7 +2835,7 @@ function clearSave() {
 }
 
 function nextYear() {
-  if (!state || state.dead || state.currentEvent || state.eventResult || state.pendingCaravan) return;
+  if (!state || state.dead || state.currentEvent || state.eventResult || state.pendingCaravan || state.pendingTravel) return;
   SFX.play("page");
   state.age += 1;
   state.year += 1;
@@ -4841,15 +4912,190 @@ function manageAsset(index, action) {
 function travelTo(index) {
   if (!state || state.dead || state.age < 6 || state.prisonYears > 0) return;
   const dest = TRAVEL_DESTINATIONS[Number(index)];
-  if (!dest || state.stats.money < dest.cost) return;
-  state.lastDeltas = [];
-  changeStat("money", -dest.cost, state.lastDeltas);
-  changeStat(dest.stat, randInt(1, 4), state.lastDeltas);
-  state.location = dest.name;
-  addLedger("车马路资", -dest.cost, `前往${dest.name}。`);
-  addLog("出行", `你乘车马前往${dest.name}。${dest.note}`, state.lastDeltas);
+  if (!dest) return;
+  state.travelSystem = normalizeTravelSystem(state.travelSystem);
+  state.travelSystem.selectedDestination = dest.id;
   save();
   render();
+}
+
+function travelDestinationById(id = state.travelSystem?.selectedDestination) {
+  return TRAVEL_DESTINATIONS.find((item) => item.id === id) || TRAVEL_DESTINATIONS[0];
+}
+
+function travelCarriage() {
+  return TRAVEL_CARRIAGES[clamp(Math.round(Number(state.travelSystem?.carriageLevel) || 1), 1, TRAVEL_CARRIAGES.length) - 1];
+}
+
+function travelSupply() {
+  return TRAVEL_SUPPLIES.find((item) => item.id === state.travelSystem?.supplyId) || TRAVEL_SUPPLIES[1];
+}
+
+function travelCompanions() {
+  const companions = [{ id: "alone", name: "独自上路", relation: "独行", bonus: 2, note: "行止自由，途中更容易静心看风景。" }];
+  if (state.family.spouse && state.family.spouseMeta?.alive !== false) companions.push({ id: "spouse", name: state.family.spouse, relation: state.gender === "male" ? "妻子" : "夫君", bonus: 8, note: "夫妻同游，增进亲密，也能相互照应。" });
+  const friend = state.friends.filter((item) => item.alive !== false).sort((a, b) => Number(b.affection || 0) - Number(a.affection || 0))[0];
+  if (friend) companions.push({ id: friend.id, name: friend.name, relation: "友人", bonus: 6, note: "与知己同行，路上见闻有人分享。" });
+  const child = adultChildren().sort((a, b) => Number(b.affection || 0) - Number(a.affection || 0))[0];
+  if (child) companions.push({ id: child.id, name: child.name, relation: child.relation, bonus: 5, note: "带成年子女远行，也是一场家学与历练。" });
+  return companions;
+}
+
+function selectTravelCompanion(id) {
+  const companion = travelCompanions().find((item) => item.id === id);
+  if (!companion || state.pendingTravel) return;
+  state.travelSystem.companionId = companion.id;
+  save();
+  render();
+}
+
+function selectTravelSupply(id) {
+  if (!TRAVEL_SUPPLIES.some((item) => item.id === id) || state.pendingTravel) return;
+  state.travelSystem.supplyId = id;
+  save();
+  render();
+}
+
+function travelTripCost(destination = travelDestinationById()) {
+  const supply = travelSupply();
+  const memory = state.travelSystem.memories?.[destination.id] || { trips: 0 };
+  const discount = Math.min(0.24, Number(memory.trips || 0) * 0.04);
+  return Math.max(4, Math.round(destination.cost * (1 - discount)) + supply.cost);
+}
+
+function startTravelJourney() {
+  if (!state || state.dead || state.age < 6 || state.prisonYears > 0 || state.pendingTravel || state.pendingCaravan) return;
+  state.travelSystem = normalizeTravelSystem(state.travelSystem);
+  const destination = travelDestinationById();
+  const companion = travelCompanions().find((item) => item.id === state.travelSystem.companionId) || travelCompanions()[0];
+  const supply = travelSupply();
+  const carriage = travelCarriage();
+  const cost = travelTripCost(destination);
+  if (state.stats.money < cost) return finishAction("路资不足", `前往${destination.name}并备下${supply.name}共需 ${moneyText(cost)}。`, [{ label: "钱财", value: "不足", negative: true }], "CashBox");
+  const eventCount = clamp(Math.ceil(destination.days / 2), 1, 3);
+  const events = pickMany(TRAVEL_ROUTE_EVENTS, eventCount).map((item) => item.id);
+  const deltas = [];
+  changeStat("money", -cost, deltas);
+  addLedger("远游路资", -cost, `乘${carriage.name}由${state.location}前往${destination.name}，行囊为${supply.name}。`);
+  state.pendingTravel = normalizeTravelRun({
+    id: `travel-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    destinationId: destination.id,
+    origin: state.location,
+    index: 0,
+    events,
+    companionId: companion.id,
+    companionName: companion.name,
+    supplyId: supply.id,
+    quality: clamp(52 + carriage.comfort + supply.comfort + companion.bonus),
+    spent: cost,
+    history: [{ title: "启程", text: `你与${companion.name}乘${carriage.name}启程，向${destination.name}而去。`, ok: true }],
+  });
+  state.lastDeltas = deltas;
+  save();
+  render();
+}
+
+function travelEventById(id) {
+  return TRAVEL_ROUTE_EVENTS.find((item) => item.id === id) || TRAVEL_ROUTE_EVENTS[0];
+}
+
+function resolveTravelChoice(index) {
+  const run = normalizeTravelRun(state.pendingTravel);
+  if (!run || run.index >= run.events.length) return;
+  const event = travelEventById(run.events[run.index]);
+  const choice = event.choices[Number(index)];
+  if (!choice) return;
+  const [label, stat, difficulty, successText, failText, successEffects, failEffects, qualityGain] = choice;
+  const supply = TRAVEL_SUPPLIES.find((item) => item.id === run.supplyId) || TRAVEL_SUPPLIES[1];
+  const carriage = travelCarriage();
+  const memory = state.travelSystem.memories?.[run.destinationId] || { trips: 0 };
+  const companion = travelCompanions().find((item) => item.id === run.companionId) || { bonus: 0 };
+  const score = randInt(1, 100) + Math.floor(Number(state.stats[stat] || 50) / 5) + supply.safety + carriage.safety + companion.bonus + Math.min(12, Number(memory.trips || 0) * 3) - (state.travelSystem.condition < 40 ? 10 : 0);
+  const success = score >= Number(difficulty || 45);
+  const effects = success ? successEffects : failEffects;
+  const deltas = [];
+  for (const [key, value] of Object.entries(effects || {})) changeStat(key, value, deltas);
+  run.quality = clamp(run.quality + (success ? qualityGain : -Math.max(3, Math.round(qualityGain / 2))));
+  run.history.push({ title: `${event.title} · ${label}`, text: success ? successText : failText, ok: success });
+  run.index += 1;
+  state.travelSystem.condition = clamp(state.travelSystem.condition - randInt(success ? 2 : 5, success ? 5 : 10));
+  state.pendingTravel = run;
+  state.lastDeltas = deltas;
+  save();
+  render();
+}
+
+function completeTravelActivity(activityId) {
+  const run = normalizeTravelRun(state.pendingTravel);
+  if (!run || run.index < run.events.length) return;
+  const destination = travelDestinationById(run.destinationId);
+  const deltas = [];
+  let title = "游历";
+  let text = "";
+  if (activityId === "landmark") {
+    changeStat(destination.stat, randInt(3, 7), deltas);
+    changeStat("mood", randInt(3, 7), deltas);
+    title = `游览${destination.landmark}`;
+    text = `${destination.story}你在${destination.landmark}停留半日，把沿途所见细细记在心里。`;
+  } else if (activityId === "souvenir") {
+    const cost = 30;
+    if (state.stats.money < cost) return;
+    changeStat("money", -cost, deltas);
+    changeStat("looks", randInt(1, 3), deltas);
+    addInventoryItem(destination.souvenir, deltas);
+    title = "采买风物";
+    text = `你在${destination.name}的市集挑中${destination.souvenir}，也尝过几样当地吃食。`;
+  } else {
+    changeStat("relationship", randInt(4, 8), deltas);
+    changeStat("eq", randInt(2, 5), deltas);
+    if (Math.random() < 0.45) addFriend();
+    title = "拜访当地人";
+    text = `你在${destination.name}随席听谈，与当地人聊起风土、行当与远方消息。`;
+  }
+  const target = run.companionId !== "alone" ? findRelationTarget(run.companionId) : null;
+  if (target?.person) {
+    target.person.affection = clamp(Number(target.person.affection || 60) + randInt(3, 7));
+    text += ` ${run.companionName}一路与你同看风景，彼此更亲近了。`;
+  }
+  const memory = state.travelSystem.memories[destination.id] ||= { trips: 0, bestQuality: 0, lastCompanion: "", lastActivity: "" };
+  memory.trips += 1;
+  memory.bestQuality = Math.max(Number(memory.bestQuality || 0), run.quality);
+  memory.lastCompanion = run.companionName;
+  memory.lastActivity = title;
+  state.travelSystem.totalTrips += 1;
+  if (!state.travelSystem.stamps.includes(destination.id)) state.travelSystem.stamps.push(destination.id);
+  state.location = destination.name;
+  const routeStory = run.history.map((item) => item.text).join(" ");
+  state.pendingTravel = null;
+  finishAction(`${destination.name} · ${title}`, `${routeStory} 抵达后，${text} 本次旅途评定为 ${travelQualityLabel(run.quality)}（${Math.round(run.quality)}）。`, deltas, destination.icon || "RepairCarriage");
+}
+
+function travelQualityLabel(value) {
+  if (value >= 82) return "尽兴难忘";
+  if (value >= 65) return "一路顺遂";
+  if (value >= 45) return "有惊无险";
+  return "舟车劳顿";
+}
+
+function upgradeTravelCarriage(action) {
+  if (state.pendingTravel) return;
+  state.travelSystem = normalizeTravelSystem(state.travelSystem);
+  const deltas = [];
+  if (action === "repair") {
+    const cost = Math.max(20, Math.round((100 - state.travelSystem.condition) * 1.6));
+    if (state.travelSystem.condition >= 96 || state.stats.money < cost) return;
+    changeStat("money", -cost, deltas);
+    state.travelSystem.condition = 100;
+    addLedger("修整车马", -cost, "更换车楔、补油车轴并照料马匹。" );
+    return finishAction("车马修整", "车马铺师傅重新校正车轮、添油车轴，马匹也得了草料歇息。", deltas, "CarShop");
+  }
+  const next = TRAVEL_CARRIAGES[state.travelSystem.carriageLevel];
+  if (!next || state.stats.money < next.price) return;
+  changeStat("money", -next.price, deltas);
+  state.travelSystem.carriageLevel = next.level;
+  state.travelSystem.condition = 100;
+  addLedger("购置车马", -next.price, `换置${next.name}。`);
+  finishAction("车马升级", `你在车马铺换置了${next.name}。${next.note}`, deltas, next.icon);
 }
 
 function useSpecialPlace(id) {
@@ -7953,8 +8199,8 @@ function activitySceneFor(iconName, title = "", text = "") {
   const source = `${iconName || ""}${title}${text}`;
   if (/Temple|Elixir|祈福|求签|法事|玄门/.test(source)) return "incense";
   if (/ArrangeMarriage|Whorehouse|Flower|婚|宴|瓦舍|琴|歌|舞/.test(source)) return "lantern";
+  if (/RepairCarriage|Agriculture|出行|押镖|车|路|桥|旅途|游历|抵达/.test(source)) return "travel";
   if (/Book|Exam|书|试|学|画/.test(source)) return "ink";
-  if (/RepairCarriage|Agriculture|出行|押镖|车|路|桥/.test(source)) return "travel";
   if (/Official|官|案|衙/.test(source)) return "seal";
   if (/Medicine|医|病/.test(source)) return "herb";
   return "petal";
@@ -9281,6 +9527,7 @@ function achievementToast() {
 
 function centerContent() {
   if (state.dead) return deathView();
+  if (state.pendingTravel) return travelRunView();
   if (state.pendingCaravan) return caravanRunView();
   if (state.eventResult) return eventResultView();
   if (state.currentEvent) return eventView(state.currentEvent);
@@ -10064,20 +10311,112 @@ function relationLabel(value) {
 
 function travelView() {
   const locked = state.age < 6 || state.prisonYears > 0 || !!state.pendingCaravan;
+  state.travelSystem = normalizeTravelSystem(state.travelSystem);
+  const selected = travelDestinationById();
+  const carriage = travelCarriage();
+  const supply = travelSupply();
+  const companions = travelCompanions();
+  const selectedCompanion = companions.find((item) => item.id === state.travelSystem.companionId) || companions[0];
+  const cost = travelTripCost(selected);
+  const nextCarriage = TRAVEL_CARRIAGES[state.travelSystem.carriageLevel];
+  const repairCost = Math.max(20, Math.round((100 - state.travelSystem.condition) * 1.6));
   return `
-    <article class="play-card travel-card">
-      <p class="eyebrow">车马</p>
-      <h2>出行</h2>
-      <p>${locked ? "年岁尚幼或身不由己，暂不可远行。" : "选择目的地，花费路资并改变居处。远行也会增长些许见闻。"}</p>
-      <div class="button-list">
-        ${TRAVEL_DESTINATIONS.map((item, index) => `
-          <button class="list-btn" data-travel="${index}" ${locked || state.stats.money < item.cost ? "disabled" : ""}>
-            ${icon("RepairCarriage", item.name)}
-            <span>${escapeHtml(item.name)}<small>${moneyText(item.cost)} · ${escapeHtml(item.note)}</small></span>
-          </button>`).join("")}
-      </div>
-      <div class="main-actions"><button class="ghost-btn" data-action="back-main">返回</button></div>
+    <article class="play-card travel-card travel-hub">
+      <header class="travel-hero">
+        <div><p class="eyebrow">车马 · 山河游历</p><h2>从${escapeHtml(state.location)}启程</h2><p>${locked ? "年岁尚幼或身不由己，暂不可远行。" : "选路线、约旅伴、备行囊。途中会遇见不同事件，抵达后还可游览、访友或采买风物。"}</p></div>
+        <div class="travel-passport"><span>游历印记</span><strong>${state.travelSystem.stamps.length}/${TRAVEL_DESTINATIONS.length}</strong><small>累计 ${state.travelSystem.totalTrips} 次远游</small></div>
+      </header>
+
+      <section class="carriage-garage">
+        <div class="carriage-icon">${icon(carriage.icon, carriage.name)}</div>
+        <div><span>当前座驾 · ${carriage.level}级</span><h3>${escapeHtml(carriage.name)}</h3><p>${escapeHtml(carriage.note)}</p></div>
+        <div class="carriage-condition"><b>车况 ${Math.round(state.travelSystem.condition)}</b><div class="meter"><i style="width:${state.travelSystem.condition}%"></i></div><small>舒适 +${carriage.comfort} · 安全 +${carriage.safety}</small></div>
+        <div class="mini-actions">
+          <button class="text-btn inline-action" data-travel-upgrade="repair" ${state.travelSystem.condition >= 96 || state.stats.money < repairCost ? "disabled" : ""}>修整 · ${moneyText(repairCost)}</button>
+          ${nextCarriage ? `<button class="text-btn inline-action" data-travel-upgrade="upgrade" ${state.stats.money < nextCarriage.price ? "disabled" : ""}>换${escapeHtml(nextCarriage.name)} · ${moneyText(nextCarriage.price)}</button>` : `<small>已是最高规格车马</small>`}
+        </div>
+      </section>
+
+      <section class="travel-section">
+        <div class="section-title"><h2>一、择一条路线</h2><small>熟悉同一路线可逐渐减免路资</small></div>
+        <div class="travel-map">
+          ${TRAVEL_DESTINATIONS.map((item, index) => {
+            const memory = state.travelSystem.memories[item.id];
+            const active = item.id === selected.id;
+            return `<button class="travel-destination ${active ? "active" : ""} ${state.travelSystem.stamps.includes(item.id) ? "visited" : ""}" data-travel="${index}" ${locked ? "disabled" : ""}>
+              <span class="destination-icon">${icon(item.icon, item.name)}</span>
+              <strong>${escapeHtml(item.name)}</strong>
+              <small>${item.days}日路程 · 风险 ${item.risk}</small>
+              <em>${escapeHtml(item.landmark)}</em>
+              ${memory.trips ? `<b>已游 ${memory.trips} 次</b>` : ""}
+            </button>`;
+          }).join("")}
+        </div>
+        <div class="selected-route-card">
+          <div>${icon(selected.icon, selected.name)}<span><b>${escapeHtml(selected.name)} · ${escapeHtml(selected.landmark)}</b><small>${escapeHtml(selected.story)}</small></span></div>
+          <p>${escapeHtml(selected.note)} · 基础路资 ${moneyText(selected.cost)} · 预计 ${selected.days} 日</p>
+        </div>
+      </section>
+
+      <section class="travel-section">
+        <div class="section-title"><h2>二、约一位旅伴</h2><small>旅伴会提高途中应对，并增进关系</small></div>
+        <div class="travel-option-grid companion-grid">${companions.map((item) => `<button class="travel-option ${item.id === selectedCompanion.id ? "active" : ""}" data-travel-companion="${escapeHtml(item.id)}"><b>${escapeHtml(item.name)}</b><span>${escapeHtml(item.relation)} · 照应 +${item.bonus}</span><small>${escapeHtml(item.note)}</small></button>`).join("")}</div>
+      </section>
+
+      <section class="travel-section">
+        <div class="section-title"><h2>三、备好行囊</h2><small>行囊影响安全、舒适与总路资</small></div>
+        <div class="travel-option-grid">${TRAVEL_SUPPLIES.map((item) => `<button class="travel-option ${item.id === supply.id ? "active" : ""}" data-travel-supply="${item.id}"><b>${escapeHtml(item.name)} · ${moneyText(item.cost)}</b><span>安全 +${item.safety} · 舒适 +${item.comfort}</span><small>${escapeHtml(item.note)}</small></button>`).join("")}</div>
+      </section>
+
+      <footer class="travel-departure">
+        <div><span>本次计划</span><strong>${escapeHtml(state.location)} → ${escapeHtml(selected.name)}</strong><small>${escapeHtml(selectedCompanion.name)}同行 · ${escapeHtml(supply.name)} · 共需 ${moneyText(cost)}</small></div>
+        <button class="primary-btn" data-action="travel-depart" ${locked || state.stats.money < cost ? "disabled" : ""}>整装启程</button>
+        <button class="ghost-btn" data-action="back-main">暂不出发</button>
+      </footer>
     </article>`;
+}
+
+function travelRunView() {
+  const run = normalizeTravelRun(state.pendingTravel);
+  if (!run) return travelView();
+  const destination = travelDestinationById(run.destinationId);
+  const progress = run.events.length ? Math.round((run.index / run.events.length) * 100) : 100;
+  if (run.index >= run.events.length) {
+    return `
+      <article class="play-card travel-run-card travel-arrival">
+        <div class="arrival-mark">${icon(destination.icon, destination.name)}</div>
+        <p class="eyebrow">抵达 · ${escapeHtml(destination.name)}</p>
+        <h2>${escapeHtml(destination.landmark)}在望</h2>
+        <p>${escapeHtml(destination.story)}一路行程评定：${travelQualityLabel(run.quality)}（${Math.round(run.quality)}）。你还可以选择一项当地游历。</p>
+        ${travelJourneyProgress(run, 100)}
+        <div class="arrival-activity-grid">
+          <button class="arrival-activity" data-travel-local="landmark">${icon(destination.icon, destination.landmark)}<span><b>游览名胜</b><small>细看${escapeHtml(destination.landmark)}，增长${escapeHtml(STAT_LABELS[destination.stat] || destination.stat)}与心情</small></span></button>
+          <button class="arrival-activity" data-travel-local="souvenir" ${state.stats.money < 30 ? "disabled" : ""}>${icon("BookStore", destination.souvenir)}<span><b>采买风物 · ${moneyText(30)}</b><small>收藏${escapeHtml(destination.souvenir)}，带回一件旅途纪念</small></span></button>
+          <button class="arrival-activity" data-travel-local="locals">${icon("FamilyFriendAvatar", "当地人")}<span><b>拜访当地人</b><small>听风土消息、结交人物，也许认识新友</small></span></button>
+        </div>
+        ${travelHistoryHtml(run.history)}
+      </article>`;
+  }
+  const event = travelEventById(run.events[run.index]);
+  return `
+    <article class="play-card travel-run-card">
+      <p class="eyebrow">在途 · ${escapeHtml(run.origin)}至${escapeHtml(destination.name)}</p>
+      <h2>${escapeHtml(event.title)}</h2>
+      <p>${escapeHtml(event.prompt)}</p>
+      ${travelJourneyProgress(run, progress)}
+      <div class="travel-run-stats"><span>旅伴 <b>${escapeHtml(run.companionName)}</b></span><span>旅途体验 <b>${Math.round(run.quality)}</b></span><span>车况 <b>${Math.round(state.travelSystem.condition)}</b></span></div>
+      <div class="travel-choice-grid">${event.choices.map((choice, index) => `<button class="travel-choice" data-travel-choice="${index}"><b>${escapeHtml(choice[0])}</b><span>${escapeHtml(STAT_LABELS[choice[1]] || choice[1])}检定</span><small>${escapeHtml(choice[3])}</small></button>`).join("")}</div>
+      ${travelHistoryHtml(run.history)}
+    </article>`;
+}
+
+function travelJourneyProgress(run, progress) {
+  const destination = travelDestinationById(run.destinationId);
+  return `<section class="journey-progress"><div class="journey-line"><i style="width:${progress}%"></i><span class="journey-carriage" style="left:calc(${progress}% - 16px)">${icon("RepairCarriage", "车马")}</span></div><div><b>${escapeHtml(run.origin)}</b><span>${Math.round(progress)}%</span><b>${escapeHtml(destination.name)}</b></div></section>`;
+}
+
+function travelHistoryHtml(history = []) {
+  return `<section class="travel-history"><h3>旅途札记</h3>${[...history].reverse().slice(0, 5).map((item) => `<article class="${item.ok === false ? "bad" : ""}"><b>${escapeHtml(item.title || "途中")}</b><span>${escapeHtml(item.text || "")}</span></article>`).join("")}</section>`;
 }
 
 function backpackView() {
@@ -11939,6 +12278,12 @@ app.addEventListener("click", (event) => {
   if (button.dataset.action === "official-work") return handleOfficialWork();
   if (button.dataset.assetAction) return manageAsset(button.dataset.assetIndex, button.dataset.assetAction);
   if (button.dataset.buyAsset !== undefined) return buyAsset(button.dataset.buyAsset);
+  if (button.dataset.travelCompanion) return selectTravelCompanion(button.dataset.travelCompanion);
+  if (button.dataset.travelSupply) return selectTravelSupply(button.dataset.travelSupply);
+  if (button.dataset.travelChoice !== undefined) return resolveTravelChoice(button.dataset.travelChoice);
+  if (button.dataset.travelLocal) return completeTravelActivity(button.dataset.travelLocal);
+  if (button.dataset.travelUpgrade) return upgradeTravelCarriage(button.dataset.travelUpgrade);
+  if (button.dataset.action === "travel-depart") return startTravelJourney();
   if (button.dataset.travel !== undefined) return travelTo(button.dataset.travel);
   if (button.dataset.career !== undefined) return takeCareer(button.dataset.career);
   if (button.dataset.careerAction) return performCareerAction(button.dataset.careerAction);

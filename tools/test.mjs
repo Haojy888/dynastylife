@@ -746,6 +746,81 @@ try {
   assert.equal(redemption.spent, true, "赎身没有扣除赎资");
   await clearBlockingUi();
 
+  console.log("quality gate: verifying interactive travel system");
+  const oldTravelSave = await page.evaluate(() => {
+    const saved = JSON.parse(JSON.stringify(state));
+    delete saved.travelSystem;
+    delete saved.pendingTravel;
+    const restored = normalizeState(saved);
+    return { level: restored.travelSystem.carriageLevel, condition: restored.travelSystem.condition, pending: restored.pendingTravel, destinations: Object.keys(restored.travelSystem.memories).length };
+  });
+  assert.deepEqual(oldTravelSave, { level: 1, condition: 100, pending: null, destinations: 8 }, "旧存档没有正确补全车马旅行状态");
+
+  const travelSetup = await page.evaluate(() => {
+    state.age = 30;
+    state.year = 62;
+    state.stats.money = 10000;
+    state.currentEvent = null;
+    state.eventResult = null;
+    state.pendingCaravan = null;
+    state.pendingTravel = null;
+    state.travelSystem = createTravelSystem();
+    state.family.spouse = "沈清照";
+    state.family.spouseMeta = normalizePartner({ name: "沈清照", relation: "妻子", gender: "female", age: 29, physique: 76, affection: 82 }, state.name.slice(0, 1), "妻子", "spouse");
+    view.page = "travel";
+    render();
+    travelTo(2);
+    selectTravelCompanion("spouse");
+    selectTravelSupply("luxury");
+    const money = state.stats.money;
+    startTravelJourney();
+    return {
+      destination: state.pendingTravel?.destinationId,
+      companion: state.pendingTravel?.companionName,
+      supply: state.pendingTravel?.supplyId,
+      eventCount: state.pendingTravel?.events.length,
+      spent: state.stats.money < money,
+      destinationCards: document.querySelectorAll("[data-travel]").length,
+    };
+  });
+  assert.equal(travelSetup.destination, "luocheng", "选择目的地后没有按路线启程");
+  assert.equal(travelSetup.companion, "沈清照", "旅伴选择没有写入旅程");
+  assert.equal(travelSetup.supply, "luxury", "行囊选择没有写入旅程");
+  assert.ok(travelSetup.eventCount >= 2, "远行没有生成多阶段途中事件");
+  assert.equal(travelSetup.spent, true, "旅行没有扣除路资");
+  assert.equal(travelSetup.destinationCards, 0, "启程后仍停留在旅行准备页");
+
+  const travelArrival = await page.evaluate(() => {
+    while (state.pendingTravel && state.pendingTravel.index < state.pendingTravel.events.length) resolveTravelChoice(0);
+    const html = travelRunView();
+    return { index: state.pendingTravel?.index, total: state.pendingTravel?.events.length, hasActivities: /data-travel-local/.test(html), history: state.pendingTravel?.history.length };
+  });
+  assert.equal(travelArrival.index, travelArrival.total, "途中事件完成后没有抵达目的地");
+  assert.equal(travelArrival.hasActivities, true, "抵达后没有提供当地游历活动");
+  assert.ok(travelArrival.history >= travelArrival.total + 1, "旅途札记没有记录途中选择");
+
+  const travelComplete = await page.evaluate(() => {
+    completeTravelActivity("landmark");
+    const memory = state.travelSystem.memories.luocheng;
+    return { pending: state.pendingTravel, location: state.location, trips: memory.trips, stamp: state.travelSystem.stamps.includes("luocheng"), result: state.eventResult?.title, scene: state.eventResult?.scene };
+  });
+  assert.equal(travelComplete.pending, null, "目的地游历完成后仍卡在旅途中");
+  assert.equal(travelComplete.location, "洛城", "完成旅程后没有改变居处");
+  assert.equal(travelComplete.trips, 1, "路线熟练度没有累计");
+  assert.equal(travelComplete.stamp, true, "游历印记没有收集");
+  assert.match(travelComplete.result, /洛城/, "旅行结果没有写入目的地");
+  assert.equal(travelComplete.scene, "travel", "旅行结果没有使用旅途过场动画");
+  await clearBlockingUi();
+
+  const travelMobileOverflow = await page.evaluate(() => {
+    view.page = "travel";
+    render();
+    return { viewport: document.documentElement.clientWidth, document: document.documentElement.scrollWidth, cards: document.querySelectorAll(".travel-destination").length, supplies: document.querySelectorAll("[data-travel-supply]").length };
+  });
+  assert.equal(travelMobileOverflow.document, travelMobileOverflow.viewport, "新版车马页面在移动端横向溢出");
+  assert.equal(travelMobileOverflow.cards, 8, "车马页面没有显示全部旅行目的地");
+  assert.equal(travelMobileOverflow.supplies, 3, "车马页面缺少行囊选择");
+
   const underageGuard = await page.evaluate(() => {
     state.age = 17;
     state.year = 17;
