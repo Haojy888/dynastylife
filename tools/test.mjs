@@ -564,6 +564,105 @@ try {
   await clearBlockingUi();
   await page.waitForNetworkIdle({ idleTime: 100, timeout: 5000 }).catch(() => {});
 
+  console.log("quality gate: verifying descendant marriage, inheritance, remarriage, fortune and redemption");
+  const familyExpansion = await page.evaluate(() => {
+    state.gender = "male";
+    state.age = 58;
+    state.year = 58;
+    state.stats.money = 10000;
+    state.currentEvent = null;
+    state.eventResult = null;
+    const child = makeChild(state.name.slice(0, 1), 20);
+    state.family.children = [child];
+    marryChild(child.id);
+    const grandchild = makeGrandchild(child, 4);
+    child.grandchildren.push(grandchild);
+    return {
+      spouseRelation: child.spouse?.relation,
+      marriageYear: child.marriageYear,
+      grandchildRelation: grandchild.relation,
+      heirs: eligibleHeirs().map((item) => ({ id: item.id, kind: item.heirKind })),
+      relationHtml: relationsView(),
+    };
+  });
+  assert.ok(["女婿", "儿媳"].includes(familyExpansion.spouseRelation), "成年子女成婚后没有生成女婿或儿媳");
+  assert.equal(familyExpansion.marriageYear, 58, "子女婚年没有写入存档");
+  assert.ok(["孙子", "孙女"].includes(familyExpansion.grandchildRelation), "子女婚后没有生成正确孙辈关系");
+  assert.deepEqual(familyExpansion.heirs.map((item) => item.kind), ["child", "grandchild"], "孙辈没有进入遗产继承候选");
+  assert.match(familyExpansion.relationHtml, /女婿与儿媳/, "亲友页没有显示姻亲分区");
+  assert.match(familyExpansion.relationHtml, /孙辈/, "亲友页没有显示孙辈分区");
+
+  const grandInheritance = await page.evaluate(() => {
+    const previous = JSON.parse(JSON.stringify(state));
+    const grandchild = livingGrandchildren()[0];
+    const oldGeneration = state.lineage.generation;
+    state.dead = true;
+    state.deathReason = "测试寿终";
+    inheritFromChild(grandchild.id);
+    const result = { name: state.name, generation: state.lineage.generation, expectedName: grandchild.name, expectedGeneration: oldGeneration + 2, father: state.family.father.name, mother: state.family.mother.name };
+    state = normalizeState(previous);
+    save();
+    render();
+    return result;
+  });
+  assert.equal(grandInheritance.name, grandInheritance.expectedName, "选择孙辈后没有切换到孙辈存档");
+  assert.equal(grandInheritance.generation, grandInheritance.expectedGeneration, "隔代继承没有正确推进两代");
+  assert.ok(grandInheritance.father && grandInheritance.mother, "孙辈继承后父母关系缺失");
+
+  const remarriage = await page.evaluate(() => {
+    state.eventResult = null;
+    state.family.spouse = "故人甲";
+    state.family.spouseMeta = normalizePartner({ name: "故人甲", relation: "妻子", gender: "female", age: 55, physique: 0, alive: false }, state.name.slice(0, 1), "妻子", "spouse");
+    archiveDeceasedSpouse([]);
+    const archived = state.family.spouseHistory.some((item) => item.name === "故人甲");
+    state.family.lover = "新人乙";
+    state.family.loverMeta = normalizeRelative({ name: "新人乙", relation: "相看之人", gender: "female", age: 36, affection: 72 }, state.name.slice(0, 1), "partner");
+    marryLover();
+    return { archived, spouse: state.family.spouse, history: state.family.spouseHistory.map((item) => item.name) };
+  });
+  assert.equal(remarriage.archived, true, "亡配没有转入故配记录");
+  assert.equal(remarriage.spouse, "新人乙", "丧偶后无法再婚");
+  assert.ok(remarriage.history.includes("故人甲"), "再婚后故配记录丢失");
+  await clearBlockingUi();
+
+  const fortune = await page.evaluate(() => {
+    state.year = 60;
+    state.templeFortune = { active: { id: "noble", drawnYear: 59, dueYear: 60 }, history: [], lastDrawYear: 59 };
+    const event = annualFortuneEvent();
+    state.currentEvent = event;
+    chooseOption(0);
+    return { kind: event?.kind, active: state.templeFortune.active, history: state.templeFortune.history, result: state.eventResult?.text };
+  });
+  assert.equal(fortune.kind, "fortuneEvent", "求签没有在下一流年触发专属剧情");
+  assert.equal(fortune.active, null, "签运应验后仍处于待触发状态");
+  assert.equal(fortune.history.length, 1, "签运应验没有写入历史");
+  assert.match(fortune.result, /至此应验/, "签运结果没有明确关联此前所求之签");
+  await clearBlockingUi();
+
+  const redemption = await page.evaluate(() => {
+    state.gender = "male";
+    state.age = 30;
+    state.year = 61;
+    state.stats.money = 10000;
+    state.eventResult = null;
+    state.family.concubines = [];
+    state.courtesanVisit = createCourtesanVisit();
+    const candidate = state.courtesanVisit.candidates[0];
+    candidate.affection = COURTESAN_REDEEM_AFFECTION;
+    candidate.visits = COURTESAN_REDEEM_VISITS;
+    const money = state.stats.money;
+    redeemCourtesan(candidate.id);
+    return {
+      removed: !state.courtesanVisit.candidates.some((item) => item.id === candidate.id),
+      housed: state.family.concubines.some((item) => item.name === candidate.name && item.redeemed),
+      spent: state.stats.money < money,
+    };
+  });
+  assert.equal(redemption.removed, true, "赎身后美人仍留在青楼候选中");
+  assert.equal(redemption.housed, true, "赎身美人没有安置进家庭关系");
+  assert.equal(redemption.spent, true, "赎身没有扣除赎资");
+  await clearBlockingUi();
+
   const underageGuard = await page.evaluate(() => {
     state.age = 17;
     state.year = 17;

@@ -863,6 +863,17 @@ const BROTHEL_ACTIONS = {
   banquet: { label: "夜宴谈心", multiplier: 1.25, icon: "Wine1", diseaseRisk: 0.03 },
   intimate: { label: "共度良宵", multiplier: 2, icon: "Whorehouse", diseaseRisk: 0.18 },
 };
+const CHILD_MARRIAGE_AGE = 18;
+const CHILD_MARRIAGE_COST = 260;
+const COURTESAN_REDEEM_AFFECTION = 82;
+const COURTESAN_REDEEM_VISITS = 3;
+const TEMPLE_FORTUNES = [
+  { id: "noble", grade: "上上签", title: "云开见贵", verse: "云开月出照前程，旧识新知引路行。", interpretation: "来年将遇贵人相助，但是否受其提携仍看你的取舍。", icon: "Official" },
+  { id: "wealth", grade: "上签", title: "财入东门", verse: "春水绕门添活计，一分胆识一分金。", interpretation: "来年会有一桩进财机会，稳取与冒险各有得失。", icon: "CashBox" },
+  { id: "family", grade: "中上签", title: "灯火团圆", verse: "堂前灯暖人声近，旧隙逢春亦可消。", interpretation: "来年家中将有一场需要你居中料理的团圆事。", icon: "FamilyFriendAvatar" },
+  { id: "study", grade: "中签", title: "砚池微澜", verse: "莫嫌纸上功夫慢，夜雨磨穿铁砚心。", interpretation: "来年会遇到一场考验学识与耐心的机会。", icon: "Book" },
+  { id: "warning", grade: "下签", title: "风雨敲窗", verse: "行舟最怕滩头急，且把浮财换太平。", interpretation: "来年恐有破财或伤身之险，谨慎可将灾祸化小。", icon: "Temple" },
+];
 const PLAYER_AVATARS = {
   male: [
     "assets/player-avatar-male-1.webp",
@@ -1793,6 +1804,7 @@ function createFamily(familyName) {
     siblings: makeSiblings(familyName),
     lover: false,
     concubines: [],
+    spouseHistory: [],
     concubineCandidate: null,
     intimacyBonus: 0,
     romanceRecords: { intimate: 0, outings: 0, conflicts: 0 },
@@ -1887,6 +1899,7 @@ function startLife() {
     pendingCaravan: null,
     family: createFamily(draft.family),
     familyStories: { active: null, completed: [], lastTriggerYear: -1 },
+    templeFortune: { active: null, history: [], lastDrawYear: -1 },
     exam: { rank: -1, attempts: 0, history: [], current: null, lastYear: -1 },
     pendingActivity: null,
     eventResult: null,
@@ -1989,6 +2002,7 @@ function normalizeState(raw) {
   next.pendingCaravan = normalizeCaravanRun(next.pendingCaravan, next.age);
   next.family = normalizeFamily(next.family, next.name.slice(0, 1));
   next.familyStories = normalizeFamilyStories(next.familyStories);
+  next.templeFortune = normalizeTempleFortune(next.templeFortune);
   next.exam = normalizeExam(next.exam);
   next.pendingActivity = next.pendingActivity || null;
   next.eventResult = next.eventResult || null;
@@ -2036,6 +2050,20 @@ function normalizeFamilyStories(stories) {
   };
 }
 
+function normalizeTempleFortune(fortune) {
+  const source = fortune && typeof fortune === "object" ? fortune : {};
+  const active = source.active && typeof source.active === "object" ? source.active : null;
+  return {
+    active: active ? {
+      id: TEMPLE_FORTUNES.some((item) => item.id === active.id) ? active.id : "warning",
+      drawnYear: Math.max(0, Math.round(Number(active.drawnYear) || 0)),
+      dueYear: Math.max(0, Math.round(Number(active.dueYear) || 0)),
+    } : null,
+    history: Array.isArray(source.history) ? source.history.slice(-12) : [],
+    lastDrawYear: Number.isFinite(Number(source.lastDrawYear)) ? Number(source.lastDrawYear) : -1,
+  };
+}
+
 function normalizeFamily(family, familyName) {
   const source = family || {};
   const father =
@@ -2057,15 +2085,20 @@ function normalizeFamily(family, familyName) {
   const concubines = Array.isArray(source.concubines) ? source.concubines : [];
   const spouseRelation = source.spouseRelation || "配偶";
   const romanceRecords = source.romanceRecords && typeof source.romanceRecords === "object" ? source.romanceRecords : {};
+  const normalizedSpouse = source.spouse ? normalizePartner({ name: typeof source.spouse === "string" ? source.spouse : source.spouse?.name, relation: spouseRelation, gender: source.spouseGender, alive: true, affection: source.spouseAffection ?? 78, ...source.spouseMeta }, familyName, spouseRelation) : null;
+  const spouseHistory = Array.isArray(source.spouseHistory) ? source.spouseHistory.map((item, index) => normalizePartner(item, familyName, item?.relation || "故配", `former-spouse-${index}`)) : [];
+  if (normalizedSpouse?.alive === false && !spouseHistory.some((item) => item.name === normalizedSpouse.name)) spouseHistory.push({ ...normalizedSpouse, relation: "故配" });
+  const currentSpouse = normalizedSpouse?.alive === false ? null : normalizedSpouse;
   return {
     father: normalizeParent({ relation: "父亲", gender: "male", alive: true, affection: randInt(68, 96), ...father }, "father"),
     mother: normalizeParent({ relation: "母亲", gender: "female", alive: true, affection: randInt(68, 96), ...mother }, "mother"),
     siblings: siblings.map((item) => normalizeRelative({ relation: item.gender === "female" ? "姐姐" : "哥哥", alive: true, affection: randInt(42, 88), ...item }, familyName, "sibling")),
     lover: source.lover || false,
     loverMeta: source.lover ? normalizeRelative({ name: typeof source.lover === "string" ? source.lover : source.lover?.name, relation: "相看之人", gender: source.loverGender, alive: true, affection: 64, ...source.loverMeta }, familyName, "partner") : null,
-    spouse: source.spouse || null,
-    spouseMeta: source.spouse ? normalizePartner({ name: typeof source.spouse === "string" ? source.spouse : source.spouse?.name, relation: spouseRelation, gender: source.spouseGender, alive: true, affection: source.spouseAffection ?? 78, ...source.spouseMeta }, familyName, spouseRelation) : null,
+    spouse: currentSpouse?.name || null,
+    spouseMeta: currentSpouse,
     spouseAffection: clamp(Number(source.spouseAffection ?? 78)),
+    spouseHistory: spouseHistory.slice(-6),
     concubines: concubines.map((item, index) => normalizePartner(typeof item === "string" ? { name: item } : item, familyName, "妾室", `concubine-${index}`)),
     concubineCandidate: source.concubineCandidate ? normalizePartner(source.concubineCandidate, familyName, "待纳侧室", "concubine-candidate") : null,
     intimacyBonus: clamp(Number(source.intimacyBonus || 0), 0, 0.45),
@@ -2135,6 +2168,8 @@ function makeChild(familyName = state?.name?.slice(0, 1) || "李", age = 0) {
     study: randInt(0, 20),
     virtue: randInt(30, 80),
     trait: sample(CHILD_TRAITS) || "聪慧",
+    spouse: null,
+    grandchildren: [],
   };
 }
 
@@ -2142,8 +2177,12 @@ function normalizeChild(child, familyName) {
   const base = child && typeof child === "object" ? child : makeChild(familyName);
   const gender = base.gender === "female" ? "female" : "male";
   const physique = clamp(Number(base.physique ?? randInt(42, 86)));
+  const childId = base.id || `child-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const spouseRelation = gender === "female" ? "女婿" : "儿媳";
+  const spouse = base.spouse ? normalizeRelative({ ...base.spouse, relation: spouseRelation, gender: gender === "female" ? "male" : "female" }, familyName, "partner") : null;
+  const grandchildren = Array.isArray(base.grandchildren) ? base.grandchildren : [];
   return {
-    id: base.id || `child-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    id: childId,
     name: base.name || `${familyName}${sample(gender === "female" ? DATA.database?.names?.female : DATA.database?.names?.male) || "承安"}`,
     relation: base.relation || (gender === "female" ? "女儿" : "儿子"),
     gender,
@@ -2157,6 +2196,43 @@ function normalizeChild(child, familyName) {
     trait: base.trait || sample(CHILD_TRAITS) || "聪慧",
     educationPath: ["academy", "craft", "home"].includes(base.educationPath) ? base.educationPath : "",
     educationOutcome: String(base.educationOutcome || ""),
+    otherParent: String(base.otherParent || ""),
+    spouse,
+    marriageYear: Number.isFinite(Number(base.marriageYear)) ? Number(base.marriageYear) : -1,
+    grandchildren: grandchildren.map((item) => normalizeGrandchild(item, familyName, childId)),
+  };
+}
+
+function makeGrandchild(parent, age = 0) {
+  const gender = Math.random() > 0.5 ? "male" : "female";
+  const familyName = parent?.gender === "male" ? parent.name.slice(0, 1) : parent?.spouse?.name?.slice(0, 1) || state.name.slice(0, 1);
+  return normalizeGrandchild({
+    id: `grandchild-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    name: `${familyName}${sample(gender === "female" ? DATA.database?.names?.female : DATA.database?.names?.male) || "承安"}`,
+    gender,
+    age,
+    otherParent: parent?.spouse?.name || "",
+  }, familyName, parent?.id || "");
+}
+
+function normalizeGrandchild(grandchild, familyName, parentId) {
+  const base = grandchild && typeof grandchild === "object" ? grandchild : {};
+  const gender = base.gender === "female" ? "female" : "male";
+  const physique = clamp(Number(base.physique ?? randInt(42, 86)));
+  return {
+    id: base.id || `grandchild-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    name: base.name || `${familyName}${sample(gender === "female" ? DATA.database?.names?.female : DATA.database?.names?.male) || "承安"}`,
+    relation: gender === "female" ? "孙女" : "孙子",
+    gender,
+    age: Math.max(0, Math.round(Number(base.age) || 0)),
+    physique,
+    alive: base.alive !== false && physique > 0,
+    affection: clamp(Number(base.affection ?? randInt(58, 88))),
+    aptitude: clamp(Number(base.aptitude ?? randInt(35, 88))),
+    study: clamp(Number(base.study ?? randInt(0, 20))),
+    virtue: clamp(Number(base.virtue ?? randInt(30, 80))),
+    trait: base.trait || sample(CHILD_TRAITS) || "聪慧",
+    parentId: String(base.parentId || parentId || ""),
     otherParent: String(base.otherParent || ""),
   };
 }
@@ -2704,7 +2780,7 @@ function nextYear() {
     return;
   }
 
-  state.currentEvent = annualFamilyStoryEvent() || annualOfficialCaseEvent() || chooseEvent();
+  state.currentEvent = annualFortuneEvent() || annualFamilyStoryEvent() || annualOfficialCaseEvent() || chooseEvent();
   if (!state.currentEvent) addLog("平年", "这一年无甚大事，日子仍照常向前。", state.lastDeltas);
   finishYear(false);
 }
@@ -3169,6 +3245,7 @@ function advanceFamilyYear(deltas) {
   for (const parent of [state.family.father, state.family.mother]) advanceRelationYear(parent, deltas, "parent");
   for (const sibling of state.family.siblings || []) advanceRelationYear(sibling, deltas, "sibling");
   if (state.family.spouseMeta) advanceRelationYear(state.family.spouseMeta, deltas, "spouse");
+  archiveDeceasedSpouse(deltas);
   if (state.family.loverMeta) advanceRelationYear(state.family.loverMeta, deltas, "lover");
   for (const concubine of state.family.concubines || []) advanceRelationYear(concubine, deltas, "spouse");
   if (state.family.concubineCandidate) advanceRelationYear(state.family.concubineCandidate, deltas, "lover");
@@ -3200,6 +3277,20 @@ function advanceFamilyYear(deltas) {
       };
       addLog("子女成长", notes[child.age], [{ label: "子女", value: `${child.name}${child.age}岁` }]);
     }
+    if (child.spouse) advanceRelationYear(child.spouse, deltas, "spouse");
+    for (const grandchild of child.grandchildren || []) advanceGrandchildYear(grandchild, deltas);
+    if (child.spouse?.alive !== false && child.age >= CHILD_MARRIAGE_AGE && child.age <= 50 && child.spouse.age >= CHILD_MARRIAGE_AGE && child.spouse.age <= 50 && (child.grandchildren || []).filter((item) => item.alive !== false).length < 4 && Math.random() < 0.2) {
+      const grandchild = makeGrandchild(child, 0);
+      child.grandchildren ||= [];
+      child.grandchildren.push(grandchild);
+      deltas.push({ label: "添孙", value: grandchild.name });
+      changeStat("mood", randInt(3, 9), deltas);
+      addLog("添孙之喜", `${child.name}与${child.spouse.name}添了${grandchild.relation}${grandchild.name}，三代同堂又多一声啼哭。`, [{ label: grandchild.relation, value: grandchild.name }]);
+    }
+  }
+  for (const child of state.family.children || []) {
+    if (child.alive !== false) continue;
+    for (const grandchild of child.grandchildren || []) advanceGrandchildYear(grandchild, deltas);
   }
 
   const childParent = childbearingPartnerThisYear();
@@ -3212,6 +3303,36 @@ function advanceFamilyYear(deltas) {
     deltas.push({ label: "添丁", value: child.name });
     addLog("添丁", `${childParent.name}为家中添了${child.relation}${child.name}，乳名未定，眉眼间已有几分${child.trait}。`, [{ label: "子女", value: child.name }]);
   }
+}
+
+function advanceGrandchildYear(grandchild, deltas = []) {
+  if (!grandchild || grandchild.alive === false) return;
+  grandchild.age += 1;
+  grandchild.physique = clamp(Number(grandchild.physique ?? 70) - relationPhysiqueDecline(grandchild.age, "child"));
+  if (grandchild.physique <= 0) {
+    grandchild.alive = false;
+    grandchild.physique = 0;
+    addLog("孙辈离世", `${grandchild.name}不幸离世，白发人闻讯悲恸。`, [{ label: grandchild.relation, value: "离世", negative: true }]);
+    changeStat("mood", -randInt(7, 16), deltas);
+  } else if (grandchild.age <= 16) {
+    grandchild.study = clamp(grandchild.study + randInt(0, grandchild.aptitude >= 70 ? 4 : 2));
+    grandchild.virtue = clamp(grandchild.virtue + randInt(-1, 2));
+  }
+}
+
+function archiveDeceasedSpouse(deltas = []) {
+  const spouse = state.family.spouseMeta;
+  if (!state.family.spouse || !spouse || spouse.alive !== false) return;
+  state.family.spouseHistory ||= [];
+  if (!state.family.spouseHistory.some((item) => item.name === spouse.name)) state.family.spouseHistory.push({ ...spouse, relation: "故配" });
+  state.family.spouseHistory = state.family.spouseHistory.slice(-6);
+  const name = state.family.spouse;
+  state.family.spouse = null;
+  state.family.spouseMeta = null;
+  state.family.spouseAffection = 0;
+  state.family.concubineCandidate = null;
+  deltas.push({ label: "婚姻", value: "丧偶", negative: true });
+  addLog("丧偶", `${name}离世后，家中收起旧日婚书。服丧过后，你仍可托媒人另寻配偶。`, [{ label: "故配", value: name, negative: true }]);
 }
 
 function relationPhysiqueDecline(age, kind = "friend") {
@@ -3399,12 +3520,19 @@ function livingChildren() {
   return (state.family.children || []).filter((child) => child.alive !== false);
 }
 
+function livingGrandchildren() {
+  return livingChildren().flatMap((child) => (child.grandchildren || []).filter((grandchild) => grandchild.alive !== false).map((grandchild) => ({ ...grandchild, parentId: child.id, parentName: child.name, heirKind: "grandchild" })));
+}
+
 function adultChildren() {
   return livingChildren().filter((child) => child.age >= 15);
 }
 
 function eligibleHeirs() {
-  return livingChildren().sort((a, b) => b.age - a.age || (b.aptitude + b.study + b.virtue) - (a.aptitude + a.study + a.virtue));
+  return [
+    ...livingChildren().map((child) => ({ ...child, heirKind: "child" })),
+    ...livingGrandchildren(),
+  ].sort((a, b) => (a.heirKind === b.heirKind ? 0 : a.heirKind === "child" ? -1 : 1) || b.age - a.age || (b.aptitude + b.study + b.virtue) - (a.aptitude + a.study + a.virtue));
 }
 
 function chooseEvent() {
@@ -3435,6 +3563,7 @@ function chooseOption(index) {
   if (event.kind === "officialCase") return resolveOfficialCase(event, choice);
   if (event.kind === "familyStory") return resolveFamilyStory(event, choice);
   if (event.kind === "careerCase") return resolveCareerCase(event, choice);
+  if (event.kind === "fortuneEvent") return resolveFortuneEvent(event, choice);
 
   const deltas = applyResults(choice.results || []);
   state.lastDeltas = mergeDeltas(state.pendingActivity?.deltas, deltas);
@@ -6450,6 +6579,7 @@ function performPlaceAction(id) {
   if (id === "prepareExam") return prepareExam();
   if (id === "courtesanContest") return startCourtesanContest();
   if (id === "courtesanParlor") return startCourtesanParlor();
+  if (id === "templeDrawLot") return drawTempleFortune();
   const deltas = [];
   let title = "去处";
   let text = "";
@@ -6947,6 +7077,154 @@ function teachChild(id) {
   finishAction("教养子女", `你为${child.name}延师授课，又亲自督看功课。${child.name}学业渐进，也更亲近你。`, deltas, "Book");
 }
 
+function redeemCourtesan(candidateId) {
+  if (!state || state.dead || state.prisonYears > 0 || state.age < COURTESAN_MIN_AGE) return;
+  const visit = normalizeCourtesanVisit(state.courtesanVisit);
+  const candidate = visit?.candidates.find((item) => item.id === candidateId);
+  if (!visit || !candidate || candidate.affection < COURTESAN_REDEEM_AFFECTION || candidate.visits < COURTESAN_REDEEM_VISITS) return;
+  if (state.gender === "male" && (state.family.concubines || []).filter((item) => item.alive !== false).length >= 3) return finishAction("内宅已满", "家中已有三房侧室，暂不能再安置赎身之人。", [{ label: "侧室", value: "已满", negative: true }], "FamilyConcubineAvatar");
+  const cost = Math.max(1200, Math.round(candidate.price * 12));
+  if (state.stats.money < cost) return finishAction("赎资不足", `替${candidate.name}赎身需 ${moneyText(cost)}，眼下钱财不足。`, [{ label: "钱财", value: "不足", negative: true }], "CashBox");
+  const deltas = [];
+  changeStat("money", -cost, deltas);
+  changeStat("mood", 8, deltas);
+  changeStat("relationship", 7, deltas);
+  if (state.gender === "male") {
+    state.family.concubines ||= [];
+    state.family.concubines.push(normalizePartner({
+      id: `concubine-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      name: candidate.name,
+      relation: "妾室",
+      gender: "female",
+      age: candidate.age,
+      physique: randInt(52, 82),
+      affection: clamp(candidate.affection + 6),
+      intimacy: 24,
+      redeemed: true,
+      portrait: candidate.portrait,
+    }, state.name.slice(0, 1), "妾室", "concubine"));
+    if (state.family.spouseMeta) {
+      state.family.spouseAffection = clamp(Number(state.family.spouseAffection || 78) - 6);
+      state.family.spouseMeta.affection = state.family.spouseAffection;
+      state.family.spouseMeta.jealousy = clamp(Number(state.family.spouseMeta.jealousy || 0) + 10);
+    }
+  } else {
+    state.friends = state.friends.filter((friend) => friend.name !== candidate.name);
+    state.friends.push(normalizeFriend({ name: candidate.name, relation: "赎身女伴", gender: "female", age: candidate.age, physique: randInt(52, 82), affection: clamp(candidate.affection + 6), lastMet: state.age }));
+  }
+  visit.candidates = visit.candidates.filter((item) => item.id !== candidate.id);
+  state.courtesanVisit = visit;
+  state.brothelRecords.favorites = [...new Set([...(state.brothelRecords.favorites || []), candidate.name])];
+  addLedger("替人赎身", -cost, `为${candidate.name}脱籍赎身。`);
+  finishAction("赎身出坊", `你备齐 ${moneyText(cost)}，替${candidate.name}销去乐籍、赎出坊门。${state.gender === "male" ? "她随你回府，以侧室身份重新安顿。" : "她以女伴身份留在你身边，自此不必再迎来送往。"}`, deltas, "ArrangeMarriage");
+}
+
+function drawTempleFortune() {
+  if (!state || state.dead || state.prisonYears > 0) return;
+  state.templeFortune = normalizeTempleFortune(state.templeFortune);
+  if (state.templeFortune.active) {
+    const current = TEMPLE_FORTUNES.find((item) => item.id === state.templeFortune.active.id);
+    return finishAction("签意未应", `你手中已有一支“${current?.title || "旧签"}”尚待应验。寺祝劝你静候来年，不可反复求问。`, [], "Temple");
+  }
+  if (state.templeFortune.lastDrawYear === state.year) return finishAction("今日已求签", "寺祝收起签筒，请你待来年再问。", [], "Temple");
+  const cost = Math.min(30, Math.max(0, state.stats.money));
+  const deltas = [];
+  changeStat("money", -cost, deltas);
+  changeStat("mood", 2, deltas);
+  const lot = sample(TEMPLE_FORTUNES) || TEMPLE_FORTUNES[0];
+  state.templeFortune.active = { id: lot.id, drawnYear: state.year, dueYear: state.year + 1 };
+  state.templeFortune.lastDrawYear = state.year;
+  addLedger("寺庙求签", -cost, `求得${lot.grade}“${lot.title}”。`);
+  finishAction(`${lot.grade} · ${lot.title}`, `${lot.verse}\n\n解签：${lot.interpretation} 这支签会在下一流年的具体剧情中应验。`, deltas, lot.icon);
+}
+
+function annualFortuneEvent() {
+  const active = state.templeFortune?.active;
+  if (!active || state.year < active.dueYear) return null;
+  const lot = TEMPLE_FORTUNES.find((item) => item.id === active.id) || TEMPLE_FORTUNES[0];
+  const stories = {
+    noble: {
+      content: "签中所言的贵人果然来访：一位旧识愿替你引见门路，但也盼你日后记得这份人情。",
+      children: [
+        { title: "受其提携", note: "得人脉与声望，也欠下一份人情", content: "你郑重受下引荐，门路顿开，也把这份人情记在心里。", effects: { relationship: 8, favorability: 5, eq: 2 } },
+        { title: "婉言自守", note: "少些捷径，保全德行与心境", content: "你谢过好意，只请对方饮茶叙旧，不以人情换前程。", effects: { virtue: 6, mood: 4, relationship: 2 } },
+      ],
+    },
+    wealth: {
+      content: "东市有人邀你合做一笔买卖，正应了签上“财入东门”四字。",
+      children: [
+        { title: "稳妥入股", note: "小有收益，风险较低", content: "你只投了能承受的本钱，账目清楚，旬月后果然分得红利。", effects: { money: 180, eq: 3 } },
+        { title: "放胆押注", note: "收益更高，也会伤些心神", content: "你押上重注，几经波折才赚回一笔厚利，夜里却没少惊醒。", effects: { money: 420, mood: -7, virtue: -2 } },
+      ],
+    },
+    family: {
+      content: "久未登门的亲眷忽然来信，愿借家宴化解旧日芥蒂，堂前灯火正如签诗所示。",
+      children: [
+        { title: "设宴团圆", note: "花钱修复亲情", content: "你备下家宴，让旧话在灯下说开，席散时众人终于有了笑意。", effects: { money: -80, relationship: 10, mood: 6 } },
+        { title: "写信劝和", note: "省下花销，效果温和", content: "你亲笔回信，句句留有余地，虽未立刻团聚，旧隙也渐渐松动。", effects: { relationship: 5, virtue: 3 } },
+      ],
+    },
+    study: {
+      content: "一位游学先生携残卷到访，请你共同校勘。字句艰涩，正是一场耐心与学识的考验。",
+      children: [
+        { title: "闭门校书", note: "增长学识，耗费心神", content: "你与先生连校数夜，终于补全残篇，也悟出许多旧义。", effects: { knowledge: 8, mood: -3 } },
+        { title: "请益后收藏", note: "稳中有进", content: "你不强求一时读尽，只记下先生讲解，留待日后慢慢参详。", effects: { knowledge: 4, virtue: 2, mood: 2 } },
+      ],
+    },
+    warning: {
+      content: "夜里屋梁忽折，继而又传来街坊疫气。下签的警示果然应验，幸而你已有防备。",
+      children: [
+        { title: "舍财修屋施药", note: "破财挡灾，保全体魄与德行", content: "你立即修屋，又买药分给家人邻里，花销不小，却把险情压了下去。", effects: { money: -160, virtue: 7, physique: 3 } },
+        { title: "紧闭门户观望", note: "省钱但可能伤身", content: "你只闭门自守，虽省下一笔钱，惊惧与湿寒仍伤了身体。", effects: { physique: -8, mood: -5 } },
+      ],
+    },
+  };
+  const story = stories[lot.id] || stories.warning;
+  return { kind: "fortuneEvent", fortuneId: lot.id, title: `签运应验 · ${lot.title}`, content: story.content, children: story.children };
+}
+
+function resolveFortuneEvent(event, choice) {
+  const deltas = [];
+  for (const [key, value] of Object.entries(choice.effects || {})) changeStat(key, value, deltas);
+  const lot = TEMPLE_FORTUNES.find((item) => item.id === event.fortuneId) || TEMPLE_FORTUNES[0];
+  state.templeFortune ||= normalizeTempleFortune();
+  state.templeFortune.history.push({ id: lot.id, grade: lot.grade, drawnYear: state.templeFortune.active?.drawnYear ?? state.year - 1, resolvedYear: state.year, choice: choice.title });
+  state.templeFortune.history = state.templeFortune.history.slice(-12);
+  state.templeFortune.active = null;
+  state.currentEvent = null;
+  state.lastDeltas = deltas;
+  addLog(`签运应验 · ${lot.grade}`, choice.content, deltas);
+  state.eventResult = { title: choice.title, text: `${choice.content} 去年所求的“${lot.title}”至此应验。`, deltas, icon: lot.icon };
+  save();
+  render();
+}
+
+function marryChild(id) {
+  const child = livingChildren().find((item) => item.id === id);
+  if (!child || child.age < CHILD_MARRIAGE_AGE || child.spouse || state.dead || state.prisonYears > 0) return;
+  if (state.stats.money < CHILD_MARRIAGE_COST) return finishAction("婚资不足", `替${child.name}操办婚事至少需 ${moneyText(CHILD_MARRIAGE_COST)}。`, [{ label: "钱财", value: "不足", negative: true }], "ArrangeMarriage");
+  const spouseGender = child.gender === "female" ? "male" : "female";
+  const relation = child.gender === "female" ? "女婿" : "儿媳";
+  const spouse = normalizeRelative({
+    id: `inlaw-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    name: makePersonName(spouseGender),
+    relation,
+    gender: spouseGender,
+    age: clamp(child.age + randInt(-3, 4), CHILD_MARRIAGE_AGE, 55),
+    physique: randInt(52, 86),
+    affection: randInt(58, 82),
+  }, state.name.slice(0, 1), "partner");
+  const deltas = [];
+  changeStat("money", -CHILD_MARRIAGE_COST, deltas);
+  changeStat("mood", randInt(4, 10), deltas);
+  changeStat("relationship", randInt(4, 9), deltas);
+  child.spouse = spouse;
+  child.marriageYear = state.year;
+  child.grandchildren ||= [];
+  addLedger("子女婚仪", -CHILD_MARRIAGE_COST, `为${child.name}与${spouse.name}操办婚礼。`);
+  finishAction("子女成婚", `你替${child.name}备下婚书与喜宴，迎来${relation}${spouse.name}。自此家谱添了一门姻亲，往后也可能再添孙辈。`, deltas, "ArrangeMarriage");
+}
+
 function inheritFromChild(id) {
   const heir = eligibleHeirs().find((item) => item.id === id);
   if (!state.dead || !heir) return;
@@ -6956,6 +7234,8 @@ function inheritFromChild(id) {
   const oldScore = lifeScore();
   const oldGrade = lifeGrade(oldScore);
   const generation = Math.max(1, Number(state.lineage?.generation) || 1);
+  const generationStep = heir.heirKind === "grandchild" ? 2 : 1;
+  const heirParent = heir.heirKind === "grandchild" ? livingChildren().find((child) => child.id === heir.parentId) : null;
   const inheritedMoney = Math.max(20, Math.round(Math.max(0, state.stats.money || 0) * 0.78));
   const inheritedAssets = (state.assets || []).map((asset) => ({ ...asset, inherited: true, owner: heir.name }));
   const inheritedInventory = [...new Set([...(state.inventory || []), "家书"])]
@@ -6963,7 +7243,8 @@ function inheritFromChild(id) {
     .slice(0, 18);
   const familyName = heir.name.slice(0, 1);
   const spouseName = state.family.spouse;
-  const siblings = livingChildren()
+  const siblingSource = heirParent ? (heirParent.grandchildren || []).filter((item) => item.alive !== false) : livingChildren();
+  const siblings = siblingSource
     .filter((child) => child.id !== heir.id)
     .map((child) => ({
       name: child.name,
@@ -6974,6 +7255,12 @@ function inheritFromChild(id) {
       age: child.age,
       physique: randInt(45, 78),
     }));
+  const inheritedSpouse = heir.heirKind === "child" && heir.spouse?.alive !== false ? heir.spouse : null;
+  const inheritedChildren = heir.heirKind === "child" ? (heir.grandchildren || []).filter((item) => item.alive !== false).map((item) => ({ ...item, relation: item.gender === "female" ? "女儿" : "儿子", parentId: undefined })) : [];
+  const directFather = oldGender === "male" ? oldName : spouseName || `${familyName}父`;
+  const directMother = oldGender === "female" ? oldName : spouseName || `${familyName}母`;
+  const parentFather = heirParent?.gender === "male" ? heirParent.name : heirParent?.spouse?.name || `${familyName}父`;
+  const parentMother = heirParent?.gender === "female" ? heirParent.name : heirParent?.spouse?.name || `${familyName}母`;
   const ancestors = [
     {
       name: oldName,
@@ -7019,11 +7306,11 @@ function inheritFromChild(id) {
     diseases: [],
     inventory: inheritedInventory,
     log: [
-      { age: startAge, title: "承继家业", text: `${oldName}身后，${heir.name}承继第 ${generation + 1} 代家业。上一代命格总评为${oldGrade}，${oldScore}分；遗下钱财 ${moneyText(inheritedMoney)}、家产 ${inheritedAssets.length} 处。` },
+      { age: startAge, title: "承继家业", text: `${oldName}身后，${heir.name}以${heir.heirKind === "grandchild" ? heir.relation : "子女"}身份承继第 ${generation + generationStep} 代家业。上一代命格总评为${oldGrade}，${oldScore}分；遗下钱财 ${moneyText(inheritedMoney)}、家产 ${inheritedAssets.length} 处。` },
       { age: startAge, title: "家族命册", text: `家中旧事由长辈收束成册，${heir.name}自此接过门户，也接过${oldName}未竟之事。` },
       ...oldLog.slice(0, 42).map((item) => ({ ...item, inherited: true })),
     ],
-    biography: `${heir.name}承${oldName}遗业而立，是这一门第 ${generation + 1} 代主事人。家中旧事皆入命册，钱财田宅亦随之过户。`,
+    biography: `${heir.name}承${oldName}遗业而立，是这一门第 ${generation + generationStep} 代主事人。家中旧事皆入命册，钱财田宅亦随之过户。`,
     assets: inheritedAssets,
     ledger: [
       { age: startAge, title: "承继家产", amount: inheritedMoney, text: `承继${oldName}遗下的钱财与产业。` },
@@ -7034,7 +7321,7 @@ function inheritFromChild(id) {
     femaleSkills: heir.gender === "female" ? { 诗书: Math.floor(heirStudy / 20) } : {},
     official: createOfficialState(),
     lineage: {
-      generation: generation + 1,
+      generation: generation + generationStep,
       familyName,
       ancestors,
     },
@@ -7048,16 +7335,18 @@ function inheritFromChild(id) {
     market: { year: -1, factor: 1 },
     caravanMemory: normalizeCaravanMemory(state.caravanMemory),
     family: {
-      father: { name: oldGender === "male" ? oldName : spouseName || `${familyName}父`, relation: "父亲", gender: "male", alive: oldGender !== "male" && !!spouseName, age: oldGender === "male" ? state.age : Math.max(22, state.age - randInt(0, 5)), physique: oldGender === "male" ? 0 : randInt(38, 72), affection: 76 },
-      mother: { name: oldGender === "female" ? oldName : spouseName || `${familyName}母`, relation: "母亲", gender: "female", alive: oldGender !== "female" && !!spouseName, age: oldGender === "female" ? state.age : Math.max(22, state.age - randInt(0, 5)), physique: oldGender === "female" ? 0 : randInt(38, 72), affection: 76 },
+      father: { name: heirParent ? parentFather : directFather, relation: "父亲", gender: "male", alive: heirParent ? heirParent.gender === "male" ? heirParent.alive !== false : heirParent.spouse?.alive !== false : oldGender !== "male" && !!spouseName, age: heirParent ? (heirParent.gender === "male" ? heirParent.age : heirParent.spouse?.age || Math.max(22, heirAge + 20)) : oldGender === "male" ? state.age : Math.max(22, state.age - randInt(0, 5)), physique: heirParent ? randInt(42, 76) : oldGender === "male" ? 0 : randInt(38, 72), affection: 76 },
+      mother: { name: heirParent ? parentMother : directMother, relation: "母亲", gender: "female", alive: heirParent ? heirParent.gender === "female" ? heirParent.alive !== false : heirParent.spouse?.alive !== false : oldGender !== "female" && !!spouseName, age: heirParent ? (heirParent.gender === "female" ? heirParent.age : heirParent.spouse?.age || Math.max(22, heirAge + 20)) : oldGender === "female" ? state.age : Math.max(22, state.age - randInt(0, 5)), physique: heirParent ? randInt(42, 76) : oldGender === "female" ? 0 : randInt(38, 72), affection: 76 },
       siblings,
       lover: false,
-      spouse: null,
+      spouse: inheritedSpouse?.name || null,
+      spouseMeta: inheritedSpouse,
+      spouseHistory: [],
       concubines: [],
       concubineCandidate: null,
       intimacyBonus: 0,
       romanceRecords: { intimate: 0, outings: 0, conflicts: 0 },
-      children: [],
+      children: inheritedChildren,
     },
     exam: { rank: -1, attempts: 0, history: [], current: null, lastYear: -1 },
     pendingActivity: null,
@@ -7067,7 +7356,8 @@ function inheritFromChild(id) {
     pendingCaravan: null,
     currentEvent: null,
     inventoryTab: "all",
-    lastDeltas: [{ label: "承继", value: `${heir.name} · 第${generation + 1}代` }],
+    templeFortune: { active: null, history: [], lastDrawYear: -1 },
+    lastDeltas: [{ label: "承继", value: `${heir.name} · 第${generation + generationStep}代` }],
     dead: false,
     deathReason: "",
     prisonYears: 0,
@@ -7078,7 +7368,7 @@ function inheritFromChild(id) {
 }
 
 function marryLover() {
-  if (!state.family.lover || state.family.spouse || state.age < 16) return;
+  if (!state.family.lover || (state.family.spouse && state.family.spouseMeta?.alive !== false) || state.age < 16) return;
   SFX.play("marry");
   const deltas = [];
   const cost = randInt(120, 420);
@@ -9021,6 +9311,8 @@ function courtesanParlorView() {
 
 function brothelCompanionCard(candidate) {
   const stats = [["才艺", candidate.talent], ["机智", candidate.wit], ["姿容", candidate.looks], ["亲近", candidate.affection]];
+  const redeemCost = Math.max(1200, Math.round(candidate.price * 12));
+  const redeemReady = candidate.affection >= COURTESAN_REDEEM_AFFECTION && candidate.visits >= COURTESAN_REDEEM_VISITS;
   return `
     <article class="courtesan-person brothel-person">
       <div class="courtesan-avatar">
@@ -9039,8 +9331,9 @@ function brothelCompanionCard(candidate) {
             const cost = Math.max(40, Math.round(candidate.price * action.multiplier));
             return `<button class="text-btn inline-action" data-brothel-action="${id}" data-brothel-id="${escapeHtml(candidate.id)}" ${state.stats.money < cost ? "disabled" : ""}>${escapeHtml(action.label)} · ${moneyText(cost)}</button>`;
           }).join("")}
+          <button class="text-btn inline-action" data-redeem-courtesan="${escapeHtml(candidate.id)}" ${!redeemReady || state.stats.money < redeemCost ? "disabled" : ""}>赎身 · ${moneyText(redeemCost)}</button>
         </div>
-        <small>已作陪 ${candidate.visits || 0} 次${candidate.visits >= 2 ? " · 风月知己" : ""}</small>
+        <small>已作陪 ${candidate.visits || 0} 次${candidate.visits >= 2 ? " · 风月知己" : ""} · ${redeemReady ? "已愿脱籍，可备赎资" : `好感达 ${COURTESAN_REDEEM_AFFECTION} 且作陪 ${COURTESAN_REDEEM_VISITS} 次可赎身`}</small>
       </div>
     </article>`;
 }
@@ -9232,7 +9525,10 @@ function placeActionButtons(place, locked) {
       ["courtesanParlor", "美人雅座", "18 岁后可入，挑选美人听曲、夜宴或共度良宵", "FlowerChiefTitle", COURTESAN_MIN_AGE],
       ["courtesanContest", "佳丽竞选", "18 岁后可入，赏才问答，评出一夜花魁", "FlowerChiefTitle", COURTESAN_MIN_AGE],
     ],
-    temple: [["templePray", "焚香祈福", "添德行、安心绪", "Temple"]],
+    temple: [
+      ["templePray", "焚香祈福", "添德行、安心绪", "Temple"],
+      ["templeDrawLot", "求签问运", "抽取签运，下一流年将出现对应的应验剧情", "Temple"],
+    ],
     academy: [["prepareExam", "备考温课", "消耗一年在书院温题，提升备考进度", "Book"]],
   }[place.id] || [];
   return actions.map(([id, label, note, iconName, minAge = 0]) => {
@@ -9405,6 +9701,9 @@ function relationsView() {
   const concubines = (state.family.concubines || []).filter((item) => item.alive !== false);
   const concubineCandidate = state.family.concubineCandidate ? [{ ...state.family.concubineCandidate, relation: "待纳侧室" }] : [];
   const children = livingChildren();
+  const inlaws = children.map((child) => child.spouse ? { ...child.spouse, relation: child.gender === "female" ? "女婿" : "儿媳", childName: child.name } : null).filter((person) => person && person.alive !== false);
+  const grandchildren = livingGrandchildren();
+  const formerSpouses = (state.family.spouseHistory || []).map((person) => ({ ...person, relation: "故配", alive: false }));
   const friends = state.friends.filter((friend) => friend.alive !== false);
   return `
     <article class="play-card relations-card">
@@ -9418,9 +9717,12 @@ function relationsView() {
         <div class="person-list">${family.filter((person) => person.relation !== "父亲" && person.relation !== "母亲").map((person) => personCard(person, person.id || person.name)).join("")}</div>
       ` : `<p class="empty-note">暂未刷新到哥哥姐姐。</p>`}
       ${spouse.length || lover.length ? `<h2 class="subhead">姻缘</h2><div class="person-list">${[...spouse, ...lover].map((person) => personCard(person, person.id || person.name)).join("")}</div>` : ""}
+      ${formerSpouses.length ? `<h2 class="subhead">故配</h2><div class="person-list">${formerSpouses.map((person) => personCard(person)).join("")}</div>` : ""}
       ${concubines.length ? `<h2 class="subhead">侧室</h2><div class="person-list">${concubines.map((person) => personCard(person, person.id)).join("")}</div>` : ""}
       ${concubineCandidate.length ? `<h2 class="subhead">媒人名帖</h2><div class="person-list">${concubineCandidate.map((person) => personCard(person)).join("")}</div>` : ""}
       ${children.length ? `<h2 class="subhead">子女</h2><div class="person-list">${children.map(childCard).join("")}</div>` : state.family.spouse ? `<p class="empty-note">尚无子女。</p>` : ""}
+      ${inlaws.length ? `<h2 class="subhead">女婿与儿媳</h2><div class="person-list">${inlaws.map((person) => personCard(person)).join("")}</div>` : ""}
+      ${grandchildren.length ? `<h2 class="subhead">孙辈</h2><div class="person-list">${grandchildren.map(grandchildCard).join("")}</div>` : ""}
       ${friends.length ? `<h2 class="subhead">友人</h2><div class="person-list">${friends.map((person) => personCard(person, person.id)).join("")}</div>` : ""}
       <div class="main-actions">
         <button class="secondary-btn" data-action="send-letter">发送书信</button>
@@ -9440,11 +9742,24 @@ function childCard(child) {
       <div>
         <strong><span>${escapeHtml(child.relation || "子女")} · ${child.age}岁</span>${escapeHtml(child.name || "无名")}</strong>
         <div class="meter"><i style="width:${affection}%"></i></div>
-        <small>${escapeHtml(child.trait || "聪慧")} · 体魄 ${physique} · 学业 ${Math.round(child.study || 0)} · 德行 ${Math.round(child.virtue || 0)}${child.otherParent ? ` · 生母/父 ${escapeHtml(child.otherParent)}` : ""}${childEducationLabel(child) ? ` · ${escapeHtml(childEducationLabel(child))}` : ""}${familyStoryStatus(child)}</small>
+        <small>${escapeHtml(child.trait || "聪慧")} · 体魄 ${physique} · 学业 ${Math.round(child.study || 0)} · 德行 ${Math.round(child.virtue || 0)}${child.otherParent ? ` · 生母/父 ${escapeHtml(child.otherParent)}` : ""}${child.spouse ? ` · 已与${escapeHtml(child.spouse.name)}成婚` : ""}${(child.grandchildren || []).length ? ` · 子女 ${(child.grandchildren || []).filter((item) => item.alive !== false).length} 人` : ""}${childEducationLabel(child) ? ` · ${escapeHtml(childEducationLabel(child))}` : ""}${familyStoryStatus(child)}</small>
         <span class="mini-actions">
           ${child.age < 15 ? `<button class="text-btn inline-action" data-teach-child="${escapeHtml(child.id)}" ${state.stats.money < CHILD_EDU_COST ? "disabled" : ""}>延师教养</button>` : `<small>已成丁，可承继家业。</small>`}
+          ${child.age >= CHILD_MARRIAGE_AGE && !child.spouse ? `<button class="text-btn inline-action" data-marry-child="${escapeHtml(child.id)}" ${state.stats.money < CHILD_MARRIAGE_COST ? "disabled" : ""}>操办婚事 · ${moneyText(CHILD_MARRIAGE_COST)}</button>` : ""}
           ${relationActionButtons(child.id)}
         </span>
+      </div>
+    </article>`;
+}
+
+function grandchildCard(grandchild) {
+  return `
+    <article class="person-card">
+      <div class="person-avatar ${grandchild.gender === "female" ? "female" : ""}">${icon(relativeAvatarIcon(grandchild), grandchild.relation)}</div>
+      <div>
+        <strong><span>${escapeHtml(grandchild.relation)} · ${grandchild.age}岁</span>${escapeHtml(grandchild.name)}</strong>
+        <div class="meter"><i style="width:${clamp(Number(grandchild.affection ?? 70))}%"></i></div>
+        <small>${escapeHtml(grandchild.trait || "聪慧")} · 体魄 ${Math.round(grandchild.physique || 0)} · 学业 ${Math.round(grandchild.study || 0)} · 父母 ${escapeHtml(grandchild.parentName || "家中子女")}${grandchild.age >= 15 ? " · 可承继家业" : ""}</small>
       </div>
     </article>`;
 }
@@ -9475,6 +9790,11 @@ function relativeAvatarIcon(person = {}) {
   if (["姐姐", "妹妹", "姊妹"].includes(relation)) return "FamilySisterAvatar";
   if (relation === "儿子") return "FamilySonAvatar";
   if (relation === "女儿") return "FamilyDaughterAvatar";
+  if (relation === "孙子") return "FamilySonAvatar";
+  if (relation === "孙女") return "FamilyDaughterAvatar";
+  if (relation === "儿媳") return "FamilyWifeAvatar";
+  if (relation === "女婿") return "FamilyHusbandAvatar";
+  if (relation === "故配") return person.gender === "male" ? "FamilyHusbandAvatar" : "FamilyWifeAvatar";
   if (relation === "友人") return "FamilyFriendAvatar";
   if (["妻子", "配偶"].includes(relation) && person.gender !== "male") return "FamilyWifeAvatar";
   if (relation === "妾室") return "FamilyConcubineAvatar";
@@ -10803,9 +11123,10 @@ function eventView(event) {
   const official = event.kind === "officialCase";
   const familyStory = event.kind === "familyStory";
   const careerCase = event.kind === "careerCase";
+  const fortuneEvent = event.kind === "fortuneEvent";
   return `
     <article class="play-card event-card">
-      <p class="eyebrow">${official ? "官场考验" : familyStory ? "家事流年" : careerCase ? "本业专案" : "事件"}</p>
+      <p class="eyebrow">${official ? "官场考验" : familyStory ? "家事流年" : careerCase ? "本业专案" : fortuneEvent ? "签运应验" : "事件"}</p>
       <h2>${escapeHtml(event.title || "事件")}</h2>
       <p>${formatText(fillPlaceholders(event.content || event.history || "", false))}</p>
       <div class="choice-list">
@@ -10813,7 +11134,7 @@ function eventView(event) {
           options.length
             ? options.map(({ child, index }) => `<button class="choice-btn ${official || careerCase ? "official-choice" : ""}" data-choice="${index}" ${child.disabled ? "disabled" : ""}>
               <span>${escapeHtml(child.title || "继续")}</span>
-              ${(official || familyStory || careerCase) && child.note ? `<small>${escapeHtml(child.note)}</small>` : ""}
+              ${(official || familyStory || careerCase || fortuneEvent) && child.note ? `<small>${escapeHtml(child.note)}</small>` : ""}
             </button>`).join("")
             : `<button class="primary-btn" data-action="finish-event">继续</button>`
         }
@@ -10831,7 +11152,7 @@ function deathView() {
     <article class="play-card death-card">
       <p class="eyebrow">身后事</p>
       <h2>${escapeHtml(state.name)}</h2>
-      <p>${escapeHtml(state.name)}享年${state.age}岁，${escapeHtml(state.deathReason || "命数已尽")}。命格总评：${escapeHtml(lifeGrade(score))}，${score} 分。若有子女，可由下一代承继家业继续此存档。</p>
+      <p>${escapeHtml(state.name)}享年${state.age}岁，${escapeHtml(state.deathReason || "命数已尽")}。命格总评：${escapeHtml(lifeGrade(score))}，${score} 分。若有子孙，可由后人承继家业继续此存档。</p>
       <section class="score-grid">
         ${scoreTile("达成成就", `${completedGoals().length}/${LIFE_GOALS.length}`)}
         ${scoreTile("命册经历", `${state.log.length} 件`)}
@@ -10842,12 +11163,12 @@ function deathView() {
       </section>
       ${endingSharePanel(share)}
       <section class="inherit-section">
-        <div class="section-title"><h2>选择子女承继</h2></div>
+        <div class="section-title"><h2>选择子孙承继</h2></div>
         ${heirs.length ? `<div class="button-list">${heirs.map((child) => `
           <button class="list-btn inherit-btn" data-inherit-child="${escapeHtml(child.id)}">
             ${icon(child.gender === "female" ? "Relationship2" : "Relationship1", child.name)}
-            <span>${escapeHtml(child.name)}承继家业<small>${child.age}岁 · 学业 ${Math.round(child.study || 0)} · 德行 ${Math.round(child.virtue || 0)} · 继承 ${moneyText(inheritedMoney)}与 ${state.assets.length} 处家产</small></span>
-          </button>`).join("")}</div>` : `<p class="empty-note">没有活着的子女可承继家业，只能另开新档。</p>`}
+            <span>${escapeHtml(child.name)}承继家业<small>${escapeHtml(child.relation || (child.gender === "female" ? "女儿" : "儿子"))} · ${child.age}岁 · 学业 ${Math.round(child.study || 0)} · 德行 ${Math.round(child.virtue || 0)} · 继承 ${moneyText(inheritedMoney)}与 ${state.assets.length} 处家产</small></span>
+          </button>`).join("")}</div>` : `<p class="empty-note">没有活着的子孙可承继家业，只能另开新档。</p>`}
       </section>
       <div class="main-actions">
         <button class="${heirs.length ? "ghost-btn danger" : "primary-btn"}" data-action="new-life">另开新档</button>
@@ -10997,6 +11318,8 @@ function relationsPanel() {
     ...(state.family.concubines || []).filter((item) => item.alive !== false).map((item) => [item.name, relationSummary(item)]),
     ...(state.family.lover ? [[state.family.lover, relationSummary({ relation: "相看之人", affection: 64, ...state.family.loverMeta, name: state.family.lover })]] : []),
     ...livingChildren().map((child) => [child.name, `${child.relation} · ${child.age}岁 · 体魄 ${Math.round(child.physique || 0)} · 学业 ${Math.round(child.study || 0)}`]),
+    ...livingChildren().filter((child) => child.spouse && child.spouse.alive !== false).map((child) => [child.spouse.name, `${child.gender === "female" ? "女婿" : "儿媳"} · 与${child.name}成婚 · ${child.spouse.age}岁`]),
+    ...livingGrandchildren().map((child) => [child.name, `${child.relation} · ${child.age}岁 · 父母 ${child.parentName} · 学业 ${Math.round(child.study || 0)}`]),
     ...state.friends.filter((friend) => friend.alive !== false).map((friend) => [friend.name, relationSummary(friend)]),
   ];
   return listPanel("亲友", rows);
@@ -11344,6 +11667,7 @@ app.addEventListener("click", (event) => {
   if (button.dataset.guessValue) return chooseGuessValue(button.dataset.guessValue);
   if (button.dataset.guessRounds) return setGuessRounds(button.dataset.guessRounds);
   if (button.dataset.brothelAction) return chooseBrothelCompanion(button.dataset.brothelId, button.dataset.brothelAction);
+  if (button.dataset.redeemCourtesan) return redeemCourtesan(button.dataset.redeemCourtesan);
   if (button.dataset.courtesanAction) return chooseCourtesanAction(button.dataset.courtesanId, button.dataset.courtesanAction);
   if (button.dataset.paiGowTile !== undefined) return selectPaiGowTile(button.dataset.paiGowTile);
   if (button.dataset.paiGowAuto) return autoPaiGowSplit(button.dataset.paiGowAuto);
@@ -11377,6 +11701,7 @@ app.addEventListener("click", (event) => {
   if (button.dataset.useItem) return useInventoryItem(button.dataset.useItem);
   if (button.dataset.sellItem) return sellInventoryItem(button.dataset.sellItem);
   if (button.dataset.teachChild) return teachChild(button.dataset.teachChild);
+  if (button.dataset.marryChild) return marryChild(button.dataset.marryChild);
   if (button.dataset.inheritChild) return inheritFromChild(button.dataset.inheritChild);
   if (button.dataset.relationAction) return interactRelation(button.dataset.relationTarget, button.dataset.relationAction);
   if (button.dataset.action === "send-letter") return sendLetter();
