@@ -4763,6 +4763,63 @@ p {
 .travel-history article.bad { background: rgba(170,70,58,.07); }
 .travel-history span { color: var(--muted); font-size: 12px; }
 
+/* 主界面可见的奇闻暗线入口 */
+.featured-shortcut,
+.featured-door { position: relative; border-color: rgba(137, 74, 54, .36); background: linear-gradient(145deg, rgba(47,83,73,.12), rgba(151,82,55,.11)); }
+.featured-shortcut::after { content: "暗"; position: absolute; top: 5px; left: 6px; color: #a14c3d; font-size: 10px; font-weight: 900; }
+.shortcut-notice,
+.secret-notice { position: absolute; top: -7px; right: -7px; min-width: 23px; height: 23px; display: grid; place-items: center; padding: 0 6px; border: 2px solid #fffaf1; border-radius: 999px; background: #ad4438; color: white; font-size: 11px; box-shadow: 0 4px 10px rgba(113,40,35,.3); animation: secret-breathe 1.9s ease-in-out infinite; }
+.door-grid .featured-door { grid-column: 1 / -1; min-height: 82px; grid-template-columns: auto auto 1fr; place-items: center start; text-align: left; padding-inline: 22px; color: #29443e; }
+.featured-door small { justify-self: end; color: #a14c3d; }
+
+.secret-pulse { position: relative; display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: center; margin-top: 16px; padding: 16px 18px; border: 1px solid rgba(136,80,56,.26); border-radius: 16px; background: radial-gradient(circle at 85% 15%, rgba(203,151,78,.18), transparent 28%), linear-gradient(120deg, rgba(29,56,51,.94), rgba(69,42,39,.92)); color: #f9edda; box-shadow: 0 10px 28px rgba(55,41,34,.13); overflow: visible; }
+.secret-pulse.locked { filter: saturate(.55); opacity: .78; }
+.secret-pulse-mark { width: 58px; height: 58px; display: grid; place-items: center; border-radius: 50%; background: rgba(255,255,255,.1); }
+.secret-pulse-mark img { width: 42px; height: 42px; object-fit: contain; }
+.secret-pulse-copy { display: grid; gap: 4px; }
+.secret-pulse h3 { margin: 0; color: inherit; font-size: 18px; }
+.secret-kicker { color: #e5ba75; font-size: 12px; font-weight: 900; letter-spacing: .08em; }
+.secret-pulse-status { display: flex; flex-wrap: wrap; gap: 6px; }
+.secret-pulse-status span { padding: 3px 7px; border-radius: 999px; background: rgba(255,255,255,.08); color: rgba(255,246,231,.75); font-size: 11px; }
+
+.secret-hub-card { gap: 18px; align-content: start; padding: clamp(18px,3vw,30px); background: linear-gradient(rgba(255,251,241,.92),rgba(255,251,241,.95)), var(--paper-bg); }
+.secret-hub-hero { display: grid; grid-template-columns: auto 1fr auto; gap: 18px; align-items: center; padding: 22px; border-radius: 17px; background: radial-gradient(circle at 75% 5%, rgba(206,143,68,.25),transparent 32%), linear-gradient(125deg,#18332e,#482c2c); color: #faeedc; }
+.secret-hub-hero h2,
+.secret-hub-hero p { margin: 0; color: inherit; }
+.secret-hub-hero h2 { margin-bottom: 5px; font-size: clamp(25px,4vw,38px); }
+.secret-seal { width: 72px; height: 72px; display: grid; place-items: center; border-radius: 50%; background: rgba(255,255,255,.09); }
+.secret-seal img { width: 52px; height: 52px; object-fit: contain; }
+.secret-hub-hero aside { min-width: 105px; display: grid; justify-items: center; padding: 12px; border: 1px solid rgba(238,201,143,.24); border-radius: 12px; }
+.secret-hub-hero aside span,
+.secret-hub-hero aside small { color: #dfbd87; font-size: 11px; }
+.secret-hub-hero aside strong { color: #fff1d6; font-size: 32px; }
+
+.secret-line-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; }
+.secret-line-card { position: relative; display: grid; align-content: start; gap: 9px; min-height: 330px; padding: 17px; border: 1px solid var(--line); border-radius: 15px; background: rgba(255,253,246,.82); overflow: hidden; }
+.secret-line-card::before { content: ""; position: absolute; inset: 0 0 auto; height: 5px; background: #456f61; }
+.secret-line-card.mystery-line::before { background: #a74f43; }
+.secret-line-card.jianghu-line::before { background: #b48742; }
+.secret-line-icon { width: 54px; height: 54px; display: grid; place-items: center; margin-top: 4px; border-radius: 13px; background: rgba(48,103,87,.08); }
+.secret-line-icon img { width: 41px; height: 41px; object-fit: contain; }
+.secret-line-tag { color: #9a633e; font-size: 11px; font-weight: 900; letter-spacing: .05em; }
+.secret-line-card h3,
+.secret-line-card p { margin: 0; }
+.secret-line-card h3 { font-size: 23px; }
+.secret-line-card p { color: var(--muted); font-size: 13px; line-height: 1.55; }
+.secret-line-state { display: grid; gap: 3px; margin-top: auto; padding: 10px; border-radius: 10px; background: rgba(45,86,74,.06); }
+.secret-line-state small { color: var(--muted); line-height: 1.4; }
+.secret-line-card > button { width: 100%; }
+
+.case-archive-strip { display: grid; gap: 10px; padding: 15px; border: 1px solid var(--line); border-radius: 14px; background: rgba(108,72,49,.05); }
+.case-archive-strip > div:last-child { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 7px; }
+.case-archive-strip span { display: grid; padding: 8px 10px; border-left: 3px solid #aaa096; background: rgba(255,255,255,.58); }
+.case-archive-strip span.solved { border-left-color: #347b69; }
+.case-archive-strip span.wrong { border-left-color: #b34d42; }
+.case-archive-strip small { color: var(--muted); }
+.secret-hub-foot { display: flex; justify-content: space-between; gap: 14px; align-items: center; color: var(--muted); font-size: 12px; }
+
+@keyframes secret-breathe { 0%,100% { transform: scale(1); } 50% { transform: scale(1.09); } }
+
 /* 科场暗门、离奇案件与江湖奇术 */
 .underworld-card,
 .mystery-card,
@@ -4840,6 +4897,15 @@ p {
 .suspect-grid span { color: var(--muted); font-size: 12px; }
 
 @media (max-width: 760px) {
+  .secret-pulse,
+  .secret-hub-hero { grid-template-columns: 1fr; }
+  .secret-pulse > button,
+  .secret-hub-foot > button { width: 100%; }
+  .secret-line-grid,
+  .case-archive-strip > div:last-child { grid-template-columns: 1fr; }
+  .secret-hub-foot { display: grid; }
+  .door-grid .featured-door { grid-template-columns: auto 1fr; }
+  .featured-door small { grid-column: 1 / -1; justify-self: start; }
   .dark-system-hero,
   .mystery-hero { grid-template-columns: 1fr; text-align: left; }
   .dark-system-hero > b { justify-self: start; }

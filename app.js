@@ -716,6 +716,7 @@ const XIANGQI_AI_CANDIDATE_LIMIT = 18;
 const XIANGQI_AI_REPLY_LIMIT = 10;
 
 const TOP_SHORTCUTS = [
+  { id: "secrets", label: "奇闻", icon: "PrisonHeader", featured: true },
   { id: "travel", label: "车马", icon: "RepairCarriage" },
   { id: "backpack", label: "行囊", icon: "Backpack" },
   { id: "ledger", label: "账本", icon: "CashBox" },
@@ -905,6 +906,7 @@ const MAIN_DOORS = [
   { id: "assets", label: "家产", icon: "House" },
   { id: "relations", label: "亲友", icon: "FamilyIcon" },
   { id: "activities", label: "活动", icon: "Activity" },
+  { id: "secrets", label: "奇闻暗线", icon: "PrisonHeader", featured: true },
 ];
 
 const EXAM_CHEAT_METHODS = [
@@ -1989,6 +1991,7 @@ function startLife() {
     underworld: createUnderworldState(),
     mystery: { active: null, completed: [] },
     jianghu: createJianghuState(),
+    secretLines: createSecretLinesState(),
     exam: { rank: -1, attempts: 0, history: [], current: null, lastYear: -1 },
     pendingActivity: null,
     eventResult: null,
@@ -2098,6 +2101,7 @@ function normalizeState(raw) {
   next.underworld = normalizeUnderworld(next.underworld);
   next.mystery = normalizeMysteryState(next.mystery);
   next.jianghu = normalizeJianghuState(next.jianghu);
+  next.secretLines = normalizeSecretLinesState(next.secretLines, next.age);
   next.exam = normalizeExam(next.exam);
   next.pendingActivity = next.pendingActivity || null;
   next.eventResult = next.eventResult || null;
@@ -2227,7 +2231,7 @@ function normalizeMysteryState(source) {
   const base = source && typeof source === "object" ? source : {};
   const active = base.active && MYSTERY_CASES.some((item) => item.id === base.active.caseId) ? base.active : null;
   return {
-    active: active ? { caseId: active.caseId, round: Math.max(0, Number(active.round) || 0), clues: Array.isArray(active.clues) ? active.clues.slice(0, 6) : [], actionsUsed: Array.isArray(active.actionsUsed) ? [...new Set(active.actionsUsed)] : [] } : null,
+    active: active ? { caseId: active.caseId, round: Math.max(0, Number(active.round) || 0), clues: Array.isArray(active.clues) ? active.clues.slice(0, 6) : [], actionsUsed: Array.isArray(active.actionsUsed) ? [...new Set(active.actionsUsed)] : [], role: ["official", "civilian"].includes(active.role) ? active.role : "legacy" } : null,
     completed: Array.isArray(base.completed) ? base.completed.slice(-20) : [],
   };
 }
@@ -2246,6 +2250,20 @@ function normalizeJianghuState(source) {
     prophecy: base.prophecy && typeof base.prophecy === "object" ? { type: String(base.prophecy.type || "blood"), truthful: base.prophecy.truthful !== false, dueYear: Math.max(0, Number(base.prophecy.dueYear) || 0), text: String(base.prophecy.text || "") } : null,
     pursuit: base.pursuit && typeof base.pursuit === "object" ? { dueYear: Math.max(0, Number(base.pursuit.dueYear) || 0), reason: String(base.pursuit.reason || "旧账追来") } : null,
     records: { cons: Math.max(0, Number(base.records?.cons) || 0), caught: Math.max(0, Number(base.records?.caught) || 0), prophecies: Math.max(0, Number(base.records?.prophecies) || 0), trueProphecies: Math.max(0, Number(base.records?.trueProphecies) || 0) },
+  };
+}
+
+function createSecretLinesState() {
+  return { introduced: false, seenHub: false, lastVisitedYear: -1 };
+}
+
+function normalizeSecretLinesState(source, age = 0) {
+  const base = source && typeof source === "object" ? source : {};
+  return {
+    introduced: !!base.introduced,
+    seenHub: !!base.seenHub,
+    lastVisitedYear: Number.isFinite(Number(base.lastVisitedYear)) ? Number(base.lastVisitedYear) : -1,
+    legacyEligible: !!base.legacyEligible || (Number(age) >= 15 && source == null),
   };
 }
 
@@ -2965,7 +2983,7 @@ function nextYear() {
     return;
   }
 
-  state.currentEvent = annualUnderworldEvent() || annualJianghuEvent() || annualFortuneEvent() || annualFamilyStoryEvent() || annualOfficialCaseEvent() || chooseEvent();
+  state.currentEvent = annualUnderworldEvent() || annualJianghuEvent() || annualFortuneEvent() || annualFamilyStoryEvent() || annualOfficialCaseEvent() || annualSecretIntroductionEvent() || chooseEvent();
   if (state.underworld) state.underworld.heat = clamp(Number(state.underworld.heat || 0) - randInt(2, 6));
   if (state.jianghu) state.jianghu.heat = clamp(Number(state.jianghu.heat || 0) - randInt(2, 6));
   if (!state.currentEvent) addLog("平年", "这一年无甚大事，日子仍照常向前。", state.lastDeltas);
@@ -3774,6 +3792,7 @@ function chooseOption(index) {
   if (event.kind === "examinerBribe") return resolveExaminerBribe(choice);
   if (event.kind === "underworldConsequence") return resolveUnderworldConsequence(event, choice);
   if (event.kind === "jianghuProphecy") return resolveJianghuProphecy(event, choice);
+  if (event.kind === "secretIntroduction") return resolveSecretIntroduction(event, choice);
 
   const deltas = applyResults(choice.results || []);
   state.lastDeltas = mergeDeltas(state.pendingActivity?.deltas, deltas);
@@ -7602,6 +7621,38 @@ function drawTempleFortune() {
   finishAction(`${lot.grade} · ${lot.title}`, `${lot.verse}\n\n解签：${lot.interpretation} 这支签会在下一流年的具体剧情中应验。`, deltas, lot.icon);
 }
 
+function annualSecretIntroductionEvent() {
+  if (state.age < 15 || state.age > 17 || state.secretLines?.introduced || state.prisonYears > 0) return null;
+  return {
+    kind: "secretIntroduction",
+    title: "夜雨黑帖 · 城中三条暗线",
+    content: "雨夜里，一封没有署名的黑帖从门缝滑入。纸上只画着三样东西：贡院号牌、染血卷宗和一枚灌铅骰子。帖末写道：‘世间不止一条明路。’",
+    children: [
+      { title: "循帖探查", note: "开启奇闻暗线总览", content: "你照着暗记来到城南废庙。中介、仵作和江湖客各守一盏灯，三条隐秘道路从此向你敞开。", route: "secrets" },
+      { title: "先收进匣中", note: "入口仍会保留在主界面", content: "你暂时没有赴约，却把黑帖留在身边。往后若想追查，随时可以从奇闻暗线进入。", route: "main" },
+    ],
+  };
+}
+
+function resolveSecretIntroduction(event, choice) {
+  const deltas = [];
+  state.secretLines.introduced = true;
+  state.secretLines.legacyEligible = false;
+  if (choice.route === "secrets") {
+    state.secretLines.seenHub = true;
+    state.secretLines.lastVisitedYear = state.year;
+    changeStat("eq", 2, deltas);
+    changeStat("mood", 2, deltas);
+  }
+  state.currentEvent = null;
+  state.lastDeltas = deltas;
+  view.page = choice.route || "main";
+  addLog(event.title, choice.content, deltas);
+  state.eventResult = { title: choice.title, text: choice.content, deltas, icon: "PrisonHeader", scene: "ink" };
+  save();
+  render();
+}
+
 function annualUnderworldEvent() {
   const extortion = state.underworld?.extortion;
   if (!extortion || state.year < extortion.dueYear) return null;
@@ -8609,10 +8660,10 @@ function resolveExaminerBribe(choice) {
 }
 
 function startMysteryCase() {
-  if (state.mystery.active) return;
+  if (state.mystery.active || state.age < 16 || state.dead || state.prisonYears > 0 || state.currentEvent || state.eventResult) return;
   const available = MYSTERY_CASES.filter((item) => !state.mystery.completed.some((done) => done.caseId === item.id));
   const item = sample(available.length ? available : MYSTERY_CASES);
-  state.mystery.active = { caseId: item.id, round: 0, clues: [], actionsUsed: [] };
+  state.mystery.active = { caseId: item.id, round: 0, clues: [], actionsUsed: [], role: state.career && careerKind(state.career) === "official" ? "official" : "civilian" };
   state.currentEvent = null;
   state.eventResult = null;
   save();
@@ -8648,18 +8699,27 @@ function accuseMystery(suspectId) {
   const suspect = item.suspects.find(([id]) => id === suspectId);
   if (!suspect) return;
   const correct = suspectId === item.guilty;
+  const officialInvestigator = active.role !== "civilian" && state.career && careerKind(state.career) === "official";
   const deltas = [];
   if (correct) {
-    state.official.merit += randInt(90, 180);
-    state.official.records.cases += 1;
+    if (officialInvestigator) {
+      state.official.merit += randInt(90, 180);
+      state.official.records.cases += 1;
+      deltas.push({ label: "政绩", value: "+90以上" });
+    } else {
+      const reward = randInt(120, 360);
+      changeStat("money", reward, deltas);
+      addLedger("协破奇案", reward, `协助查破${item.title}所得赏银。`);
+    }
     changeStat("favorability", randInt(6, 12), deltas);
     changeStat("virtue", randInt(3, 7), deltas);
   } else {
-    state.official.merit = Math.max(0, state.official.merit - randInt(45, 100));
+    if (officialInvestigator) state.official.merit = Math.max(0, state.official.merit - randInt(45, 100));
+    else changeStat("money", -Math.min(state.stats.money, randInt(30, 100)), deltas);
     changeStat("favorability", -randInt(5, 12), deltas);
     changeStat("virtue", -randInt(7, 14), deltas);
   }
-  const text = correct ? `你以${active.clues.map((clue) => clue.label).join("、")}所得线索层层对证，最终指认${suspect[1]}。真凶无法自圆其说，奇案告破。` : `你指认${suspect[1]}，但关键证据彼此冲突。真正的凶手借机脱身，这桩错案成为你官声上的污点。`;
+  const text = correct ? `你以${active.clues.map((clue) => clue.label).join("、")}所得线索层层对证，最终指认${suspect[1]}。真凶无法自圆其说，奇案告破。${officialInvestigator ? "此案被写入你的官府政绩。" : "官府依约发下赏银，市井开始传你的断案名声。"}` : `你指认${suspect[1]}，但关键证据彼此冲突。真正的凶手借机脱身，这桩错案成为${officialInvestigator ? "你官声上的污点" : "坊间嘲讽你的谈资"}。`;
   state.mystery.completed.push({ caseId: item.id, title: item.title, correct, accused: suspect[1], year: state.year });
   state.mystery.active = null;
   state.lastDeltas = deltas;
@@ -8679,7 +8739,7 @@ function openExamUnderworld() {
 }
 
 function canUseExamCheat(method) {
-  if (!method || state.stats.money < method.cost || state.exam.current || examTakenThisYear()) return false;
+  if (!method || state.stats.money < method.cost || state.exam.current || examTakenThisYear() || state.exam.rank >= EXAM_STAGES.length - 1) return false;
   if (method.requireExaminer && !(state.stats.relationship >= 70 || state.friends.some((item) => /考官|学政|官员/.test(item.relation || "")))) return false;
   return true;
 }
@@ -9742,9 +9802,10 @@ function renderGame() {
             <span>${SFX.isMuted() ? "静音" : "音效"}</span>
           </button>
           ${TOP_SHORTCUTS.map((item) => `
-            <button class="shortcut-btn" data-shortcut="${item.id}" title="${escapeHtml(item.label)}">
+            <button class="shortcut-btn ${item.featured ? "featured-shortcut" : ""}" data-shortcut="${item.id}" title="${escapeHtml(item.label)}">
               ${icon(item.icon, item.label)}
               <span>${escapeHtml(item.label)}</span>
+              ${item.id === "secrets" && state.age >= 15 && secretLineNoticeCount() ? `<b class="shortcut-notice">${secretLineNoticeCount()}</b>` : ""}
             </button>`).join("")}
         </div>
       </header>
@@ -9997,7 +10058,57 @@ function centerContent() {
   if (view.page === "exam") return examView();
   if (view.page === "examUnderworld") return examUnderworldView();
   if (view.page === "jianghu") return jianghuView();
+  if (view.page === "secrets") return secretsView();
   return overviewView();
+}
+
+function secretLineNoticeCount() {
+  let count = 0;
+  if (!state.secretLines?.seenHub && state.age >= 15) count += 1;
+  if (state.underworld?.activeCheat || state.underworld?.extortion) count += 1;
+  if (state.mystery?.active) count += 1;
+  if (state.jianghu?.prophecy || state.jianghu?.pursuit || state.jianghu?.enabledQian) count += 1;
+  return count;
+}
+
+function openSecretHub() {
+  state.secretLines = normalizeSecretLinesState(state.secretLines, state.age);
+  state.secretLines.seenHub = true;
+  state.secretLines.introduced = state.secretLines.introduced || state.age >= 15;
+  state.secretLines.legacyEligible = false;
+  state.secretLines.lastVisitedYear = state.year;
+  view.page = "secrets";
+  view.placeId = "";
+  save();
+  render();
+}
+
+function secretLineSummary() {
+  const cheat = EXAM_CHEAT_METHODS.find((item) => item.id === state.underworld?.activeCheat?.id);
+  const activeCase = activeMysteryCase();
+  const learned = state.jianghu?.skills?.length || 0;
+  return {
+    exam: cheat ? `已布置“${cheat.name}”` : state.underworld?.records?.attempts ? `暗试 ${state.underworld.records.attempts} 次` : "五种门路待选择",
+    mystery: activeCase ? `${activeCase.title} · ${state.mystery.active.clues.length}/4 线索` : state.mystery?.completed?.length ? `已结 ${state.mystery.completed.length}/6 案` : "六宗奇案待开卷",
+    jianghu: state.jianghu?.prophecy ? `${Math.max(0, state.jianghu.prophecy.dueYear - state.year)} 年后卦应` : learned ? `已习 ${learned}/5 门奇术` : "拜师学习五门奇术",
+  };
+}
+
+function secretPulseView() {
+  if (state.age < 14) return "";
+  const summary = secretLineSummary();
+  const locked = state.age < 15;
+  return `
+    <section class="secret-pulse ${locked ? "locked" : ""}">
+      <div class="secret-pulse-mark">${icon("PrisonHeader", "奇闻暗线")}</div>
+      <div class="secret-pulse-copy">
+        <span class="secret-kicker">${locked ? "城中传闻 · 尚未成丁" : "黑帖已至 · 三线并行"}</span>
+        <h3>${locked ? "十五岁后，明路之外还有另一座城" : "科场暗局、离奇案件、江湖奇术"}</h3>
+        <div class="secret-pulse-status"><span>${escapeHtml(summary.exam)}</span><span>${escapeHtml(summary.mystery)}</span><span>${escapeHtml(summary.jianghu)}</span></div>
+      </div>
+      <button class="${locked ? "ghost-btn" : "primary-btn"}" data-action="open-secrets" ${locked ? "disabled" : ""}>${locked ? "15 岁解锁" : "展开黑帖"}</button>
+      ${!locked && secretLineNoticeCount() ? `<b class="secret-notice">${secretLineNoticeCount()}</b>` : ""}
+    </section>`;
 }
 
 function resourcePill(label, value, tone = "") {
@@ -10058,6 +10169,7 @@ function overviewView() {
         <button class="secondary-btn" data-page="place" data-place="activities">安排活动</button>
       </div>
     </article>
+    ${secretPulseView()}
     <section class="goal-strip">
       ${goals.map((goal) => `
         <article class="goal-card">
@@ -10068,9 +10180,10 @@ function overviewView() {
     </section>
     <section class="door-grid">
       ${MAIN_DOORS.map((door) => `
-        <button class="door-btn" data-door="${door.id}">
+        <button class="door-btn ${door.featured ? "featured-door" : ""}" data-door="${door.id}">
           ${icon(door.icon, door.label)}
           <span>${escapeHtml(door.label)}</span>
+          ${door.id === "secrets" ? `<small>${state.age < 15 ? "15 岁解锁" : secretLineNoticeCount() ? `${secretLineNoticeCount()} 条动静` : "三线总览"}</small>` : ""}
         </button>`).join("")}
     </section>
     ${recentLog()}`;
@@ -12042,6 +12155,59 @@ function activityEventPreview(activity) {
     </section>`;
 }
 
+function secretsView() {
+  state.secretLines = normalizeSecretLinesState(state.secretLines, state.age);
+  const summary = secretLineSummary();
+  const totalHeat = Math.round(Number(state.underworld?.heat || 0) + Number(state.jianghu?.heat || 0));
+  const examinerReady = state.career && careerKind(state.career) === "official" && officialRankIndex() >= 4;
+  const examReady = state.age >= MAIN_EXAM_MIN_AGE && !state.dead && state.prisonYears <= 0 && !examTakenThisYear() && !state.exam.current && state.exam.rank < EXAM_STAGES.length - 1;
+  const mysteryReady = state.age >= 16 && !state.dead && state.prisonYears <= 0;
+  const jianghuReady = state.age >= 15 && !state.dead && state.prisonYears <= 0;
+  const completedCases = new Map((state.mystery?.completed || []).map((item) => [item.caseId, item]));
+  return `
+    <article class="play-card secret-hub-card">
+      <header class="secret-hub-hero">
+        <div class="secret-seal">${icon("PrisonHeader", "奇闻暗线")}</div>
+        <div><p class="eyebrow">奇闻暗线 · 明路之外</p><h2>一封黑帖，三条隐秘人生</h2><p>这些玩法不再藏在书院和职业深处。你可以从这里直接进入；做出的选择会通过风声、追查、官声与三年预言回到日常流年。</p></div>
+        <aside><span>全城风声</span><strong>${totalHeat}</strong><small>${totalHeat < 20 ? "无人留意" : totalHeat < 50 ? "已有耳目" : "追查逼近"}</small></aside>
+      </header>
+      <section class="secret-line-grid">
+        <article class="secret-line-card exam-line">
+          <div class="secret-line-icon">${icon("Book", "科举舞弊")}</div>
+          <span class="secret-line-tag">科举 · 黑灰产业链</span>
+          <h3>贡院暗门</h3>
+          <p>与作弊中介交涉，从夹带到买题布置五种手段；考官身份还会反向收到卖题邀约。</p>
+          <div class="secret-line-state"><b>${escapeHtml(summary.exam)}</b><small>风声 ${Math.round(state.underworld?.heat || 0)} · 得手 ${state.underworld?.records?.successes || 0} · 败露 ${state.underworld?.records?.exposed || 0}</small></div>
+          <button class="primary-btn" data-action="${examinerReady ? "start-secret-bribe" : "open-secret-exam"}" ${examinerReady || examReady ? "" : "disabled"}>${examinerReady ? "查看今科买题密函" : state.age < 15 ? "15 岁解锁" : state.exam.rank >= EXAM_STAGES.length - 1 ? "科名已尽，任考官后开启卖题" : examTakenThisYear() ? "今年已试" : "去见作弊中介"}</button>
+        </article>
+        <article class="secret-line-card mystery-line">
+          <div class="secret-line-icon">${icon("PrisonHeader", "离奇案件")}</div>
+          <span class="secret-line-tag">探案 · 多轮推理</span>
+          <h3>六宗奇案</h3>
+          <p>验尸、问证、搜查、翻卷，至少掌握三条线索后亲自指认。平民可协助查案，官员可获大量政绩。</p>
+          <div class="secret-line-state"><b>${escapeHtml(summary.mystery)}</b><small>${state.career && careerKind(state.career) === "official" ? "官府主审：政绩与官声" : "民间协查：赏银与声望"}</small></div>
+          <button class="primary-btn" data-action="start-secret-mystery" ${mysteryReady ? "" : "disabled"}>${state.age < 16 ? "16 岁解锁" : "领取一宗新案"}</button>
+        </article>
+        <article class="secret-line-card jianghu-line">
+          <div class="secret-line-icon">${icon("GamblingHouse", "江湖奇术")}</div>
+          <span class="secret-line-tag">江湖 · 奇术骗术</span>
+          <h3>后巷茶棚</h3>
+          <p>拜老千或相士为师，学习千术、相面、算命、假药和诈官；三年批命可能真的应验。</p>
+          <div class="secret-line-state"><b>${escapeHtml(summary.jianghu)}</b><small>江湖风声 ${Math.round(state.jianghu?.heat || 0)} · 被擒 ${state.jianghu?.records?.caught || 0}</small></div>
+          <button class="primary-btn" data-action="open-secret-jianghu" ${jianghuReady ? "" : "disabled"}>${state.age < 15 ? "15 岁解锁" : state.jianghu?.mentor ? "回到师门" : "去后巷拜师"}</button>
+        </article>
+      </section>
+      <section class="case-archive-strip">
+        <div class="section-title"><h2>奇案卷宗</h2><small>完成情况会永久留在本代命册</small></div>
+        <div>${MYSTERY_CASES.map((item) => {
+          const done = completedCases.get(item.id);
+          return `<span class="${done ? (done.correct ? "solved" : "wrong") : ""}"><b>${escapeHtml(item.title)}</b><small>${done ? (done.correct ? "已破" : "错案") : "未启封"}</small></span>`;
+        }).join("")}</div>
+      </section>
+      <footer class="secret-hub-foot"><span>提示：风声会随流年缓慢下降，但敲诈、追门与预言不会因为离开页面而消失。</span><button class="ghost-btn" data-action="back-main">收起黑帖</button></footer>
+    </article>`;
+}
+
 function examUnderworldView() {
   state.underworld = normalizeUnderworld(state.underworld);
   const broker = state.underworld.broker || { name: "贡院鼠", trust: 40 };
@@ -12055,7 +12221,7 @@ function examUnderworldView() {
         return `<article class="dark-method"><span><b>${escapeHtml(method.name)}</b><em>风险 ${method.risk}% · 风声 +${method.heat}</em></span><p>${escapeHtml(method.note)}</p><button class="text-btn inline-action" data-exam-cheat="${method.id}" ${active || gated || !canUseExamCheat(method) ? "disabled" : ""}>${gated ? "尚不认识考官" : `交 ${moneyText(method.cost)} 布局`}</button></article>`;
       }).join("")}</div>
       <section class="dark-record"><b>暗账</b><span>尝试 ${state.underworld.records.attempts} · 得手 ${state.underworld.records.successes} · 败露 ${state.underworld.records.exposed} · 卖题 ${state.underworld.records.soldQuestions}</span></section>
-      <div class="main-actions"><button class="primary-btn" data-action="back-exam">回到明场</button></div>
+      <div class="main-actions"><button class="primary-btn" data-action="back-exam">回到明场</button><button class="ghost-btn" data-action="open-secrets">奇闻总览</button></div>
     </article>`;
 }
 
@@ -12066,7 +12232,7 @@ function mysteryCaseView() {
   const actions = [["autopsy", "验尸", "从伤口、毒物与尸体现象判断死因", "MedicineBag"], ["witness", "问证人", "拆分口供，寻找时间与措辞矛盾", "Relationship1"], ["scene", "搜查现场", "勘门窗、器物、脚印与被移动的细节", "MainBook"], ["records", "查阅卷宗", "追旧案、债务、亲缘与不为人知的动机", "Book"]];
   return `
     <article class="play-card mystery-card">
-      <header class="mystery-hero"><div>${icon("PrisonHeader", item.title)}</div><span><p class="eyebrow">离奇案件 · 第 ${active.round + 1} 轮</p><h2>${escapeHtml(item.title)}</h2><p>${escapeHtml(item.intro)}</p></span></header>
+      <header class="mystery-hero"><div>${icon("PrisonHeader", item.title)}</div><span><p class="eyebrow">离奇案件 · 第 ${Math.min(active.round + 1, 4)} 轮 · ${active.role === "civilian" ? "民间协查" : "官府主审"}</p><h2>${escapeHtml(item.title)}</h2><p>${escapeHtml(item.intro)}</p><small>${active.role === "civilian" ? "破案可得赏银与声望；错案会破财损名。" : "破案可得大量政绩；错案会损害官声。"}</small></span></header>
       <section class="case-board"><div class="case-thread"></div>${active.clues.map((clue, index) => `<article><b>线索 ${index + 1} · ${escapeHtml(clue.label)}</b><p>${escapeHtml(clue.text)}</p></article>`).join("") || `<p class="empty-note">案卷刚刚展开，尚无可靠线索。</p>`}</section>
       ${active.round < 4 ? `<div class="investigation-grid">${actions.map(([id, label, note, iconName]) => `<button class="investigation-action" data-mystery-investigate="${id}" ${active.actionsUsed.includes(id) ? "disabled" : ""}>${icon(iconName, label)}<span><b>${label}</b><small>${note}</small></span></button>`).join("")}</div>` : ""}
       ${active.clues.length >= 3 ? `<section class="suspect-section"><div class="section-title"><h2>指认真凶</h2><small>一经落笔便不能反悔</small></div><div class="suspect-grid">${item.suspects.map(([id, name, role]) => `<button data-mystery-accuse="${id}"><b>${escapeHtml(name)}</b><span>${escapeHtml(role)}</span></button>`).join("")}</div></section>` : `<p class="dark-warning">至少取得三条线索后，才能正式指认嫌犯。</p>`}
@@ -12087,7 +12253,7 @@ function jianghuView() {
       ${state.jianghu.skills.includes("impersonate") && !state.inventory.includes("官差衣冠") ? `<button class="secondary-btn" data-action="jianghu-costume" ${state.stats.money < 180 ? "disabled" : ""}>买旧官差衣冠 · ${moneyText(180)}</button>` : ""}
       ${state.jianghu.prophecy ? `<section class="prophecy-slip"><b>未应之卦 · ${state.jianghu.prophecy.dueYear - state.year} 年后</b><p>${escapeHtml(state.jianghu.prophecy.text)}</p></section>` : ""}
       <section class="dark-record"><b>江湖旧账</b><span>设局 ${state.jianghu.records.cons} · 被擒 ${state.jianghu.records.caught} · 批命 ${state.jianghu.records.prophecies} · 应真 ${state.jianghu.records.trueProphecies}</span></section>
-      <div class="main-actions"><button class="ghost-btn" data-action="back-places">离开暗门</button></div>
+      <div class="main-actions"><button class="primary-btn" data-action="open-secrets">奇闻总览</button><button class="ghost-btn" data-action="back-places">返回活动</button></div>
     </article>`;
 }
 
@@ -12191,8 +12357,8 @@ function eventView(event) {
   const familyStory = event.kind === "familyStory";
   const careerCase = event.kind === "careerCase";
   const fortuneEvent = event.kind === "fortuneEvent";
-  const darkEvent = ["examinerBribe", "underworldConsequence", "jianghuProphecy"].includes(event.kind);
-  const eyebrow = event.kind === "examinerBribe" ? "贡院暗局" : event.kind === "underworldConsequence" ? "旧账追门" : event.kind === "jianghuProphecy" ? "江湖命数" : official ? "官场考验" : familyStory ? "家事流年" : careerCase ? "本业专案" : fortuneEvent ? "签运应验" : "事件";
+  const darkEvent = ["examinerBribe", "underworldConsequence", "jianghuProphecy", "secretIntroduction"].includes(event.kind);
+  const eyebrow = event.kind === "secretIntroduction" ? "奇闻暗线开启" : event.kind === "examinerBribe" ? "贡院暗局" : event.kind === "underworldConsequence" ? "旧账追门" : event.kind === "jianghuProphecy" ? "江湖命数" : official ? "官场考验" : familyStory ? "家事流年" : careerCase ? "本业专案" : fortuneEvent ? "签运应验" : "事件";
   return `
     <article class="play-card event-card">
       <p class="eyebrow">${eyebrow}</p>
@@ -12666,6 +12832,11 @@ app.addEventListener("click", (event) => {
   if (button.dataset.action === "prepare-exam") return prepareExam();
   if (button.dataset.action === "submit-exam") return submitExam();
   if (button.dataset.action === "open-exam-underworld") return openExamUnderworld();
+  if (button.dataset.action === "open-secrets") return openSecretHub();
+  if (button.dataset.action === "open-secret-exam") return openExamUnderworld();
+  if (button.dataset.action === "start-secret-bribe") return startExaminerBribe();
+  if (button.dataset.action === "start-secret-mystery") return startMysteryCase();
+  if (button.dataset.action === "open-secret-jianghu") return useSpecialPlace("jianghu");
   if (button.dataset.action === "back-exam") {
     view.page = "exam";
     render();
@@ -12701,12 +12872,14 @@ app.addEventListener("click", (event) => {
     return;
   }
   if (button.dataset.shortcut) {
+    if (button.dataset.shortcut === "secrets") return openSecretHub();
     view.page = button.dataset.shortcut;
     view.placeId = "";
     render();
     return;
   }
   if (button.dataset.door) {
+    if (button.dataset.door === "secrets") return openSecretHub();
     if (button.dataset.door === "relations") view.tab = "relations";
     view.page = button.dataset.door === "activities" ? "place" : button.dataset.door;
     view.placeId = "";

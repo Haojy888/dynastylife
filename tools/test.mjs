@@ -827,6 +827,7 @@ try {
     delete saved.underworld;
     delete saved.mystery;
     delete saved.jianghu;
+    delete saved.secretLines;
     const restored = normalizeState(saved);
     return {
       heat: restored.underworld.heat,
@@ -834,9 +835,66 @@ try {
       mystery: restored.mystery.active,
       skills: restored.jianghu.skills.length,
       prophecies: restored.jianghu.records.prophecies,
+      secretIntro: restored.secretLines.introduced,
+      secretLegacy: restored.secretLines.legacyEligible,
     };
   });
-  assert.deepEqual(darkSaveCompatibility, { heat: 0, attempts: 0, mystery: null, skills: 0, prophecies: 0 }, "旧存档没有补全黑灰、奇案或江湖状态");
+  assert.deepEqual(darkSaveCompatibility, { heat: 0, attempts: 0, mystery: null, skills: 0, prophecies: 0, secretIntro: false, secretLegacy: true }, "旧存档没有补全黑灰、奇案或奇闻入口状态");
+
+  const visibleSecretHub = await page.evaluate(() => {
+    state.age = 24;
+    state.year = 69;
+    state.eventResult = null;
+    state.currentEvent = null;
+    state.career = null;
+    state.exam.rank = -1;
+    state.exam.lastYear = -1;
+    state.secretLines = createSecretLinesState();
+    view.page = "main";
+    render();
+    const overview = {
+      shortcut: document.querySelectorAll('[data-shortcut="secrets"]').length,
+      door: document.querySelectorAll('[data-door="secrets"]').length,
+      pulse: document.querySelectorAll(".secret-pulse").length,
+    };
+    openSecretHub();
+    return {
+      ...overview,
+      cards: document.querySelectorAll(".secret-line-card").length,
+      archive: document.querySelectorAll(".case-archive-strip span").length,
+      examButton: Boolean(document.querySelector('[data-action="open-secret-exam"]')),
+      mysteryButton: Boolean(document.querySelector('[data-action="start-secret-mystery"]')),
+      jianghuButton: Boolean(document.querySelector('[data-action="open-secret-jianghu"]')),
+      seen: state.secretLines.seenHub,
+      mobileFits: document.documentElement.scrollWidth === document.documentElement.clientWidth,
+    };
+  });
+  assert.deepEqual(visibleSecretHub, { shortcut: 1, door: 1, pulse: 1, cards: 3, archive: 6, examButton: true, mysteryButton: true, jianghuButton: true, seen: true, mobileFits: true }, "三套玩法没有在主界面和奇闻总览中形成明显入口");
+
+  const examinerSecretEntry = await page.evaluate(() => {
+    state.career = { name: "翰林院编修", customKind: "official", careerType: 5 };
+    state.official.rank = 8;
+    state.exam.rank = EXAM_STAGES.length - 1;
+    view.page = "secrets";
+    render();
+    const button = document.querySelector('[data-action="start-secret-bribe"]');
+    return { visible: Boolean(button), enabled: Boolean(button && !button.disabled), label: button?.textContent || "" };
+  });
+  assert.equal(examinerSecretEntry.visible, true, "高阶官员在奇闻总览中看不到反向卖题入口");
+  assert.equal(examinerSecretEntry.enabled, true, "高阶官员的买题密函入口不可交互");
+  assert.match(examinerSecretEntry.label, /买题密函/, "高阶官员入口文案不明确");
+
+  const secretIntroduction = await page.evaluate(() => {
+    state.age = 15;
+    state.year = 15;
+    state.secretLines = createSecretLinesState();
+    state.currentEvent = annualSecretIntroductionEvent();
+    const kind = state.currentEvent?.kind;
+    chooseOption(0);
+    return { kind, introduced: state.secretLines.introduced, route: view.page, result: state.eventResult?.title };
+  });
+  assert.deepEqual(secretIntroduction, { kind: "secretIntroduction", introduced: true, route: "secrets", result: "循帖探查" }, "十五岁没有触发黑帖引导并导向奇闻总览");
+  await clearBlockingUi();
 
   const examUnderworld = await page.evaluate(() => {
     state.age = 24;
@@ -875,7 +933,8 @@ try {
   const mysteryResolution = await page.evaluate(() => {
     state.eventResult = null;
     state.currentEvent = null;
-    state.mystery = { active: { caseId: "locked-room", round: 0, clues: [], actionsUsed: [] }, completed: [] };
+    state.career = { name: "县衙户房", customKind: "official", careerType: 5 };
+    state.mystery = { active: { caseId: "locked-room", round: 0, clues: [], actionsUsed: [], role: "official" }, completed: [] };
     const beforeMerit = state.official.merit;
     investigateMystery("autopsy");
     investigateMystery("witness");
@@ -896,6 +955,21 @@ try {
   assert.equal(mysteryResolution.correct, true, "密室案正确嫌犯没有结案");
   assert.equal(mysteryResolution.meritGain, true, "正确破案没有增加政绩");
   assert.equal(mysteryResolution.cleared, true, "结案后仍残留进行中案件");
+  await clearBlockingUi();
+
+  const civilianMystery = await page.evaluate(() => {
+    state.career = null;
+    state.eventResult = null;
+    state.currentEvent = null;
+    state.stats.money = 100;
+    state.mystery = { active: { caseId: "ghost-bride", round: 3, clues: [{ action: "autopsy", label: "验尸", text: "" }, { action: "witness", label: "问证人", text: "" }, { action: "scene", label: "搜查现场", text: "" }], actionsUsed: ["autopsy", "witness", "scene"], role: "civilian" }, completed: [] };
+    const money = state.stats.money;
+    accuseMystery("doctor");
+    return { rewarded: state.stats.money > money, correct: state.mystery.completed[0]?.correct, text: state.eventResult?.text };
+  });
+  assert.equal(civilianMystery.rewarded, true, "平民协破奇案没有获得赏银");
+  assert.equal(civilianMystery.correct, true, "平民身份无法正确结案");
+  assert.match(civilianMystery.text, /赏银|断案名声/, "平民查案没有专属结果反馈");
   await clearBlockingUi();
 
   const examinerBribe = await page.evaluate(() => {
