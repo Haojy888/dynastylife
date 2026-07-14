@@ -4929,3 +4929,32 @@ p {
   .travel-departure .primary-btn,
   .travel-departure .ghost-btn { width: 100%; }
 }
+
+
+.poetry-upper {
+  display: grid;
+  gap: 8px;
+  padding: 16px 18px;
+  margin: 12px 0 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(194, 116, 63, 0.28);
+  background: linear-gradient(145deg, rgba(245, 234, 216, 0.92), rgba(255, 255, 255, 0.72));
+  text-align: center;
+}
+.poetry-upper span { color: var(--muted); letter-spacing: 0.2em; font-size: 12px; }
+.poetry-upper strong { font-size: 22px; letter-spacing: 0.12em; }
+.match-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-top: 12px; }
+.match-card { display: grid; gap: 10px; padding: 14px; border-radius: 14px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.66); }
+.match-card strong { font-size: 16px; }
+.match-card p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.match-stats { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 13px; }
+.match-stats b { color: var(--accent, #2f7d6d); }
+.season-strip {
+  display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 14px;
+  padding: 10px 12px; margin-bottom: 10px; border-radius: 12px;
+  background: rgba(47, 125, 109, 0.08); border: 1px solid rgba(47, 125, 109, 0.16); font-size: 13px;
+}
+.season-strip small { color: var(--muted); }
+.codex-item.secret-active { border-color: rgba(150, 40, 27, 0.28); background: rgba(150, 40, 27, 0.06); }
+.codex-item.secret-exposed { opacity: 0.85; border-color: rgba(150, 40, 27, 0.4); background: rgba(150, 40, 27, 0.1); }
+.landmark-grid .codex-item { min-height: 108px; }

@@ -1358,14 +1358,14 @@ const PROPERTY_CATALOG = [
 ];
 
 const TRAVEL_DESTINATIONS = [
-  { id: "qingping", name: "清平县", cost: 8, days: 1, risk: 5, note: "县中街巷熟门熟路。", stat: "mood", icon: "Restaurant", landmark: "南市灯街", souvenir: "清平竹哨", story: "南市灯街入夜后摊火相连，最适合慢慢闲逛。" },
-  { id: "yunzhou", name: "云州", cost: 35, days: 3, risk: 18, note: "商旅云集，消息灵通。", stat: "eq", icon: "CarShop", landmark: "九门商栈", souvenir: "云州商牌", story: "九门商栈里口音纷杂，货单与传闻一样多。" },
-  { id: "luocheng", name: "洛城", cost: 55, days: 4, risk: 16, note: "书院林立，适合访学。", stat: "knowledge", icon: "BookStore", landmark: "白鹿书院", souvenir: "洛城拓片", story: "城西书院沿河而建，旧碑与藏书吸引四方士子。" },
-  { id: "jiangling", name: "江陵", cost: 45, days: 4, risk: 20, note: "水路繁华，适合会友。", stat: "relationship", icon: "BambooFlute", landmark: "十里水埠", souvenir: "江陵绢扇", story: "十里水埠舟楫不断，夜里还有沿河弦歌。" },
-  { id: "liangdu", name: "梁都", cost: 80, days: 6, risk: 25, note: "京畿气象，见闻最广。", stat: "virtue", icon: "Official", landmark: "朱雀御街", souvenir: "梁都宫笺", story: "朱雀御街宽阔笔直，官署、行会与百年老店并立。" },
-  { id: "kunbei", name: "昆北府", cost: 68, days: 6, risk: 34, note: "北地雄城，胡汉商旅交错。", stat: "physique", icon: "RepairCarriage", landmark: "朔风马市", souvenir: "昆北马铃", story: "马市终日尘土飞扬，塞外皮货与良驹在此交易。" },
-  { id: "sudi", name: "苏堤水乡", cost: 62, days: 5, risk: 14, note: "桥多水密，园林与丝坊闻名。", stat: "looks", icon: "Courtyard", landmark: "烟雨画桥", souvenir: "苏堤香囊", story: "画桥两岸粉墙黛瓦，雨落河面时最有江南意趣。" },
-  { id: "qingya", name: "青崖山", cost: 48, days: 4, risk: 38, note: "山寺、药谷与险峰相连。", stat: "virtue", icon: "Temple", landmark: "云顶古寺", souvenir: "青崖平安结", story: "石阶穿云而上，半山药香与钟声常被雾气送来。" },
+  { id: "qingping", name: "清平县", cost: 8, days: 1, risk: 5, note: "县中街巷熟门熟路。", stat: "mood", icon: "Restaurant", landmark: "南市灯街", souvenir: "清平竹哨", story: "南市灯街入夜后摊火相连，最适合慢慢闲逛。", landmarks: ["qingping-street","qingping-temple"] },
+  { id: "yunzhou", name: "云州", cost: 35, days: 3, risk: 18, note: "商旅云集，消息灵通。", stat: "eq", icon: "CarShop", landmark: "九门商栈", souvenir: "云州商牌", story: "九门商栈里口音纷杂，货单与传闻一样多。", landmarks: ["yunzhou-market","yunzhou-pass"] },
+  { id: "luocheng", name: "洛城", cost: 55, days: 4, risk: 16, note: "书院林立，适合访学。", stat: "knowledge", icon: "BookStore", landmark: "白鹿书院", souvenir: "洛城拓片", story: "城西书院沿河而建，旧碑与藏书吸引四方士子。", landmarks: ["luocheng-academy","luocheng-garden"] },
+  { id: "jiangling", name: "江陵", cost: 45, days: 4, risk: 20, note: "水路繁华，适合会友。", stat: "relationship", icon: "BambooFlute", landmark: "十里水埠", souvenir: "江陵绢扇", story: "十里水埠舟楫不断，夜里还有沿河弦歌。", landmarks: ["jiangling-wharf","jiangling-water"] },
+  { id: "liangdu", name: "梁都", cost: 80, days: 6, risk: 25, note: "京畿气象，见闻最广。", stat: "virtue", icon: "Official", landmark: "朱雀御街", souvenir: "梁都宫笺", story: "朱雀御街宽阔笔直，官署、行会与百年老店并立。", landmarks: ["liangdu-gate","liangdu-canal"] },
+  { id: "kunbei", name: "昆北府", cost: 68, days: 6, risk: 34, note: "北地雄城，胡汉商旅交错。", stat: "physique", icon: "RepairCarriage", landmark: "朔风马市", souvenir: "昆北马铃", story: "马市终日尘土飞扬，塞外皮货与良驹在此交易。", landmarks: ["yunzhou-pass","exile-border"] },
+  { id: "sudi", name: "苏堤水乡", cost: 62, days: 5, risk: 14, note: "桥多水密，园林与丝坊闻名。", stat: "looks", icon: "Courtyard", landmark: "烟雨画桥", souvenir: "苏堤香囊", story: "画桥两岸粉墙黛瓦，雨落河面时最有江南意趣。", landmarks: ["jiangling-water","study-tour"] },
+  { id: "qingya", name: "青崖山", cost: 48, days: 4, risk: 38, note: "山寺、药谷与险峰相连。", stat: "virtue", icon: "Temple", landmark: "云顶古寺", souvenir: "青崖平安结", story: "石阶穿云而上，半山药香与钟声常被雾气送来。", landmarks: ["study-tour","qingping-temple"] },
 ];
 
 const TRAVEL_CARRIAGES = [
@@ -1387,6 +1387,202 @@ const TRAVEL_ROUTE_EVENTS = [
   { id: "festival", title: "途中乡会", prompt: "沿途村镇正逢乡会，社火、百戏与货摊堵住了驿道。", choices: [["停车看会", "mood", 30, "你随人群看完社火，也尝到当地吃食。", "人潮拥挤，随身小物被挤丢了。", { mood: 5, money: -12 }, { money: -25 }, 6], ["帮忙疏通车道", "eq", 44, "你帮乡老分开人车，两边都顺利通行。", "众人各说各话，车道反而更乱。", { favorability: 2, relationship: 2 }, { mood: -2 }, 6], ["绕村而过", "knowledge", 38, "你沿田埂找到一条清静小路。", "田埂尽头水渠阻路，只得折返。", { knowledge: 1 }, { mood: -2 }, 3]] },
   { id: "shrine", title: "古道小祠", prompt: "古道旁有一座无名小祠，香火虽淡，檐下却挂满过路人的平安牌。", choices: [["添香祈路", "virtue", 30, "你添香留名，心绪安稳许多。", "山风吹灭香火，只余一缕青烟。", { virtue: 2, mood: 2, money: -8 }, { money: -8 }, 4], ["查看旧碑", "knowledge", 45, "碑阴记着旧驿路线，恰好能避开前方险滩。", "碑文漫漶，你只辨出几个地名。", { knowledge: 3 }, { knowledge: 1 }, 6], ["替祠堂补瓦", "physique", 48, "你顺手补好漏瓦，守祠老人赠你一枚平安结。", "瓦片湿滑，忙了许久也未补牢。", { virtue: 3, relationship: 1 }, { physique: -2 }, 5]] },
   { id: "broken", title: "车轴异响", prompt: "车行半途，左轮车轴忽然发出细碎异响，再走下去可能折在荒野。", choices: [["就地检修", "knowledge", 48, "你卸轮加楔，把松动处重新箍紧。", "检修不彻底，车况又坏了几分。", { knowledge: 2 }, {}, 6], ["减载慢行", "physique", 38, "众人分担行李，车马轻装抵达下一驿。", "脚程拖慢，所有人都十分疲惫。", { physique: 1 }, { mood: -3 }, 4], ["赶往车马铺", "eq", 32, "你谈妥修价，老师傅很快换好车楔。", "最近车铺坐地起价，仍得咬牙修车。", { money: -28 }, { money: -48 }, 7]] },
+];
+
+const TRAVEL_LANDMARKS = [
+  { id: "qingping-street", name: "清平街巷", region: "清平县", icon: "Activity", note: "故乡巷陌，檐下旧事最熟。" },
+  { id: "qingping-temple", name: "清平古刹", region: "清平县", icon: "Temple", note: "县外香火，钟声可闻半里。" },
+  { id: "yunzhou-market", name: "云州集市", region: "云州", icon: "BookStore", note: "商旅叫卖，货通四方。" },
+  { id: "yunzhou-pass", name: "云州边关", region: "云州", icon: "Official", note: "烽火台下，风沙扑面。" },
+  { id: "luocheng-academy", name: "洛城书院", region: "洛城", icon: "Book", note: "碑廊满是旧题，书声不绝。" },
+  { id: "luocheng-garden", name: "洛城名园", region: "洛城", icon: "Jade", note: "曲水亭台，文人常聚。" },
+  { id: "jiangling-wharf", name: "江陵码头", region: "江陵", icon: "RepairCarriage", note: "舟楫如织，夜灯映水。" },
+  { id: "jiangling-water", name: "江南水乡", region: "江陵", icon: "Agriculture", note: "烟雨小桥，渔歌唱晚。" },
+  { id: "liangdu-gate", name: "梁都城阙", region: "梁都", icon: "House", note: "宫墙高耸，车马不绝。" },
+  { id: "liangdu-canal", name: "御河长堤", region: "梁都", icon: "Activity", note: "杨柳夹岸，仕女游春。" },
+  { id: "caravan-mountain", name: "苍山栈道", region: "押镖途中", icon: "RepairCarriage", note: "栈道临渊，商队鱼贯而过。" },
+  { id: "caravan-desert", name: "瀚海驿站", region: "押镖途中", icon: "CashBox", note: "黄沙漫漫，驿鼓声远。" },
+  { id: "caravan-river", name: "大河古渡", region: "押镖途中", icon: "Restaurant", note: "渡口浊浪，船夫号子起伏。" },
+  { id: "exile-border", name: "谪戍边城", region: "远谪", icon: "Official", note: "荒城落日，才知京华之远。" },
+  { id: "study-tour", name: "游学名山", region: "游学", icon: "MainBook", note: "登山访碑，得半卷旧闻。" },
+];
+
+/** 诗会文斗：选项制对句 */
+const POETRY_ROUNDS = [
+  {
+    upper: "海上生明月",
+    options: [
+      { text: "天涯共此时", good: true, note: "工整开阔，最称雅座。" },
+      { text: "江上清风来", good: false, note: "意境尚可，对仗略偏。" },
+      { text: "炉边煮新茶", good: false, note: "意象不接，座中窃笑。" },
+      { text: "春色满皇都", good: false, note: "题意相左，难入法眼。" },
+    ],
+  },
+  {
+    upper: "大漠孤烟直",
+    options: [
+      { text: "长河落日圆", good: true, note: "气象雄浑，满座称善。" },
+      { text: "小桥流水长", good: false, note: "江南情调，难配边塞。" },
+      { text: "夜雨打窗纱", good: false, note: "纤细有余，气势不足。" },
+      { text: "柳絮满春城", good: false, note: "春景虽美，与上联不谐。" },
+    ],
+  },
+  {
+    upper: "两个黄鹂鸣翠柳",
+    options: [
+      { text: "一行白鹭上青天", good: true, note: "色彩对仗，灵动可喜。" },
+      { text: "三杯浊酒醉红尘", good: false, note: "情味有了，景致不对。" },
+      { text: "四面楚歌起边关", good: false, note: "气势过重，失了轻盈。" },
+      { text: "五更鸡鸣破残梦", good: false, note: "对仗勉强，意境散乱。" },
+    ],
+  },
+  {
+    upper: "窗含西岭千秋雪",
+    options: [
+      { text: "门泊东吴万里船", good: true, note: "时空开阔，气魄不俗。" },
+      { text: "庭开南国一枝梅", good: false, note: "清雅有余，格局略小。" },
+      { text: "案列东家半卷书", good: false, note: "太过琐碎，难称佳对。" },
+      { text: "夜听北风打柴门", good: false, note: "冷意尚合，对仗不工。" },
+    ],
+  },
+  {
+    upper: "欲穷千里目",
+    options: [
+      { text: "更上一层楼", good: true, note: "简洁有力，余韵悠长。" },
+      { text: "先饮一杯酒", good: false, note: "俏皮有趣，却失庄重。" },
+      { text: "且听一夜雨", good: false, note: "意境尚可，气势不足。" },
+      { text: "莫问百年愁", good: false, note: "伤感有余，对仗偏虚。" },
+    ],
+  },
+  {
+    upper: "野火烧不尽",
+    options: [
+      { text: "春风吹又生", good: true, note: "生机勃发，满座颔首。" },
+      { text: "秋雨落还来", good: false, note: "意象近似，却少精妙。" },
+      { text: "寒霜冻更坚", good: false, note: "气势反了，不合原意。" },
+      { text: "明月照无眠", good: false, note: "题意游离，难称对句。" },
+    ],
+  },
+  {
+    upper: "落霞与孤鹜齐飞",
+    options: [
+      { text: "秋水共长天一色", good: true, note: "千古名对，压得满堂。", perfect: true },
+      { text: "春潮带雨晚来急", good: false, note: "好句却非此联之对。" },
+      { text: "孤舟蓑笠翁独钓", good: false, note: "景致冷清，对仗不齐。" },
+      { text: "黄鹤一去不复返", good: false, note: "名句错位，座中失笑。" },
+    ],
+  },
+  {
+    upper: "劝君更尽一杯酒",
+    options: [
+      { text: "西出阳关无故人", good: true, note: "离情恰切，举座动容。" },
+      { text: "东篱把酒黄昏后", good: false, note: "闲适太过，不合送别。" },
+      { text: "南来北往皆过客", good: false, note: "通达有理，诗味稍薄。" },
+      { text: "北风卷地白草折", good: false, note: "边塞气象，却非此对。" },
+    ],
+  },
+];
+
+/** 促织/博坊赛季称号 */
+const CRICKET_SEASON_TITLES = [
+  { id: "cricket-1", need: 1, name: "草根新鸣", desc: "本季首胜。" },
+  { id: "cricket-3", need: 3, name: "连胜三场", desc: "本季大赛三捷。" },
+  { id: "cricket-5", need: 5, name: "府城新魁", desc: "本季五场大赛。" },
+  { id: "cricket-10", need: 10, name: "鸣冠一城", desc: "本季十场大赛。" },
+];
+
+const GAMBLE_SEASON_TITLES = [
+  { id: "gamble-3", need: 3, name: "手气正旺", desc: "本季连胜三局。" },
+  { id: "gamble-5", need: 5, name: "赌坊新贵", desc: "本季净胜五局。" },
+  { id: "gamble-8", need: 8, name: "骰中闻名", desc: "本季净胜八局。" },
+];
+
+/** 联姻策略：家世档位 */
+const MATCH_FAMILY_TIERS = [
+  { id: "humble", name: "寒门", power: 12, fertility: 72, brideBase: 80, favor: 0, moneyYear: [0, 8], note: "门第虽薄，少许多应酬。" },
+  { id: "small", name: "小户", power: 28, fertility: 66, brideBase: 160, favor: 1, moneyYear: [5, 20], note: "略有薄产，亲戚尚可走动。" },
+  { id: "merchant", name: "商贾之家", power: 45, fertility: 60, brideBase: 320, favor: 2, moneyYear: [25, 70], note: "银钱活络，人情也杂。" },
+  { id: "scholar", name: "书香门第", power: 52, fertility: 58, brideBase: 280, favor: 4, moneyYear: [10, 35], note: "知书达礼，利于仕学。" },
+  { id: "gentry", name: "乡绅望族", power: 70, fertility: 55, brideBase: 480, favor: 6, moneyYear: [30, 90], note: "地方有声，婚后助力不小。" },
+  { id: "noble", name: "官宦世家", power: 88, fertility: 50, brideBase: 720, favor: 10, moneyYear: [40, 120], note: "权势可借，也易卷入是非。" },
+];
+
+const MATCH_PERSONALITIES = [
+  { id: "gentle", name: "温婉", mood: [1, 3], eq: [0, 1], conflict: 0.08, note: "性情和顺，持家得体。" },
+  { id: "fiery", name: "刚烈", mood: [-1, 2], virtue: [0, 2], conflict: 0.22, note: "有主见，也好争执。" },
+  { id: "clever", name: "机敏", eq: [1, 3], knowledge: [0, 2], conflict: 0.12, note: "心思活络，善解人事。" },
+  { id: "plain", name: "朴实", virtue: [1, 3], money: [0, 15], conflict: 0.06, note: "勤俭持家，少生是非。" },
+  { id: "shrewd", name: "精明", money: [10, 40], relationship: [-1, 1], conflict: 0.18, note: "会算计，也容易计较。" },
+  { id: "aloof", name: "清高", knowledge: [1, 3], relationship: [-2, 1], conflict: 0.15, note: "雅致有余，人情略疏。" },
+];
+
+/** 秘密与身份（高风险可选） */
+const SECRET_DEFS = [
+  {
+    id: "hidden-birth",
+    name: "身世隐秘",
+    icon: "Letter",
+    risk: 0.07,
+    acquireNote: "你得知并选择隐瞒一段不便示人的身世。",
+    benefitNote: "暗中有人照应，偶有接济。",
+    benefit: { money: [15, 55], mood: [-1, 2] },
+    exposeTitle: "身世败露",
+    exposeText: "旧事被人捅破，亲友侧目，你一时难以自处。",
+    expose: { virtue: [-12, -6], favorability: [-18, -8], relationship: [-14, -6], mood: [-10, -4] },
+  },
+  {
+    id: "fake-title",
+    name: "假功名",
+    icon: "MainBook",
+    risk: 0.11,
+    acquireNote: "你暗中顶着一纸假功名行走于人前。",
+    benefitNote: "门户略好开，人情也抬几分。",
+    benefit: { favorability: [2, 6], eq: [1, 3], money: [10, 40] },
+    exposeTitle: "假功名败露",
+    exposeText: "假功名事发，士林哗然，你声名扫地。",
+    expose: { favorability: [-35, -18], virtue: [-18, -10], money: [-280, -80], mood: [-12, -5] },
+    tag: "假功名",
+  },
+  {
+    id: "bandit-tie",
+    name: "通匪暗线",
+    icon: "BlackMarket",
+    risk: 0.1,
+    acquireNote: "你与江湖暗线有了往来，银钱来得快，也危险。",
+    benefitNote: "黑白两道偶有门路。",
+    benefit: { money: [40, 140], eq: [1, 4], virtue: [-2, 0] },
+    exposeTitle: "通匪事发",
+    exposeText: "暗线被人咬出，官府查问，你险些下狱。",
+    expose: { virtue: [-20, -10], favorability: [-25, -12], money: [-200, -60], mood: [-10, -4] },
+    mayPrison: true,
+    tag: "通匪嫌疑",
+  },
+  {
+    id: "faction-remnant",
+    name: "阉党余绪",
+    icon: "Official",
+    risk: 0.09,
+    acquireNote: "旧年权门余党与你有了牵扯，升迁或有暗助。",
+    benefitNote: "官场偶有人递话，也埋着祸根。",
+    benefit: { favorability: [3, 8], eq: [1, 4], money: [20, 70] },
+    exposeTitle: "余党牵连",
+    exposeText: "阉党旧案重提，你被点名牵连，仕途人情一并受损。",
+    expose: { favorability: [-30, -15], virtue: [-12, -6], eq: [-6, -2], mood: [-10, -4] },
+    tag: "余党嫌疑",
+  },
+  {
+    id: "illicit-child",
+    name: "私生子隐情",
+    icon: "FamilyIcon",
+    risk: 0.08,
+    acquireNote: "你私下安置了一段不为人知的骨肉之事。",
+    benefitNote: "心中有牵挂，也偶得慰藉。",
+    benefit: { mood: [1, 4], relationship: [1, 3], money: [-25, -5] },
+    exposeTitle: "私情败露",
+    exposeText: "私生子之事传开，家中起了风波，你颜面尽失。",
+    expose: { relationship: [-20, -10], virtue: [-14, -6], mood: [-14, -6], favorability: [-12, -5] },
+    tag: "家丑",
+  },
 ];
 
 const SHOP_GOODS = [
@@ -1641,7 +1837,12 @@ const LIFE_GOALS = [
   { id: "cricket-champion", tier: "gold", title: "促织魁首", icon: "Cricket", desc: "赢得促织大赛冠军。", score: 240, done: () => Number(state.cricketRecord?.champion || 0) > 0, advice: "培养高品相促织，再参加大赛。" },
   { id: "game-master", tier: "gold", title: "雅戏宗师", icon: "BambooFlute", desc: "五子棋 5 胜、象棋 3 胜，且投壶满矢。", score: 280, done: () => state.miniGames?.record?.gomokuWins >= 5 && state.miniGames?.record?.xiangqiWins >= 3 && state.miniGames?.record?.touhuBest >= 5, advice: "把雅戏三项都练到能赢。" },
   { id: "caravan-master", tier: "gold", title: "万里镖路", icon: "RepairCarriage", desc: "押镖行商累计完成 5 趟。", score: 260, done: () => caravanRuns() >= 5, advice: "走熟路线会积累经验，也要控制风险。" },
-  { id: "legend-book", tier: "gold", title: "命册厚重", icon: "MainBook", desc: "命册记录达到 80 件。", score: 260, done: () => (state.log || []).length >= 80, advice: "多参与活动、经营亲友和家业，命册自然丰厚。" },
+  { id: "legend-book", tier: "gold", title: "命册厚重", icon: "MainBook", desc: "命册记录达到 80 件。", score: 260, done: () => (state.log || []).length >= 80, advice: "多参与活动、经营亲友和家业，命册自然丰厚。" },,
+  { id: "poetry-win", title: "诗会夺魁", icon: "MainBook", desc: "诗会文斗获胜 3 次。", score: 80, tier: "bronze", done: () => (state.poetry?.wins || 0) >= 3, advice: "12 岁后去书院或宴会参加诗会文斗。" },
+  { id: "travel-codex", title: "足迹半天下", icon: "RepairCarriage", desc: "旅中奇遇图鉴解锁 6 处。", score: 90, tier: "silver", done: () => (state.travelCodex?.unlocked || []).length >= 6, advice: "多乘车马远行，或走押镖、游学之路。" },
+  { id: "cricket-season", title: "促织赛季魁", icon: "Cricket", desc: "获得任一促织赛季称号。", score: 70, tier: "bronze", done: () => (state.leisureSeason?.titles || []).some((id) => String(id).startsWith("cricket-")), advice: "去促织处参加大赛，攒本季胜场。" },
+  { id: "match-strategy", title: "良缘有策", icon: "ArrangeMarriage", desc: "通过联姻策略局选定配偶并成婚。", score: 80, tier: "silver", done: () => !!state.family?.spouse && !!state.family?.spouseProfile, advice: "16 岁后去媒人处细看家世、彩礼与性情再定亲。" },
+  { id: "secret-keep", title: "隐秘一生", icon: "Letter", desc: "持有秘密至终老且从未败露。", score: 100, tier: "gold", done: () => state.dead && (state.secrets || []).some((item) => item && !item.exposed), advice: "黑市或中年后可沾染暗事，败露代价极高。" }
 ];
 
 const ONBOARDING_VERSION = 1;
@@ -2646,6 +2847,476 @@ function normalizeCricket(cricket) {
   };
 }
 
+function createPoetryState() {
+  return { wins: 0, losses: 0, attended: 0, lastYear: -1 };
+}
+
+function normalizePoetry(poetry) {
+  const source = poetry && typeof poetry === "object" ? poetry : {};
+  return {
+    wins: Math.max(0, Math.round(Number(source.wins) || 0)),
+    losses: Math.max(0, Math.round(Number(source.losses) || 0)),
+    attended: Math.max(0, Math.round(Number(source.attended) || 0)),
+    lastYear: Number.isFinite(Number(source.lastYear)) ? Number(source.lastYear) : -1,
+  };
+}
+
+function normalizePoetryRound(round) {
+  if (!round || typeof round !== "object") return null;
+  const upper = String(round.upper || "").trim();
+  const options = Array.isArray(round.options)
+    ? round.options
+        .map((item) => ({
+          text: String(item?.text || "").trim(),
+          good: !!item?.good,
+          perfect: !!item?.perfect,
+          note: String(item?.note || "").trim(),
+        }))
+        .filter((item) => item.text)
+        .slice(0, 4)
+    : [];
+  if (!upper || options.length < 2) return null;
+  return { upper, options, cost: Math.max(0, Math.round(Number(round.cost) || 20)) };
+}
+
+function createTravelCodexState() {
+  return { unlocked: [] };
+}
+
+function normalizeTravelCodex(codex) {
+  const source = codex && typeof codex === "object" ? codex : {};
+  const valid = new Set(TRAVEL_LANDMARKS.map((item) => item.id));
+  const unlocked = [...new Set((Array.isArray(source.unlocked) ? source.unlocked : []).map(String).filter((id) => valid.has(id)))];
+  return { unlocked };
+}
+
+function createLeisureSeasonState(age = 0) {
+  return {
+    seasonKey: Math.floor(Math.max(0, age) / 3),
+    cricketWins: 0,
+    cricketStreak: 0,
+    gambleWins: 0,
+    gambleLosses: 0,
+    gambleStreak: 0,
+    titles: [],
+    blacklistedUntil: -1,
+  };
+}
+
+function normalizeLeisureSeason(season, age = 0) {
+  const source = season && typeof season === "object" ? season : {};
+  const currentKey = Math.floor(Math.max(0, Number(age) || 0) / 3);
+  const seasonKey = Number.isFinite(Number(source.seasonKey)) ? Number(source.seasonKey) : currentKey;
+  const reset = seasonKey !== currentKey;
+  return {
+    seasonKey: currentKey,
+    cricketWins: reset ? 0 : Math.max(0, Math.round(Number(source.cricketWins) || 0)),
+    cricketStreak: reset ? 0 : Math.max(0, Math.round(Number(source.cricketStreak) || 0)),
+    gambleWins: reset ? 0 : Math.max(0, Math.round(Number(source.gambleWins) || 0)),
+    gambleLosses: reset ? 0 : Math.max(0, Math.round(Number(source.gambleLosses) || 0)),
+    gambleStreak: reset ? 0 : Math.max(0, Math.round(Number(source.gambleStreak) || 0)),
+    titles: Array.isArray(source.titles) ? [...new Set(source.titles.map(String))].slice(0, 24) : [],
+    blacklistedUntil: Math.max(-1, Math.round(Number(source.blacklistedUntil) || -1)),
+  };
+}
+
+function ensureLeisureSeason() {
+  state.leisureSeason = normalizeLeisureSeason(state.leisureSeason, state.age);
+  return state.leisureSeason;
+}
+
+function secretDef(id) {
+  return SECRET_DEFS.find((item) => item.id === id) || null;
+}
+
+function normalizeSecrets(secrets) {
+  if (!Array.isArray(secrets)) return [];
+  return secrets
+    .map((item) => {
+      const def = secretDef(item?.id);
+      if (!def) return null;
+      return {
+        id: def.id,
+        acquiredAge: Math.max(0, Math.round(Number(item.acquiredAge) || 0)),
+        exposed: !!item.exposed,
+        exposedAge: item.exposed ? Math.max(0, Math.round(Number(item.exposedAge) || 0)) : null,
+      };
+    })
+    .filter(Boolean)
+    .slice(0, 8);
+}
+
+function normalizeMatchCandidate(candidate) {
+  const source = candidate && typeof candidate === "object" ? candidate : null;
+  if (!source) return null;
+  const tier = MATCH_FAMILY_TIERS.find((item) => item.id === source.familyId) || MATCH_FAMILY_TIERS[1];
+  const personality = MATCH_PERSONALITIES.find((item) => item.id === source.personalityId) || MATCH_PERSONALITIES[0];
+  const gender = source.gender === "male" ? "male" : "female";
+  const name = String(source.name || "").trim() || makePersonName(gender);
+  return {
+    id: source.id || `match-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+    name,
+    gender,
+    age: clamp(Math.round(Number(source.age) || randInt(16, 28)), 15, 40),
+    familyId: tier.id,
+    familyName: tier.name,
+    power: clamp(Math.round(Number(source.power ?? tier.power)), 1, 100),
+    fertility: clamp(Math.round(Number(source.fertility ?? tier.fertility)), 20, 95),
+    bridePrice: Math.max(40, Math.round(Number(source.bridePrice ?? tier.brideBase) || tier.brideBase)),
+    personalityId: personality.id,
+    personality: personality.name,
+    looks: clamp(Math.round(Number(source.looks) || randInt(40, 88))),
+    knowledge: clamp(Math.round(Number(source.knowledge) || randInt(30, 80))),
+    note: String(source.note || `${tier.note} 性情${personality.name}。`).trim(),
+  };
+}
+
+function generateMatchCandidate(forcedGender) {
+  const gender = forcedGender || (state.gender === "male" ? "female" : "male");
+  const tier = sample(MATCH_FAMILY_TIERS) || MATCH_FAMILY_TIERS[1];
+  const personality = sample(MATCH_PERSONALITIES) || MATCH_PERSONALITIES[0];
+  const looks = clamp(randInt(38, 92) + (tier.id === "noble" ? 6 : 0));
+  const knowledge = clamp(randInt(28, 86) + (tier.id === "scholar" ? 12 : 0));
+  const fertility = clamp(tier.fertility + randInt(-10, 10) + (personality.id === "plain" ? 6 : 0));
+  const power = clamp(tier.power + randInt(-8, 10));
+  const bridePrice = Math.max(50, Math.round(tier.brideBase * (0.75 + Math.random() * 0.7) + looks * 1.2 + power * 1.5));
+  return normalizeMatchCandidate({
+    name: makePersonName(gender),
+    gender,
+    age: randInt(16, 28),
+    familyId: tier.id,
+    power,
+    fertility,
+    bridePrice,
+    personalityId: personality.id,
+    looks,
+    knowledge,
+    note: `${tier.note} 性情${personality.name}，容止约 ${looks}，识书约 ${knowledge}。`,
+  });
+}
+
+function refreshMatchPool(force = false) {
+  if (!state) return [];
+  if (!force && Array.isArray(state.matchPool) && state.matchPool.length) {
+    state.matchPool = state.matchPool.map(normalizeMatchCandidate).filter(Boolean);
+    if (state.matchPool.length) return state.matchPool;
+  }
+  const gender = state.gender === "male" ? "female" : "male";
+  state.matchPool = [generateMatchCandidate(gender), generateMatchCandidate(gender), generateMatchCandidate(gender)];
+  return state.matchPool;
+}
+
+function matchSummary(profile) {
+  const candidate = normalizeMatchCandidate(profile);
+  if (!candidate) return "未详";
+  return `${candidate.familyName} · ${candidate.personality} · 彩礼 ${moneyText(candidate.bridePrice)} · 生育 ${candidate.fertility}`;
+}
+
+function unlockTravelLandmark(id, deltas = [], options = {}) {
+  const landmark = TRAVEL_LANDMARKS.find((item) => item.id === id);
+  if (!landmark || !state) return false;
+  state.travelCodex = normalizeTravelCodex(state.travelCodex);
+  if (state.travelCodex.unlocked.includes(landmark.id)) return false;
+  state.travelCodex.unlocked.push(landmark.id);
+  deltas.push({ label: "奇遇", value: landmark.name, type: "text" });
+  if (options.log !== false) {
+    addLog("旅中奇遇", `足迹记入图鉴：${landmark.name}。${landmark.note}`, deltas.slice(-1));
+  }
+  changeStat("mood", randInt(1, 3), deltas);
+  if (Math.random() > 0.55) changeStat("knowledge", randInt(0, 2), deltas);
+  return true;
+}
+
+function tryUnlockTravelLandmarks(ids = [], deltas = [], chance = 0.72) {
+  let unlocked = 0;
+  for (const id of ids) {
+    if (Math.random() > chance) continue;
+    if (unlockTravelLandmark(id, deltas, { log: true })) unlocked += 1;
+  }
+  return unlocked;
+}
+
+function openPoetryContest() {
+  if (!state || state.dead || state.prisonYears > 0 || state.age < 12) return;
+  state.poetry = normalizePoetry(state.poetry);
+  if (state.poetry.lastYear === state.year) {
+    finishAction("诗会", "今年已赴过诗会，来年再去也不迟。", [], "MainBook");
+    return;
+  }
+  const cost = state.age < 16 ? 8 : 20;
+  if (state.stats.money < cost) return;
+  const base = sample(POETRY_ROUNDS) || POETRY_ROUNDS[0];
+  const options = shuffle(base.options.map((item) => ({ ...item })));
+  state.poetryRound = normalizePoetryRound({ upper: base.upper, options, cost });
+  view.page = "poetry";
+  save();
+  render();
+}
+
+function answerPoetry(optionIndex) {
+  if (!state || state.dead || !state.poetryRound) return;
+  const round = normalizePoetryRound(state.poetryRound);
+  if (!round) {
+    state.poetryRound = null;
+    save();
+    render();
+    return;
+  }
+  const option = round.options[Number(optionIndex)];
+  if (!option) return;
+  const cost = Math.min(round.cost, Math.max(0, state.stats.money));
+  const deltas = [];
+  changeStat("money", -cost, deltas);
+  if (cost) addLedger("诗会束脩", -cost, "赴诗会雅集。");
+  state.poetry = normalizePoetry(state.poetry);
+  state.poetry.attended += 1;
+  state.poetry.lastYear = state.year;
+  const knowledgeBoost = state.stats.knowledge / 140;
+  const success = option.good || (!option.good && Math.random() + knowledgeBoost > 1.18);
+  const perfect = option.perfect && option.good;
+  if (success) {
+    state.poetry.wins += 1;
+    changeStat("knowledge", perfect ? randInt(5, 10) : randInt(3, 7), deltas);
+    changeStat("favorability", perfect ? randInt(3, 7) : randInt(1, 4), deltas);
+    changeStat("mood", randInt(2, 6), deltas);
+    changeStat("eq", randInt(0, 3), deltas);
+    if (!state.tags.includes("诗会")) state.tags.push("诗会");
+    if (perfect && !state.tags.includes("压卷")) state.tags.push("压卷");
+  } else {
+    state.poetry.losses += 1;
+    changeStat("mood", -randInt(3, 8), deltas);
+    changeStat("favorability", -randInt(0, 3), deltas);
+    if (Math.random() > 0.55 && !state.tags.includes("出丑")) state.tags.push("出丑");
+  }
+  const title = success ? (perfect ? "诗会压卷" : "诗会称善") : "诗会失言";
+  const text = success
+    ? `上联「${round.upper}」，你对「${option.text}」。${option.note}${perfect ? " 满座称绝。" : " 座中点头称善。"}`
+    : `上联「${round.upper}」，你对「${option.text}」。${option.note} 有人掩袖低笑，你面上发热。`;
+  state.poetryRound = null;
+  view.page = "main";
+  finishAction(title, text, deltas, "MainBook");
+}
+
+function recordGambleSeasonResult(won, deltas = []) {
+  const season = ensureLeisureSeason();
+  if (won) {
+    season.gambleWins += 1;
+    season.gambleStreak += 1;
+    season.gambleLosses = Math.max(0, season.gambleLosses);
+    for (const title of GAMBLE_SEASON_TITLES) {
+      if (season.gambleStreak >= title.need && !season.titles.includes(title.id)) {
+        season.titles.push(title.id);
+        deltas.push({ label: "名号", value: title.name, type: "text" });
+        addLog("赌坊名号", `本季连胜，得名号「${title.name}」：${title.desc}`, [{ label: "名号", value: title.name }]);
+      }
+    }
+  } else {
+    season.gambleLosses += 1;
+    season.gambleStreak = 0;
+    if (season.gambleLosses >= 4 && season.blacklistedUntil < state.age) {
+      season.blacklistedUntil = state.age + randInt(1, 2);
+      deltas.push({ label: "博坊", value: "列入黑名单", negative: true, type: "text" });
+      addLog("赌坊黑名单", `你连番输钱，博坊掌柜冷脸相待，约 ${season.blacklistedUntil} 岁前不宜再入。`, [{ label: "黑名单", value: `至${season.blacklistedUntil}岁`, negative: true }]);
+      changeStat("mood", -randInt(2, 5), deltas);
+    }
+  }
+}
+
+function isGambleBlacklisted() {
+  const season = ensureLeisureSeason();
+  return season.blacklistedUntil >= 0 && state.age <= season.blacklistedUntil;
+}
+
+function recordCricketSeasonResult(won, contest, deltas = []) {
+  if (!contest) return;
+  const season = ensureLeisureSeason();
+  if (won) {
+    season.cricketWins += 1;
+    season.cricketStreak += 1;
+    for (const title of CRICKET_SEASON_TITLES) {
+      if (season.cricketWins >= title.need && !season.titles.includes(title.id)) {
+        season.titles.push(title.id);
+        deltas.push({ label: "名号", value: title.name, type: "text" });
+        addLog("促织名号", `府城大赛本季传开你的名号「${title.name}」：${title.desc}`, [{ label: "名号", value: title.name }]);
+        changeStat("favorability", randInt(1, 3), deltas);
+      }
+    }
+  } else {
+    season.cricketStreak = 0;
+  }
+}
+
+function seasonTitleNames(ids = []) {
+  const map = Object.fromEntries([...CRICKET_SEASON_TITLES, ...GAMBLE_SEASON_TITLES].map((item) => [item.id, item.name]));
+  return ids.map((id) => map[id] || id).filter(Boolean);
+}
+
+function activeSecrets() {
+  return (state.secrets || []).filter((item) => item && !item.exposed);
+}
+
+function hasSecret(id) {
+  return (state.secrets || []).some((item) => item?.id === id && !item.exposed);
+}
+
+function acquireSecret(id, deltas = [], options = {}) {
+  const def = secretDef(id);
+  if (!def || !state) return false;
+  state.secrets = normalizeSecrets(state.secrets);
+  if (state.secrets.some((item) => item.id === id)) return false;
+  state.secrets.push({ id, acquiredAge: state.age, exposed: false, exposedAge: null });
+  if (def.tag && !state.tags.includes(def.tag)) state.tags.push(def.tag);
+  deltas.push({ label: "秘密", value: def.name, type: "text" });
+  if (options.silent) return true;
+  changeStat("mood", randInt(-2, 3), deltas);
+  return true;
+}
+
+function exposeSecret(secret, deltas = []) {
+  const def = secretDef(secret?.id);
+  if (!def || secret.exposed) return;
+  secret.exposed = true;
+  secret.exposedAge = state.age;
+  applyEffectRanges(def.expose, deltas);
+  if (def.tag) state.tags = state.tags.filter((tag) => tag !== def.tag);
+  if (!state.tags.includes("事发")) state.tags.push("事发");
+  if (def.mayPrison && Math.random() > 0.55) {
+    state.prisonYears = Math.max(state.prisonYears || 0, randInt(1, 2));
+    if (!state.tags.includes("入狱")) state.tags.push("入狱");
+    deltas.push({ label: "牢狱", value: `${state.prisonYears}年`, negative: true });
+  }
+  addLog(def.exposeTitle, def.exposeText, deltas);
+}
+
+function runSecretYear(deltas = []) {
+  state.secrets = normalizeSecrets(state.secrets);
+  for (const secret of state.secrets) {
+    if (secret.exposed) continue;
+    const def = secretDef(secret.id);
+    if (!def) continue;
+    applyEffectRanges(def.benefit, deltas);
+    const heldYears = Math.max(0, state.age - (secret.acquiredAge || 0));
+    const risk = def.risk + heldYears * 0.01 + (state.stats.virtue < 35 ? 0.03 : 0) + (state.stats.favorability > 50 ? 0.02 : 0);
+    if (Math.random() < risk) exposeSecret(secret, deltas);
+  }
+}
+
+function offerRandomSecret(deltas = []) {
+  if (!state || state.age < 18 || state.prisonYears > 0) return false;
+  if (activeSecrets().length >= 2) return false;
+  if (Math.random() > 0.14) return false;
+  const pool = SECRET_DEFS.filter((item) => !state.secrets.some((secret) => secret.id === item.id));
+  const def = sample(pool);
+  if (!def) return false;
+  state.pendingSurprise = {
+    category: "暗事",
+    title: "可隐之事",
+    text: `${def.acquireNote} 若接住，每年或有暗利，却也随时可能败露。`,
+    icon: def.icon || "Letter",
+    secretOffer: def.id,
+  };
+  view.overlay = "surprise";
+  return true;
+}
+
+function acceptSecretOffer() {
+  if (!state?.pendingSurprise?.secretOffer) return closeSurprise();
+  const id = state.pendingSurprise.secretOffer;
+  const def = secretDef(id);
+  const deltas = [];
+  acquireSecret(id, deltas);
+  state.pendingSurprise = null;
+  view.overlay = "";
+  if (def) finishAction("暗事沾身", `${def.acquireNote}${def.benefitNote}`, deltas, def.icon || "Letter");
+  else {
+    save();
+    render();
+  }
+}
+
+function declineSecretOffer() {
+  if (!state) return;
+  state.pendingSurprise = null;
+  view.overlay = "";
+  addLog("拒隐", "你摇头推开这段暗事，心想清清白白更好。", []);
+  save();
+  render();
+}
+
+function applySpouseProfileYear(deltas = []) {
+  const profile = normalizeMatchCandidate(state.family?.spouseProfile);
+  if (!profile || !state.family.spouse || state.family.spouseMeta?.alive === false) return;
+  const tier = MATCH_FAMILY_TIERS.find((item) => item.id === profile.familyId) || MATCH_FAMILY_TIERS[0];
+  const personality = MATCH_PERSONALITIES.find((item) => item.id === profile.personalityId) || MATCH_PERSONALITIES[0];
+  const moneyGain = rangeValue(tier.moneyYear || [0, 0]);
+  if (moneyGain) {
+    changeStat("money", moneyGain, deltas);
+    addLedger("姻亲资助", moneyGain, `${profile.familyName}娘家送来薄礼。`);
+  }
+  if (tier.favor && Math.random() > 0.45) changeStat("favorability", randInt(0, tier.favor > 5 ? 2 : 1), deltas);
+  applyEffectRanges(
+    Object.fromEntries(
+      Object.entries(personality)
+        .filter(([key]) => ["mood", "eq", "virtue", "knowledge", "relationship", "money"].includes(key))
+        .map(([key, value]) => [key, value])
+    ),
+    deltas
+  );
+  if (Math.random() < (personality.conflict || 0.1)) {
+    changeStat("mood", -randInt(1, 4), deltas);
+    state.family.spouseAffection = clamp(Number(state.family.spouseAffection ?? 78) - randInt(1, 5));
+    addLog("闺中争执", `你与${state.family.spouse}为家事口角几句，性情${personality.name}，有时也难全让。`, [{ label: "情分", value: state.family.spouseAffection }]);
+  } else if (Math.random() > 0.7) {
+    state.family.spouseAffection = clamp(Number(state.family.spouseAffection ?? 78) + randInt(1, 3));
+  }
+}
+
+function openMatchmakerBoard() {
+  if (!state || state.dead || state.prisonYears > 0 || state.age < 16) return;
+  if (state.family.spouse) {
+    finishAction("媒人", "你已成婚，媒人拱手道喜，说改日再为子女操心也不迟。", [], "ArrangeMarriage");
+    return;
+  }
+  refreshMatchPool(true);
+  view.page = "matchmaker";
+  save();
+  render();
+}
+
+function selectMatchCandidate(candidateId) {
+  if (!state || state.dead || (state.family.spouse && state.family.spouseMeta?.alive !== false) || state.age < 16) return;
+  const candidate = (state.matchPool || []).map(normalizeMatchCandidate).find((item) => item?.id === candidateId);
+  if (!candidate) return;
+  const deltas = [];
+  const fee = Math.min(30, Math.max(0, state.stats.money));
+  changeStat("money", -fee, deltas);
+  if (fee) addLedger("媒资", -fee, "托媒人相看人家。");
+  changeStat("relationship", randInt(2, 6), deltas);
+  state.family.lover = candidate.name;
+  state.family.loverMeta = normalizeRelative(
+    {
+      name: candidate.name,
+      relation: "相看之人",
+      gender: candidate.gender,
+      age: candidate.age,
+      affection: clamp(48 + Math.floor(candidate.looks / 5) + Math.floor(candidate.power / 10)),
+      alive: true,
+    },
+    state.name.slice(0, 1),
+    "partner"
+  );
+  state.family.loverProfile = candidate;
+  state.family.spouseAffection = state.family.loverMeta.affection;
+  state.matchPool = [];
+  view.page = "relations";
+  finishAction(
+    "媒人细看",
+    `媒人替你细说${candidate.name}：${candidate.familyName}，性情${candidate.personality}，开价彩礼约 ${moneyText(candidate.bridePrice)}，生育预期 ${candidate.fertility}。${candidate.note}`,
+    deltas,
+    "ArrangeMarriage"
+  );
+}
+
 function normalizeExam(exam) {
   const source = exam || {};
   const current = source.current || null;
@@ -3136,7 +3807,8 @@ function lifeScore() {
   const examScore = Math.max(0, state.exam.rank + 1) * 70;
   const careerScore = Object.values(state.careerProgress || {}).reduce((sum, item) => sum + Math.max(1, Number(item.level) || 1) * 18, state.career ? 40 : 0);
   const goalScore = completedGoals().reduce((sum, goal) => sum + goal.score, 0);
-  return statScore + wealthScore + relationScore + examScore + careerScore + goalScore + Math.min(120, state.log.length * 2);
+  const sideScore = Math.min(100, (state.travelCodex?.unlocked || []).length * 8 + (state.poetry?.wins || 0) * 6 + (state.leisureSeason?.titles || []).length * 10 + (state.secrets || []).filter((item) => item && !item.exposed).length * 12);
+  return statScore + wealthScore + relationScore + examScore + careerScore + goalScore + Math.min(120, state.log.length * 2) + sideScore;
 }
 
 function lifeGrade(score = lifeScore()) {
@@ -4795,6 +5467,7 @@ function finishCaravanRun(sourceRun = state.pendingCaravan) {
     events: run.history,
   };
   updateCaravanMemory(route, summary);
+  tryUnlockTravelLandmarks(shuffle(["caravan-mountain", "caravan-desert", "caravan-river"]).slice(0, summary.success ? 2 : 1), deltas, summary.success ? 0.85 : 0.55);
   const title = success ? `${route.label}告捷` : `${route.label}失手`;
   const text = `${success ? "你护货抵达，货主清点无误。" : "车队折损，货主脸色极差。"}货物完好 ${summary.cargo}%，途中失手 ${summary.failures} 次。${levelText}`;
   unlockLifeGoals();
@@ -5167,6 +5840,8 @@ function completeTravelActivity(activityId) {
   memory.lastActivity = title;
   state.travelSystem.totalTrips += 1;
   if (!state.travelSystem.stamps.includes(destination.id)) state.travelSystem.stamps.push(destination.id);
+  tryUnlockTravelLandmarks(destination.landmarks || [], deltas, 0.9);
+  if (activityId === "landmark") tryUnlockTravelLandmarks(["study-tour"], deltas, 0.35);
   state.location = destination.name;
   const routeStory = run.history.map((item) => item.text).join(" ");
   state.pendingTravel = null;
@@ -6235,6 +6910,7 @@ function revealGuessDice() {
   state.gamble.guess = game;
   state.gamble.stake = stake;
   state.lastDeltas = deltas;
+  recordGambleSeasonResult(total >= 0, deltas);
   addLedger("博坊猜骰", total, `下注 ${moneyText(stake)}，${rounds} 局，押${guessChoiceLabel(game.kind, game.choice)}。`);
   addLog("博坊猜骰", game.result.text, deltas);
   save();
@@ -6541,6 +7217,7 @@ function revealPaiGow() {
   state.gamble.paiGow = game;
   state.gamble.stake = stake;
   state.lastDeltas = deltas;
+  recordGambleSeasonResult(amount > 0, deltas);
   addLedger("博坊牌九", amount, `下注 ${moneyText(stake)}，${outcome}。`);
   addLog("博坊牌九", game.result.text, deltas);
   save();
@@ -6648,6 +7325,7 @@ function revealBigSmall() {
   state.gamble.bigSmall = game;
   state.gamble.stake = stake;
   state.lastDeltas = deltas;
+  recordGambleSeasonResult(playerWin, deltas);
   addLedger("博坊赌大小", amount, `下注 ${moneyText(stake)}，押${choice.label}，开出${outcome.sum}点${outcome.label}。`);
   addLog("博坊赌大小", game.result.text, deltas);
   save();
@@ -6841,6 +7519,7 @@ function revealGamble(opener = "player") {
     actual,
   };
   state.lastDeltas = deltas;
+  recordGambleSeasonResult(playerWin, deltas);
   addLedger("博坊叫骰", amount, `下注 ${moneyText(stake)}，${gambleBidText(bid)}，实际 ${actual} 个 ${bid.face} 点。`);
   addLog("博坊叫骰", state.gamble.result.text, deltas);
   save();
@@ -7060,6 +7739,7 @@ function chooseBrothelCompanion(candidateId, actionId) {
 function performPlaceAction(id) {
   if (!state || state.dead || state.prisonYears > 0) return;
   if (id === "prepareExam") return prepareExam();
+  if (id === "poetryMeet") return openPoetryContest();
   if (id === "courtesanContest") return startCourtesanContest();
   if (id === "courtesanParlor") return startCourtesanParlor();
   if (id === "templeDrawLot") return drawTempleFortune();
@@ -7195,6 +7875,8 @@ function buyGood(index, black = false) {
     const loss = item.risk === "money" ? -randInt(30, 120) : -randInt(2, 8);
     changeStat(item.risk, loss, deltas);
   }
+  if (black && item.name === "赝造荐书") acquireSecret("fake-title", deltas, { silent: true });
+  if (black && item.name === "无名丹" && Math.random() > 0.72) acquireSecret("bandit-tie", deltas, { silent: true });
   addInventoryItem(item.name, deltas);
   addLedger(black ? "黑市买卖" : "市集买物", -item.price, `购得${item.name}。`);
   finishAction(black ? "黑市" : "市集", `你买下${item.name}。${item.note}`, deltas, item.icon);
@@ -7353,14 +8035,15 @@ function cricketAction(action, cricketId = "") {
   if (!selected) return;
   const deltas = [];
   const contest = action === "competition";
-  const target = contest ? randInt(45, 95) : randInt(25, 86);
+  const season = ensureLeisureSeason();
+  const target = contest ? randInt(45, 95) + Math.min(8, season.cricketWins) : randInt(25, 86);
   const agePenalty = Math.max(0, selected.age - 4) * 4;
   const score = selected.quality - agePenalty + randInt(-18, 18);
   const win = score >= target;
   if (win) {
     selected.wins = (selected.wins || 0) + 1;
     state.cricketRecord.wins += 1;
-    const prize = contest ? randInt(180, 620) : randInt(25, 120);
+    const prize = contest ? randInt(180, 620) + season.cricketWins * 12 : randInt(25, 120);
     changeStat("money", prize, deltas);
     addLedger(contest ? "促织大赛" : "斗促织", prize, `${selected.name}获胜。`);
     if (contest && selected.wins >= 3) state.cricketRecord.champion += 1;
@@ -7368,8 +8051,10 @@ function cricketAction(action, cricketId = "") {
     state.cricketRecord.losses += 1;
     changeStat("mood", -randInt(2, 7), deltas);
   }
-  const title = contest ? "促织大赛" : "斗促织";
-  const text = win ? `${selected.name}振翅扑斗，竟胜过对手。` : `${selected.name}临阵失势，被对手压住了声势。`;
+  recordCricketSeasonResult(win, contest, deltas);
+  const title = contest ? "府城促织大赛" : "斗促织";
+  const seasonNote = contest ? ` 本季大赛胜场 ${season.cricketWins}。` : "";
+  const text = (win ? `${selected.name}振翅扑斗，竟胜过对手。` : `${selected.name}临阵失势，被对手压住了声势。`) + seasonNote;
   finishAction(title, text, deltas, contest ? "CricketCompetition" : "CricketBattle");
 }
 
@@ -8062,21 +8747,35 @@ function inheritFromSpouse(heir) {
 
 function marryLover() {
   if (!state.family.lover || (state.family.spouse && state.family.spouseMeta?.alive !== false) || state.age < 16) return;
-  SFX.play("marry");
+  if (typeof SFX !== "undefined" && SFX.play) SFX.play("marry");
   const deltas = [];
-  const cost = randInt(120, 420);
+  const profile = normalizeMatchCandidate(state.family.loverProfile) || generateMatchCandidate(state.gender === "male" ? "female" : "male");
+  if (profile) profile.name = state.family.lover;
+  const cost = profile ? profile.bridePrice + randInt(20, 80) : randInt(120, 420);
+  if (state.stats.money < Math.floor(cost * 0.45)) {
+    finishAction("婚仪未成", `彩礼与婚仪约需 ${moneyText(cost)}，手头尚不足，只得暂缓。`, [], "ArrangeMarriage");
+    return;
+  }
   const actualCost = Math.min(cost, Math.max(0, state.stats.money));
   changeStat("money", -actualCost, deltas);
   changeStat("mood", randInt(8, 16), deltas);
-  changeStat("relationship", randInt(6, 14), deltas);
+  changeStat("relationship", randInt(6, 14) + Math.floor((profile?.power || 0) / 25), deltas);
+  changeStat("favorability", Math.floor((profile?.power || 0) / 20), deltas);
+  if (profile?.knowledge) changeStat("knowledge", randInt(0, Math.floor(profile.knowledge / 30)), deltas);
   state.family.spouse = state.family.lover;
   const relation = state.gender === "male" ? "妻子" : "夫君";
   state.family.spouseAffection = clamp(Number(state.family.loverMeta?.affection ?? state.family.spouseAffection ?? 82));
   state.family.spouseMeta = normalizePartner({ ...state.family.loverMeta, name: state.family.spouse, relation, affection: state.family.spouseAffection, intimacy: 28 }, state.name.slice(0, 1), relation, "spouse");
+  state.family.spouseProfile = profile;
   state.family.lover = false;
   state.family.loverMeta = null;
+  state.family.loverProfile = null;
+  state.matchPool = [];
   addLedger("婚仪", -actualCost, `与${state.family.spouse}成婚。`);
-  finishAction("成婚", `红烛高照，你与${state.family.spouse}成礼，自此家中多了一位同路人。`, deltas, "ArrangeMarriage");
+  const profileText = profile
+    ? `对方出自${profile.familyName}，性情${profile.personality}，彩礼婚仪约 ${moneyText(actualCost)}。婚后娘家势力与性情，都会慢慢显在日子里。`
+    : "自此家中多了一位同路人。";
+  finishAction("成婚", `红烛高照，你与${state.family.spouse}成礼。${profileText}`, deltas, "ArrangeMarriage");
 }
 
 function takeConcubine() {
@@ -10008,7 +10707,9 @@ function surpriseOverlay() {
         <div class="result-illustration">${icon(gift.icon || "FamilyIcon", gift.title || "惊喜")}</div>
         <p>${formatText(gift.text || "")}</p>
         <div class="delta-list result-deltas">${deltaHtml()}</div>
-        <button class="primary-btn" data-action="close-surprise">确定</button>
+        ${(state.pendingSurprise || {}).secretOffer
+          ? `<div class="main-actions"><button class="primary-btn" data-action="accept-secret">接下暗事</button><button class="ghost-btn" data-action="decline-secret">婉拒</button></div>`
+          : `<button class="primary-btn" data-action="close-surprise">确定</button>`}
       </article>
     </section>`;
 }
@@ -10049,6 +10750,8 @@ function centerContent() {
   if (view.page === "ledger") return ledgerView();
   if (view.page === "menu") return menuView();
   if (view.page === "save-manager") return saveManagerView();
+  if (view.page === "poetry") return poetryView();
+  if (view.page === "matchmaker") return matchmakerView();
   if (view.page === "codex") return codexView();
   if (view.page === "gamble") return gambleView();
   if (view.page === "miniGames") return miniGamesView();
@@ -10567,7 +11270,11 @@ function placeActionButtons(place, locked) {
       ["templePray", "焚香祈福", "添德行、安心绪", "Temple"],
       ["templeDrawLot", "求签问运", "抽取签运，下一流年将出现对应的应验剧情", "Temple"],
     ],
-    academy: [["prepareExam", "备考温课", "消耗一年在书院温题，提升备考进度", "Book"]],
+    academy: [
+      ["prepareExam", "备考温课", "消耗一年在书院温题，提升备考进度", "Book"],
+      ["poetryMeet", "诗会文斗", "12 岁后可入：对上下联，胜涨学识名望，败则出丑", "MainBook", 12],
+    ],
+    party: [["poetryMeet", "诗会雅集", "赴席对句，一较高下", "MainBook", 12]],
   }[place.id] || [];
   return actions.map(([id, label, note, iconName, minAge = 0]) => {
     const ageLocked = minAge && state.age < minAge;
@@ -10624,7 +11331,7 @@ function specialPlaceButton(place, locked) {
               <small>品相 ${Math.round(cricket.quality)} · ${cricket.age}/${cricket.lifespan} 年 · 胜 ${cricket.wins || 0}</small>
               <span class="mini-actions">
                 <button class="text-btn inline-action" data-cricket-action="battle" data-cricket-id="${escapeHtml(cricket.id)}" ${locked ? "disabled" : ""}>斗促织</button>
-                <button class="text-btn inline-action" data-cricket-action="competition" data-cricket-id="${escapeHtml(cricket.id)}" ${locked ? "disabled" : ""}>大赛</button>
+                <button class="text-btn inline-action" data-cricket-action="competition" data-cricket-id="${escapeHtml(cricket.id)}" ${locked ? "disabled" : ""}>府城大赛</button>
               </span>
             </article>
           `).join("")}
@@ -10657,7 +11364,7 @@ function specialPlaceButton(place, locked) {
     return `${themes.map((theme, index) => `<button class="list-btn" data-party="${index}" ${locked || !partyOpen(theme) ? "disabled" : ""}>${icon("DrinkingWine", theme.name)}<span>${escapeHtml(theme.name)}<small>${partyOpen(theme) ? escapeHtml(theme.keywords || "赴宴会友") : `${theme.ageRange?.x || 16}-${theme.ageRange?.y || 80} 岁开放`}</small></span></button>`).join("")}`;
   }
   const labels = {
-    matchmaker: ["求媒问姻缘", "请媒人相看一门亲事。"],
+    matchmaker: ["联姻策略局", "细看家世、彩礼、性情与生育预期，再定相看之人。"],
     marry: ["成婚", "与相看之人成礼。"],
     gamble: ["赌大小", "双方摇骰叫点，开盅按总数判输赢。"],
     miniGames: ["入席游艺", "五子棋与投壶，胜负只争雅兴，也有小小彩头。"],
@@ -11146,6 +11853,69 @@ function menuView() {
       <div class="main-actions"><button class="ghost-btn" data-action="back-main">返回</button></div>
     </article>`;
 }
+
+function poetryView() {
+  const round = normalizePoetryRound(state.poetryRound);
+  if (!round) {
+    return `
+      <article class="play-card poetry-card">
+        <p class="eyebrow">诗会</p>
+        <h2>文斗</h2>
+        <p>席上暂无新题，可回书院或宴会再开一局。</p>
+        <div class="main-actions"><button class="ghost-btn" data-action="back-places">返回</button></div>
+      </article>`;
+  }
+  const record = normalizePoetry(state.poetry);
+  return `
+    <article class="play-card poetry-card">
+      <p class="eyebrow">诗会文斗</p>
+      <h2>对上下联</h2>
+      <p>束脩 ${moneyText(round.cost)}。学识越高，歪诗也有几分被抬举的可能。战绩 ${record.wins} 胜 ${record.losses} 负。</p>
+      <div class="poetry-upper">
+        <span>上联</span>
+        <strong>${escapeHtml(round.upper)}</strong>
+      </div>
+      <div class="button-list poetry-options">
+        ${round.options.map((option, index) => `
+          <button class="list-btn" data-poetry-option="${index}">
+            ${icon("MainBook", option.text)}
+            <span>${escapeHtml(option.text)}<small>点选此下联应和</small></span>
+          </button>`).join("")}
+      </div>
+      <div class="main-actions"><button class="ghost-btn" data-action="back-places">弃局返回</button></div>
+    </article>`;
+}
+
+function matchmakerView() {
+  const pool = refreshMatchPool(false);
+  const hasLover = !!state.family.lover && !state.family.spouse;
+  return `
+    <article class="play-card matchmaker-card">
+      <p class="eyebrow">联姻策略局</p>
+      <h2>细看人家</h2>
+      <p>媒人摊开庚帖：家世、彩礼、性情、生育预期与娘家势力一应写明。选定后可在亲友页成婚；彩礼不足则婚仪难成。</p>
+      ${hasLover ? `<p class="empty-note">当前相看：${escapeHtml(state.family.lover)}（${escapeHtml(matchSummary(state.family.loverProfile))}）。再选会更换对象。</p>` : ""}
+      <div class="match-grid">
+        ${pool.map((item) => `
+          <article class="match-card">
+            <strong>${escapeHtml(item.name)} · ${item.age}岁</strong>
+            <small>${escapeHtml(item.familyName)} · 势力 ${item.power} · 性情${escapeHtml(item.personality)}</small>
+            <p>${escapeHtml(item.note)}</p>
+            <ul class="match-stats">
+              <li>彩礼约 <b>${moneyText(item.bridePrice)}</b></li>
+              <li>生育预期 <b>${item.fertility}</b></li>
+              <li>容止 ${item.looks} · 识书 ${item.knowledge}</li>
+            </ul>
+            <button class="primary-btn" data-match-candidate="${escapeHtml(item.id)}" ${state.family.spouse ? "disabled" : ""}>选定相看</button>
+          </article>`).join("")}
+      </div>
+      <div class="main-actions">
+        <button class="secondary-btn" data-action="refresh-match">换几户人家</button>
+        <button class="ghost-btn" data-action="back-places">返回</button>
+      </div>
+    </article>`;
+}
+
 
 function codexView() {
   const score = lifeScore();
@@ -12706,8 +13476,20 @@ app.addEventListener("click", (event) => {
     return;
   }
   if (button.dataset.action === "close-surprise") {
+    if (state.pendingSurprise?.secretOffer) return declineSecretOffer();
     view.overlay = "";
     state.pendingSurprise = null;
+    save();
+    render();
+    return;
+  }
+  if (button.dataset.action === "accept-secret") return acceptSecretOffer();
+  if (button.dataset.action === "decline-secret") return declineSecretOffer();
+  if (button.dataset.action === "open-poetry") return openPoetryContest();
+  if (button.dataset.poetryOption !== undefined) return answerPoetry(button.dataset.poetryOption);
+  if (button.dataset.matchCandidate) return selectMatchCandidate(button.dataset.matchCandidate);
+  if (button.dataset.action === "refresh-match") {
+    refreshMatchPool(true);
     save();
     render();
     return;
