@@ -2196,6 +2196,7 @@ function startLife() {
     jianghu: createJianghuState(),
     secretLines: createSecretLinesState(),
     exam: { rank: -1, attempts: 0, history: [], current: null, lastYear: -1 },
+    recentEventKeys: [],
     pendingActivity: null,
     eventResult: null,
     pendingSurprise: null,
@@ -2313,6 +2314,9 @@ function normalizeState(raw) {
   next.inventoryTab = INVENTORY_CATEGORIES.some(([id]) => id === next.inventoryTab) ? next.inventoryTab : "all";
   next.onboarding = normalizeOnboarding(next.onboarding);
   next.lastDeltas = Array.isArray(next.lastDeltas) ? next.lastDeltas : [];
+  next.recentEventKeys = Array.isArray(next.recentEventKeys)
+    ? next.recentEventKeys.map(String).filter(Boolean).slice(0, 24)
+    : [];
   next.prisonYears = Math.max(0, Math.round(Number(next.prisonYears) || 0));
   next.dead = !!next.dead;
   next.deathReason ||= "";
@@ -3693,6 +3697,7 @@ function nextYear() {
       annualOfficialCaseEvent() ||
       annualSecretIntroductionEvent() ||
       chooseEvent();
+    if (state.currentEvent) rememberEventKey(state.currentEvent);
     if (state.underworld) state.underworld.heat = clamp(Number(state.underworld.heat || 0) - randInt(2, 6));
     if (state.jianghu) state.jianghu.heat = clamp(Number(state.jianghu.heat || 0) - randInt(2, 6));
     // 有事件时不再叠惊喜弹窗，避免遮住选项导致“点不动”
@@ -3702,6 +3707,7 @@ function nextYear() {
       } else {
         annualSurpriseEvent(state.lastDeltas);
       }
+      // 只有真的没抽出任何事件时才记“平年”，避免盖住其他日志观感
       addLog("平年", "这一年无甚大事，日子仍照常向前。", state.lastDeltas);
     }
     finishYear(false);
@@ -4504,16 +4510,101 @@ function eligibleHeirs() {
   ].sort((a, b) => order[a.heirKind] - order[b.heirKind] || b.age - a.age || (b.aptitude + b.study + b.virtue) - (a.aptitude + a.study + a.virtue));
 }
 
-function chooseEvent() {
-  const expanded = expandedDailyEvents().filter((event) => state.age >= event.minAge && state.age <= event.maxAge);
-  if (expanded.length && Math.random() < 0.58) return cloneEvent(sample(expanded));
-  const candidates = (DATA.randomEvents || []).filter((event) => {
-    if (!bucketMatchesAge(event.bucket, state.age)) return false;
-    if (event.category === "male" && state.gender !== "male") return false;
-    if (event.category === "female" && state.gender !== "female") return false;
-    return conditionsPass(event.conditions || []);
+function eventKey(event) {
+  if (!event) return "";
+  return String(event.id || event.title || event.kind || "").trim();
+}
+
+function rememberEventKey(event) {
+  const key = eventKey(event);
+  if (!key) return;
+  state.recentEventKeys = [key, ...((state.recentEventKeys || []).filter((item) => item !== key))].slice(0, 18);
+}
+
+function hardConditionsPass(conditions = []) {
+  // 建池时不掷概率：GetProbability 只决定稀有度，不应把大半事件直接踢出候选池
+  return conditionsPass(conditions, { ignoreProbability: true });
+}
+
+function eventEligible(event, age = state.age) {
+  if (!event) return false;
+  if (event.minAge != null && age < event.minAge) return false;
+  if (event.maxAge != null && age > event.maxAge) return false;
+  if (event.bucket && !bucketMatchesAge(event.bucket, age)) return false;
+  if (event.category === "male" && state.gender !== "male") return false;
+  if (event.category === "female" && state.gender !== "female") return false;
+  return hardConditionsPass(event.conditions || []);
+}
+
+function weightedSample(list, weightFn = () => 1) {
+  if (!list?.length) return undefined;
+  let total = 0;
+  const weights = list.map((item) => {
+    const weight = Math.max(0, Number(weightFn(item)) || 0);
+    total += weight;
+    return weight;
   });
-  return cloneEvent(sample(candidates));
+  if (total <= 0) return sample(list);
+  let roll = Math.random() * total;
+  for (let i = 0; i < list.length; i += 1) {
+    roll -= weights[i];
+    if (roll <= 0) return list[i];
+  }
+  return list[list.length - 1];
+}
+
+function eventProbabilityWeight(event) {
+  // 若事件自身带概率条件，保留“更难得”的差异，但不至于抽空
+  let weight = 1;
+  for (const cond of event.conditions || []) {
+    if ((cond.name || "") !== "GetProbability") continue;
+    const value = conditionNumber(cond.para);
+    if (!Number.isFinite(value)) continue;
+    const chance = value > 1 ? value / 100 : value;
+    weight *= clamp(chance, 0.08, 1);
+  }
+  return weight;
+}
+
+function pickYearEventFromPool(pool) {
+  if (!pool?.length) return null;
+  const recent = new Set(state.recentEventKeys || []);
+  const fresh = pool.filter((event) => !recent.has(eventKey(event)));
+  const preferred = fresh.length ? fresh : pool;
+  // 近期未出现的权重更高
+  const picked = weightedSample(preferred, (event) => {
+    const base = eventProbabilityWeight(event);
+    return recent.has(eventKey(event)) ? base * 0.15 : base;
+  });
+  return picked || sample(preferred) || sample(pool) || null;
+}
+
+function chooseEvent() {
+  const age = state.age;
+  const expanded = expandedDailyEvents().filter((event) => eventEligible(event, age));
+  const fromData = (DATA.randomEvents || []).filter((event) => eventEligible(event, age));
+
+  // 以随机事件库为主，补充日常短剧；再压低“刚抽过”的权重
+  const pool = [];
+  for (const event of fromData) pool.push(event);
+  for (const event of expanded) pool.push(event);
+
+  // 兼容：库被条件滤空时，至少还能从扩展日常里出剧情
+  const source = pool.length ? pool : expanded.length ? expanded : fromData;
+  if (!source.length) return null;
+
+  // 约 28% 优先抽扩展日常（原先 58% 过高，中年后容易循环那十来个标题）
+  if (expanded.length && Math.random() < 0.28) {
+    const daily = pickYearEventFromPool(expanded);
+    if (daily) {
+      rememberEventKey(daily);
+      return cloneEvent(daily);
+    }
+  }
+
+  const picked = pickYearEventFromPool(source);
+  if (picked) rememberEventKey(picked);
+  return cloneEvent(picked);
 }
 
 function expandedDailyEvents() {
