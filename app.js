@@ -2102,8 +2102,10 @@ function makeSiblings(familyName, count = randInt(0, 2)) {
   return Array.from({ length: count }, () => {
     const gender = Math.random() > 0.5 ? "male" : "female";
     const age = randInt(2, 12);
+    const name = `${familyName}${sample(gender === "female" ? DATA.database?.names?.female : DATA.database?.names?.male) || "无名"}`;
     return {
-      name: `${familyName}${sample(gender === "female" ? DATA.database?.names?.female : DATA.database?.names?.male) || "无名"}`,
+      id: `sibling-${name}`,
+      name,
       relation: gender === "female" ? "姐姐" : "哥哥",
       gender,
       age,
@@ -3608,63 +3610,113 @@ function clearSave() {
   }
 }
 
+function yearAdvanceBlockReason() {
+  if (!state || state.dead) return "此生已终。";
+  if (state.eventResult) return "请先点「点击继续」关闭当前结果。";
+  if (state.currentEvent) return "请先处理当前事件再推进流年。";
+  if (state.pendingTravel) return "旅途未完，请先走完车马行程。";
+  if (state.pendingCaravan) return "押镖途中，请先处理镖路上的抉择。";
+  if (state.mystery?.active && view.page === "mystery") return "办案界面中。可点「先放下案卷」再推进流年。";
+  if (state.pendingSurprise && view.overlay === "surprise") return "请先关闭眼前的惊喜弹窗。";
+  return "";
+}
+
 function nextYear() {
-  if (!state || state.dead || state.currentEvent || state.eventResult || state.pendingCaravan || state.pendingTravel) return;
-  SFX.play("page");
-  state.age += 1;
-  state.year += 1;
-  state.lastDeltas = [];
-
-  if (state.age === 1 && !state.tags.includes("抓周")) {
-    state.tags.push("抓周");
-    state.currentEvent = cloneEvent(START_EVENT);
-    save();
-    render();
-    return;
-  }
-
-  if (state.prisonYears > 0) {
-    state.prisonYears -= 1;
-    changeStat("mood", -randInt(1, 4), state.lastDeltas);
-    if (state.prisonYears <= 0) {
-      state.tags = state.tags.filter((tag) => tag !== "入狱");
-      addLog("出狱", "刑期已满，你离开牢狱，重见天日。", state.lastDeltas);
-    } else {
-      addLog("牢狱", `你在牢中又过一年，余刑 ${state.prisonYears} 年。`, state.lastDeltas);
+  const block = yearAdvanceBlockReason();
+  if (block) {
+    // 避免静默无响应：若只是弹窗挡着，刷新一次让用户看到提示
+    if (state && !state.dead) {
+      state.lastDeltas = [{ label: "流年", value: block, type: "text", negative: true }];
+      save();
+      render();
     }
-    finishYear();
     return;
   }
+  try {
+    SFX.play("page");
+    state.age += 1;
+    state.year += 1;
+    state.lastDeltas = [];
 
-  applyAgeMilestones(state.lastDeltas);
-  changeStat("mood", randInt(-2, 2), state.lastDeltas);
-  changeStat("physique", state.age > 55 ? randInt(-4, -1) : randInt(-1, 2), state.lastDeltas);
-  changeStat("money", state.career ? randInt(18, 80) : randInt(-10, 25), state.lastDeltas);
-  const assetIncome = annualAssetIncome();
-  if (assetIncome) {
-    changeStat("money", assetIncome, state.lastDeltas);
-    addLedger("家产进项", assetIncome, "名下产业送来一年收益。");
-  }
-  assetMarketEvent(state.lastDeltas);
-  if (state.diseases.length) changeStat("physique", -state.diseases.length, state.lastDeltas);
-  advanceFamilyYear(state.lastDeltas);
-  advanceCricketYear(state.lastDeltas);
-  annualRelationEvent(state.lastDeltas);
-  annualPartnerEvent(state.lastDeltas);
-  annualSurpriseEvent(state.lastDeltas);
+    if (state.age === 1 && !state.tags.includes("抓周")) {
+      state.tags.push("抓周");
+      state.currentEvent = cloneEvent(START_EVENT);
+      save();
+      render();
+      return;
+    }
 
-  if (shouldDie()) {
-    die(state.age >= 100 ? "寿终正寝" : "体魄耗尽");
+    if (state.prisonYears > 0) {
+      state.prisonYears -= 1;
+      changeStat("mood", -randInt(1, 4), state.lastDeltas);
+      if (state.prisonYears <= 0) {
+        state.tags = state.tags.filter((tag) => tag !== "入狱");
+        addLog("出狱", "刑期已满，你离开牢狱，重见天日。", state.lastDeltas);
+      } else {
+        addLog("牢狱", `你在牢中又过一年，余刑 ${state.prisonYears} 年。`, state.lastDeltas);
+      }
+      finishYear();
+      return;
+    }
+
+    applyAgeMilestones(state.lastDeltas);
+    if (typeof ensureLeisureSeason === "function") ensureLeisureSeason();
+    changeStat("mood", randInt(-2, 2), state.lastDeltas);
+    changeStat("physique", state.age > 55 ? randInt(-4, -1) : randInt(-1, 2), state.lastDeltas);
+    changeStat("money", state.career ? randInt(18, 80) : randInt(-10, 25), state.lastDeltas);
+    const assetIncome = annualAssetIncome();
+    if (assetIncome) {
+      changeStat("money", assetIncome, state.lastDeltas);
+      addLedger("家产进项", assetIncome, "名下产业送来一年收益。");
+    }
+    assetMarketEvent(state.lastDeltas);
+    if (state.diseases.length) changeStat("physique", -state.diseases.length, state.lastDeltas);
+    advanceFamilyYear(state.lastDeltas);
+    if (typeof applySpouseProfileYear === "function") applySpouseProfileYear(state.lastDeltas);
+    advanceCricketYear(state.lastDeltas);
+    if (typeof runSecretYear === "function") runSecretYear(state.lastDeltas);
+    annualRelationEvent(state.lastDeltas);
+    annualPartnerEvent(state.lastDeltas);
+
+    if (shouldDie()) {
+      die(state.age >= 100 ? "寿终正寝" : "体魄耗尽");
+      save();
+      render();
+      return;
+    }
+
+    state.currentEvent =
+      annualUnderworldEvent() ||
+      annualJianghuEvent() ||
+      annualFortuneEvent() ||
+      annualFamilyStoryEvent() ||
+      annualOfficialCaseEvent() ||
+      annualSecretIntroductionEvent() ||
+      chooseEvent();
+    if (state.underworld) state.underworld.heat = clamp(Number(state.underworld.heat || 0) - randInt(2, 6));
+    if (state.jianghu) state.jianghu.heat = clamp(Number(state.jianghu.heat || 0) - randInt(2, 6));
+    // 有事件时不再叠惊喜弹窗，避免遮住选项导致“点不动”
+    if (!state.currentEvent) {
+      if (typeof offerRandomSecret === "function") {
+        if (!offerRandomSecret(state.lastDeltas)) annualSurpriseEvent(state.lastDeltas);
+      } else {
+        annualSurpriseEvent(state.lastDeltas);
+      }
+      addLog("平年", "这一年无甚大事，日子仍照常向前。", state.lastDeltas);
+    }
+    finishYear(false);
+  } catch (error) {
+    console.error("nextYear failed", error);
+    state.currentEvent = null;
+    state.eventResult = {
+      title: "流年受阻",
+      text: "这一年事务繁杂，记录时出了岔子。已为你理顺案牍，可再点「下一年」继续。",
+      deltas: state.lastDeltas || [],
+      icon: "MainBook",
+    };
     save();
     render();
-    return;
   }
-
-  state.currentEvent = annualUnderworldEvent() || annualJianghuEvent() || annualFortuneEvent() || annualFamilyStoryEvent() || annualOfficialCaseEvent() || annualSecretIntroductionEvent() || chooseEvent();
-  if (state.underworld) state.underworld.heat = clamp(Number(state.underworld.heat || 0) - randInt(2, 6));
-  if (state.jianghu) state.jianghu.heat = clamp(Number(state.jianghu.heat || 0) - randInt(2, 6));
-  if (!state.currentEvent) addLog("平年", "这一年无甚大事，日子仍照常向前。", state.lastDeltas);
-  finishYear(false);
 }
 
 function finishYear(runAftermath = true) {
@@ -3849,7 +3901,13 @@ function annualFamilyStoryEvent() {
       return null;
     }
     if (stories.active.dueYear > state.year) return null;
-    return buildFamilyStoryEvent(stories.active, target);
+    const built = buildFamilyStoryEvent(stories.active, target);
+    // 构造失败时清掉卡死的 active 家事，避免流年永远被挡住
+    if (!built) {
+      completeFamilyStory(stories.active);
+      return null;
+    }
+    return built;
   }
 
   if (state.year - stories.lastTriggerYear < 2 || Math.random() > 0.32) return null;
@@ -3902,6 +3960,7 @@ function familyStoryTarget(story) {
 }
 
 function buildFamilyStoryEvent(story, target) {
+  if (!story || !target) return null;
   if (story.type === "parentIllness") {
     if (story.stage === "followup") {
       return {
@@ -3916,8 +3975,8 @@ function buildFamilyStoryEvent(story, target) {
       title: `${target.name}卧病`,
       content: `${target.name}近来咳喘乏力，体魄只余 ${Math.round(target.physique || 0)}。家中人心惶惶，都等你拿个主意。`,
       children: [
-        { title: "请医延药", note: "花费 120 铜钱，治疗最稳妥", familyEffect: "doctor", disabled: state.stats.money < 120 },
-        { title: "亲自侍奉", note: "耗费自身精力，尽一份孝心", familyEffect: "care" },
+        { title: "请医延药", note: state.stats.money < 120 ? "需 120 铜钱（当前不足）" : "花费 120 铜钱，治疗最稳妥", familyEffect: "doctor", disabled: state.stats.money < 120 },
+        { title: "亲自侍奉", note: "耗费自身精力，尽一份孝心（不会把自己累死）", familyEffect: "care" },
         { title: "暂且静养", note: "不花钱，但病情可能反复", familyEffect: "rest" },
       ],
     };
@@ -3965,7 +4024,26 @@ function buildFamilyStoryEvent(story, target) {
 function resolveFamilyStory(event, choice) {
   const story = state.familyStories?.active;
   const target = familyStoryTarget(story);
-  if (!story || !target || choice.disabled) return;
+  if (choice?.disabled) return;
+  if (!story || !target || target.alive === false) {
+    if (story) completeFamilyStory(story);
+    state.currentEvent = null;
+    state.eventResult = {
+      title: "家事已了",
+      text: "当事人已不在或这桩家事失去了对象，你只能把旧事翻过，继续往前过。",
+      deltas: [],
+      icon: "FamilyIcon",
+    };
+    save();
+    render();
+    return;
+  }
+  // 金额类选项以当前钱财实时判定，避免事件生成后钱变了却仍点不动
+  if (choice.familyEffect === "doctor" && state.stats.money < 120) return;
+  if (choice.familyEffect === "mediate" && state.stats.money < 60) return;
+  if (choice.familyEffect === "support" && state.stats.money < 120) return;
+  if (choice.familyEffect === "academy" && state.stats.money < 160) return;
+  if (choice.familyEffect === "craft" && state.stats.money < 80) return;
   const deltas = [];
   let title = choice.title || event.title || "家事";
   let text = "这件家事有了新的进展。";
@@ -3985,7 +4063,9 @@ function resolveFamilyStory(event, choice) {
         story.score = 3;
         text = `你请来医者细细诊治，又照方抓药。${target.name}的气色渐渐稳住。`;
       } else if (effect === "care") {
-        changeStat("physique", -4, deltas);
+        // 侍疾不应直接把玩家体魄扣到致死
+        const careCost = Math.min(4, Math.max(0, Math.round(state.stats.physique) - 1));
+        if (careCost) changeStat("physique", -careCost, deltas);
         changeStat("mood", -2, deltas);
         changeStat("virtue", 3, deltas);
         target.physique = clamp(Number(target.physique || 0) + 10);
@@ -4461,35 +4541,52 @@ function cloneEvent(event) {
 function chooseOption(index) {
   const event = state?.currentEvent;
   const choice = event?.children?.[index];
-  if (!choice || !conditionsPass(choice.conditions || [])) return;
+  if (!choice || choice.disabled) return;
+  // 点击时不再重掷 GetProbability，避免“选项显示了却点不动”
+  if (!conditionsPass(choice.conditions || [], { ignoreProbability: true })) return;
 
-  if (event.kind === "officialCase") return resolveOfficialCase(event, choice);
-  if (event.kind === "familyStory") return resolveFamilyStory(event, choice);
-  if (event.kind === "careerCase") return resolveCareerCase(event, choice);
-  if (event.kind === "fortuneEvent") return resolveFortuneEvent(event, choice);
-  if (event.kind === "dailyStory") return resolveDailyStory(event, choice);
-  if (event.kind === "examinerBribe") return resolveExaminerBribe(choice);
-  if (event.kind === "underworldConsequence") return resolveUnderworldConsequence(event, choice);
-  if (event.kind === "jianghuProphecy") return resolveJianghuProphecy(event, choice);
-  if (event.kind === "secretIntroduction") return resolveSecretIntroduction(event, choice);
+  try {
+    if (event.kind === "officialCase") return resolveOfficialCase(event, choice);
+    if (event.kind === "familyStory") return resolveFamilyStory(event, choice);
+    if (event.kind === "careerCase") return resolveCareerCase(event, choice);
+    if (event.kind === "fortuneEvent") return resolveFortuneEvent(event, choice);
+    if (event.kind === "dailyStory") return resolveDailyStory(event, choice);
+    if (event.kind === "examinerBribe") return resolveExaminerBribe(choice);
+    if (event.kind === "underworldConsequence") return resolveUnderworldConsequence(event, choice);
+    if (event.kind === "jianghuProphecy") return resolveJianghuProphecy(event, choice);
+    if (event.kind === "secretIntroduction") return resolveSecretIntroduction(event, choice);
 
-  const deltas = applyResults(choice.results || []);
-  state.lastDeltas = mergeDeltas(state.pendingActivity?.deltas, deltas);
-  const resultText = fillPlaceholders(choice.content || choice.history || choice.title);
-  addLog(choice.title || event.title || "事件", resultText, deltas);
-  const nextChildren = viableChildren(choice);
-  state.currentEvent = nextChildren.length && !state.dead ? choice : null;
-  unlockLifeGoals();
-  if (!state.currentEvent) {
+    const deltas = applyResults(choice.results || []);
+    state.lastDeltas = mergeDeltas(state.pendingActivity?.deltas, deltas);
+    const resultText = fillPlaceholders(choice.content || choice.history || choice.title);
+    addLog(choice.title || event.title || "事件", resultText, deltas);
+    // 嵌套子事件：若后续分支条件全部不成立，直接结算，避免卡死
+    const nextChildren = viableChildren(choice);
+    const nested = nextChildren.length && !state.dead ? { ...choice, kind: event.kind || choice.kind || "" } : null;
+    state.currentEvent = nested;
+    unlockLifeGoals();
+    if (!state.currentEvent) {
+      state.eventResult = {
+        title: choice.title || event.title || "结果",
+        text: resultText,
+        deltas,
+        icon: resultIcon(choice, event),
+      };
+    }
+    save();
+    render();
+  } catch (error) {
+    console.error("chooseOption failed", error);
+    state.currentEvent = null;
     state.eventResult = {
-      title: choice.title || event.title || "结果",
-      text: resultText,
-      deltas,
-      icon: resultIcon(choice, event),
+      title: choice?.title || event?.title || "事件中断",
+      text: "此事中途出了差错，你只好草草收场，日子还得往下过。",
+      deltas: state.lastDeltas || [],
+      icon: "MainBook",
     };
+    save();
+    render();
   }
-  save();
-  render();
 }
 
 function resolveDailyStory(event, choice) {
@@ -9372,6 +9469,15 @@ function startMysteryCase() {
   state.mystery.active = { caseId: item.id, round: 0, clues: [], actionsUsed: [], role: state.career && careerKind(state.career) === "official" ? "official" : "civilian" };
   state.currentEvent = null;
   state.eventResult = null;
+  view.page = "mystery";
+  save();
+  render();
+}
+
+function resumeMysteryCase() {
+  if (!state?.mystery?.active) return;
+  view.page = "mystery";
+  view.overlay = "";
   save();
   render();
 }
@@ -9428,6 +9534,7 @@ function accuseMystery(suspectId) {
   const text = correct ? `你以${active.clues.map((clue) => clue.label).join("、")}所得线索层层对证，最终指认${suspect[1]}。真凶无法自圆其说，奇案告破。${officialInvestigator ? "此案被写入你的官府政绩。" : "官府依约发下赏银，市井开始传你的断案名声。"}` : `你指认${suspect[1]}，但关键证据彼此冲突。真正的凶手借机脱身，这桩错案成为${officialInvestigator ? "你官声上的污点" : "坊间嘲讽你的谈资"}。`;
   state.mystery.completed.push({ caseId: item.id, title: item.title, correct, accused: suspect[1], year: state.year });
   state.mystery.active = null;
+  view.page = "main";
   state.lastDeltas = deltas;
   addLog(`奇案 · ${item.title}`, text, deltas);
   state.eventResult = { title: `${item.title} · ${correct ? "真相大白" : "铸成错案"}`, text, deltas, icon: correct ? "Official" : "PrisonHeader", scene: "seal" };
@@ -9766,10 +9873,11 @@ function makePersonName(gender) {
   return `${sample(names.last) || "赵"}${sample(gender === "female" ? names.female : names.male) || "无名"}`;
 }
 
-function conditionsPass(conditions) {
+function conditionsPass(conditions, options = {}) {
   for (const cond of conditions || []) {
     const name = cond.name || "";
     if (name === "GetProbability") {
+      if (options.ignoreProbability) continue;
       const value = conditionNumber(cond.para);
       if (!Number.isFinite(value)) continue;
       const chance = value > 1 ? value / 100 : value;
@@ -10743,7 +10851,8 @@ function achievementToast() {
 
 function centerContent() {
   if (state.dead) return deathView();
-  if (state.mystery?.active) return mysteryCaseView();
+  // 奇案仅在明确进入办案页时全屏，不再永久挡住「下一年」
+  if (state.mystery?.active && view.page === "mystery") return mysteryCaseView();
   if (state.pendingTravel) return travelRunView();
   if (state.pendingCaravan) return caravanRunView();
   if (state.eventResult) return eventResultView();
@@ -10863,6 +10972,8 @@ function overviewView() {
   const phase = lifePhase();
   const goals = nextGoals(3);
   const generation = Math.max(1, Number(state.lineage?.generation) || 1);
+  const blockReason = yearAdvanceBlockReason();
+  const yearBlocked = !!blockReason;
   return `
     <article class="play-card life-scroll">
       <p class="eyebrow">流年 · ${escapeHtml(phase.name)} · 第${generation}代</p>
@@ -10874,8 +10985,10 @@ function overviewView() {
         <span><b>命格评分</b>${lifeScore()} · ${escapeHtml(lifeGrade())}</span>
       </div>
       <p class="life-tip">${escapeHtml(lifeInsight())}</p>
+      ${yearBlocked ? `<p class="empty-note">${escapeHtml(blockReason)}</p>` : ""}
+      ${state.mystery?.active ? `<p class="dark-warning">你手头还有未结奇案「${escapeHtml(activeMysteryCase()?.title || "旧案")}」。可继续查，也可先推进流年。</p><div class="main-actions"><button class="secondary-btn" data-action="resume-mystery">继续办案</button></div>` : ""}
       <div class="main-actions">
-        <button class="primary-btn year-btn" data-action="next-year" ${state.eventResult ? "disabled" : ""}>下一年</button>
+        <button class="primary-btn year-btn" data-action="next-year" ${yearBlocked ? "disabled" : ""}>下一年</button>
         <button class="secondary-btn" data-page="place" data-place="activities">安排活动</button>
       </div>
     </article>
@@ -13002,10 +13115,24 @@ function examUnderworldView() {
     </article>`;
 }
 
+function suspendMysteryCase() {
+  if (!state?.mystery?.active) return;
+  // 保留进度，仅退出全屏办案视图，避免卡死流年
+  view.page = "main";
+  view.overlay = "";
+  state.lastDeltas = [{ label: "奇案", value: "暂且搁置", type: "text" }];
+  addLog("案卷暂搁", "你把案卷先压在几下。流年可继续推进；想继续查时，可从奇闻暗线再打开。", []);
+  save();
+  render();
+}
+
 function mysteryCaseView() {
   const active = state.mystery.active;
   const item = activeMysteryCase();
-  if (!active || !item) return overviewView();
+  if (!active || !item) {
+    if (state.mystery) state.mystery.active = null;
+    return overviewView();
+  }
   const actions = [["autopsy", "验尸", "从伤口、毒物与尸体现象判断死因", "MedicineBag"], ["witness", "问证人", "拆分口供，寻找时间与措辞矛盾", "Relationship1"], ["scene", "搜查现场", "勘门窗、器物、脚印与被移动的细节", "MainBook"], ["records", "查阅卷宗", "追旧案、债务、亲缘与不为人知的动机", "Book"]];
   return `
     <article class="play-card mystery-card">
@@ -13013,6 +13140,10 @@ function mysteryCaseView() {
       <section class="case-board"><div class="case-thread"></div>${active.clues.map((clue, index) => `<article><b>线索 ${index + 1} · ${escapeHtml(clue.label)}</b><p>${escapeHtml(clue.text)}</p></article>`).join("") || `<p class="empty-note">案卷刚刚展开，尚无可靠线索。</p>`}</section>
       ${active.round < 4 ? `<div class="investigation-grid">${actions.map(([id, label, note, iconName]) => `<button class="investigation-action" data-mystery-investigate="${id}" ${active.actionsUsed.includes(id) ? "disabled" : ""}>${icon(iconName, label)}<span><b>${label}</b><small>${note}</small></span></button>`).join("")}</div>` : ""}
       ${active.clues.length >= 3 ? `<section class="suspect-section"><div class="section-title"><h2>指认真凶</h2><small>一经落笔便不能反悔</small></div><div class="suspect-grid">${item.suspects.map(([id, name, role]) => `<button data-mystery-accuse="${id}"><b>${escapeHtml(name)}</b><span>${escapeHtml(role)}</span></button>`).join("")}</div></section>` : `<p class="dark-warning">至少取得三条线索后，才能正式指认嫌犯。</p>`}
+      <div class="main-actions">
+        <button class="secondary-btn" data-action="suspend-mystery">先放下案卷</button>
+        <button class="ghost-btn" data-action="open-secrets">奇闻总览</button>
+      </div>
     </article>`;
 }
 
@@ -13625,6 +13756,8 @@ app.addEventListener("click", (event) => {
   if (button.dataset.action === "open-secret-exam") return openExamUnderworld();
   if (button.dataset.action === "start-secret-bribe") return startExaminerBribe();
   if (button.dataset.action === "start-secret-mystery") return startMysteryCase();
+  if (button.dataset.action === "suspend-mystery") return suspendMysteryCase();
+  if (button.dataset.action === "resume-mystery") return resumeMysteryCase();
   if (button.dataset.action === "open-secret-jianghu") return useSpecialPlace("jianghu");
   if (button.dataset.action === "back-exam") {
     view.page = "exam";
