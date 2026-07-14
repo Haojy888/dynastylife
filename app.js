@@ -1837,12 +1837,12 @@ const LIFE_GOALS = [
   { id: "cricket-champion", tier: "gold", title: "促织魁首", icon: "Cricket", desc: "赢得促织大赛冠军。", score: 240, done: () => Number(state.cricketRecord?.champion || 0) > 0, advice: "培养高品相促织，再参加大赛。" },
   { id: "game-master", tier: "gold", title: "雅戏宗师", icon: "BambooFlute", desc: "五子棋 5 胜、象棋 3 胜，且投壶满矢。", score: 280, done: () => state.miniGames?.record?.gomokuWins >= 5 && state.miniGames?.record?.xiangqiWins >= 3 && state.miniGames?.record?.touhuBest >= 5, advice: "把雅戏三项都练到能赢。" },
   { id: "caravan-master", tier: "gold", title: "万里镖路", icon: "RepairCarriage", desc: "押镖行商累计完成 5 趟。", score: 260, done: () => caravanRuns() >= 5, advice: "走熟路线会积累经验，也要控制风险。" },
-  { id: "legend-book", tier: "gold", title: "命册厚重", icon: "MainBook", desc: "命册记录达到 80 件。", score: 260, done: () => (state.log || []).length >= 80, advice: "多参与活动、经营亲友和家业，命册自然丰厚。" },,
-  { id: "poetry-win", title: "诗会夺魁", icon: "MainBook", desc: "诗会文斗获胜 3 次。", score: 80, tier: "bronze", done: () => (state.poetry?.wins || 0) >= 3, advice: "12 岁后去书院或宴会参加诗会文斗。" },
-  { id: "travel-codex", title: "足迹半天下", icon: "RepairCarriage", desc: "旅中奇遇图鉴解锁 6 处。", score: 90, tier: "silver", done: () => (state.travelCodex?.unlocked || []).length >= 6, advice: "多乘车马远行，或走押镖、游学之路。" },
-  { id: "cricket-season", title: "促织赛季魁", icon: "Cricket", desc: "获得任一促织赛季称号。", score: 70, tier: "bronze", done: () => (state.leisureSeason?.titles || []).some((id) => String(id).startsWith("cricket-")), advice: "去促织处参加大赛，攒本季胜场。" },
-  { id: "match-strategy", title: "良缘有策", icon: "ArrangeMarriage", desc: "通过联姻策略局选定配偶并成婚。", score: 80, tier: "silver", done: () => !!state.family?.spouse && !!state.family?.spouseProfile, advice: "16 岁后去媒人处细看家世、彩礼与性情再定亲。" },
-  { id: "secret-keep", title: "隐秘一生", icon: "Letter", desc: "持有秘密至终老且从未败露。", score: 100, tier: "gold", done: () => state.dead && (state.secrets || []).some((item) => item && !item.exposed), advice: "黑市或中年后可沾染暗事，败露代价极高。" }
+  { id: "legend-book", tier: "gold", title: "命册厚重", icon: "MainBook", desc: "命册记录达到 80 件。", score: 260, done: () => (state.log || []).length >= 80, advice: "多参与活动、经营亲友和家业，命册自然丰厚。" },
+  { id: "poetry-win", tier: "bronze", title: "诗会夺魁", icon: "MainBook", desc: "诗会文斗获胜 3 次。", score: 80, done: () => (state.poetry?.wins || 0) >= 3, advice: "12 岁后去书院或宴会参加诗会文斗。" },
+  { id: "travel-codex", tier: "silver", title: "足迹半天下", icon: "RepairCarriage", desc: "旅中奇遇图鉴解锁 6 处。", score: 90, done: () => (state.travelCodex?.unlocked || []).length >= 6, advice: "多乘车马远行，或走押镖、游学之路。" },
+  { id: "cricket-season", tier: "bronze", title: "促织赛季魁", icon: "Cricket", desc: "获得任一促织赛季称号。", score: 70, done: () => (state.leisureSeason?.titles || []).some((id) => String(id).startsWith("cricket-")), advice: "去促织处参加大赛，攒本季胜场。" },
+  { id: "match-strategy", tier: "silver", title: "良缘有策", icon: "ArrangeMarriage", desc: "通过联姻策略局选定配偶并成婚。", score: 80, done: () => !!state.family?.spouse && !!state.family?.spouseProfile, advice: "16 岁后去媒人处细看家世、彩礼与性情再定亲。" },
+  { id: "secret-keep", tier: "gold", title: "隐秘一生", icon: "Letter", desc: "持有秘密至终老且从未败露。", score: 100, done: () => state.dead && (state.secrets || []).some((item) => item && !item.exposed), advice: "黑市或中年后可沾染暗事，败露代价极高。" },
 ];
 
 const ONBOARDING_VERSION = 1;
@@ -3220,7 +3220,13 @@ function offerRandomSecret(deltas = []) {
 }
 
 function acceptSecretOffer() {
-  if (!state?.pendingSurprise?.secretOffer) return closeSurprise();
+  if (!state?.pendingSurprise?.secretOffer) {
+    state.pendingSurprise = null;
+    view.overlay = "";
+    save();
+    render();
+    return;
+  }
   const id = state.pendingSurprise.secretOffer;
   const def = secretDef(id);
   const deltas = [];
@@ -3695,6 +3701,7 @@ function unlockLifeGoals() {
   state.life ||= normalizeLife();
   const unlocked = [];
   for (const goal of LIFE_GOALS) {
+    if (!goal?.id || typeof goal.done !== "function") continue;
     if (state.life.goals.includes(goal.id) || !goal.done()) continue;
     state.life.goals.push(goal.id);
     if (!state.tags.includes(goal.title)) state.tags.push(goal.title);

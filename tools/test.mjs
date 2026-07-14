@@ -67,6 +67,8 @@ try {
     const selectors = [
       '[data-action="close-achievement"]',
       '[data-action="close-surprise"]',
+      '[data-action="accept-secret"]',
+      '[data-action="decline-secret"]',
       '.choice-btn:not([disabled])',
       '[data-action="finish-result"]',
       '[data-action="finish-event"]',
