@@ -906,6 +906,7 @@ const MAIN_DOORS = [
   { id: "assets", label: "家产", icon: "House" },
   { id: "relations", label: "亲友", icon: "FamilyIcon" },
   { id: "activities", label: "活动", icon: "Activity" },
+  { id: "culture", label: "华夏岁时", icon: "Temple" },
   { id: "secrets", label: "奇闻暗线", icon: "PrisonHeader", featured: true },
 ];
 
@@ -1709,6 +1710,163 @@ const ANNUAL_GIFTS = [
   { name: "安神汤", icon: "MedicineBag", note: "一剂安神汤" },
 ];
 
+/** 华夏岁时：传统节日与完整二十四节气。时代与地域习俗有别，叙事采用广为流传的共同传统。 */
+const CULTURAL_SEASONS = {
+  spring: { name: "春", color: "#6c9a61", note: "生发 · 耕作 · 踏青" },
+  summer: { name: "夏", color: "#b86a4d", note: "长养 · 避暑 · 祛疫" },
+  autumn: { name: "秋", color: "#b38a43", note: "收成 · 团圆 · 登高" },
+  winter: { name: "冬", color: "#667f91", note: "收藏 · 祭祖 · 迎年" },
+};
+
+const SOLAR_TERMS = [
+  ["lichun", "立春", "spring", "东风解冻，草木将萌", "迎春、戴春胜、尝春盘", "顺应生发，早起舒展"],
+  ["yushui", "雨水", "spring", "冰雪渐消，春雨润物", "占稻色、护田畴、备农具", "避湿护脾，衣被勿骤减"],
+  ["jingzhe", "惊蛰", "spring", "春雷动，蛰虫始振", "蒙鼓皮、扫虫蚁、劝耕", "清淡饮食，防春困"],
+  ["chunfen", "春分", "spring", "昼夜相半，寒暑平", "校日晷、踏青、放纸鸢", "起居有常，调和身心"],
+  ["qingming", "清明", "spring", "气清景明，百卉萌发", "扫墓祭祖、插柳、踏青", "慎终追远，也亲近春光"],
+  ["guyu", "谷雨", "spring", "雨生百谷，农事渐忙", "种谷点豆、赏牡丹、采新茶", "祛湿健脾，惜春惜谷"],
+  ["lixia", "立夏", "summer", "万物并秀，暑气初成", "称人、尝新、悬蛋囊", "养心静气，午间小憩"],
+  ["xiaoman", "小满", "summer", "麦粒渐满，尚未大熟", "祭车神、看麦梢、修水渠", "清热祛湿，不贪生冷"],
+  ["mangzhong", "芒种", "summer", "有芒之谷可种，梅雨将至", "送花神、煮青梅、抢收抢种", "劳作张弛有度"],
+  ["xiazhi", "夏至", "summer", "日长之至，阳盛阴生", "祭地、食夏至面、量日影", "避烈日，护津液"],
+  ["xiaoshu", "小暑", "summer", "热气渐盛，尚未极暑", "晒书画、尝新米、纳凉", "少动多静，饮食洁净"],
+  ["dashu", "大暑", "summer", "暑热至极，雷雨亦多", "饮伏茶、晒伏姜、送清凉", "防暑湿，顾惜体力"],
+  ["liqiu", "立秋", "autumn", "凉风渐至，禾谷将熟", "贴秋膘、啃秋、候凉风", "早卧早起，润燥养肺"],
+  ["chushu", "处暑", "autumn", "暑气至此而止", "开渔、放河灯、晒秋", "昼夜温差渐大"],
+  ["bailu", "白露", "autumn", "露凝而白，秋意分明", "收清露、酿米酒、采十样白", "添衣润燥，勿露身"],
+  ["qiufen", "秋分", "autumn", "昼夜再相半，秋色平分", "祭月、竖蛋、校秤量收成", "收敛心神，劳逸相宜"],
+  ["hanlu", "寒露", "autumn", "露气寒冷，将欲凝霜", "赏菊、登高、制秋茶", "护足添衣，温润饮食"],
+  ["shuangjiang", "霜降", "autumn", "气肃霜降，草木黄落", "赏红叶、吃柿、备冬藏", "防寒润燥，少食辛辣"],
+  ["lidong", "立冬", "winter", "水始冰，万物收藏", "祭祖、补冬、修仓廪", "敛藏精气，早卧晚起"],
+  ["xiaoxue", "小雪", "winter", "寒气增，初雪未盛", "腌菜、制腊味、围炉", "温补不过燥"],
+  ["daxue", "大雪", "winter", "雪势渐盛，天地闭藏", "藏冰、赏雪、修屋济寒", "避寒护阳，行路谨慎"],
+  ["dongzhi", "冬至", "winter", "日短之至，一阳来复", "祭祖、贺冬、食馄饨或饺饵", "安静休养，护心防寒"],
+  ["xiaohan", "小寒", "winter", "寒意已深，岁暮将近", "画梅数九、备年货、试腊味", "避风寒，固护脾肾"],
+  ["dahan", "大寒", "winter", "寒气至极，轮回将启", "尾牙、除旧、糊窗迎岁", "藏养待春，勿过劳"],
+].map(([id, name, season, phenology, customs, care]) => ({ id: `term-${id}`, name, type: "term", season, phenology, customs, care }));
+
+const TRADITIONAL_FESTIVALS = [
+  ["yuanri", "元日", "winter", "岁首更新，家门从旧年走入新年", "燃爆竹、贴桃符、拜年贺岁", "年糕与屠苏酒"],
+  ["renri", "人日", "winter", "正月初七相传为人之生日", "戴人胜、登高赋诗、食七菜羹", "七菜羹"],
+  ["yuanxiao", "上元灯节", "winter", "正月望日，灯火与月色同明", "张灯、猜谜、踏歌、观百戏", "元宵或浮圆子"],
+  ["chunshe", "春社", "spring", "乡里祭社祈求风调雨顺", "祭社、分社肉、饮社酒", "社饭与社肉"],
+  ["shangsi", "上巳", "spring", "暮春临水祓禊，踏青游春", "修禊、曲水流觞、佩兰", "春蔬与清酒"],
+  ["hanshi", "寒食", "spring", "禁火冷食，亦寄慎终追远之意", "禁火、扫墓、插柳、踏青", "冷粥与青团类点心"],
+  ["duanwu", "端午", "summer", "仲夏祛疫禳灾，也纪念忠烈", "竞渡、佩香囊、悬艾草、系五色丝", "角黍与雄黄酒"],
+  ["qixi", "七夕", "summer", "星河相会，亦是女子乞巧之夕", "穿针乞巧、晒书晒衣、拜双星", "巧果"],
+  ["zhongyuan", "中元", "autumn", "慎终追远，普度孤魂", "祭祖、放河灯、施食", "时果与素供"],
+  ["zhongqiu", "中秋", "autumn", "三秋之半，望月思亲", "拜月、赏桂、团圆夜宴", "月饼与桂花酒"],
+  ["chongyang", "重阳", "autumn", "九月九日登高避灾，敬老延寿", "登高、簪菊、佩茱萸、敬老", "重阳糕与菊花酒"],
+  ["xiayuan", "下元", "autumn", "岁暮前修斋祈福、谢过解厄", "祭水官、修斋、祈福", "糍粑与素食"],
+  ["laba", "腊八", "winter", "岁末腊祭，合聚百谷谢岁", "祭祖敬神、施粥、泡腊八蒜", "腊八粥"],
+  ["xiaonian", "祭灶", "winter", "送灶神上天言事，家家开始除尘", "祭灶、扫尘、剪窗花", "灶糖"],
+  ["chuxi", "除夕", "winter", "旧岁至此而除，家人守岁待旦", "祭祖、贴门神、团年、守岁", "年夜饭"],
+  ["huachao", "花朝", "spring", "百花生日，惜春护花", "赏红、扑蝶、踏青咏花", "花糕与春茶"],
+].map(([id, name, season, meaning, customs, food]) => ({ id: `festival-${id}`, name, type: "festival", season, meaning, customs, food }));
+
+const CULTURAL_CALENDAR_ITEMS = [...SOLAR_TERMS, ...TRADITIONAL_FESTIVALS];
+
+/** 牢狱年度事件；数值由专门结算器处理，避免普通事件无法表达减刑、狱中关系等状态。 */
+const PRISON_YEAR_EVENTS = [
+  {
+    id: "rules", title: "点名立规", content: "木牌点过姓名，{guard}用棍梢敲着栅门，要新来的先学牢里的规矩。{cellmate}低声提醒：这里一言一饭都有价钱。",
+    firstYear: true,
+    choices: [
+      { title: "低头守规", note: "稳妥求生，狱卒好感上升", text: "你按规矩领衣、认铺、应点，不与人争一时长短。", effects: { mood: -2, eq: 2 }, prison: { guardFavor: 6, reputation: -1 } },
+      { title: "替弱者出头", note: "赢狱友敬重，也可能挨板子", text: "你拦下抢夺病囚口粮的人，背上挨了两棍，却让通铺都记住了你。", effects: { physique: -5, virtue: 4 }, prison: { inmateFavor: 9, reputation: 7 } },
+      { title: "暗递碎银", note: "花钱换一处干净铺位", text: "你悄悄递出碎银，换到离便桶稍远的一角，也少受几分刁难。", cost: 45, effects: { mood: 3 }, prison: { guardFavor: 10 } },
+    ],
+  },
+  {
+    id: "cell-order", title: "通铺争位", content: "连日阴雨，墙根返潮。牢头要把{cellmate}赶到最湿的角落，众人都等你表态。",
+    choices: [
+      { title: "与牢头讲理", note: "情商与声望越高越有利", text: "你不硬碰，只把每人的病情和铺位说得分明，最终劝牢头重排通铺。", effects: { eq: 2, mood: 1 }, prison: { inmateFavor: 7, reputation: 4 } },
+      { title: "让出自己的铺", note: "损体魄，得人心", text: "你把干处让给病弱者，自己靠墙熬了几夜，咳嗽声却换来一碗热水。", effects: { physique: -4, virtue: 5 }, prison: { inmateFavor: 10 } },
+      { title: "装作没看见", note: "保全自己", text: "你裹紧薄被转过身去。牢里无人责怪，可也无人再与你多说。", effects: { mood: -2 }, prison: { inmateFavor: -5, reputation: -2 } },
+    ],
+  },
+  {
+    id: "labor", title: "狱作劳役", content: "天未亮便开锁，今日要搓麻绳、舂米并修补囚衣。做得快能添半勺稀粥，偷懒则要记过。",
+    choices: [
+      { title: "埋头做足份额", note: "增长劳作技能与体魄", text: "你找准省力的节奏，一日下来手掌磨破，却渐渐练出筋力。", effects: { physique: 2, mood: -1 }, prison: { laborSkill: 8, guardFavor: 3 } },
+      { title: "帮狱友补份额", note: "结交狱友", text: "你替发热的{cellmate}多搓两捆麻绳，夜里对方把珍藏的半块盐饼分给你。", effects: { virtue: 3, relationship: 2 }, prison: { inmateFavor: 8, laborSkill: 4 } },
+      { title: "藏下一截麻绳", note: "高风险，可能加刑", text: "你把麻绳藏入墙缝，想着日后或有用途；这件事一旦搜出，便不是挨打那么简单。", effects: { eq: 2 }, prison: { reputation: 4 }, risk: { chance: 0.34, failText: "夜间搜监时麻绳败露，你被按作图谋越狱，加刑一年。", sentence: 1, effects: { physique: -7, mood: -6 }, guardFavor: -12 } },
+    ],
+  },
+  {
+    id: "sick-inmate", title: "病囚夜喘", content: "半夜里{cellmate}高热不退，喊狱卒却无人应。角落只有一碗冷水和你藏下的旧布。",
+    choices: [
+      { title: "整夜照料", note: "积德，也有染病风险", text: "你替对方擦汗喂水，挨到天明终于等来狱医。", effects: { virtue: 5, mood: -1 }, prison: { inmateFavor: 12 }, risk: { chance: 0.2, failText: "病气传到你身上，之后数日也发起热来。", effects: { physique: -6 } } },
+      { title: "拍门求医", note: "消耗狱卒人情", text: "你反复拍门，直到{guard}骂骂咧咧地带来狱医。人救下了，你也欠了一份人情。", effects: { relationship: 1 }, prison: { guardFavor: -4, inmateFavor: 7 } },
+      { title: "隔开铺位", note: "保住体魄，损狱友情分", text: "你用破席隔开铺位，牢里人明白你的顾虑，却还是冷了眼神。", effects: { physique: 1, mood: -2 }, prison: { inmateFavor: -8 } },
+    ],
+  },
+  {
+    id: "guard-extort", title: "狱卒索钱", content: "{guard}说外头有人托话，却先把手伸进栅门：没有茶钱，家书便只能压在案底。",
+    choices: [
+      { title: "花钱取信", note: "支付银钱，收到家书", text: "碎银换来一封皱巴巴的家书。字不多，却让铁窗外的日子重新有了形状。", cost: 80, effects: { mood: 6, relationship: 3 }, prison: { guardFavor: 6, letters: 1 } },
+      { title: "据理拒绝", note: "守住德行，得罪狱卒", text: "你指出收押文册的规矩，拒绝出钱。家书仍被扣下，{guard}也记住了你的脸。", effects: { virtue: 3, mood: -3 }, prison: { guardFavor: -10, reputation: 3 } },
+      { title: "请狱友转递", note: "依赖狱中人缘", text: "你托出工的狱友绕过值房带回口信，虽只有一句“家中尚安”，也足够宽心。", effects: { mood: 3, eq: 2 }, prison: { inmateFavor: -2, letters: 1 } },
+    ],
+  },
+  {
+    id: "informant", title: "密告之诱", content: "同监有人私藏铁片。{guard}暗示，只要你指出藏处，往后的饭食与考功都能好看几分。",
+    choices: [
+      { title: "据实密告", note: "讨好狱卒，彻底得罪狱友", text: "搜监很快找到铁片。你多得一勺饭，却发现通铺从此无人与你对视。", effects: { virtue: -4, mood: -1 }, prison: { guardFavor: 12, inmateFavor: -16, reputation: -5 } },
+      { title: "劝其交出", note: "需要声望，兼顾双方", text: "你连夜劝藏铁片的人主动交出，最终只记轻过，也未酿成更大祸事。", effects: { eq: 4, virtue: 3 }, prison: { guardFavor: 4, inmateFavor: 5, reputation: 6 } },
+      { title: "守口如瓶", note: "获狱友信任，承担牵连风险", text: "你没有开口。铁片后来被别人搜出，众人敬你守信，狱卒却把你列入疑册。", effects: { mood: -2 }, prison: { inmateFavor: 10, guardFavor: -8, reputation: 4 } },
+    ],
+  },
+  {
+    id: "prison-books", title: "残卷入监", content: "抄没旧物中混进半部残书，纸角被虫蛀去。识字的人少，{cellmate}请你把上面的律例和故事念给众人听。",
+    choices: [
+      { title: "讲读残卷", note: "增长学识与狱中声望", text: "你把难字拆开讲，又以旧案解释律文。铁窗下一时竟像简陋书塾。", effects: { knowledge: 5, virtue: 2 }, prison: { inmateFavor: 7, reputation: 8 } },
+      { title: "查找申诉门路", note: "积累翻案线索", text: "你逐条找出复审、亲供与刑名程序，把有用段落默记在心。", effects: { knowledge: 4, eq: 2 }, prison: { appeal: 12 } },
+      { title: "撕纸换口粮", note: "短期保身，损失名声", text: "你用残页包针线换来两块干粮，填了肚子，却让盼着听书的人失望。", effects: { physique: 3, virtue: -3 }, prison: { inmateFavor: -6 } },
+    ],
+  },
+  {
+    id: "riot", title: "监中哗变", content: "发霉的囚粮终于激起众怒，木碗砸向栅门。有人抢钥匙，有人缩在墙根，{guard}已召来持棍差役。",
+    choices: [
+      { title: "护住弱小", note: "有受伤风险，声望大增", text: "你把老弱病囚护到墙角，没有参与抢门，也没有任他们遭踩踏。", effects: { virtue: 6, physique: -4 }, prison: { inmateFavor: 10, guardFavor: 3, reputation: 9 } },
+      { title: "协助平乱", note: "狱卒记功，狱友记恨", text: "你帮差役夺回钥匙，事后被记作有功，却也成了不少人眼中的叛徒。", effects: { favorability: 2, virtue: -2 }, prison: { guardFavor: 14, inmateFavor: -14 }, sentence: -1 },
+      { title: "趁乱逃狱", note: "极高风险；失败加刑", text: "你盯上半开的侧门，在烟尘与叫喊里赌一次自由。", prison: { reputation: 5 }, risk: { chance: 0.72, successText: "你冲过侧门，却在外墙前停步折返。主动回监让狱官从轻处置，反得一次减刑。", sentenceSuccess: -1, failText: "你刚翻上外墙便被弩手喝止，跌落受伤并加刑两年。", sentence: 2, effects: { physique: -12, favorability: -8 }, guardFavor: -20 } },
+    ],
+  },
+  {
+    id: "appeal", title: "秋审申诉", content: "刑名文册将送上复核。若要申诉，只剩今夜能托{guard}递出状纸；你积下的律例见识与狱中口碑都可能派上用场。",
+    choices: [
+      { title: "据律写状", note: "学识与申诉积累越高越有利", text: "你把案情、证词矛盾与应复核之处一条条写清，托人送入秋审案卷。", effects: { knowledge: 3 }, prison: { appeal: 8 }, test: "appeal" },
+      { title: "请狱友联名", note: "依靠狱中人缘", text: "几名见过案情始末的狱友按下指印，证明你在狱中守规无恶。", effects: { relationship: 2 }, prison: { inmateFavor: -4 }, test: "inmates" },
+      { title: "暂不妄动", note: "避免申诉失败招来报复", text: "你收起状纸，决定等更可靠的证据。机会错过，却也没有惊动旧案中的人。", effects: { mood: -2 }, prison: { appeal: 2 } },
+    ],
+  },
+  {
+    id: "new-year", title: "铁窗岁除", content: "外城爆竹声隔着高墙传来。狱里每人多得半块杂面饼，{cellmate}用草梗在墙上摆出一个歪斜的“福”字。",
+    choices: [
+      { title: "分食守岁", note: "与狱友共度除夕", text: "众人把各自那点食物凑在一起，说起家乡年俗，直到更鼓过夜半。", effects: { mood: 5, relationship: 2 }, prison: { inmateFavor: 8 } },
+      { title: "写信报平安", note: "给家人留下音讯", text: "你在粗纸上只写平安，不写苦楚。信能否送到未知，心里却像点起一盏灯。", effects: { mood: 3, virtue: 2 }, prison: { letters: 1, guardFavor: -2 } },
+      { title: "独坐反省", note: "增长德行与申诉意志", text: "你听着远处爆竹，逐件回想走到今日的因果，默记出狱后最先要做的三件事。", effects: { virtue: 5, knowledge: 2 }, prison: { appeal: 4 } },
+    ],
+  },
+  {
+    id: "mid-autumn", title: "囚窗望月", content: "中秋月从气窗移到墙上，只留下巴掌大一块亮。有人想家落泪，有人强说月亮不过一块白石。",
+    choices: [
+      { title: "讲一段故乡", note: "抚慰众人", text: "你讲起家中桂树、旧院与团圆饭，旁人也接着说自己的故乡，冷牢渐有了人声。", effects: { mood: 3, relationship: 2 }, prison: { inmateFavor: 7, reputation: 3 } },
+      { title: "吟诗对月", note: "增长学识", text: "你借那一线月光吟出旧句。字句不一定工整，却让众人安静许久。", effects: { knowledge: 4, mood: 2 }, prison: { reputation: 5 } },
+      { title: "以饼换信", note: "舍口粮换家书消息", text: "你把今日加发的粗饼交给出工囚犯，请他替你探一声家中近况。", effects: { physique: -2, mood: 5 }, prison: { letters: 1 } },
+    ],
+  },
+  {
+    id: "cold-wave", title: "寒潮封监", content: "北风从砖缝灌入，水缸结了一层薄冰。官仓迟迟不发冬衣，咳嗽声一夜比一夜密。",
+    choices: [
+      { title: "合铺取暖", note: "同舟共济", text: "你提议把铺位并拢，又轮流守夜添草，终于熬过最冷的几晚。", effects: { physique: 1, mood: 2 }, prison: { inmateFavor: 7, reputation: 4 } },
+      { title: "拆席塞缝", note: "增长劳作技能", text: "你拆开破席与麻绳，把最漏风的砖缝逐处塞紧，手艺救了半监的人。", effects: { knowledge: 2 }, prison: { laborSkill: 7, inmateFavor: 5 } },
+      { title: "向狱卒讨衣", note: "狱卒好感决定代价", text: "你向{guard}反复陈说冻死囚犯会坏了考成，终于领到几件旧棉衣。", effects: { eq: 3 }, prison: { guardFavor: -4, reputation: 3 } },
+    ],
+  },
+];
+
 const RELATION_ACTIONS = {
   visit: { label: "探望", cost: 0, relationship: [1, 4], affection: [3, 8], mood: [1, 4], icon: "FamilyIcon" },
   gift: { label: "送礼", cost: 120, relationship: [2, 6], affection: [8, 16], mood: [0, 3], icon: "Jade" },
@@ -1880,6 +2038,12 @@ const LIFE_GOALS = [
   { id: "cricket-season", tier: "bronze", title: "促织赛季魁", icon: "Cricket", desc: "获得任一促织赛季称号。", score: 70, done: () => (state.leisureSeason?.titles || []).some((id) => String(id).startsWith("cricket-")), advice: "去促织处参加大赛，攒本季胜场。" },
   { id: "match-strategy", tier: "silver", title: "良缘有策", icon: "ArrangeMarriage", desc: "通过联姻策略局选定配偶并成婚。", score: 80, done: () => !!state.family?.spouse && !!state.family?.spouseProfile, advice: "16 岁后去媒人处细看家世、彩礼与性情再定亲。" },
   { id: "secret-keep", tier: "gold", title: "隐秘一生", icon: "Letter", desc: "持有秘密至终老且从未败露。", score: 100, done: () => state.dead && (state.secrets || []).some((item) => item && !item.exposed), advice: "黑市或中年后可沾染暗事，败露代价极高。" },
+  { id: "prison-survivor", tier: "silver", title: "铁窗三载", icon: "PrisonHeader", desc: "累计度过三年有完整剧情的牢狱生活。", score: 120, done: () => Number(state.prison?.yearsServed || 0) >= 3, advice: "在牢中每年都要处理生存、劳役、人情与申诉。" },
+  { id: "prison-appeal", tier: "silver", title: "秋审翻卷", icon: "MainBook", desc: "在狱中申诉或联名作证获得减刑。", score: 140, done: () => (state.prison?.records || []).some((item) => /申诉得准|众证减刑/.test(item.title || "")), advice: "读残卷积累申诉线索，再把握秋审机会。" },
+  { id: "culture-first", tier: "bronze", title: "岁时入册", icon: "Temple", desc: "亲历四个传统节日或节气。", score: 60, done: () => (state.culturalCalendar?.seen || []).length >= 4, advice: "每年流转都会遇见一则节日或节气故事。" },
+  { id: "culture-four-seasons", tier: "silver", title: "四时有序", icon: "MainBook", desc: "春夏秋冬都留下岁时记录。", score: 130, done: () => Object.keys(CULTURAL_SEASONS).every((season) => Number(state.culturalCalendar?.seasonCounts?.[season] || 0) > 0), advice: "随流年经历完整的春生、夏长、秋收、冬藏。" },
+  { id: "culture-terms", tier: "silver", title: "节令通览", icon: "MainBook", desc: "解锁十二个不同节气。", score: 160, done: () => (state.culturalCalendar?.seen || []).filter((id) => id.startsWith("term-")).length >= 12, advice: "在华夏岁时图鉴里记录物候、农事与起居。" },
+  { id: "culture-complete", tier: "gold", title: "岁时大成", icon: "Temple", desc: "解锁全部二十四节气与十六个传统节日。", score: 420, done: () => (state.culturalCalendar?.seen || []).length >= CULTURAL_CALENDAR_ITEMS.length, advice: "让一生走遍四十则岁时文化。" },
 ];
 
 const ONBOARDING_VERSION = 1;
@@ -2361,14 +2525,117 @@ function normalizeState(raw) {
     ? next.recentEventKeys.map(String).filter(Boolean).slice(0, 24)
     : [];
   next.prisonYears = Math.max(0, Math.round(Number(next.prisonYears) || 0));
+  next.prison = normalizePrisonState(next.prison, next.prisonYears, next.age, next.gender);
+  next.culturalCalendar = normalizeCulturalCalendar(next.culturalCalendar);
+  next.pendingAnnualEvent = next.pendingAnnualEvent && typeof next.pendingAnnualEvent === "object" ? next.pendingAnnualEvent : null;
+  // 旧版若恰好存档在两段年度事件之间，读取后继续尚未结算的后续事件。
+  if (!next.currentEvent && !next.eventResult && next.pendingAnnualEvent) {
+    next.currentEvent = next.pendingAnnualEvent;
+    next.pendingAnnualEvent = null;
+  }
   next.dead = !!next.dead;
   next.deathReason ||= "";
   if (next.dead) {
     next.currentEvent = null;
+    next.pendingAnnualEvent = null;
     next.pendingCaravan = null;
     next.pendingTravel = null;
   }
   return next;
+}
+
+function createPrisonState() {
+  return {
+    active: false,
+    entryAge: -1,
+    yearsServed: 0,
+    totalYears: 0,
+    reputation: 0,
+    guardFavor: 35,
+    inmateFavor: 40,
+    laborSkill: 0,
+    appeal: 0,
+    letters: 0,
+    lastEventId: "",
+    recentEventIds: [],
+    cellmate: null,
+    guard: null,
+    records: [],
+    releases: 0,
+    lastReason: "",
+  };
+}
+
+function normalizePrisonState(source, prisonYears = 0, age = 1, gender = "male") {
+  const base = source && typeof source === "object" ? source : {};
+  const defaults = createPrisonState();
+  const makePrisonPerson = (person, gender, role) => {
+    const item = person && typeof person === "object" ? person : {};
+    return {
+      name: String(item.name || makePersonName(gender)),
+      gender,
+      role,
+      age: clampNumber(item.age, 18, 72, randInt(24, 58)),
+    };
+  };
+  return {
+    ...defaults,
+    ...base,
+    active: prisonYears > 0 || !!base.active,
+    entryAge: Number.isFinite(Number(base.entryAge)) ? Number(base.entryAge) : prisonYears > 0 ? age : -1,
+    yearsServed: Math.max(0, Math.round(Number(base.yearsServed) || 0)),
+    totalYears: Math.max(prisonYears, Math.round(Number(base.totalYears) || 0)),
+    reputation: clampNumber(base.reputation, -100, 100, 0),
+    guardFavor: clampNumber(base.guardFavor, 0, 100, 35),
+    inmateFavor: clampNumber(base.inmateFavor, 0, 100, 40),
+    laborSkill: clampNumber(base.laborSkill, 0, 100, 0),
+    appeal: clampNumber(base.appeal, 0, 100, 0),
+    letters: Math.max(0, Math.round(Number(base.letters) || 0)),
+    lastEventId: String(base.lastEventId || ""),
+    recentEventIds: Array.isArray(base.recentEventIds) ? base.recentEventIds.map(String).filter(Boolean).slice(0, 6) : [],
+    cellmate: makePrisonPerson(base.cellmate, gender === "female" ? "female" : "male", "同监狱友"),
+    guard: makePrisonPerson(base.guard, "male", "当值狱卒"),
+    records: Array.isArray(base.records) ? base.records.filter((item) => item && typeof item === "object").slice(0, 24) : [],
+    releases: Math.max(0, Math.round(Number(base.releases) || 0)),
+    lastReason: String(base.lastReason || ""),
+  };
+}
+
+function createCulturalCalendar() {
+  return {
+    seen: [],
+    records: {},
+    total: 0,
+    festivalCount: 0,
+    termCount: 0,
+    lastId: "",
+    recentIds: [],
+    seasonCounts: { spring: 0, summer: 0, autumn: 0, winter: 0 },
+    familyChoices: 0,
+    publicChoices: 0,
+    reflectionChoices: 0,
+  };
+}
+
+function normalizeCulturalCalendar(source) {
+  const base = source && typeof source === "object" ? source : {};
+  const defaults = createCulturalCalendar();
+  const seen = Array.isArray(base.seen) ? [...new Set(base.seen.map(String))].filter((id) => CULTURAL_CALENDAR_ITEMS.some((item) => item.id === id)) : [];
+  return {
+    ...defaults,
+    ...base,
+    seen,
+    records: base.records && typeof base.records === "object" ? base.records : {},
+    total: Math.max(0, Math.round(Number(base.total) || 0)),
+    festivalCount: Math.max(0, Math.round(Number(base.festivalCount) || 0)),
+    termCount: Math.max(0, Math.round(Number(base.termCount) || 0)),
+    lastId: String(base.lastId || ""),
+    recentIds: Array.isArray(base.recentIds) ? base.recentIds.map(String).filter(Boolean).slice(0, 10) : [],
+    seasonCounts: Object.fromEntries(Object.keys(CULTURAL_SEASONS).map((season) => [season, Math.max(0, Math.round(Number(base.seasonCounts?.[season]) || 0))])),
+    familyChoices: Math.max(0, Math.round(Number(base.familyChoices) || 0)),
+    publicChoices: Math.max(0, Math.round(Number(base.publicChoices) || 0)),
+    reflectionChoices: Math.max(0, Math.round(Number(base.reflectionChoices) || 0)),
+  };
 }
 
 function createTravelSystem() {
@@ -3241,8 +3508,7 @@ function exposeSecret(secret, deltas = []) {
   if (def.tag) state.tags = state.tags.filter((tag) => tag !== def.tag);
   if (!state.tags.includes("事发")) state.tags.push("事发");
   if (def.mayPrison && Math.random() > 0.55) {
-    state.prisonYears = Math.max(state.prisonYears || 0, randInt(1, 2));
-    if (!state.tags.includes("入狱")) state.tags.push("入狱");
+    imposePrisonSentence(randInt(1, 2), `${def.name}败露`);
     deltas.push({ label: "牢狱", value: `${state.prisonYears}年`, negative: true });
   }
   addLog(def.exposeTitle, def.exposeText, deltas);
@@ -3685,6 +3951,275 @@ function yearAdvanceBlockReason() {
   return "";
 }
 
+function ensurePrisonState(reason = "") {
+  const wasActive = !!state.prison?.active;
+  const prisonState = state.prison && typeof state.prison === "object" ? state.prison : {};
+  Object.assign(prisonState, normalizePrisonState(prisonState, state.prisonYears, state.age, state.gender));
+  state.prison = prisonState;
+  if (state.prisonYears > 0) {
+    state.prison.active = true;
+    state.prison.totalYears = Math.max(state.prison.totalYears, state.prison.yearsServed + state.prisonYears);
+    if (!wasActive) {
+      state.prison.entryAge = state.age;
+      state.prison.yearsServed = 0;
+      state.prison.reputation = 0;
+      state.prison.guardFavor = 35;
+      state.prison.inmateFavor = 40;
+      state.prison.laborSkill = 0;
+      state.prison.appeal = 0;
+      state.prison.letters = 0;
+      state.prison.recentEventIds = [];
+      state.prison.cellmate = null;
+      state.prison.guard = null;
+      Object.assign(state.prison, normalizePrisonState(state.prison, state.prisonYears, state.age, state.gender));
+    }
+    if (!state.tags.includes("入狱")) state.tags.push("入狱");
+  }
+  if (reason) state.prison.lastReason = reason;
+  return state.prison;
+}
+
+function imposePrisonSentence(years, reason = "案情获罪") {
+  const sentence = Math.max(1, Math.round(Number(years) || 1));
+  state.prisonYears = Math.max(Number(state.prisonYears) || 0, sentence);
+  const prison = ensurePrisonState(reason);
+  prison.totalYears = Math.max(prison.totalYears, prison.yearsServed + state.prisonYears);
+  return sentence;
+}
+
+function prisonText(text) {
+  const prison = ensurePrisonState();
+  return String(text || "")
+    .replaceAll("{guard}", prison.guard?.name || "当值狱卒")
+    .replaceAll("{cellmate}", prison.cellmate?.name || "同监狱友")
+    .replaceAll("{remaining}", String(state.prisonYears));
+}
+
+function createPrisonYearEvent(releaseCandidate = false) {
+  const prison = ensurePrisonState();
+  if (releaseCandidate) {
+    return {
+      id: "prison-release",
+      kind: "prisonYear",
+      releaseCandidate: true,
+      title: "刑满开门",
+      content: `清晨点名后，牢门没有再次落锁。${prison.guard.name}把旧衣与收押文书推到你面前：刑期已满，今日可出监。铁门之外既是自由，也是重新学着过日子的第一步。`,
+      children: [
+        { title: "核清文书", note: "确认案底与释放凭照，稳妥离监", text: "你逐页核对释放凭照，领回旧物，在门槛前郑重按下最后一个手印。", effects: { knowledge: 2, eq: 2 }, prison: { appeal: 3 } },
+        { title: "与狱友作别", note: "若狱友情深，出狱后将成为故交", text: `你把仅剩的干粮留给${prison.cellmate.name}，约定若有重见之日，彼此都以清白身份相认。`, effects: { virtue: 3, relationship: 3 }, prison: { inmateFavor: 8 } },
+        { title: "跨门迎光", note: "放下旧事，重整心境", text: "你没有回头。日光刺得眼睛发酸，街上的叫卖声却比任何乐曲都真切。", effects: { mood: 9, physique: 2 }, prison: { reputation: 2 } },
+      ],
+    };
+  }
+  let pool = PRISON_YEAR_EVENTS.filter((item) => !item.firstYear || prison.yearsServed === 1);
+  if (prison.yearsServed === 1 && !prison.recentEventIds.includes("rules")) pool = PRISON_YEAR_EVENTS.filter((item) => item.id === "rules");
+  const fresh = pool.filter((item) => !prison.recentEventIds.includes(item.id));
+  const source = sample(fresh.length ? fresh : pool) || PRISON_YEAR_EVENTS[0];
+  const event = cloneEvent(source);
+  return {
+    id: `prison-${event.id}`,
+    prisonEventId: event.id,
+    kind: "prisonYear",
+    title: event.title,
+    content: prisonText(event.content),
+    children: event.choices.map((choice) => ({
+      ...choice,
+      text: prisonText(choice.text),
+      content: prisonText(choice.text),
+      note: `${choice.note || ""}${choice.cost ? ` · 需 ${moneyText(choice.cost)}` : ""}`,
+      disabled: !!choice.cost && state.stats.money < choice.cost,
+    })),
+  };
+}
+
+function adjustPrisonMetrics(changes = {}, deltas = []) {
+  const prison = ensurePrisonState();
+  const labels = { reputation: "狱中声望", guardFavor: "狱卒态度", inmateFavor: "狱友情分", laborSkill: "劳作熟练", appeal: "申诉线索", letters: "家书" };
+  for (const [key, amountValue] of Object.entries(changes || {})) {
+    const amount = Number(amountValue) || 0;
+    const before = Number(prison[key] || 0);
+    prison[key] = key === "reputation" ? clamp(before + amount, -100, 100) : key === "letters" ? Math.max(0, before + amount) : clamp(before + amount);
+    const actual = Math.round(prison[key] - before);
+    if (actual) deltas.push({ label: labels[key] || key, value: actual, negative: actual < 0 });
+  }
+}
+
+function changeSentence(amount, deltas = []) {
+  const before = state.prisonYears;
+  state.prisonYears = Math.max(0, Math.round(before + Number(amount || 0)));
+  const actual = state.prisonYears - before;
+  if (actual) deltas.push({ label: actual < 0 ? "减刑" : "加刑", value: `${Math.abs(actual)}年`, negative: actual > 0 });
+}
+
+function finalizePrisonRelease(deltas = [], note = "刑期已满") {
+  const prison = ensurePrisonState();
+  state.prisonYears = 0;
+  state.tags = state.tags.filter((tag) => tag !== "入狱");
+  prison.active = false;
+  prison.releases += 1;
+  if (prison.inmateFavor >= 68 && prison.cellmate?.name && !state.friends.some((friend) => friend.name === prison.cellmate.name)) {
+    state.friends.push(normalizeFriend({
+      name: prison.cellmate.name,
+      gender: prison.cellmate.gender,
+      age: prison.cellmate.age,
+      relation: "狱中故交",
+      affection: clamp(prison.inmateFavor),
+      lastMet: state.age,
+    }));
+    deltas.push({ label: "故交", value: prison.cellmate.name });
+  }
+  addLog("出狱", `${note}。你结束了这段牢狱岁月，重见天日。`, deltas);
+}
+
+function resolvePrisonYear(event, choice) {
+  const prison = ensurePrisonState();
+  const deltas = [];
+  let text = prisonText(choice.text || choice.content || choice.title);
+  if (choice.cost) {
+    if (state.stats.money < choice.cost) return;
+    changeStat("money", -choice.cost, deltas);
+    addLedger(`牢中 · ${event.title}`, -choice.cost, choice.title);
+  }
+  applyEffectRanges(choice.effects, deltas);
+  adjustPrisonMetrics(choice.prison, deltas);
+  if (choice.sentence) changeSentence(choice.sentence, deltas);
+  if (choice.risk) {
+    if (Math.random() < Number(choice.risk.chance || 0)) {
+      text += ` ${prisonText(choice.risk.failText || "此举败露，反而招来责罚。")}`;
+      applyEffectRanges(choice.risk.effects, deltas);
+      adjustPrisonMetrics({ guardFavor: choice.risk.guardFavor || 0 }, deltas);
+      if (choice.risk.sentence) changeSentence(choice.risk.sentence, deltas);
+    } else {
+      if (choice.risk.successText) text += ` ${prisonText(choice.risk.successText)}`;
+      if (choice.risk.sentenceSuccess) changeSentence(choice.risk.sentenceSuccess, deltas);
+    }
+  }
+  if (choice.test === "appeal") {
+    const chance = clamp(18 + state.stats.knowledge * 0.34 + prison.appeal * 0.38 + prison.guardFavor * 0.12, 15, 86) / 100;
+    if (Math.random() < chance) {
+      const reduction = Math.min(state.prisonYears, prison.appeal >= 55 ? 2 : 1);
+      if (reduction) changeSentence(-reduction, deltas);
+      text += reduction ? " 秋审官采纳了状纸中的关键疑点，批下减刑。" : " 秋审官将你的申诉记入案卷，为离监洗清了一层疑云。";
+      adjustPrisonMetrics({ appeal: -Math.min(20, prison.appeal) }, deltas);
+      prison.records.unshift({ age: state.age, title: "申诉得准", text: "秋审复核后获得减刑。" });
+    } else text += " 状纸虽递入案卷，却因证据不足被驳回。";
+  }
+  if (choice.test === "inmates") {
+    const chance = clamp(16 + prison.inmateFavor * 0.48 + prison.reputation * 0.22, 12, 82) / 100;
+    if (Math.random() < chance) {
+      const reduction = Math.min(1, state.prisonYears);
+      if (reduction) changeSentence(-reduction, deltas);
+      text += " 联名证词被秋审官采信，你因狱中表现获准减刑。";
+      prison.records.unshift({ age: state.age, title: "众证减刑", text: "狱友联名作证，秋审从宽。" });
+    } else text += " 联名证词分量不足，刑期未改。";
+  }
+  prison.lastEventId = event.prisonEventId || event.id;
+  prison.recentEventIds = [prison.lastEventId, ...prison.recentEventIds.filter((id) => id !== prison.lastEventId)].slice(0, 6);
+  prison.records.unshift({ age: state.age, title: event.title, choice: choice.title, text });
+  prison.records = prison.records.slice(0, 24);
+  state.lastDeltas = deltas;
+  state.currentEvent = null;
+  state.pendingAnnualEvent = null;
+  if (event.releaseCandidate && state.prisonYears <= 0) finalizePrisonRelease(deltas, "刑满开门");
+  addLog(`牢狱 · ${event.title}`, text, deltas);
+  state.eventResult = { title: choice.title, text, deltas, icon: "PrisonHeader", scene: event.releaseCandidate ? "petal" : "ember" };
+  unlockLifeGoals();
+  if (shouldDie() && !state.dead) die("病殁狱中");
+  save();
+  render();
+}
+
+function culturalCompanionText() {
+  const spouse = state.family?.spouse?.alive !== false ? state.family?.spouse : null;
+  const child = livingChildren()[0];
+  if (spouse && child) return `你与${spouse.name}带着${child.name}`;
+  if (spouse) return `你与${spouse.name}`;
+  if (child) return `你带着${child.name}`;
+  if (state.age < 15) return "你随家中长辈";
+  return "你与邻里亲友";
+}
+
+function culturalPublicChoice(item) {
+  const kind = careerKind();
+  if (kind === "official") return { title: "以官身行岁令", note: "把节令化为地方治理与惠民之举", text: `你命吏员依${item.name}时序巡视仓廪、水利与鳏寡之家，又向乡里讲明“${item.customs}”背后的秩序与人情。`, effects: { favorability: 5, virtue: 4, eq: 2 } };
+  if (kind === "caravan") return { title: "随商路观风俗", note: "比较各地岁时物候与市集", text: `你随车马经过数处乡镇，发现同是${item.name}，各地在${item.customs}上各有变体，便把见闻记进路簿。`, effects: { knowledge: 4, money: 35, favorability: 2 } };
+  if (["craft", "art", "female"].includes(kind)) return { title: "以本业应节", note: "用手艺参与乡里的节令生活", text: `你依本业制成应${item.name}之物，既取“${item.customs}”的意趣，也让街坊看见传统并非故纸，而在每日器用之间。`, effects: { knowledge: 3, favorability: 4, money: 24 } };
+  if (kind === "mystic") return { title: "为乡人讲时序", note: "辨物候、说养藏，不作怪力乱神", text: `你借${item.name}向来客解释天时、农事与起居之理，提醒众人敬畏自然，却不把祸福都推给鬼神。`, effects: { knowledge: 5, virtue: 3, favorability: 3 } };
+  return { title: "与乡里共此日", note: "参与公共礼俗，体会一方人情", text: `社鼓与市声渐起，你同乡人一起${item.customs}。礼俗不只热闹，也把陌生人重新连成一处共同生活的乡里。`, effects: { relationship: 4, favorability: 3, mood: 3 } };
+}
+
+function createCulturalEvent(item) {
+  const season = CULTURAL_SEASONS[item.season];
+  const companion = culturalCompanionText();
+  const familyText = item.type === "festival"
+    ? `${companion}照旧俗${item.customs}，晚间围坐分食${item.food}。席间有人说起往年旧事，年轻人也问起这些礼俗为何代代相传。`
+    : `${companion}观察“${item.phenology}”的变化，又依时做了${item.customs}。一日细事，让节气不再只是历书上的两个字。`;
+  const reflectText = item.type === "festival"
+    ? `你查阅旧书并请教乡老，明白${item.name}所重在“${item.meaning}”。你没有把旧俗照单全收，而是记下其中珍惜亲情、敬畏生命与守望相助的部分。`
+    : `你把${item.name}的物候、农事与身体感受写成短记：${item.phenology}；起居则宜“${item.care}”。从此再见天色变化，心里便多了一层尺度。`;
+  return {
+    id: item.id,
+    kind: "culturalEvent",
+    culturalId: item.id,
+    season: item.season,
+    culturalType: item.type,
+    title: item.name,
+    content: item.type === "festival" ? `${season.name}时岁事 · ${item.meaning}。今岁乡里照例${item.customs}，你打算如何度过？` : `${season.name}时节令 · ${item.phenology}。历书翻到${item.name}，天时、农事与人的生活都悄悄换了一层。`,
+    children: [
+      { title: "与家人守俗", note: item.type === "festival" ? `${item.customs} · ${item.food}` : `${item.customs} · ${item.care}`, text: familyText, content: familyText, choiceType: "family", effects: { relationship: 5, mood: 5, virtue: 2 } },
+      { ...culturalPublicChoice(item), choiceType: "public" },
+      { title: "访古问今", note: item.type === "festival" ? "读旧志、问乡老，理解礼俗源流" : "观物候、记农事与养生之理", text: reflectText, content: reflectText, choiceType: "reflection", effects: { knowledge: 6, virtue: 2, mood: 2 } },
+    ],
+  };
+}
+
+function annualCulturalEvent() {
+  if (!state || state.dead || state.prisonYears > 0 || state.age < 2) return null;
+  state.culturalCalendar = normalizeCulturalCalendar(state.culturalCalendar);
+  const calendar = state.culturalCalendar;
+  const seasons = Object.keys(CULTURAL_SEASONS);
+  const season = seasons[calendar.total % seasons.length];
+  const preferredType = calendar.total % 2 === 0 ? "term" : "festival";
+  const unseen = CULTURAL_CALENDAR_ITEMS.filter((item) => !calendar.seen.includes(item.id));
+  const pickFrom = (list, predicate) => list.filter(predicate);
+  const pools = [
+    pickFrom(unseen, (item) => item.season === season && item.type === preferredType),
+    pickFrom(unseen, (item) => item.season === season),
+    pickFrom(unseen, (item) => item.type === preferredType),
+    unseen,
+    CULTURAL_CALENDAR_ITEMS.filter((item) => item.season === season && !calendar.recentIds.includes(item.id)),
+    CULTURAL_CALENDAR_ITEMS.filter((item) => !calendar.recentIds.includes(item.id)),
+    CULTURAL_CALENDAR_ITEMS,
+  ];
+  const item = sample(pools.find((pool) => pool.length) || CULTURAL_CALENDAR_ITEMS);
+  return item ? createCulturalEvent(item) : null;
+}
+
+function resolveCulturalEvent(event, choice) {
+  const deltas = [];
+  applyEffectRanges(choice.effects, deltas);
+  const calendar = state.culturalCalendar = normalizeCulturalCalendar(state.culturalCalendar);
+  const item = CULTURAL_CALENDAR_ITEMS.find((entry) => entry.id === event.culturalId) || { id: event.culturalId, type: event.culturalType, season: event.season, name: event.title };
+  if (!calendar.seen.includes(item.id)) calendar.seen.push(item.id);
+  calendar.total += 1;
+  calendar.lastId = item.id;
+  calendar.recentIds = [item.id, ...calendar.recentIds.filter((id) => id !== item.id)].slice(0, 10);
+  calendar.seasonCounts[item.season] = (calendar.seasonCounts[item.season] || 0) + 1;
+  if (item.type === "festival") calendar.festivalCount += 1;
+  else calendar.termCount += 1;
+  const choiceKey = `${choice.choiceType || "reflection"}Choices`;
+  calendar[choiceKey] = (calendar[choiceKey] || 0) + 1;
+  calendar.records[item.id] = { count: Math.max(0, Number(calendar.records[item.id]?.count) || 0) + 1, age: state.age, choice: choice.title };
+  state.lastDeltas = deltas;
+  state.currentEvent = null;
+  const text = choice.text || choice.content || choice.title;
+  addLog(`岁时 · ${item.name}`, text, deltas);
+  state.eventResult = { title: `${item.name} · ${choice.title}`, text, deltas, icon: item.type === "festival" ? "Temple" : "MainBook", scene: item.season === "winter" ? "ember" : item.season === "autumn" ? "ink" : item.season === "summer" ? "lantern" : "petal" };
+  unlockLifeGoals();
+  save();
+  render();
+}
+
 function nextYear() {
   const block = yearAdvanceBlockReason();
   if (block) {
@@ -3713,15 +4248,23 @@ function nextYear() {
     }
 
     if (state.prisonYears > 0) {
-      state.prisonYears -= 1;
+      const prison = ensurePrisonState();
+      prison.yearsServed += 1;
+      state.prisonYears = Math.max(0, state.prisonYears - 1);
+      applyAgeMilestones(state.lastDeltas);
       changeStat("mood", -randInt(1, 4), state.lastDeltas);
-      if (state.prisonYears <= 0) {
-        state.tags = state.tags.filter((tag) => tag !== "入狱");
-        addLog("出狱", "刑期已满，你离开牢狱，重见天日。", state.lastDeltas);
-      } else {
-        addLog("牢狱", `你在牢中又过一年，余刑 ${state.prisonYears} 年。`, state.lastDeltas);
+      changeStat("physique", randInt(-4, -1), state.lastDeltas);
+      advanceFamilyYear(state.lastDeltas);
+      advanceCricketYear(state.lastDeltas);
+      if (shouldDie()) {
+        die("病殁狱中");
+        save();
+        render();
+        return;
       }
-      finishYear();
+      state.currentEvent = createPrisonYearEvent(state.prisonYears <= 0);
+      rememberEventKey(state.currentEvent);
+      finishYear(false);
       return;
     }
 
@@ -3751,7 +4294,7 @@ function nextYear() {
       return;
     }
 
-    state.currentEvent =
+    const annualEvent =
       annualUnderworldEvent() ||
       annualJianghuEvent() ||
       annualFortuneEvent() ||
@@ -3759,7 +4302,11 @@ function nextYear() {
       annualOfficialCaseEvent() ||
       annualSecretIntroductionEvent() ||
       chooseEvent();
-    if (state.currentEvent) rememberEventKey(state.currentEvent);
+    const culturalEvent = annualCulturalEvent();
+    state.currentEvent = culturalEvent || annualEvent;
+    state.pendingAnnualEvent = culturalEvent ? annualEvent : null;
+    if (annualEvent) rememberEventKey(annualEvent);
+    if (culturalEvent) rememberEventKey(culturalEvent);
     if (state.underworld) state.underworld.heat = clamp(Number(state.underworld.heat || 0) - randInt(2, 6));
     if (state.jianghu) state.jianghu.heat = clamp(Number(state.jianghu.heat || 0) - randInt(2, 6));
     // 有事件时不再叠惊喜弹窗，避免遮住选项导致“点不动”
@@ -4709,6 +5256,8 @@ function chooseOption(index) {
     if (event.kind === "underworldConsequence") return resolveUnderworldConsequence(event, choice);
     if (event.kind === "jianghuProphecy") return resolveJianghuProphecy(event, choice);
     if (event.kind === "secretIntroduction") return resolveSecretIntroduction(event, choice);
+    if (event.kind === "prisonYear") return resolvePrisonYear(event, choice);
+    if (event.kind === "culturalEvent") return resolveCulturalEvent(event, choice);
 
     const deltas = applyResults(choice.results || []);
     state.lastDeltas = mergeDeltas(state.pendingActivity?.deltas, deltas);
@@ -4777,6 +5326,10 @@ function finishEventResult() {
   if (!state?.eventResult) return;
   state.eventResult = null;
   if (state.pendingActivity) return completePendingActivity();
+  if (!state.dead && state.pendingAnnualEvent) {
+    state.currentEvent = state.pendingAnnualEvent;
+    state.pendingAnnualEvent = null;
+  }
   save();
   render();
 }
@@ -4835,8 +5388,7 @@ function applyResults(results) {
     }
     if (method === "InfluencePersonEnterPrison") {
       const years = Math.max(1, Math.abs(fixedFromPara(para)) || 1);
-      state.prisonYears = Math.max(state.prisonYears, years);
-      if (!state.tags.includes("入狱")) state.tags.push("入狱");
+      imposePrisonSentence(years, "事件获罪");
       changeStat("mood", -randInt(8, 18), deltas);
       changeStat("favorability", -randInt(1, 8), deltas);
       deltas.push({ label: "入狱", value: `${years}年`, negative: true });
@@ -4912,6 +5464,7 @@ function die(reason) {
   state.dead = true;
   state.deathReason = reason;
   state.currentEvent = null;
+  state.pendingAnnualEvent = null;
   state.pendingCaravan = null;
   addLog("身后事", `${state.name}于${state.age}岁${reason}。`);
   unlockLifeGoals();
@@ -7750,7 +8303,7 @@ function revealGamble(opener = "player") {
       playerWin = false;
       state.jianghu.records.caught += 1;
       state.jianghu.heat = clamp(state.jianghu.heat + 28);
-      state.prisonYears = Math.max(state.prisonYears, randInt(1, 3));
+      imposePrisonSentence(randInt(1, 3), "博坊出千败露");
       qianText = "你刚换过暗记，庄家便扣住手腕。袖中机关当场败露，你被打伤手指并押入牢中。";
     } else if (!playerWin && Math.random() < 0.68) {
       playerWin = true;
@@ -8654,7 +9207,7 @@ function resolveJianghuProphecy(event, choice) {
   const deltas = [];
   if (event.prophecyType === "pursuit") {
     if (choice.choice === "pay") changeStat("money", -Math.min(state.stats.money, randInt(120, 320)), deltas);
-    else if (Math.random() + state.stats.physique / 150 < 0.8) { state.prisonYears = Math.max(state.prisonYears, 1); changeStat("physique", -randInt(4, 10), deltas); }
+    else if (Math.random() + state.stats.physique / 150 < 0.8) { imposePrisonSentence(1, "江湖旧账追缉"); changeStat("physique", -randInt(4, 10), deltas); }
     else changeStat("mood", 3, deltas);
     state.jianghu.pursuit = null;
   } else {
@@ -9553,7 +10106,7 @@ function useJianghuSkill(id) {
     if (!state.inventory.includes("官差衣冠")) return;
     const caught = Math.random() < 0.22 + state.jianghu.heat / 180;
     if (caught) {
-      state.prisonYears = Math.max(state.prisonYears, randInt(1, 4));
+      imposePrisonSentence(randInt(1, 4), "冒充官差败露");
       state.jianghu.records.caught += 1;
       state.jianghu.heat = clamp(state.jianghu.heat + 30);
       changeStat("favorability", -randInt(7, 14), deltas);
@@ -9739,7 +10292,7 @@ function examCheatResolution(stage, current, score, passed) {
     changeStat("favorability", -randInt(8, 18));
     changeStat("virtue", -randInt(5, 12));
     if (method.severe) {
-      state.prisonYears = Math.max(state.prisonYears, randInt(3, 7));
+      imposePrisonSentence(randInt(3, 7), `科举${method.name}舞弊`);
       if (!state.tags.includes("科场案犯")) state.tags.push("科场案犯");
       for (const child of livingChildren()) child.affection = clamp(child.affection - randInt(3, 10));
     }
@@ -11025,6 +11578,7 @@ function centerContent() {
   if (view.page === "poetry") return poetryView();
   if (view.page === "matchmaker") return matchmakerView();
   if (view.page === "codex") return codexView();
+  if (view.page === "culture") return cultureView();
   if (view.page === "gamble") return gambleView();
   if (view.page === "miniGames") return miniGamesView();
   if (view.page === "courtesanContest") return courtesanContestView();
@@ -11124,7 +11678,87 @@ function deltaHtml() {
     .join("");
 }
 
+function prisonOverviewView() {
+  const prison = ensurePrisonState();
+  const served = prison.yearsServed;
+  const total = Math.max(prison.totalYears, served + state.prisonYears);
+  const records = prison.records.slice(0, 4);
+  const metric = (label, value, note) => `
+    <article class="prison-metric">
+      <span>${escapeHtml(label)}</span><strong>${Math.round(value)}</strong>
+      <div class="meter"><i style="width:${clamp(value)}%"></i></div>
+      <small>${escapeHtml(note)}</small>
+    </article>`;
+  return `
+    <article class="play-card prison-dashboard">
+      <div class="prison-hero">
+        <div>${icon("PrisonHeader", "牢狱")}</div>
+        <section>
+          <p class="eyebrow">牢狱生涯 · 第 ${served + 1} 年将至</p>
+          <h2>铁窗之内，日子仍在向前</h2>
+          <p>${prison.lastReason ? `因「${escapeHtml(prison.lastReason)}」获罪。` : "案牍已经封存。"}余刑 <b>${state.prisonYears}</b> 年，原判与加减刑合计按 ${total} 年计。</p>
+        </section>
+      </div>
+      <div class="prison-people">
+        <article><small>同监狱友</small><strong>${escapeHtml(prison.cellmate.name)}</strong><span>${prison.cellmate.age} 岁 · 情分 ${prison.inmateFavor}</span></article>
+        <article><small>当值狱卒</small><strong>${escapeHtml(prison.guard.name)}</strong><span>态度 ${prison.guardFavor} · 家书 ${prison.letters} 封</span></article>
+      </div>
+      <div class="prison-metrics">
+        ${metric("狱中声望", Math.max(0, prison.reputation), prison.reputation < 0 ? "处处受人轻看" : prison.reputation > 60 ? "一言颇有分量" : "仍在摸清规矩")}
+        ${metric("狱友情分", prison.inmateFavor, "决定互助、联名与出狱故交")}
+        ${metric("狱卒态度", prison.guardFavor, "影响家书、冬衣与申诉递送")}
+        ${metric("申诉线索", prison.appeal, "秋审据律写状的关键积累")}
+        ${metric("劳作熟练", prison.laborSkill, "劳役中保身体、赢考功")}
+      </div>
+      <p class="prison-advice">在牢中推进一年会先扣除一年刑期，再进入专属剧情；越狱、密告、秋审、家书与狱中人情都会改变余刑和出狱后的关系。</p>
+      <div class="main-actions"><button class="primary-btn year-btn" data-action="next-year">熬过这一年</button></div>
+    </article>
+    <section class="log-preview prison-records">
+      <div class="section-title"><h2>铁窗旧事</h2><span>已服 ${served} 年</span></div>
+      ${records.map((record) => infoCard(record.title, `${record.choice ? `${record.choice} · ` : ""}${record.text || ""}`)).join("") || `<p class="empty-note">第一年的点名声尚未响起。</p>`}
+    </section>`;
+}
+
+function cultureView() {
+  const calendar = state.culturalCalendar = normalizeCulturalCalendar(state.culturalCalendar);
+  const seen = new Set(calendar.seen);
+  const typeSeen = (type) => CULTURAL_CALENDAR_ITEMS.filter((item) => item.type === type && seen.has(item.id)).length;
+  return `
+    <article class="play-card culture-dashboard">
+      <p class="eyebrow">华夏岁时 · 文化图鉴</p>
+      <h2>观天时，也观人间</h2>
+      <p>节气来自对太阳周年运行、物候和农事节律的观察；传统节日则把祭祖、团圆、敬老、祛疫、游春等生活记忆留在一代代人的日常里。不同朝代与地域风俗不尽相同，本图鉴呈现广为流传的共同传统。</p>
+      <div class="culture-summary">
+        <span><b>${seen.size}/${CULTURAL_CALENDAR_ITEMS.length}</b>岁时见闻</span>
+        <span><b>${typeSeen("term")}/24</b>二十四节气</span>
+        <span><b>${typeSeen("festival")}/16</b>传统节日</span>
+        <span><b>${calendar.familyChoices}</b>次与家人守俗</span>
+      </div>
+      <div class="culture-season-strip">
+        ${Object.entries(CULTURAL_SEASONS).map(([id, season]) => `<span style="--season:${season.color}"><b>${season.name}</b>${season.note}<em>${calendar.seasonCounts[id] || 0} 则</em></span>`).join("")}
+      </div>
+      <div class="main-actions"><button class="ghost-btn" data-action="back-main">返回流年</button></div>
+    </article>
+    ${Object.entries(CULTURAL_SEASONS).map(([seasonId, season]) => `
+      <section class="culture-season">
+        <div class="section-title"><h2>${season.name} · ${season.note}</h2><span>${CULTURAL_CALENDAR_ITEMS.filter((item) => item.season === seasonId && seen.has(item.id)).length}/${CULTURAL_CALENDAR_ITEMS.filter((item) => item.season === seasonId).length}</span></div>
+        <div class="culture-grid">
+          ${CULTURAL_CALENDAR_ITEMS.filter((item) => item.season === seasonId).map((item) => {
+            const unlocked = seen.has(item.id);
+            const record = calendar.records[item.id];
+            const detail = item.type === "term" ? `${item.phenology}。习俗：${item.customs}；起居：${item.care}。` : `${item.meaning}。习俗：${item.customs}；食俗：${item.food}。`;
+            return `<article class="culture-card ${unlocked ? "unlocked" : "locked"}" style="--season:${season.color}">
+              <span>${item.type === "term" ? "节气" : "节日"}</span><h3>${escapeHtml(item.name)}</h3>
+              <p>${unlocked ? escapeHtml(detail) : "尚未在流年中亲历，风俗条目暂藏。"}</p>
+              <small>${unlocked ? `${record?.age ?? "旧年"}岁 · ${escapeHtml(record?.choice || "已有记录")}` : "随岁月解锁"}</small>
+            </article>`;
+          }).join("")}
+        </div>
+      </section>`).join("")}`;
+}
+
 function overviewView() {
+  if (state.prisonYears > 0) return prisonOverviewView();
   const phase = lifePhase();
   const goals = nextGoals(3);
   const generation = Math.max(1, Number(state.lineage?.generation) || 1);
@@ -11163,6 +11797,7 @@ function overviewView() {
           ${icon(door.icon, door.label)}
           <span>${escapeHtml(door.label)}</span>
           ${door.id === "secrets" ? `<small>${state.age < 15 ? "15 岁解锁" : secretLineNoticeCount() ? `${secretLineNoticeCount()} 条动静` : "三线总览"}</small>` : ""}
+          ${door.id === "culture" ? `<small>${state.culturalCalendar?.seen?.length || 0}/${CULTURAL_CALENDAR_ITEMS.length} 已入册</small>` : ""}
         </button>`).join("")}
     </section>
     ${recentLog()}`;
@@ -13451,10 +14086,12 @@ function eventView(event) {
   const familyStory = event.kind === "familyStory";
   const careerCase = event.kind === "careerCase";
   const fortuneEvent = event.kind === "fortuneEvent";
+  const prisonEvent = event.kind === "prisonYear";
+  const culturalEvent = event.kind === "culturalEvent";
   const darkEvent = ["examinerBribe", "underworldConsequence", "jianghuProphecy", "secretIntroduction"].includes(event.kind);
-  const eyebrow = event.kind === "secretIntroduction" ? "奇闻暗线开启" : event.kind === "examinerBribe" ? "贡院暗局" : event.kind === "underworldConsequence" ? "旧账追门" : event.kind === "jianghuProphecy" ? "江湖命数" : official ? "官场考验" : familyStory ? "家事流年" : careerCase ? "本业专案" : fortuneEvent ? "签运应验" : "事件";
+  const eyebrow = prisonEvent ? `牢狱流年 · 余刑 ${state.prisonYears} 年` : culturalEvent ? `${CULTURAL_SEASONS[event.season]?.name || "四时"}时 · ${event.culturalType === "festival" ? "传统节日" : "二十四节气"}` : event.kind === "secretIntroduction" ? "奇闻暗线开启" : event.kind === "examinerBribe" ? "贡院暗局" : event.kind === "underworldConsequence" ? "旧账追门" : event.kind === "jianghuProphecy" ? "江湖命数" : official ? "官场考验" : familyStory ? "家事流年" : careerCase ? "本业专案" : fortuneEvent ? "签运应验" : "事件";
   return `
-    <article class="play-card event-card">
+    <article class="play-card event-card ${prisonEvent ? "prison-event" : ""} ${culturalEvent ? `culture-event season-${event.season}` : ""}">
       <p class="eyebrow">${eyebrow}</p>
       <h2>${escapeHtml(event.title || "事件")}</h2>
       <p>${formatText(fillPlaceholders(event.content || event.history || "", false))}</p>
@@ -13463,7 +14100,7 @@ function eventView(event) {
           options.length
             ? options.map(({ child, index }) => `<button class="choice-btn ${official || careerCase ? "official-choice" : ""}" data-choice="${index}" ${child.disabled ? "disabled" : ""}>
               <span>${escapeHtml(child.title || "继续")}</span>
-              ${(official || familyStory || careerCase || fortuneEvent || darkEvent) && child.note ? `<small>${escapeHtml(child.note)}</small>` : ""}
+              ${(official || familyStory || careerCase || fortuneEvent || darkEvent || prisonEvent || culturalEvent) && child.note ? `<small>${escapeHtml(child.note)}</small>` : ""}
             </button>`).join("")
             : `<button class="primary-btn" data-action="finish-event">继续</button>`
         }

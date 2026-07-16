@@ -158,12 +158,14 @@ try {
   assert.ok(storyNext, "家事测试无法推进到触发年份");
   await storyNext.click();
   await page.waitForSelector('.choice-btn:not([disabled])', { timeout: 10000 });
-  const introKind = await page.evaluate(() => {
+  const introKinds = await page.evaluate(() => {
     const meta = JSON.parse(localStorage.getItem("dynasty-life-save-meta") || "[]");
     const slot = meta.findIndex(Boolean);
-    return JSON.parse(localStorage.getItem(`dynasty-life-slot-${slot}`) || "{}").currentEvent?.kind;
+    const saved = JSON.parse(localStorage.getItem(`dynasty-life-slot-${slot}`) || "{}");
+    return { current: saved.currentEvent?.kind, pending: saved.pendingAnnualEvent?.kind };
   });
-  assert.equal(introKind, "familyStory", "未触发父母疾病家事");
+  assert.ok([introKinds.current, introKinds.pending].includes("familyStory"), "未触发父母疾病家事");
+  assert.equal(introKinds.current, "culturalEvent", "年度文化事件未在原有家事前依序呈现");
   await clearBlockingUi();
 
   let storyState = await page.evaluate(() => {
@@ -264,6 +266,7 @@ try {
     state.official = normalizeOfficial({ ...state.official, unlocked: true, rank: 18, merit: 6462 });
     recordOfficialPost("测试任命");
     state.currentEvent = null;
+    state.pendingAnnualEvent = null;
     state.eventResult = null;
     state.pendingSurprise = null;
     state.pendingAchievement = null;
@@ -1058,7 +1061,7 @@ try {
   console.log("quality gate: verifying latest system persistence and interrupted-flow recovery");
   const newSystemNormalization = await page.evaluate(() => {
     const source = JSON.parse(JSON.stringify(state));
-    for (const key of ["poetry", "poetryRound", "travelCodex", "leisureSeason", "secrets", "matchPool"]) delete source[key];
+    for (const key of ["poetry", "poetryRound", "travelCodex", "leisureSeason", "secrets", "matchPool", "prison", "culturalCalendar", "pendingAnnualEvent"]) delete source[key];
     source.family.spouse = "顾清和";
     source.family.spouseMeta = { name: "顾清和", relation: "妻子", gender: "female", age: 24, physique: 80, affection: 82, alive: true };
     source.family.spouseProfile = { id: "persist-spouse", name: "顾清和", gender: "female", familyId: "scholar", personalityId: "gentle", bridePrice: 260, fertility: 72, power: 58, looks: 76, knowledge: 88 };
@@ -1071,6 +1074,9 @@ try {
       secrets: normalized.secrets?.length,
       matchPool: normalized.matchPool?.length,
       spouseFamily: normalized.family.spouseProfile?.familyId,
+      prisonRecords: normalized.prison?.records?.length,
+      cultureSeen: normalized.culturalCalendar?.seen?.length,
+      pendingAnnualEvent: normalized.pendingAnnualEvent,
     };
   });
   assert.equal(newSystemNormalization.poetryWins, 0, "旧存档没有补全诗会状态");
@@ -1080,6 +1086,9 @@ try {
   assert.equal(newSystemNormalization.secrets, 0, "旧存档没有补全秘密身份状态");
   assert.equal(newSystemNormalization.matchPool, 0, "旧存档没有补全媒人候选池");
   assert.equal(newSystemNormalization.spouseFamily, "scholar", "读档后丢失了配偶家世资料");
+  assert.equal(newSystemNormalization.prisonRecords, 0, "旧存档没有补全牢狱生涯状态");
+  assert.equal(newSystemNormalization.cultureSeen, 0, "旧存档没有补全华夏岁时图鉴");
+  assert.equal(newSystemNormalization.pendingAnnualEvent, null, "旧存档错误生成了年度候补事件");
 
   const poetryFlow = await page.evaluate(() => {
     state.age = 20;
@@ -1190,6 +1199,96 @@ try {
   assert.deepEqual(restoredSurprise, { overlay: "surprise", title: "读档惊喜" }, "刷新后未恢复待处理的惊喜弹窗");
   await page.click('[data-action="close-surprise"]');
 
+  console.log("quality gate: verifying prison life and Chinese cultural calendar systems");
+  const prisonCulture = await page.evaluate(() => {
+    const snapshot = JSON.stringify(state);
+    const oldRandom = Math.random;
+    Math.random = () => 0.91;
+    state.age = 30;
+    state.year = 30;
+    state.dead = false;
+    state.stats.physique = 100;
+    state.stats.mood = 80;
+    state.stats.money = 2000;
+    state.currentEvent = null;
+    state.pendingAnnualEvent = null;
+    state.eventResult = null;
+    state.pendingSurprise = null;
+    state.pendingAchievement = null;
+    state.pendingTravel = null;
+    state.pendingCaravan = null;
+    state.poetryRound = null;
+    state.prisonYears = 0;
+    state.prison = createPrisonState();
+    imposePrisonSentence(2, "回归测试案");
+    const dashboardHasMetrics = /申诉线索/.test(prisonOverviewView()) && /同监狱友/.test(prisonOverviewView());
+    nextYear();
+    const firstKind = state.currentEvent?.kind;
+    const firstHasChoices = (state.currentEvent?.children || []).length >= 3;
+    resolvePrisonYear(state.currentEvent, state.currentEvent.children.find((choice) => !choice.disabled));
+    state.eventResult = null;
+    state.pendingAchievement = null;
+    state.prison.inmateFavor = 72;
+    nextYear();
+    const releaseEvent = state.currentEvent?.releaseCandidate === true;
+    resolvePrisonYear(state.currentEvent, state.currentEvent.children[1]);
+    const released = state.prisonYears === 0 && state.prison.active === false && !state.tags.includes("入狱");
+    const prisonFriend = state.friends.some((friend) => friend.relation === "狱中故交");
+    const prisonRecords = state.prison.records.length;
+
+    state.currentEvent = null;
+    state.eventResult = null;
+    state.pendingAchievement = null;
+    state.culturalCalendar = createCulturalCalendar();
+    const cultureEvent = createCulturalEvent(SOLAR_TERMS[0]);
+    state.currentEvent = cultureEvent;
+    resolveCulturalEvent(cultureEvent, cultureEvent.children[0]);
+    const recordedTerm = state.culturalCalendar.seen.includes(SOLAR_TERMS[0].id) && state.culturalCalendar.familyChoices === 1;
+    const cultureHtml = cultureView();
+    const cultureCards = (cultureHtml.match(/class="culture-card/g) || []).length;
+    state.eventResult = null;
+    const queued = { id: "queued-daily", kind: "dailyStory", title: "候补日常", content: "旧剧情仍应接续。", children: [{ title: "继续", content: "旧剧情仍应接续。", effects: {} }] };
+    const festivalEvent = createCulturalEvent(TRADITIONAL_FESTIVALS[0]);
+    state.currentEvent = festivalEvent;
+    state.pendingAnnualEvent = queued;
+    resolveCulturalEvent(festivalEvent, festivalEvent.children[2]);
+    finishEventResult();
+    const queuedKind = state.currentEvent?.kind;
+    const definitions = { terms: SOLAR_TERMS.length, festivals: TRADITIONAL_FESTIVALS.length, unique: new Set(CULTURAL_CALENDAR_ITEMS.map((item) => item.id)).size };
+    state.currentEvent = null;
+    state.pendingAnnualEvent = null;
+    state.eventResult = null;
+    view.page = "culture";
+    render();
+    const cultureMobile = { cards: document.querySelectorAll(".culture-card").length, overflow: document.documentElement.scrollWidth <= document.documentElement.clientWidth };
+    state.prison = createPrisonState();
+    state.prisonYears = 0;
+    imposePrisonSentence(2, "界面测试案");
+    view.page = "main";
+    render();
+    const prisonMobile = { metrics: document.querySelectorAll(".prison-metric").length, overflow: document.documentElement.scrollWidth <= document.documentElement.clientWidth };
+    Math.random = oldRandom;
+    state = normalizeState(JSON.parse(snapshot));
+    view.page = "main";
+    view.overlay = "";
+    save();
+    render();
+    return { dashboardHasMetrics, firstKind, firstHasChoices, releaseEvent, released, prisonFriend, prisonRecords, recordedTerm, cultureCards, queuedKind, definitions, cultureMobile, prisonMobile };
+  });
+  assert.equal(prisonCulture.dashboardHasMetrics, true, "牢狱主界面没有显示申诉、狱友等核心状态");
+  assert.equal(prisonCulture.firstKind, "prisonYear", "服刑年度没有进入牢狱专属事件");
+  assert.equal(prisonCulture.firstHasChoices, true, "牢狱事件缺少可交互分支");
+  assert.equal(prisonCulture.releaseEvent, true, "最后一年没有进入刑满释放剧情");
+  assert.equal(prisonCulture.released, true, "刑满剧情没有正确清除余刑与入狱状态");
+  assert.equal(prisonCulture.prisonFriend, true, "高狱友情分没有在出狱后转化为故交");
+  assert.ok(prisonCulture.prisonRecords >= 2, "牢狱经历没有写入长期记录");
+  assert.equal(prisonCulture.recordedTerm, true, "节气选择没有写入图鉴和家庭体验统计");
+  assert.equal(prisonCulture.cultureCards, 40, "华夏岁时图鉴没有展示完整四十则条目");
+  assert.equal(prisonCulture.queuedKind, "dailyStory", "文化事件结算后没有接续原有年度剧情");
+  assert.deepEqual(prisonCulture.definitions, { terms: 24, festivals: 16, unique: 40 }, "节日或二十四节气定义不完整");
+  assert.deepEqual(prisonCulture.cultureMobile, { cards: 40, overflow: true }, "华夏岁时图鉴在移动端缺项或横向溢出");
+  assert.deepEqual(prisonCulture.prisonMobile, { metrics: 5, overflow: true }, "牢狱主界面在移动端缺项或横向溢出");
+
   console.log("quality gate: stress-testing annual flow through late life");
   const annualStress = await page.evaluate(() => {
     state.age = 18;
@@ -1200,6 +1299,7 @@ try {
     state.stats.physique = 100;
     state.stats.money = 20000;
     state.currentEvent = null;
+    state.pendingAnnualEvent = null;
     state.eventResult = null;
     state.pendingSurprise = null;
     state.pendingAchievement = null;
@@ -1215,6 +1315,7 @@ try {
       nextYear();
       if (state.eventResult?.title === "流年受阻") failures.push({ age: before, text: state.eventResult.text });
       state.currentEvent = null;
+      state.pendingAnnualEvent = null;
       state.eventResult = null;
       state.pendingSurprise = null;
       state.pendingAchievement = null;

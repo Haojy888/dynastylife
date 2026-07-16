@@ -5007,3 +5007,67 @@ p {
 .codex-item.secret-active { border-color: rgba(150, 40, 27, 0.28); background: rgba(150, 40, 27, 0.06); }
 .codex-item.secret-exposed { opacity: 0.85; border-color: rgba(150, 40, 27, 0.4); background: rgba(150, 40, 27, 0.1); }
 .landmark-grid .codex-item { min-height: 108px; }
+
+/* 牢狱生涯与华夏岁时 */
+.prison-dashboard {
+  overflow: hidden;
+  border-color: rgba(83, 56, 42, .28);
+  background:
+    linear-gradient(105deg, rgba(54, 43, 36, .1), transparent 42%),
+    rgba(250, 246, 234, .92);
+}
+.prison-hero { display: grid; grid-template-columns: 76px 1fr; align-items: center; gap: 18px; }
+.prison-hero > div { display: grid; place-items: center; width: 76px; height: 76px; border-radius: 18px; background: #3f3934; box-shadow: inset 0 0 0 1px rgba(255,255,255,.12), 0 9px 25px rgba(45,37,31,.18); }
+.prison-hero img { width: 48px; height: 48px; object-fit: contain; filter: sepia(.3) brightness(1.55); }
+.prison-hero h2 { margin: 2px 0 8px; }
+.prison-hero p:last-child { margin: 0; color: var(--muted); }
+.prison-people { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 18px 0 12px; }
+.prison-people article { display: grid; gap: 3px; padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(83,56,42,.16); background: rgba(255,255,255,.55); }
+.prison-people small, .prison-people span { color: var(--muted); }
+.prison-metrics { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 9px; }
+.prison-metric { display: grid; gap: 5px; min-width: 0; padding: 11px; border-radius: 12px; background: rgba(63,57,52,.06); }
+.prison-metric > span { color: var(--muted); font-size: 12px; }
+.prison-metric strong { font-size: 22px; }
+.prison-metric small { color: var(--muted); line-height: 1.4; }
+.prison-metric .meter i { background: linear-gradient(90deg, #705c4c, #a98258); }
+.prison-advice { padding: 11px 13px; border-left: 3px solid #705c4c; background: rgba(112,92,76,.07); color: var(--muted); font-size: 13px; line-height: 1.65; }
+.prison-event { border-color: rgba(83,56,42,.3); box-shadow: inset 0 5px 0 rgba(83,56,42,.65); }
+.prison-records .info-card { border-left: 3px solid rgba(83,56,42,.45); }
+
+.culture-dashboard { background: linear-gradient(135deg, rgba(105,151,89,.11), rgba(211,166,78,.09) 48%, rgba(101,127,145,.1)); }
+.culture-dashboard > h2 { margin-bottom: 8px; }
+.culture-dashboard > p:not(.eyebrow) { max-width: 850px; color: var(--muted); line-height: 1.75; }
+.culture-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px; margin: 16px 0; }
+.culture-summary span { display: grid; gap: 4px; padding: 13px; border-radius: 13px; background: rgba(255,255,255,.58); border: 1px solid rgba(91,92,72,.12); color: var(--muted); font-size: 12px; }
+.culture-summary b { color: var(--ink); font-size: 21px; }
+.culture-season-strip { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 8px; }
+.culture-season-strip span { position: relative; display: grid; gap: 2px; padding: 11px 12px 11px 16px; overflow: hidden; border-radius: 11px; background: color-mix(in srgb, var(--season) 11%, white); color: var(--muted); font-size: 11px; }
+.culture-season-strip span::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--season); }
+.culture-season-strip b { color: var(--ink); font-size: 17px; }
+.culture-season-strip em { margin-top: 3px; color: var(--season); font-style: normal; }
+.culture-season { display: grid; gap: 10px; }
+.culture-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.culture-card { position: relative; display: grid; align-content: start; gap: 7px; min-height: 154px; padding: 15px; overflow: hidden; border: 1px solid var(--line); border-radius: 14px; background: rgba(255,253,247,.76); }
+.culture-card::before { content: ""; position: absolute; inset: 0 0 auto; height: 3px; background: var(--season); opacity: .78; }
+.culture-card > span { width: max-content; padding: 2px 7px; border-radius: 99px; background: color-mix(in srgb, var(--season) 13%, white); color: var(--season); font-size: 11px; }
+.culture-card h3 { margin: 0; font-size: 18px; }
+.culture-card p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
+.culture-card small { align-self: end; margin-top: auto; color: var(--season); }
+.culture-card.locked { filter: grayscale(.65); opacity: .58; }
+.culture-event { box-shadow: inset 0 5px 0 rgba(108,154,97,.68); }
+.culture-event.season-summer { box-shadow: inset 0 5px 0 rgba(184,106,77,.7); }
+.culture-event.season-autumn { box-shadow: inset 0 5px 0 rgba(179,138,67,.72); }
+.culture-event.season-winter { box-shadow: inset 0 5px 0 rgba(102,127,145,.72); }
+
+@media (max-width: 980px) {
+  .prison-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .culture-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 760px) {
+  .prison-hero { grid-template-columns: 1fr; }
+  .prison-hero > div { width: 58px; height: 58px; }
+  .prison-hero img { width: 38px; height: 38px; }
+  .prison-people, .prison-metrics, .culture-summary, .culture-season-strip, .culture-grid { grid-template-columns: 1fr; }
+  .culture-card { min-height: 132px; }
+}
