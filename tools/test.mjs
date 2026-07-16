@@ -138,6 +138,10 @@ try {
   assert.deepEqual(normalizedStories, { active: null, completed: [], lastTriggerYear: -1 }, "旧存档未正确补全家事状态");
 
   await page.evaluate(() => {
+    state.dynasty = normalizeDynastyState(state.dynasty);
+    state.dynasty.activeArc = null;
+    state.dynasty.completedArcs = Object.keys(WORLD_ARCS);
+    state.dynasty.lastArcYear = state.year;
     state.familyStories = {
       active: {
         type: "parentIllness",
@@ -1061,7 +1065,9 @@ try {
   console.log("quality gate: verifying latest system persistence and interrupted-flow recovery");
   const newSystemNormalization = await page.evaluate(() => {
     const source = JSON.parse(JSON.stringify(state));
-    for (const key of ["poetry", "poetryRound", "travelCodex", "leisureSeason", "secrets", "matchPool", "prison", "culturalCalendar", "pendingAnnualEvent"]) delete source[key];
+    for (const key of ["poetry", "poetryRound", "travelCodex", "leisureSeason", "secrets", "matchPool", "prison", "culturalCalendar", "dynasty", "pendingAnnualEvent"]) delete source[key];
+    delete source.family.father.memories;
+    delete source.family.father.ambition;
     source.family.spouse = "顾清和";
     source.family.spouseMeta = { name: "顾清和", relation: "妻子", gender: "female", age: 24, physique: 80, affection: 82, alive: true };
     source.family.spouseProfile = { id: "persist-spouse", name: "顾清和", gender: "female", familyId: "scholar", personalityId: "gentle", bridePrice: 260, fertility: 72, power: 58, looks: 76, knowledge: 88 };
@@ -1077,6 +1083,10 @@ try {
       prisonRecords: normalized.prison?.records?.length,
       cultureSeen: normalized.culturalCalendar?.seen?.length,
       pendingAnnualEvent: normalized.pendingAnnualEvent,
+      dynastyEra: normalized.dynasty?.eraName,
+      dynastyMetrics: [normalized.dynasty?.prosperity, normalized.dynasty?.local?.grainPrice, normalized.dynasty?.factions?.reformers],
+      fatherMemories: normalized.family.father?.memories?.length,
+      fatherAmbition: normalized.family.father?.ambition,
     };
   });
   assert.equal(newSystemNormalization.poetryWins, 0, "旧存档没有补全诗会状态");
@@ -1089,6 +1099,10 @@ try {
   assert.equal(newSystemNormalization.prisonRecords, 0, "旧存档没有补全牢狱生涯状态");
   assert.equal(newSystemNormalization.cultureSeen, 0, "旧存档没有补全华夏岁时图鉴");
   assert.equal(newSystemNormalization.pendingAnnualEvent, null, "旧存档错误生成了年度候补事件");
+  assert.ok(newSystemNormalization.dynastyEra, "旧存档没有补全王朝年号");
+  assert.ok(newSystemNormalization.dynastyMetrics.every(Number.isFinite), "旧存档没有补全天下与朝局数值");
+  assert.equal(newSystemNormalization.fatherMemories, 0, "旧存档没有补全亲友记忆数组");
+  assert.ok(newSystemNormalization.fatherAmbition, "旧存档没有补全亲友自主志向");
 
   const poetryFlow = await page.evaluate(() => {
     state.age = 20;
@@ -1198,6 +1212,136 @@ try {
   const restoredSurprise = await page.evaluate(() => ({ overlay: view.overlay, title: state.pendingSurprise?.title }));
   assert.deepEqual(restoredSurprise, { overlay: "surprise", title: "读档惊喜" }, "刷新后未恢复待处理的惊喜弹窗");
   await page.click('[data-action="close-surprise"]');
+
+  console.log("quality gate: verifying dynasty simulation, NPC memory and multi-year world arcs");
+  const worldSystems = await page.evaluate(() => {
+    const snapshot = JSON.stringify(state);
+    const oldRandom = Math.random;
+    Math.random = () => 0.1;
+    state.age = 30;
+    state.year = 200;
+    state.dead = false;
+    state.prisonYears = 0;
+    state.stats.money = 8000;
+    state.stats.physique = 100;
+    state.currentEvent = null;
+    state.pendingAnnualEvent = null;
+    state.eventResult = null;
+    state.pendingSurprise = null;
+    state.pendingAchievement = null;
+    state.dynasty = createDynastyState();
+    state.dynasty.rulerAge = 40;
+    const reignBefore = state.dynasty.reignYear;
+    const annualDeltas = [];
+    advanceDynastyYear(annualDeltas);
+    const annualWorld = { advanced: state.dynasty.reignYear === reignBefore + 1, history: state.dynasty.history.length, headline: state.dynasty.headline };
+
+    view.page = "world";
+    render();
+    const worldUi = {
+      metrics: document.querySelectorAll(".world-metric").length,
+      factions: document.querySelectorAll(".faction-card").length,
+      overflow: document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+    };
+    state.dynasty.activeArc = { id: "flood", stage: 1, score: 3, dueYear: 205, startedYear: 199, choices: ["relief"] };
+    const carriedDynasty = carryDynastyAcrossInheritance(state.dynasty, 200, 20);
+    const carryCheck = { era: carriedDynasty.eraName === state.dynasty.eraName, dueYear: carriedDynasty.activeArc?.dueYear, startedYear: carriedDynasty.activeArc?.startedYear };
+    const route = CARAVAN_ROUTES[0];
+    state.dynasty.borderThreat = 95;
+    state.dynasty.local.security = 10;
+    state.dynasty.local.grainPrice = 180;
+    const highWorldRisk = caravanRouteRisk(route, 1);
+    const highTravelCost = travelTripCost(TRAVEL_DESTINATIONS[0]);
+    state.dynasty.borderThreat = 5;
+    state.dynasty.local.security = 95;
+    state.dynasty.local.grainPrice = 70;
+    const lowWorldRisk = caravanRouteRisk(route, 1);
+    const lowTravelCost = travelTripCost(TRAVEL_DESTINATIONS[0]);
+    const systemImpact = { riskHigher: highWorldRisk > lowWorldRisk, travelCostHigher: highTravelCost > lowTravelCost };
+
+    state.career = { name: "知县", customKind: "official", careerType: 5 };
+    state.dynasty.completedArcs = [];
+    state.dynasty.lastArcYear = -20;
+    const arcChecks = [];
+    for (const id of Object.keys(WORLD_ARCS)) {
+      state.dynasty.activeArc = { id, stage: 0, score: 0, dueYear: state.year, startedYear: state.year, choices: [] };
+      let stages = 0;
+      let sawCareerFit = false;
+      while (state.dynasty.activeArc && stages < 5) {
+        const event = annualWorldArcEvent();
+        if (!event) break;
+        sawCareerFit ||= event.children.some((choice) => /可发挥专长/.test(choice.note || ""));
+        const choice = event.children.find((item) => !item.disabled);
+        state.currentEvent = event;
+        resolveWorldArcEvent(event, choice);
+        state.eventResult = null;
+        state.pendingAchievement = null;
+        stages += 1;
+        if (state.dynasty.activeArc) state.year = state.dynasty.activeArc.dueYear;
+      }
+      arcChecks.push({ id, stages, sawCareerFit, completed: state.dynasty.completedArcs.includes(id) });
+      state.year += 5;
+    }
+
+    state.family.father.alive = false;
+    state.family.mother.alive = false;
+    state.family.siblings = [];
+    state.family.spouse = null;
+    state.family.spouseMeta = null;
+    state.family.concubines = [];
+    state.family.children = [];
+    const friend = normalizeFriend({ id: "memory-friend", name: "周有恒", relation: "友人", gender: "male", age: 28, physique: 80, affection: 66, disposition: "重情", ambition: "置办家业", marriedTo: "顾清" });
+    state.friends = [friend];
+    state.dynasty.local.disaster = 65;
+    Math.random = () => 0.3;
+    advanceNpcAgencyYear([]);
+    const npcAgency = { action: friend.lastAction, year: friend.lastActionYear, memories: friend.memories.length, occupation: friend.occupation };
+    view.page = "relations";
+    render();
+    const memoryVisible = document.querySelectorAll(".npc-memory").length > 0;
+
+    state.age = 30;
+    state.year = 300;
+    state.currentEvent = null;
+    state.pendingAnnualEvent = null;
+    state.eventResult = null;
+    state.pendingSurprise = null;
+    state.pendingAchievement = null;
+    state.prisonYears = 0;
+    state.stats.physique = 100;
+    state.culturalCalendar = createCulturalCalendar();
+    state.dynasty.activeArc = { id: "flood", stage: 0, score: 0, dueYear: 301, startedYear: 301, choices: [] };
+    state.dynasty.completedArcs = [];
+    Math.random = () => 0.9;
+    nextYear();
+    const queued = { current: state.currentEvent?.kind, pending: state.pendingAnnualEvent?.kind };
+    if (state.currentEvent?.kind === "culturalEvent") {
+      resolveCulturalEvent(state.currentEvent, state.currentEvent.children[0]);
+      finishEventResult();
+    }
+    queued.afterCulture = state.currentEvent?.kind;
+
+    Math.random = oldRandom;
+    state = normalizeState(JSON.parse(snapshot));
+    view.page = "main";
+    view.overlay = "";
+    save();
+    render();
+    return { annualWorld, worldUi, carryCheck, systemImpact, arcChecks, completedArcs: Object.keys(WORLD_ARCS).length, npcAgency, memoryVisible, queued };
+  });
+  assert.equal(worldSystems.annualWorld.advanced, true, "天下状态没有随流年推进");
+  assert.ok(worldSystems.annualWorld.history >= 1 && worldSystems.annualWorld.headline, "天下事件没有写入纪事与头条");
+  assert.deepEqual(worldSystems.worldUi, { metrics: 10, factions: 4, overflow: true }, "天下风云界面缺少指标、朝局或发生移动端溢出");
+  assert.deepEqual(worldSystems.carryCheck, { era: true, dueYear: 25, startedYear: 19 }, "家族承继没有延续王朝状态或正确换算主线年份");
+  assert.deepEqual(worldSystems.systemImpact, { riskHigher: true, travelCostHigher: true }, "边患、治安与粮价没有真正影响押镖和车马系统");
+  assert.equal(worldSystems.arcChecks.length, 3, "没有建立三条天下主线");
+  for (const arc of worldSystems.arcChecks) {
+    assert.deepEqual({ stages: arc.stages, sawCareerFit: arc.sawCareerFit, completed: arc.completed }, { stages: 3, sawCareerFit: true, completed: true }, `${arc.id} 主线没有完整跨三幕结算`);
+  }
+  assert.equal(worldSystems.npcAgency.year > 0, true, "重要亲友没有执行年度自主行动");
+  assert.ok(worldSystems.npcAgency.action && worldSystems.npcAgency.memories >= 1 && worldSystems.npcAgency.occupation, "NPC 动向、营生或长期记忆没有保存");
+  assert.equal(worldSystems.memoryVisible, true, "亲友界面没有展示 NPC 记忆与近年动向");
+  assert.deepEqual(worldSystems.queued, { current: "culturalEvent", pending: "worldArc", afterCulture: "worldArc" }, "岁时事件与天下主线没有按顺序衔接");
 
   console.log("quality gate: verifying prison life and Chinese cultural calendar systems");
   const prisonCulture = await page.evaluate(() => {

@@ -902,6 +902,7 @@ const COURTESAN_QUESTIONS = [
 ];
 
 const MAIN_DOORS = [
+  { id: "world", label: "天下风云", icon: "Official", featured: true },
   { id: "home", label: "家中", icon: "FamilyIcon" },
   { id: "assets", label: "家产", icon: "House" },
   { id: "relations", label: "亲友", icon: "FamilyIcon" },
@@ -1867,6 +1868,100 @@ const PRISON_YEAR_EVENTS = [
   },
 ];
 
+/** 天下并非静止背景：国运、朝局与地方民生会逐年变化，并反过来影响各条人生路线。 */
+const DYNASTY_ERA_NAMES = ["景和", "承熙", "泰宁", "元祐", "绍兴", "隆平", "乾元", "永昌"];
+const RULER_TEMPERAMENTS = [
+  { id: "diligent", name: "勤政宽仁", note: "重农恤民，国库消耗较快" },
+  { id: "reformer", name: "锐意新政", note: "改革有力，也容易激化党争" },
+  { id: "martial", name: "尚武拓边", note: "边军强盛，徭役军费亦重" },
+  { id: "suspicious", name: "多疑峻刻", note: "朝局压抑，告讦与清洗增多" },
+  { id: "indulgent", name: "宴安怠政", note: "权臣坐大，地方贪墨渐盛" },
+];
+const WORLD_FACTIONS = {
+  reformers: { name: "新政派", note: "主张整饬吏治、兴修水利" },
+  conservatives: { name: "守成派", note: "重祖制、轻变法，根基深厚" },
+  military: { name: "边军勋贵", note: "掌兵权与军需，受边患牵动" },
+  court: { name: "近侍权门", note: "通内廷消息，善于攀附权势" },
+};
+const WORLD_INCIDENTS = [
+  { id: "harvest", title: "五谷丰登", text: "数州报来丰收，漕船满载入仓，市中米价渐平。", effects: { prosperity: [4, 8], treasury: [2, 5], "local.grainPrice": [-12, -6], "local.sentiment": [3, 7], "local.disaster": [-6, -2] } },
+  { id: "flood-warning", title: "河汛告急", text: "上游连日暴雨，河堤渗水，沿岸百姓已经开始搬运粮物。", effects: { stability: [-5, -2], treasury: [-5, -2], "local.grainPrice": [8, 18], "local.disaster": [10, 19], "local.sentiment": [-7, -3] } },
+  { id: "border-raid", title: "边烽骤起", text: "边骑越塞劫掠，驿路加急，朝廷开始征发军粮与车马。", effects: { stability: [-7, -3], treasury: [-8, -3], borderThreat: [10, 18], "local.grainPrice": [5, 13], factions: { military: [5, 10] } } },
+  { id: "anti-corruption", title: "御史巡按", text: "朝廷遣御史分巡诸道，数名贪官落马，地方胥吏一时收敛。", effects: { stability: [2, 6], corruption: [-12, -6], "local.security": [3, 8], "local.sentiment": [2, 6], factions: { reformers: [4, 8], court: [-7, -3] } } },
+  { id: "palace-spending", title: "大修宫苑", text: "内廷兴建园苑，奇木巨石沿河而下，民间又添一层徭役。", effects: { treasury: [-13, -7], corruption: [5, 11], stability: [-6, -2], "local.sentiment": [-9, -4], factions: { court: [5, 9] } } },
+  { id: "epidemic", title: "时疫流行", text: "城南先起热病，药铺门前排起长队，乡间也陆续传来病讯。", effects: { prosperity: [-7, -3], "local.epidemic": [14, 24], "local.sentiment": [-6, -2], "local.grainPrice": [3, 8] } },
+  { id: "trade-open", title: "互市重开", text: "边关议和后重开互市，皮货、茶盐与马匹重新流通。", effects: { prosperity: [5, 10], treasury: [3, 7], borderThreat: [-9, -4], "local.grainPrice": [-5, 1], factions: { military: [-3, 2] } } },
+  { id: "bandit-suppression", title: "清剿盗匪", text: "官军与乡勇合围山寨，商旅渐敢夜宿驿亭，乡路重新热闹起来。", effects: { stability: [3, 7], "local.security": [8, 15], "local.sentiment": [2, 5], treasury: [-5, -2] } },
+];
+const WORLD_ARCS = {
+  flood: {
+    name: "大河决口",
+    icon: "RepairCarriage",
+    stages: [
+      { title: "河声压城", content: "暴雨昼夜不歇，东堤裂开数丈。流民、粮价与官府的催令同时涌来，这不再是一场能等过去的雨。", choices: [
+        { title: "先救人再守堤", note: "耗费钱粮，民心与长线评价最高", text: "你把能调动的人手先用于转移老弱，又连夜装土守住第二道堤。", cost: 90, score: 2, approach: "relief", effects: { virtue: 5, favorability: 4, mood: -2 }, world: { "local.disaster": -8, "local.sentiment": 8, treasury: -3 } },
+        { title: "囤粮待价", note: "短期获利，可能在后续被追查", text: "你抢在封路前收走市面余粮，灾民的哭声与账上的进项一同增长。", score: -2, approach: "profit", effects: { money: 190, virtue: -7, favorability: -4 }, world: { corruption: 4, "local.grainPrice": 18, "local.sentiment": -8 } },
+        { title: "护住自家撤离", note: "稳妥保身，对大局帮助有限", text: "你先把家人、文书与细软迁到高处，再回望浊浪吞没低田。", cost: 35, score: 0, approach: "caution", effects: { physique: 2, mood: -3 }, world: { "local.disaster": -2 } },
+      ] },
+      { title: "赈粮失踪", content: "朝廷赈粮到了县界，开仓时却少了三成。粮商、胥吏和押运人互相推诿，灾民已在仓门外聚集。", choices: [
+        { title: "追查仓册", note: "官员与读书人更擅长；得罪地方势力", text: "你逐页比对仓单、船脚与封条，终于找出被改写的三处数目。", score: 2, approach: "investigate", effects: { knowledge: 4, eq: 2, favorability: 3 }, world: { corruption: -7, "local.sentiment": 5 } },
+        { title: "另购粮米补缺", note: "商旅路线更擅长；花钱最快止饥", text: "你绕过争讼，从邻州连夜调粮，先让粥棚重新冒起热气。", cost: 150, score: 2, approach: "supply", effects: { virtue: 5, relationship: 3 }, world: { "local.grainPrice": -10, "local.sentiment": 7, prosperity: 2 } },
+        { title: "设棚诊治疫病", note: "医者更擅长；防止灾后大疫", text: "你把净水、隔离和药材安排在粥棚旁，先压下最危险的一轮热病。", cost: 80, score: 2, approach: "healing", effects: { virtue: 6, physique: -2, favorability: 4 }, world: { "local.epidemic": -12, "local.sentiment": 5 } },
+      ] },
+      { title: "水退之后", content: "河水终于退下，田地覆着淤泥，朝廷使者也来核验功过。你这一年半所做的事，将决定重建从哪里开始。", choices: [
+        { title: "修渠复耕", note: "着眼来年收成，国运恢复最稳", text: "你组织清淤、补渠并按户分发种粮，让荒地重新有了犁痕。", cost: 100, score: 2, approach: "rebuild", effects: { virtue: 5, favorability: 4 }, world: { prosperity: 7, "local.disaster": -10, "local.grainPrice": -8 } },
+        { title: "呈报全部真相", note: "清算贪墨，可能卷入朝局", text: "你把赈粮亏空与灾情原貌一并上呈，不替任何人遮掩。", score: 2, approach: "truth", effects: { knowledge: 3, virtue: 4, favorability: 2 }, world: { corruption: -9, stability: 3, factions: { reformers: 5, court: -4 } } },
+        { title: "领功后抽身", note: "保住已有收益，重建较慢", text: "你交清手中差事，把赞誉与争议一并留给后来者。", score: 0, approach: "exit", effects: { money: 70, mood: 3 }, world: { "local.sentiment": -2 } },
+      ] },
+    ],
+  },
+  succession: {
+    name: "宫闱易主",
+    icon: "Official",
+    stages: [
+      { title: "上不视朝", content: "天子久病不朝，储位诏书迟迟未下。京中每封书信都比往日更短，地方官与豪族也在暗问风向。", choices: [
+        { title: "守法度不站私门", note: "稳定最高，但短期无人提携", text: "你只认公开诏令与官署程序，拒绝替任何私门递话。", score: 2, approach: "law", effects: { virtue: 5, favorability: 2 }, world: { stability: 5, corruption: -3 } },
+        { title: "投向新政派", note: "押注改革；成败取决于后续朝局", text: "你与主张整饬财政的士人互通声气，把前程押在新政上。", score: 1, approach: "reformers", effects: { knowledge: 3, eq: 2 }, world: { factions: { reformers: 9, conservatives: -4 } } },
+        { title: "攀附近侍权门", note: "收益直接，败露会留下污点", text: "你送出重礼，换来几句内廷消息，也把名字留在权门账簿上。", cost: 160, score: -1, approach: "court", effects: { money: 100, virtue: -5 }, world: { corruption: 7, factions: { court: 10 } } },
+      ] },
+      { title: "两诏并出", content: "深夜里两道诏书先后传出，所立之人竟不相同。城门封闭，军营换防，谁都知道天亮前必须作出选择。", choices: [
+        { title: "护住官仓与百姓", note: "不争宫门，防止地方先乱", text: "你召集乡勇守住粮仓与街巷，严禁趁乱抢掠，让城中先安稳下来。", score: 2, approach: "public", effects: { virtue: 6, favorability: 5, physique: -2 }, world: { "local.security": 10, "local.sentiment": 8, stability: 3 } },
+        { title: "查验诏书印信", note: "依靠学识寻找真伪证据", text: "你从纸张、用印与传递时刻入手，发现其中一道诏书沿用了废印。", score: 2, approach: "investigate", effects: { knowledge: 6, eq: 2 }, world: { stability: 4, corruption: -4 } },
+        { title: "静候胜负", note: "风险较低，也会失去话语权", text: "你闭门谢客，不接任何名帖，等宫门尘埃自行落定。", score: 0, approach: "caution", effects: { mood: -2 }, world: { "local.sentiment": -2 } },
+      ] },
+      { title: "新朝第一道诏", content: "新帝终于御殿，第一道诏书要定的是赦免、税赋与旧臣去留。曾经的站队和沉默，都在名单上留下痕迹。", choices: [
+        { title: "请减徭薄赋", note: "为民请命，改善地方恢复", text: "你上书陈说民力未复，请先减免一年徭赋，再议宫室与征伐。", score: 2, approach: "relief", effects: { virtue: 5, favorability: 4 }, world: { prosperity: 5, "local.sentiment": 8, treasury: -5 } },
+        { title: "助新朝清理旧账", note: "提升秩序，也可能扩大清算", text: "你参与核查旧臣案卷，坚持以实证定罪，尽量不让私怨混进诏狱。", score: 2, approach: "law", effects: { knowledge: 4, eq: 3 }, world: { stability: 6, corruption: -6 } },
+        { title: "借换朝谋取位置", note: "个人收益高，国中贪墨上升", text: "你拿出早已准备好的名帖和银钱，在新旧交替间换得一席之地。", cost: 120, score: -1, approach: "profit", effects: { money: 260, virtue: -6, favorability: -2 }, world: { corruption: 8, factions: { court: 6 } } },
+      ] },
+    ],
+  },
+  border: {
+    name: "边关烽火",
+    icon: "RepairCarriage",
+    stages: [
+      { title: "征发军需", content: "边关三烽连举，州县奉命征集粮草、药材与车马。有人看到报国之机，也有人只看见一门生意。", choices: [
+        { title: "按实筹措军需", note: "官员、商旅与工匠有职业加成", text: "你按市价采买并逐车验封，不让霉粮与空箱混入军需。", cost: 110, score: 2, approach: "supply", effects: { virtue: 4, favorability: 4 }, world: { treasury: -3, borderThreat: -5, corruption: -3 } },
+        { title: "随军救治伤患", note: "医者路线效果最好", text: "你带上药材与净布赶往军驿，先教民夫处理箭创与污水。", cost: 70, score: 2, approach: "healing", effects: { virtue: 6, physique: -3, knowledge: 3 }, world: { borderThreat: -3, "local.epidemic": -7 } },
+        { title: "抬价售卖物资", note: "赚取战财，败坏地方民心", text: "你借征发之急抬高车马与粮价，账面大赚，乡里却开始咒骂。", score: -2, approach: "profit", effects: { money: 240, virtue: -8, favorability: -5 }, world: { corruption: 6, "local.grainPrice": 15, "local.sentiment": -8 } },
+      ] },
+      { title: "败兵入城", content: "前线一战失利，伤兵与难民挤满城门。谣言说敌骑已过三十里，市面开始抢购粮盐。", choices: [
+        { title: "开门分流安置", note: "考验组织与地方治安", text: "你按籍贯、伤病与亲属分流入城者，设粥棚也设巡夜队，避免恐慌变成踩踏。", score: 2, approach: "public", effects: { eq: 4, virtue: 5, favorability: 4 }, world: { "local.security": 7, "local.sentiment": 8, "local.grainPrice": -5 } },
+        { title: "探明前线军情", note: "体魄与商路经验更有帮助", text: "你随熟悉小路的向导出城，确认敌军只是游骑，主力尚未南下。", score: 2, approach: "scout", effects: { physique: -4, knowledge: 4 }, world: { borderThreat: -6, stability: 3 } },
+        { title: "封门只保城内", note: "守住治安，但城外伤亡增加", text: "你主张紧闭城门，市内暂时安稳，城外的哭喊却整夜未停。", score: -1, approach: "caution", effects: { virtue: -5, mood: -3 }, world: { "local.security": 4, "local.sentiment": -9 } },
+      ] },
+      { title: "和战之议", content: "朝廷使者来到边城，要在增兵决战与议和互市之间定策。军功、国库与百姓生计各有一套道理。", choices: [
+        { title: "先固边再议和", note: "兼顾防务与长期互市", text: "你主张修堡、清点军籍后再开谈判，不以空城求和，也不为虚名冒进。", score: 2, approach: "balanced", effects: { knowledge: 3, eq: 4 }, world: { borderThreat: -8, stability: 5, treasury: -4 } },
+        { title: "力主互市休兵", note: "恢复商路，勋贵势力下降", text: "你列出军费与民生账目，请以互市、质子和边界巡检换取休兵。", score: 2, approach: "trade", effects: { virtue: 4, favorability: 4, money: 50 }, world: { prosperity: 7, borderThreat: -10, factions: { military: -5 } } },
+        { title: "请战求取军功", note: "高风险高名望，边患可能加剧", text: "你认为敌军可一战而破，主动请战，把前程押在最后一场胜负上。", score: 0, approach: "war", effects: { favorability: 6, physique: -7 }, world: { borderThreat: 5, treasury: -8, factions: { military: 7 } } },
+      ] },
+    ],
+  },
+};
+const NPC_AMBITIONS = ["求安稳", "置办家业", "读书进身", "经商致富", "行医济人", "远游见世", "光耀门楣"];
+const NPC_DISPOSITIONS = ["重情", "谨慎", "进取", "刚直", "圆融", "节俭", "豪爽"];
+const NPC_OCCUPATIONS = ["务农", "经营小铺", "书塾助教", "药铺帮工", "衙门书手", "工坊学徒", "往来行商"];
+
 const RELATION_ACTIONS = {
   visit: { label: "探望", cost: 0, relationship: [1, 4], affection: [3, 8], mood: [1, 4], icon: "FamilyIcon" },
   gift: { label: "送礼", cost: 120, relationship: [2, 6], affection: [8, 16], mood: [0, 3], icon: "Jade" },
@@ -2044,6 +2139,10 @@ const LIFE_GOALS = [
   { id: "culture-four-seasons", tier: "silver", title: "四时有序", icon: "MainBook", desc: "春夏秋冬都留下岁时记录。", score: 130, done: () => Object.keys(CULTURAL_SEASONS).every((season) => Number(state.culturalCalendar?.seasonCounts?.[season] || 0) > 0), advice: "随流年经历完整的春生、夏长、秋收、冬藏。" },
   { id: "culture-terms", tier: "silver", title: "节令通览", icon: "MainBook", desc: "解锁十二个不同节气。", score: 160, done: () => (state.culturalCalendar?.seen || []).filter((id) => id.startsWith("term-")).length >= 12, advice: "在华夏岁时图鉴里记录物候、农事与起居。" },
   { id: "culture-complete", tier: "gold", title: "岁时大成", icon: "Temple", desc: "解锁全部二十四节气与十六个传统节日。", score: 420, done: () => (state.culturalCalendar?.seen || []).length >= CULTURAL_CALENDAR_ITEMS.length, advice: "让一生走遍四十则岁时文化。" },
+  { id: "world-witness", tier: "bronze", title: "风云入眼", icon: "Official", desc: "亲历第一幕天下主线。", score: 70, done: () => (state.dynasty?.history || []).some((item) => item.type === "arc"), advice: "十五岁后留意天下风云，灾情、边患与朝局会开启长线。" },
+  { id: "world-arc", tier: "silver", title: "一役始终", icon: "Official", desc: "完整走完一条三年天下主线。", score: 180, done: () => (state.dynasty?.completedArcs || []).length >= 1, advice: "天下主线会跨年推进，每一幕选择都会累计评价。" },
+  { id: "world-all-arcs", tier: "gold", title: "国史亲历", icon: "MainBook", desc: "完成大河决口、宫闱易主与边关烽火三条主线。", score: 460, done: () => (state.dynasty?.completedArcs || []).length >= Object.keys(WORLD_ARCS).length, advice: "在不同人生中走遍三场改变天下的大事。" },
+  { id: "npc-memory", tier: "silver", title: "故人记我", icon: "Relationship1", desc: "一位重要亲友留下四段关于你的长期记忆。", score: 130, done: () => significantNpcRefs().some((person) => (person.memories || []).length >= 4), advice: "探望、照料、送礼与共同经历都会被亲友记住。" },
 ];
 
 const ONBOARDING_VERSION = 1;
@@ -2527,6 +2626,7 @@ function normalizeState(raw) {
   next.prisonYears = Math.max(0, Math.round(Number(next.prisonYears) || 0));
   next.prison = normalizePrisonState(next.prison, next.prisonYears, next.age, next.gender);
   next.culturalCalendar = normalizeCulturalCalendar(next.culturalCalendar);
+  next.dynasty = normalizeDynastyState(next.dynasty);
   next.pendingAnnualEvent = next.pendingAnnualEvent && typeof next.pendingAnnualEvent === "object" ? next.pendingAnnualEvent : null;
   // 旧版若恰好存档在两段年度事件之间，读取后继续尚未结算的后续事件。
   if (!next.currentEvent && !next.eventResult && next.pendingAnnualEvent) {
@@ -2636,6 +2736,132 @@ function normalizeCulturalCalendar(source) {
     publicChoices: Math.max(0, Math.round(Number(base.publicChoices) || 0)),
     reflectionChoices: Math.max(0, Math.round(Number(base.reflectionChoices) || 0)),
   };
+}
+
+function createDynastyState() {
+  const temperament = sample(RULER_TEMPERAMENTS) || RULER_TEMPERAMENTS[0];
+  return {
+    eraName: sample(DYNASTY_ERA_NAMES) || "景和",
+    reignYear: 1,
+    rulerName: makePersonName("male"),
+    rulerAge: randInt(24, 52),
+    temperamentId: temperament.id,
+    prosperity: 58,
+    stability: 62,
+    treasury: 55,
+    borderThreat: 24,
+    corruption: 30,
+    local: { grainPrice: 100, security: 62, disaster: 16, epidemic: 10, sentiment: 58 },
+    factions: { reformers: 48, conservatives: 55, military: 46, court: 42 },
+    headline: "四境承平，州县照常开市劝农。",
+    history: [],
+    activeArc: null,
+    completedArcs: [],
+    lastArcYear: -20,
+    lastIncidentId: "",
+    successions: 0,
+  };
+}
+
+function normalizeDynastyState(source) {
+  const defaults = createDynastyState();
+  const base = source && typeof source === "object" ? source : {};
+  const temperamentId = RULER_TEMPERAMENTS.some((item) => item.id === base.temperamentId) ? base.temperamentId : defaults.temperamentId;
+  const local = base.local && typeof base.local === "object" ? base.local : {};
+  const factions = base.factions && typeof base.factions === "object" ? base.factions : {};
+  const active = base.activeArc && WORLD_ARCS[base.activeArc.id] ? base.activeArc : null;
+  return {
+    ...defaults,
+    ...base,
+    eraName: String(base.eraName || defaults.eraName),
+    reignYear: Math.max(1, Math.round(Number(base.reignYear) || 1)),
+    rulerName: String(base.rulerName || defaults.rulerName),
+    rulerAge: clampNumber(base.rulerAge, 16, 99, defaults.rulerAge),
+    temperamentId,
+    prosperity: clampNumber(base.prosperity, 0, 100, defaults.prosperity),
+    stability: clampNumber(base.stability, 0, 100, defaults.stability),
+    treasury: clampNumber(base.treasury, 0, 100, defaults.treasury),
+    borderThreat: clampNumber(base.borderThreat, 0, 100, defaults.borderThreat),
+    corruption: clampNumber(base.corruption, 0, 100, defaults.corruption),
+    local: {
+      grainPrice: clampNumber(local.grainPrice, 45, 220, defaults.local.grainPrice),
+      security: clampNumber(local.security, 0, 100, defaults.local.security),
+      disaster: clampNumber(local.disaster, 0, 100, defaults.local.disaster),
+      epidemic: clampNumber(local.epidemic, 0, 100, defaults.local.epidemic),
+      sentiment: clampNumber(local.sentiment, 0, 100, defaults.local.sentiment),
+    },
+    factions: Object.fromEntries(Object.keys(WORLD_FACTIONS).map((key) => [key, clampNumber(factions[key], 0, 100, defaults.factions[key])])),
+    headline: String(base.headline || defaults.headline),
+    history: Array.isArray(base.history) ? base.history.filter((item) => item && typeof item === "object").slice(0, 30) : [],
+    activeArc: active ? {
+      id: active.id,
+      stage: clampNumber(active.stage, 0, WORLD_ARCS[active.id].stages.length - 1, 0),
+      score: Number.isFinite(Number(active.score)) ? Number(active.score) : 0,
+      dueYear: Math.max(0, Math.round(Number(active.dueYear) || 0)),
+      startedYear: Math.max(0, Math.round(Number(active.startedYear) || 0)),
+      choices: Array.isArray(active.choices) ? active.choices.map(String).slice(0, 6) : [],
+    } : null,
+    completedArcs: Array.isArray(base.completedArcs) ? [...new Set(base.completedArcs.map(String).filter((id) => WORLD_ARCS[id]))].slice(-12) : [],
+    lastArcYear: Number.isFinite(Number(base.lastArcYear)) ? Number(base.lastArcYear) : -20,
+    lastIncidentId: String(base.lastIncidentId || ""),
+    successions: Math.max(0, Math.round(Number(base.successions) || 0)),
+  };
+}
+
+function carryDynastyAcrossInheritance(source, oldYear, nextYear) {
+  const carried = normalizeDynastyState(JSON.parse(JSON.stringify(source || {})));
+  if (carried.activeArc) {
+    const wait = Math.max(0, Number(carried.activeArc.dueYear || oldYear) - Number(oldYear || 0));
+    const elapsed = Math.max(0, Number(oldYear || 0) - Number(carried.activeArc.startedYear || oldYear));
+    carried.activeArc.dueYear = Number(nextYear || 0) + wait;
+    carried.activeArc.startedYear = Math.max(0, Number(nextYear || 0) - elapsed);
+  }
+  carried.lastArcYear = Number(nextYear || 0) - Math.max(0, Number(oldYear || 0) - Number(carried.lastArcYear || oldYear));
+  return carried;
+}
+
+function dynastyTemperament() {
+  return RULER_TEMPERAMENTS.find((item) => item.id === state.dynasty?.temperamentId) || RULER_TEMPERAMENTS[0];
+}
+
+function dynastyPhase(world = state.dynasty) {
+  if (!world) return { id: "peace", name: "承平", note: "天下大体安稳" };
+  const strength = (world.prosperity + world.stability + world.treasury + world.local.security + world.local.sentiment) / 5;
+  const danger = (world.borderThreat + world.corruption + world.local.disaster + world.local.epidemic) / 4;
+  if (strength >= 72 && danger <= 32) return { id: "golden", name: "盛世", note: "仓廪渐实，四境少警" };
+  if (danger >= 68 || world.stability <= 28) return { id: "chaos", name: "乱世", note: "内外交迫，人心思变" };
+  if (strength <= 38 || danger >= 52) return { id: "decline", name: "衰世", note: "民力困乏，朝局多艰" };
+  return { id: "peace", name: "承平", note: "治乱相半，尚可经营" };
+}
+
+function worldValue(path) {
+  return String(path).split(".").reduce((value, key) => value?.[key], state.dynasty);
+}
+
+function changeWorldValue(path, amount, deltas = []) {
+  const parts = String(path).split(".");
+  let target = state.dynasty;
+  for (const key of parts.slice(0, -1)) {
+    target[key] ||= {};
+    target = target[key];
+  }
+  const key = parts.at(-1);
+  const before = Number(target[key] || 0);
+  const limits = path === "local.grainPrice" ? [45, 220] : [0, 100];
+  target[key] = clamp(before + Number(amount || 0), ...limits);
+  const actual = Math.round(target[key] - before);
+  if (actual && deltas) {
+    const labels = { prosperity: "国力", stability: "安定", treasury: "国库", borderThreat: "边患", corruption: "贪墨", "local.grainPrice": "粮价", "local.security": "治安", "local.disaster": "灾情", "local.epidemic": "疫病", "local.sentiment": "民心" };
+    deltas.push({ label: labels[path] || WORLD_FACTIONS[key]?.name || path, value: actual, negative: ["borderThreat", "corruption", "local.grainPrice", "local.disaster", "local.epidemic"].includes(path) ? actual > 0 : actual < 0 });
+  }
+}
+
+function applyWorldChanges(changes = {}, deltas = []) {
+  for (const [path, value] of Object.entries(changes || {})) {
+    if (path === "factions" && value && typeof value === "object") {
+      for (const [faction, factionValue] of Object.entries(value)) changeWorldValue(`factions.${faction}`, rangeValue(factionValue), deltas);
+    } else changeWorldValue(path, rangeValue(value), deltas);
+  }
 }
 
 function createTravelSystem() {
@@ -2833,6 +3059,22 @@ function normalizeFamily(family, familyName) {
   };
 }
 
+function normalizeNpcAgency(source, relation = "亲友", age = 18) {
+  const base = source && typeof source === "object" ? source : {};
+  const occupationFallback = age < 15 ? "尚未谋业" : /父亲|母亲/.test(relation) ? sample(["料理家业", "务农", "经营小铺"]) : sample(NPC_OCCUPATIONS);
+  return {
+    ambition: String(base.ambition || sample(NPC_AMBITIONS) || "求安稳"),
+    disposition: String(base.disposition || sample(NPC_DISPOSITIONS) || "重情"),
+    occupation: String(base.occupation || occupationFallback || "料理家业"),
+    wealth: clampNumber(base.wealth, 0, 100, randInt(25, 65)),
+    influence: clampNumber(base.influence, 0, 100, randInt(12, 48)),
+    memories: Array.isArray(base.memories) ? base.memories.filter((item) => item && typeof item === "object").map((item) => ({ year: Number(item.year || 0), type: String(item.type || "往事"), text: String(item.text || ""), impact: Number(item.impact || 0) })).slice(0, 8) : [],
+    lastActionYear: Number.isFinite(Number(base.lastActionYear)) ? Number(base.lastActionYear) : -1,
+    lastAction: String(base.lastAction || ""),
+    marriedTo: String(base.marriedTo || ""),
+  };
+}
+
 function normalizeRelative(person, familyName = "李", kind = "friend") {
   const source = person && typeof person === "object" ? person : {};
   const gender = source.gender === "female" || source.relation === "姐姐" || source.relation === "妹妹" ? "female" : source.gender === "male" || source.relation === "哥哥" || source.relation === "弟弟" ? "male" : Math.random() > 0.5 ? "male" : "female";
@@ -2844,8 +3086,10 @@ function normalizeRelative(person, familyName = "李", kind = "friend") {
   const physiqueFallback = kind === "partner" ? randInt(48, 86) : kind === "sibling" ? randInt(42, 88) : randInt(35, 88);
   const age = Math.max(0, Math.round(Number(source.age) || ageFallback));
   const physique = clamp(Number(source.physique ?? physiqueFallback));
+  const agency = normalizeNpcAgency(source, relation, age);
   return {
     ...source,
+    ...agency,
     id: source.id || `${kind}-${source.name || fallbackName}`,
     name: source.name || fallbackName,
     relation,
@@ -2864,9 +3108,11 @@ function normalizeParent(parent, role) {
   const physiqueFallback = isFather ? randInt(58, 88) : randInt(55, 86);
   const age = Math.max(18, Math.round(Number(source.age) || ageFallback));
   const physique = clamp(Number(source.physique ?? physiqueFallback));
+  const relation = isFather ? "父亲" : "母亲";
   return {
     ...source,
-    relation: isFather ? "父亲" : "母亲",
+    ...normalizeNpcAgency(source, relation, age),
+    relation,
     gender: isFather ? "male" : "female",
     age,
     physique,
@@ -2904,6 +3150,7 @@ function normalizeChild(child, familyName) {
   const spouse = base.spouse ? normalizeRelative({ ...base.spouse, relation: spouseRelation, gender: gender === "female" ? "male" : "female" }, familyName, "partner") : null;
   const grandchildren = Array.isArray(base.grandchildren) ? base.grandchildren : [];
   return {
+    ...normalizeNpcAgency(base, base.relation || (gender === "female" ? "女儿" : "儿子"), Math.max(0, Math.round(Number(base.age) || 0))),
     id: childId,
     name: base.name || `${familyName}${sample(gender === "female" ? DATA.database?.names?.female : DATA.database?.names?.male) || "承安"}`,
     relation: base.relation || (gender === "female" ? "女儿" : "儿子"),
@@ -2942,6 +3189,7 @@ function normalizeGrandchild(grandchild, familyName, parentId) {
   const gender = base.gender === "female" ? "female" : "male";
   const physique = clamp(Number(base.physique ?? randInt(42, 86)));
   return {
+    ...normalizeNpcAgency(base, gender === "female" ? "孙女" : "孙子", Math.max(0, Math.round(Number(base.age) || 0))),
     id: base.id || `grandchild-${Date.now()}-${Math.random().toString(16).slice(2)}`,
     name: base.name || `${familyName}${sample(gender === "female" ? DATA.database?.names?.female : DATA.database?.names?.male) || "承安"}`,
     relation: gender === "female" ? "孙女" : "孙子",
@@ -2961,7 +3209,7 @@ function normalizeGrandchild(grandchild, familyName, parentId) {
 
 function normalizeFriend(friend) {
   if (typeof friend === "string") {
-    return { id: `friend-${friend}`, name: friend, relation: "友人", gender: "unknown", age: randInt(12, 60), physique: randInt(35, 88), alive: true, affection: randInt(42, 78), lastMet: -1 };
+    return normalizeFriend({ id: `friend-${friend}`, name: friend, relation: "友人", gender: "unknown", age: randInt(12, 60), physique: randInt(35, 88), alive: true, affection: randInt(42, 78), lastMet: -1 });
   }
   const source = friend && typeof friend === "object" ? friend : {};
   const name = source.name || makePersonName(Math.random() > 0.5 ? "male" : "female");
@@ -4220,6 +4468,331 @@ function resolveCulturalEvent(event, choice) {
   render();
 }
 
+function recordWorldHistory(title, text, type = "incident") {
+  state.dynasty.history.unshift({ year: state.year, age: state.age, title, text, type });
+  state.dynasty.history = state.dynasty.history.slice(0, 30);
+  state.dynasty.headline = text;
+}
+
+function enthroneNewRuler() {
+  const world = state.dynasty;
+  const oldRuler = world.rulerName;
+  const oldEra = world.eraName;
+  world.rulerName = makePersonName("male");
+  world.rulerAge = randInt(18, 42);
+  world.reignYear = 1;
+  world.eraName = sample(DYNASTY_ERA_NAMES.filter((name) => name !== oldEra)) || "新元";
+  world.temperamentId = sample(RULER_TEMPERAMENTS)?.id || "diligent";
+  world.successions += 1;
+  changeWorldValue("stability", -randInt(3, 10), null);
+  changeWorldValue("factions.court", randInt(-8, 8), null);
+  changeWorldValue("factions.military", randInt(-6, 8), null);
+  recordWorldHistory("新帝改元", `${oldRuler}驾崩，${world.rulerName}继位，改元${world.eraName}。朝野观望，新旧人事开始更替。`, "succession");
+}
+
+function advanceDynastyYear(deltas = []) {
+  state.dynasty = normalizeDynastyState(state.dynasty);
+  const world = state.dynasty;
+  world.reignYear += 1;
+  world.rulerAge += 1;
+  const temperament = dynastyTemperament();
+  const temperamentChanges = {
+    diligent: { prosperity: 1, "local.sentiment": 1, treasury: -1 },
+    reformer: { corruption: -1, stability: Math.random() < 0.5 ? -1 : 1, factions: { reformers: 1 } },
+    martial: { borderThreat: -1, treasury: -2, factions: { military: 1 } },
+    suspicious: { stability: -1, corruption: -1, factions: { court: 1 } },
+    indulgent: { corruption: 2, treasury: -1, "local.sentiment": -1, factions: { court: 1 } },
+  };
+  applyWorldChanges(temperamentChanges[temperament.id], null);
+  changeWorldValue("local.disaster", -randInt(0, 3), null);
+  changeWorldValue("local.epidemic", -randInt(0, 4), null);
+  changeWorldValue("borderThreat", -randInt(0, 2), null);
+
+  const deathChance = world.rulerAge >= 82 ? 1 : world.rulerAge >= 72 ? 0.2 : world.rulerAge >= 62 ? 0.07 : 0.015;
+  if (Math.random() < deathChance && !world.activeArc) {
+    enthroneNewRuler();
+    deltas.push({ label: "朝局", value: `${world.eraName}元年` });
+  } else if (Math.random() < 0.48) {
+    const fresh = WORLD_INCIDENTS.filter((item) => item.id !== world.lastIncidentId);
+    const incident = sample(fresh.length ? fresh : WORLD_INCIDENTS);
+    if (incident) {
+      applyWorldChanges(incident.effects, null);
+      world.lastIncidentId = incident.id;
+      recordWorldHistory(incident.title, incident.text);
+      deltas.push({ label: "天下", value: incident.title, negative: ["flood-warning", "border-raid", "palace-spending", "epidemic"].includes(incident.id) });
+    }
+  } else {
+    const phase = dynastyPhase(world);
+    world.headline = `${world.eraName}${world.reignYear}年，天下处于${phase.name}：${phase.note}。`;
+  }
+  const grainTarget = clamp(Math.round(88 + world.local.disaster * 0.62 + world.borderThreat * 0.28 + world.local.epidemic * 0.2 - world.prosperity * 0.22), 55, 210);
+  world.local.grainPrice = clamp(Math.round(world.local.grainPrice * 0.65 + grainTarget * 0.35), 45, 220);
+}
+
+function worldCareerRole() {
+  const kind = careerKind();
+  const name = state.career?.name || "";
+  if (kind === "official") return "official";
+  if (kind === "caravan" || /商|铺|掌柜|牙人/.test(name)) return "merchant";
+  if (/医|郎中|药|稳婆/.test(name)) return "healer";
+  if (/农|佃|田|庄稼/.test(name)) return "farmer";
+  if (["craft", "art", "female"].includes(kind)) return "artisan";
+  return "common";
+}
+
+function worldCareerImpactText() {
+  const role = worldCareerRole();
+  const world = state.dynasty;
+  if (role === "official") return `安定 ${world.stability}、贪墨 ${world.corruption} 将影响官场考成与专案。`;
+  if (role === "merchant") return `粮价 ${world.local.grainPrice}、治安 ${world.local.security}、边患 ${world.borderThreat} 决定商路风险。`;
+  if (role === "healer") return `疫病 ${world.local.epidemic} 决定病患与收入，也会增加染病风险。`;
+  if (role === "farmer") return `灾情 ${world.local.disaster}、粮价 ${world.local.grainPrice} 共同决定收成。`;
+  return `粮价 ${world.local.grainPrice}、治安 ${world.local.security} 会改变日常开销与出行风险。`;
+}
+
+function applyWorldAnnualImpact(deltas = []) {
+  const world = state.dynasty;
+  if (!world || state.age < 15) return;
+  const livingCost = Math.max(0, Math.round((world.local.grainPrice - 95) / 14));
+  if (livingCost) changeStat("money", -livingCost, deltas);
+  const role = worldCareerRole();
+  if (role === "official") {
+    const merit = Math.round((world.stability + world.local.sentiment - world.corruption) / 45) - 1;
+    if (merit) {
+      state.official.merit = Math.max(0, Number(state.official.merit || 0) + merit);
+      deltas.push({ label: "天下考成", value: merit, negative: merit < 0 });
+    }
+  } else if (role === "merchant") {
+    const trade = Math.round((world.prosperity + world.local.security - world.borderThreat) / 18) - 4;
+    if (trade) changeStat("money", trade, deltas);
+  } else if (role === "healer" && world.local.epidemic >= 35) {
+    changeStat("money", Math.round(world.local.epidemic / 6), deltas);
+    if (Math.random() < world.local.epidemic / 250) changeStat("physique", -randInt(2, 6), deltas);
+  } else if (role === "farmer") {
+    const harvest = Math.round((world.prosperity - world.local.disaster) / 12);
+    if (harvest) changeStat("money", harvest, deltas);
+  }
+}
+
+function significantNpcRefs() {
+  const people = [
+    state.family.father,
+    state.family.mother,
+    ...(state.family.siblings || []),
+    state.family.spouseMeta,
+    ...(state.family.concubines || []),
+    ...(state.family.children || []),
+    ...(state.friends || []),
+  ].filter((person) => person && person.alive !== false);
+  const seen = new Set();
+  return people.filter((person) => {
+    const key = person.id || person.name;
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function ensureNpcAgency(person) {
+  if (!person) return null;
+  Object.assign(person, normalizeNpcAgency(person, person.relation, person.age));
+  return person;
+}
+
+function rememberNpcMoment(person, type, text, impact = 0) {
+  if (!ensureNpcAgency(person)) return;
+  person.memories.unshift({ year: state.year, type, text, impact: Number(impact || 0) });
+  person.memories = person.memories.slice(0, 8);
+  if (impact) person.affection = clamp(Number(person.affection ?? 60) + impact);
+}
+
+function advanceNpcAgencyYear(deltas = []) {
+  if (state.age < 8) return;
+  const candidates = significantNpcRefs().filter((person) => Number(person.age || 0) >= 15 && Number(person.lastActionYear || -1) < state.year);
+  const person = sample(candidates);
+  if (!person) return;
+  ensureNpcAgency(person);
+  const world = state.dynasty;
+  const roll = Math.random();
+  let title = "亲友近况";
+  let text = "";
+  if (!person.marriedTo && person.age >= 18 && person.age <= 45 && !/父亲|母亲|妻子|夫君|配偶|妾室/.test(person.relation || "") && roll < 0.16) {
+    person.marriedTo = makePersonName(person.gender === "female" ? "male" : "female");
+    if (person.id?.startsWith?.("child-")) {
+      person.spouse = normalizeRelative({ name: person.marriedTo, relation: person.gender === "female" ? "女婿" : "儿媳", gender: person.gender === "female" ? "male" : "female", age: Math.max(18, person.age + randInt(-3, 3)), affection: randInt(58, 82), alive: true }, state.name.slice(0, 1), "partner");
+      person.marriageYear = state.year;
+    }
+    person.wealth = clamp(person.wealth - randInt(3, 12));
+    person.lastAction = `与${person.marriedTo}成婚`;
+    text = `${person.name}托人送来喜帖，已与${person.marriedTo}成婚另立门户。你们往后的来往，也多了一个新的家门。`;
+    rememberNpcMoment(person, "婚姻", person.lastAction, 2);
+  } else if (world.local.disaster >= 48 && ["重情", "豪爽", "刚直"].includes(person.disposition) && roll < 0.52) {
+    const help = Math.min(person.wealth, randInt(5, 16));
+    person.wealth = clamp(person.wealth - help);
+    person.influence = clamp(person.influence + 3);
+    person.lastAction = "参与乡里赈济";
+    text = `${person.name}拿出积蓄参与赈济，还亲自帮着搭棚分粥。此事让乡里重新认识了这个${person.disposition}的人。`;
+    rememberNpcMoment(person, "天下", person.lastAction, 1);
+  } else if (world.borderThreat >= 55 && person.age <= 42 && ["进取", "刚直", "豪爽"].includes(person.disposition) && roll < 0.58) {
+    person.occupation = "随军效力";
+    person.influence = clamp(person.influence + randInt(4, 9));
+    person.physique = clamp(person.physique - randInt(1, 5));
+    person.lastAction = "投身边军";
+    text = `${person.name}应募随军，来信说边关风硬，却不愿只在家中听战报。`;
+    rememberNpcMoment(person, "志向", person.lastAction, person.affection >= 60 ? 2 : 0);
+  } else if (/读书进身|光耀门楣/.test(person.ambition) && person.age <= 45 && roll < 0.62) {
+    person.occupation = person.influence >= 55 ? "县学教谕" : "书塾助教";
+    person.influence = clamp(person.influence + randInt(3, 8));
+    person.wealth = clamp(person.wealth + randInt(2, 7));
+    person.lastAction = `谋得${person.occupation}`;
+    text = `${person.name}多年用功终于有了着落，如今在${person.occupation}，说话行事也比往日沉稳。`;
+    rememberNpcMoment(person, "营生", person.lastAction, 1);
+  } else if (roll < 0.78) {
+    const gain = randInt(3, 10);
+    person.wealth = clamp(person.wealth + gain);
+    person.influence = clamp(person.influence + randInt(0, 3));
+    person.lastAction = `${person.occupation}渐有起色`;
+    text = `${person.name}今年在${person.occupation}上站稳脚跟，离“${person.ambition}”又近了一步。`;
+    rememberNpcMoment(person, "营生", person.lastAction, 1);
+  } else {
+    const loss = randInt(4, 13);
+    person.wealth = clamp(person.wealth - loss);
+    person.lastAction = `${person.occupation}遭遇挫折`;
+    text = `${person.name}今年诸事不顺，${person.occupation}折了本钱，却仍不肯放下“${person.ambition}”的念头。`;
+    rememberNpcMoment(person, "挫折", person.lastAction, -1);
+  }
+  person.lastActionYear = state.year;
+  if (text) {
+    addLog(title, text, [{ label: person.relation || "亲友", value: person.name }]);
+    deltas.push({ label: "亲友动向", value: person.name });
+  }
+}
+
+function worldArcCandidates() {
+  const world = state.dynasty;
+  const available = Object.keys(WORLD_ARCS).filter((id) => !world.completedArcs.includes(id));
+  const urgent = [];
+  if (available.includes("flood") && world.local.disaster >= 42) urgent.push("flood");
+  if (available.includes("succession") && (world.rulerAge >= 58 || world.stability <= 42 || world.factions.court >= 72)) urgent.push("succession");
+  if (available.includes("border") && world.borderThreat >= 45) urgent.push("border");
+  return urgent.length ? urgent : available;
+}
+
+function maybeStartWorldArc() {
+  const world = state.dynasty;
+  if (world.activeArc || state.age < 15 || state.year - world.lastArcYear < 4) return;
+  const candidates = worldArcCandidates();
+  const urgent = candidates.some((id) => id === "flood" && world.local.disaster >= 42 || id === "succession" && world.rulerAge >= 58 || id === "border" && world.borderThreat >= 45);
+  if (!candidates.length || (!urgent && Math.random() > 0.28)) return;
+  const id = sample(candidates);
+  world.activeArc = { id, stage: 0, score: 0, dueYear: state.year, startedYear: state.year, choices: [] };
+  recordWorldHistory(`${WORLD_ARCS[id].name} · 开端`, `一条将持续数年的天下主线已经开始：${WORLD_ARCS[id].stages[0].title}。`, "arc");
+}
+
+function worldApproachFitsRole(approach, role = worldCareerRole()) {
+  const matches = {
+    official: ["relief", "investigate", "law", "public", "truth", "balanced"],
+    merchant: ["supply", "trade", "scout", "rebuild"],
+    healer: ["healing", "relief", "public"],
+    farmer: ["rebuild", "relief", "public"],
+    artisan: ["supply", "rebuild", "public"],
+    common: ["caution", "public", "relief"],
+  };
+  return (matches[role] || []).includes(approach);
+}
+
+function annualWorldArcEvent() {
+  if (!state || state.dead || state.prisonYears > 0 || state.age < 15) return null;
+  state.dynasty = normalizeDynastyState(state.dynasty);
+  maybeStartWorldArc();
+  const active = state.dynasty.activeArc;
+  if (!active || active.dueYear > state.year) return null;
+  const arc = WORLD_ARCS[active.id];
+  const stage = arc?.stages?.[active.stage];
+  if (!stage) {
+    state.dynasty.activeArc = null;
+    return null;
+  }
+  const role = worldCareerRole();
+  return {
+    id: `world-arc-${active.id}-${active.stage}`,
+    kind: "worldArc",
+    arcId: active.id,
+    arcStage: active.stage,
+    title: stage.title,
+    content: stage.content,
+    icon: arc.icon,
+    children: stage.choices.map((choice) => ({
+      ...choice,
+      content: choice.text,
+      note: `${choice.note}${worldApproachFitsRole(choice.approach, role) ? ` · ${state.career?.name || "当前身份"}可发挥专长` : ""}${choice.cost ? ` · 需 ${moneyText(choice.cost)}` : ""}`,
+      disabled: !!choice.cost && state.stats.money < choice.cost,
+    })),
+  };
+}
+
+function resolveWorldArcEvent(event, choice) {
+  const world = state.dynasty;
+  const active = world.activeArc;
+  if (!active || active.id !== event.arcId || active.stage !== event.arcStage) return;
+  const deltas = [];
+  if (choice.cost) {
+    if (state.stats.money < choice.cost) return;
+    changeStat("money", -choice.cost, deltas);
+    addLedger(`天下 · ${event.title}`, -choice.cost, choice.title);
+  }
+  applyEffectRanges(choice.effects, deltas);
+  applyWorldChanges(choice.world, deltas);
+  const roleBonus = worldApproachFitsRole(choice.approach) ? 1 : 0;
+  active.score += Number(choice.score || 0) + roleBonus;
+  active.choices.push(choice.approach || choice.title);
+  const witness = state.family.spouseMeta || sample(state.family.siblings || []) || sample(state.friends || []);
+  if (witness) rememberNpcMoment(witness, "共同经历", `记得你在${event.title}时选择“${choice.title}”`, Number(choice.score || 0) > 0 ? 2 : Number(choice.score || 0) < 0 ? -2 : 0);
+  let text = choice.text;
+  const arc = WORLD_ARCS[active.id];
+  const finalStage = active.stage >= arc.stages.length - 1;
+  if (roleBonus) {
+    text += ` 你凭借${state.career?.name || "过往阅历"}的经验，比旁人更快找到了着力之处。`;
+    deltas.push({ label: "职业专长", value: "+1 主线评价" });
+  }
+  if (finalStage) {
+    const strong = active.score >= 6;
+    const failed = active.score <= 0;
+    if (strong) {
+      text += " 数年风波终于平息，你的选择被地方志郑重记下，许多人因此少受了一场苦。";
+      applyWorldChanges({ prosperity: 5, stability: 5, "local.sentiment": 7, corruption: -3 }, deltas);
+      changeStat("favorability", 6, deltas);
+    } else if (failed) {
+      text += " 风波虽暂告一段落，留下的亏空、怨气与伤亡却要许多年才能抚平。";
+      applyWorldChanges({ stability: -5, "local.sentiment": -7, corruption: 4 }, deltas);
+      changeStat("mood", -4, deltas);
+    } else {
+      text += " 风波在妥协中收场，天下没有因此倾覆，也没有真正治好旧患。";
+    }
+    if (active.id === "succession") {
+      const formerRuler = world.rulerName;
+      enthroneNewRuler();
+      text += ` ${formerRuler}一朝至此结束，${world.rulerName}即位，改元${world.eraName}。`;
+      deltas.push({ label: "改元", value: `${world.eraName}元年` });
+    }
+    if (!world.completedArcs.includes(active.id)) world.completedArcs.push(active.id);
+    world.lastArcYear = state.year;
+    recordWorldHistory(`${arc.name} · 终局`, text, "arc-complete");
+    world.activeArc = null;
+  } else {
+    active.stage += 1;
+    active.dueYear = state.year + 1;
+    recordWorldHistory(`${arc.name} · ${event.title}`, text, "arc");
+  }
+  state.currentEvent = null;
+  state.lastDeltas = deltas;
+  addLog(`天下主线 · ${event.title}`, text, deltas);
+  state.eventResult = { title: choice.title, text, deltas, icon: arc.icon || "Official", scene: event.arcId === "flood" ? "travel" : event.arcId === "border" ? "ember" : "ink" };
+  unlockLifeGoals();
+  save();
+  render();
+}
+
 function nextYear() {
   const block = yearAdvanceBlockReason();
   if (block) {
@@ -4247,6 +4820,8 @@ function nextYear() {
       return;
     }
 
+    advanceDynastyYear(state.lastDeltas);
+
     if (state.prisonYears > 0) {
       const prison = ensurePrisonState();
       prison.yearsServed += 1;
@@ -4255,6 +4830,7 @@ function nextYear() {
       changeStat("mood", -randInt(1, 4), state.lastDeltas);
       changeStat("physique", randInt(-4, -1), state.lastDeltas);
       advanceFamilyYear(state.lastDeltas);
+      advanceNpcAgencyYear(state.lastDeltas);
       advanceCricketYear(state.lastDeltas);
       if (shouldDie()) {
         die("病殁狱中");
@@ -4279,6 +4855,7 @@ function nextYear() {
       addLedger("家产进项", assetIncome, "名下产业送来一年收益。");
     }
     assetMarketEvent(state.lastDeltas);
+    applyWorldAnnualImpact(state.lastDeltas);
     if (state.diseases.length) changeStat("physique", -state.diseases.length, state.lastDeltas);
     advanceFamilyYear(state.lastDeltas);
     if (typeof applySpouseProfileYear === "function") applySpouseProfileYear(state.lastDeltas);
@@ -4286,6 +4863,7 @@ function nextYear() {
     if (typeof runSecretYear === "function") runSecretYear(state.lastDeltas);
     annualRelationEvent(state.lastDeltas);
     annualPartnerEvent(state.lastDeltas);
+    advanceNpcAgencyYear(state.lastDeltas);
 
     if (shouldDie()) {
       die(state.age >= 100 ? "寿终正寝" : "体魄耗尽");
@@ -4295,6 +4873,7 @@ function nextYear() {
     }
 
     const annualEvent =
+      annualWorldArcEvent() ||
       annualUnderworldEvent() ||
       annualJianghuEvent() ||
       annualFortuneEvent() ||
@@ -5258,6 +5837,7 @@ function chooseOption(index) {
     if (event.kind === "secretIntroduction") return resolveSecretIntroduction(event, choice);
     if (event.kind === "prisonYear") return resolvePrisonYear(event, choice);
     if (event.kind === "culturalEvent") return resolveCulturalEvent(event, choice);
+    if (event.kind === "worldArc") return resolveWorldArcEvent(event, choice);
 
     const deltas = applyResults(choice.results || []);
     state.lastDeltas = mergeDeltas(state.pendingActivity?.deltas, deltas);
@@ -6107,7 +6687,8 @@ function normalizeCaravanHistory(item) {
 
 function caravanRouteRisk(route, level = 1) {
   const ability = Math.floor(((state.stats.eq || 50) + (state.stats.knowledge || 50) + (state.stats.physique || 50)) / 45);
-  return Math.max(4, Math.round(route.risk - Math.max(1, level) * 3 - ability));
+  const worldRisk = state.dynasty ? Math.round((state.dynasty.borderThreat + Math.max(0, 60 - state.dynasty.local.security)) / 12) : 0;
+  return Math.max(4, Math.round(route.risk + worldRisk - Math.max(1, level) * 3 - ability));
 }
 
 function caravanChoiceDefinitions(event, run, route) {
@@ -6392,7 +6973,9 @@ function annualAssetIncome() {
     const condition = clamp(Number(item.condition ?? 72), 20, 120) / 100;
     const level = Math.max(1, Number(item.level) || 1);
     const modeFactor = item.mode === "self" ? 1.18 : 0.92;
-    return sum + Math.round(Number(item.income || 0) * level * modeFactor * condition * (0.75 + Math.random() * 0.5));
+    const worldFactor = state.dynasty ? clamp(0.72 + state.dynasty.prosperity / 190 + state.dynasty.local.sentiment / 500 - state.dynasty.local.disaster / 240, 0.52, 1.42) : 1;
+    const grainFactor = /田|庄|农/.test(item.name || item.label || "") && state.dynasty ? clamp(state.dynasty.local.grainPrice / 100, 0.7, 1.55) : 1;
+    return sum + Math.round(Number(item.income || 0) * level * modeFactor * condition * worldFactor * grainFactor * (0.75 + Math.random() * 0.5));
   }, 0);
 }
 
@@ -6547,7 +7130,8 @@ function travelTripCost(destination = travelDestinationById()) {
   const supply = travelSupply();
   const memory = state.travelSystem.memories?.[destination.id] || { trips: 0 };
   const discount = Math.min(0.24, Number(memory.trips || 0) * 0.04);
-  return Math.max(4, Math.round(destination.cost * (1 - discount)) + supply.cost);
+  const worldSurcharge = state.dynasty ? Math.max(0, Math.round((state.dynasty.local.grainPrice - 100) / 16 + (55 - state.dynasty.local.security) / 18)) : 0;
+  return Math.max(4, Math.round(destination.cost * (1 - discount)) + supply.cost + worldSurcharge);
 }
 
 function startTravelJourney() {
@@ -6573,7 +7157,7 @@ function startTravelJourney() {
     companionId: companion.id,
     companionName: companion.name,
     supplyId: supply.id,
-    quality: clamp(52 + carriage.comfort + supply.comfort + companion.bonus),
+    quality: clamp(52 + carriage.comfort + supply.comfort + companion.bonus - (state.dynasty ? Math.round((state.dynasty.borderThreat + state.dynasty.local.disaster) / 24) : 0)),
     spent: cost,
     history: [{ title: "启程", text: `你与${companion.name}乘${carriage.name}启程，向${destination.name}而去。`, ok: true }],
   });
@@ -8930,6 +9514,7 @@ function interactRelation(id, actionId) {
   if (action.mood) changeStat("mood", rangeValue(action.mood), deltas);
   if (action.physique) changeStat("physique", rangeValue(action.physique), deltas);
   target.person.affection = clamp(Number(target.person.affection ?? 60) + rangeValue(action.affection || [0, 0]));
+  rememberNpcMoment(target.person, "你们的往来", `你曾在${state.age}岁时${action.label}${target.name}`, actionId === "borrow" ? -2 : actionId === "gift" || actionId === "care" ? 3 : 1);
   if (actionId === "care" && Number.isFinite(Number(target.person.physique))) {
     const boost = randInt(2, 6);
     target.person.physique = clamp(Number(target.person.physique) + boost);
@@ -8960,6 +9545,7 @@ function interactPartner(target, actionId) {
   if (action.mood) changeStat("mood", rangeValue(action.mood), deltas);
   const affectionGain = rangeValue(action.affection || [0, 0]);
   target.person.affection = clamp(affection + affectionGain);
+  rememberNpcMoment(target.person, "夫妻往事", `你曾在${state.age}岁时与${target.name}${action.label}`, actionId === "intimate" ? 3 : actionId === "gift" || actionId === "care" ? 2 : 1);
   if (target.kind === "spouse") state.family.spouseAffection = target.person.affection;
 
   if (actionId === "care") {
@@ -9335,6 +9921,7 @@ function inheritFromChild(id) {
   const siblings = siblingSource
     .filter((child) => child.id !== heir.id)
     .map((child) => ({
+      ...normalizeNpcAgency(child, child.gender === "female" ? (child.age >= heir.age ? "姐姐" : "妹妹") : child.age >= heir.age ? "哥哥" : "弟弟", child.age),
       name: child.name,
       relation: child.gender === "female" ? (child.age >= heir.age ? "姐姐" : "妹妹") : child.age >= heir.age ? "哥哥" : "弟弟",
       gender: child.gender,
@@ -9375,6 +9962,7 @@ function inheritFromChild(id) {
     age: startAge,
     year: startAge,
     location: state.location,
+    dynasty: carryDynastyAcrossInheritance(state.dynasty, state.year, startAge),
     stats: {
       mood: clamp(50 + Math.floor((heir.affection || 60) / 10) - (heirAge < 12 ? 4 : 0)),
       physique: clamp(42 + Math.floor(heirVirtue / 6) + randInt(-4, 8)),
@@ -9487,6 +10075,7 @@ function inheritFromSpouse(heir) {
     age: heirAge,
     year: heirAge,
     location: old.location,
+    dynasty: carryDynastyAcrossInheritance(old.dynasty, old.year, heirAge),
     stats: {
       mood: clamp(48 + Math.floor(Number(heir.affection || 70) / 12)),
       physique: clamp(Number(heir.physique || 60)),
@@ -11579,6 +12168,7 @@ function centerContent() {
   if (view.page === "matchmaker") return matchmakerView();
   if (view.page === "codex") return codexView();
   if (view.page === "culture") return cultureView();
+  if (view.page === "world") return worldView();
   if (view.page === "gamble") return gambleView();
   if (view.page === "miniGames") return miniGamesView();
   if (view.page === "courtesanContest") return courtesanContestView();
@@ -11757,6 +12347,70 @@ function cultureView() {
       </section>`).join("")}`;
 }
 
+function worldMetric(label, value, note, danger = false) {
+  const level = clamp(Number(value || 0));
+  return `<article class="world-metric ${danger ? "danger" : ""}"><span>${escapeHtml(label)}</span><strong>${Math.round(value)}</strong><div class="meter"><i style="width:${danger ? clamp(level) : level}%"></i></div><small>${escapeHtml(note)}</small></article>`;
+}
+
+function dominantWorldFaction() {
+  const [id, power] = Object.entries(state.dynasty.factions).sort((a, b) => b[1] - a[1])[0] || ["reformers", 0];
+  return { id, power, ...(WORLD_FACTIONS[id] || { name: "朝臣", note: "朝局未明" }) };
+}
+
+function worldPulseView() {
+  const world = state.dynasty;
+  const phase = dynastyPhase(world);
+  const faction = dominantWorldFaction();
+  const arc = world.activeArc ? WORLD_ARCS[world.activeArc.id] : null;
+  return `
+    <button class="world-pulse" data-door="world">
+      <span class="world-seal">${escapeHtml(world.eraName)}</span>
+      <span><small>${escapeHtml(world.eraName)}${world.reignYear}年 · ${escapeHtml(phase.name)}</small><strong>${escapeHtml(arc ? `${arc.name} · ${arc.stages[world.activeArc.stage]?.title || "风波未平"}` : world.headline)}</strong></span>
+      <em>${escapeHtml(faction.name)} ${faction.power}</em>
+    </button>`;
+}
+
+function worldView() {
+  state.dynasty = normalizeDynastyState(state.dynasty);
+  const world = state.dynasty;
+  const phase = dynastyPhase(world);
+  const temperament = dynastyTemperament();
+  const faction = dominantWorldFaction();
+  const activeArc = world.activeArc ? WORLD_ARCS[world.activeArc.id] : null;
+  return `
+    <article class="play-card world-dashboard phase-${phase.id}">
+      <div class="world-hero">
+        <div class="world-era"><small>年号</small><strong>${escapeHtml(world.eraName)}</strong><span>${world.reignYear} 年</span></div>
+        <section><p class="eyebrow">天下风云 · ${escapeHtml(phase.name)}</p><h2>${escapeHtml(world.headline)}</h2><p>${escapeHtml(phase.note)}。当今天子${escapeHtml(world.rulerName)}，${world.rulerAge}岁，性情${escapeHtml(temperament.name)}；${escapeHtml(temperament.note)}。</p></section>
+      </div>
+      ${activeArc ? `<section class="world-arc-banner"><span>跨年主线 · 第 ${world.activeArc.stage + 1}/${activeArc.stages.length} 幕</span><strong>${escapeHtml(activeArc.name)}：${escapeHtml(activeArc.stages[world.activeArc.stage]?.title || "风波未平")}</strong><small>当前评价 ${world.activeArc.score} · 下一幕${world.activeArc.dueYear <= state.year ? "已经临门" : `${world.activeArc.dueYear - state.year}年后`}</small></section>` : ""}
+      <div class="world-metrics">
+        ${worldMetric("国力", world.prosperity, "生产、商贸与恢复能力")}
+        ${worldMetric("安定", world.stability, "朝廷秩序与地方服从")}
+        ${worldMetric("国库", world.treasury, "赈济、军费与工程余力")}
+        ${worldMetric("边患", world.borderThreat, "越高越可能触发战争", true)}
+        ${worldMetric("贪墨", world.corruption, "越高越容易出现亏空", true)}
+      </div>
+      <div class="world-local-grid">
+        ${worldMetric("粮价", world.local.grainPrice, "100为常年基准", world.local.grainPrice > 120)}
+        ${worldMetric("治安", world.local.security, "影响商旅与百姓生活")}
+        ${worldMetric("灾情", world.local.disaster, "水旱、火灾与流民风险", true)}
+        ${worldMetric("疫病", world.local.epidemic, "医者机会与染病风险", true)}
+        ${worldMetric("民心", world.local.sentiment, "地方对官府与秩序的信任")}
+      </div>
+      <p class="world-career-impact"><b>与你的营生：</b>${escapeHtml(worldCareerImpactText())}</p>
+      <div class="main-actions"><button class="ghost-btn" data-action="back-main">返回流年</button></div>
+    </article>
+    <section class="world-factions">
+      <div class="section-title"><h2>朝局四派</h2><span>${escapeHtml(faction.name)}声势最盛</span></div>
+      <div>${Object.entries(WORLD_FACTIONS).map(([id, item]) => `<article class="faction-card ${id === faction.id ? "dominant" : ""}"><span>${escapeHtml(item.name)}</span><strong>${world.factions[id]}</strong><div class="meter"><i style="width:${world.factions[id]}%"></i></div><small>${escapeHtml(item.note)}</small></article>`).join("")}</div>
+    </section>
+    <section class="log-preview world-chronicle">
+      <div class="section-title"><h2>天下纪事</h2><span>已历 ${world.successions} 次改元 · 完成 ${world.completedArcs.length}/3 条主线</span></div>
+      ${world.history.slice(0, 10).map((item) => infoCard(`${item.year}年 · ${item.title}`, item.text)).join("") || `<p class="empty-note">本朝纪事尚未落笔。</p>`}
+    </section>`;
+}
+
 function overviewView() {
   if (state.prisonYears > 0) return prisonOverviewView();
   const phase = lifePhase();
@@ -11782,6 +12436,7 @@ function overviewView() {
         <button class="secondary-btn" data-page="place" data-place="activities">安排活动</button>
       </div>
     </article>
+    ${worldPulseView()}
     ${secretPulseView()}
     <section class="goal-strip">
       ${goals.map((goal) => `
@@ -11796,6 +12451,7 @@ function overviewView() {
         <button class="door-btn ${door.featured ? "featured-door" : ""}" data-door="${door.id}">
           ${icon(door.icon, door.label)}
           <span>${escapeHtml(door.label)}</span>
+          ${door.id === "world" ? `<small>${escapeHtml(dynastyPhase().name)} · ${state.dynasty?.activeArc ? WORLD_ARCS[state.dynasty.activeArc.id]?.name : `${state.dynasty?.eraName || "本朝"}${state.dynasty?.reignYear || 1}年`}</small>` : ""}
           ${door.id === "secrets" ? `<small>${state.age < 15 ? "15 岁解锁" : secretLineNoticeCount() ? `${secretLineNoticeCount()} 条动静` : "三线总览"}</small>` : ""}
           ${door.id === "culture" ? `<small>${state.culturalCalendar?.seen?.length || 0}/${CULTURAL_CALENDAR_ITEMS.length} 已入册</small>` : ""}
         </button>`).join("")}
@@ -12398,7 +13054,8 @@ function childCard(child) {
       <div>
         <strong><span>${escapeHtml(child.relation || "子女")} · ${child.age}岁</span>${escapeHtml(child.name || "无名")}</strong>
         <div class="meter"><i style="width:${affection}%"></i></div>
-        <small>${escapeHtml(child.trait || "聪慧")} · 体魄 ${physique} · 学业 ${Math.round(child.study || 0)} · 德行 ${Math.round(child.virtue || 0)}${child.otherParent ? ` · 生母/父 ${escapeHtml(child.otherParent)}` : ""}${child.spouse ? ` · 已与${escapeHtml(child.spouse.name)}成婚` : ""}${(child.grandchildren || []).length ? ` · 子女 ${(child.grandchildren || []).filter((item) => item.alive !== false).length} 人` : ""}${childEducationLabel(child) ? ` · ${escapeHtml(childEducationLabel(child))}` : ""}${familyStoryStatus(child)}</small>
+        <small>${escapeHtml(child.trait || "聪慧")} · 体魄 ${physique} · 学业 ${Math.round(child.study || 0)} · 德行 ${Math.round(child.virtue || 0)}${child.age >= 15 ? ` · ${escapeHtml(child.occupation || "尚未谋业")} · 志向“${escapeHtml(child.ambition || "求安稳")}”` : ""}${child.otherParent ? ` · 生母/父 ${escapeHtml(child.otherParent)}` : ""}${child.spouse ? ` · 已与${escapeHtml(child.spouse.name)}成婚` : child.marriedTo ? ` · 已与${escapeHtml(child.marriedTo)}成婚` : ""}${(child.grandchildren || []).length ? ` · 子女 ${(child.grandchildren || []).filter((item) => item.alive !== false).length} 人` : ""}${childEducationLabel(child) ? ` · ${escapeHtml(childEducationLabel(child))}` : ""}${familyStoryStatus(child)}</small>
+        ${child.lastAction ? `<small class="npc-memory">近年动向：${escapeHtml(child.lastAction)}${child.memories?.[0]?.text ? ` · 记得“${escapeHtml(child.memories[0].text)}”` : ""}</small>` : ""}
         <span class="mini-actions">
           ${child.age < 15 ? `<button class="text-btn inline-action" data-teach-child="${escapeHtml(child.id)}" ${state.stats.money < CHILD_EDU_COST ? "disabled" : ""}>延师教养</button>` : `<small>已成丁，可承继家业。</small>`}
           ${child.age >= CHILD_MARRIAGE_AGE && !child.spouse ? `<button class="text-btn inline-action" data-marry-child="${escapeHtml(child.id)}" ${state.stats.money < CHILD_MARRIAGE_COST ? "disabled" : ""}>操办婚事 · ${moneyText(CHILD_MARRIAGE_COST)}</button>` : ""}
@@ -12425,7 +13082,8 @@ function personCard(person, targetId = "") {
   const ageText = Number.isFinite(Number(person.age)) ? ` · ${Math.round(Number(person.age))}岁` : "";
   const physiqueText = Number.isFinite(Number(person.physique)) ? ` · 体魄 ${Math.round(Number(person.physique))}` : "";
   const debtText = person.debt ? ` · 欠情 ${moneyText(person.debt)}` : "";
-  const statusText = person.alive === false ? `已故${ageText}` : `${relationLabel(affection)}${ageText}${physiqueText}${debtText}${partnerStatusText(person)}${familyStoryStatus(person)}`;
+  const agencyText = person.alive === false ? "" : ` · ${person.occupation || "料理家业"} · ${person.disposition || "重情"} · 志向“${person.ambition || "求安稳"}”${person.marriedTo ? ` · 已与${person.marriedTo}成婚` : ""}`;
+  const statusText = person.alive === false ? `已故${ageText}` : `${relationLabel(affection)}${ageText}${physiqueText}${debtText}${agencyText}${partnerStatusText(person)}${familyStoryStatus(person)}`;
   return `
     <article class="person-card">
       <div class="person-avatar ${person.gender === "female" ? "female" : ""}">${icon(relativeAvatarIcon(person), person.relation)}</div>
@@ -12433,6 +13091,7 @@ function personCard(person, targetId = "") {
         <strong><span>${escapeHtml(person.relation || "亲友")}</span>${escapeHtml(person.name || "无名")}</strong>
         <div class="meter"><i style="width:${affection}%"></i></div>
         <small>${escapeHtml(statusText)}</small>
+        ${person.lastAction ? `<small class="npc-memory">近年动向：${escapeHtml(person.lastAction)}${person.memories?.[0]?.text ? ` · 记得“${escapeHtml(person.memories[0].text)}”` : ""}</small>` : ""}
         ${person.alive === false || !targetId ? "" : `<span class="mini-actions">${relationActionButtons(targetId)}</span>`}
       </div>
     </article>`;
@@ -14088,10 +14747,11 @@ function eventView(event) {
   const fortuneEvent = event.kind === "fortuneEvent";
   const prisonEvent = event.kind === "prisonYear";
   const culturalEvent = event.kind === "culturalEvent";
+  const worldEvent = event.kind === "worldArc";
   const darkEvent = ["examinerBribe", "underworldConsequence", "jianghuProphecy", "secretIntroduction"].includes(event.kind);
-  const eyebrow = prisonEvent ? `牢狱流年 · 余刑 ${state.prisonYears} 年` : culturalEvent ? `${CULTURAL_SEASONS[event.season]?.name || "四时"}时 · ${event.culturalType === "festival" ? "传统节日" : "二十四节气"}` : event.kind === "secretIntroduction" ? "奇闻暗线开启" : event.kind === "examinerBribe" ? "贡院暗局" : event.kind === "underworldConsequence" ? "旧账追门" : event.kind === "jianghuProphecy" ? "江湖命数" : official ? "官场考验" : familyStory ? "家事流年" : careerCase ? "本业专案" : fortuneEvent ? "签运应验" : "事件";
+  const eyebrow = worldEvent ? `${state.dynasty.eraName}${state.dynasty.reignYear}年 · 天下主线` : prisonEvent ? `牢狱流年 · 余刑 ${state.prisonYears} 年` : culturalEvent ? `${CULTURAL_SEASONS[event.season]?.name || "四时"}时 · ${event.culturalType === "festival" ? "传统节日" : "二十四节气"}` : event.kind === "secretIntroduction" ? "奇闻暗线开启" : event.kind === "examinerBribe" ? "贡院暗局" : event.kind === "underworldConsequence" ? "旧账追门" : event.kind === "jianghuProphecy" ? "江湖命数" : official ? "官场考验" : familyStory ? "家事流年" : careerCase ? "本业专案" : fortuneEvent ? "签运应验" : "事件";
   return `
-    <article class="play-card event-card ${prisonEvent ? "prison-event" : ""} ${culturalEvent ? `culture-event season-${event.season}` : ""}">
+    <article class="play-card event-card ${prisonEvent ? "prison-event" : ""} ${culturalEvent ? `culture-event season-${event.season}` : ""} ${worldEvent ? "world-event" : ""}">
       <p class="eyebrow">${eyebrow}</p>
       <h2>${escapeHtml(event.title || "事件")}</h2>
       <p>${formatText(fillPlaceholders(event.content || event.history || "", false))}</p>
@@ -14100,7 +14760,7 @@ function eventView(event) {
           options.length
             ? options.map(({ child, index }) => `<button class="choice-btn ${official || careerCase ? "official-choice" : ""}" data-choice="${index}" ${child.disabled ? "disabled" : ""}>
               <span>${escapeHtml(child.title || "继续")}</span>
-              ${(official || familyStory || careerCase || fortuneEvent || darkEvent || prisonEvent || culturalEvent) && child.note ? `<small>${escapeHtml(child.note)}</small>` : ""}
+              ${(official || familyStory || careerCase || fortuneEvent || darkEvent || prisonEvent || culturalEvent || worldEvent) && child.note ? `<small>${escapeHtml(child.note)}</small>` : ""}
             </button>`).join("")
             : `<button class="primary-btn" data-action="finish-event">继续</button>`
         }
