@@ -1942,7 +1942,7 @@ let view = {
   tab: "overview",
   activityId: "",
   placeId: "",
-  overlay: state && !state.onboarding?.seen ? "onboarding" : "",
+  overlay: state && !state.onboarding?.seen ? "onboarding" : state?.pendingSurprise ? "surprise" : "",
 };
 
 setAssetVars();
@@ -2332,6 +2332,12 @@ function normalizeState(raw) {
   next.market = next.market && typeof next.market === "object" ? next.market : {};
   next.market.year = Number.isFinite(Number(next.market.year)) ? Number(next.market.year) : -1;
   next.market.factor = Number.isFinite(Number(next.market.factor)) ? Number(next.market.factor) : 1;
+  next.poetry = normalizePoetry(next.poetry);
+  next.poetryRound = normalizePoetryRound(next.poetryRound);
+  next.travelCodex = normalizeTravelCodex(next.travelCodex);
+  next.leisureSeason = normalizeLeisureSeason(next.leisureSeason, next.age);
+  next.secrets = normalizeSecrets(next.secrets);
+  next.matchPool = Array.isArray(next.matchPool) ? next.matchPool.map(normalizeMatchCandidate).filter(Boolean).slice(0, 3) : [];
   next.travelSystem = normalizeTravelSystem(next.travelSystem);
   next.pendingTravel = normalizeTravelRun(next.pendingTravel);
   next.caravanMemory = normalizeCaravanMemory(next.caravanMemory);
@@ -2542,8 +2548,10 @@ function normalizeFamily(family, familyName) {
     siblings: siblings.map((item) => normalizeRelative({ relation: item.gender === "female" ? "姐姐" : "哥哥", alive: true, affection: randInt(42, 88), ...item }, familyName, "sibling")),
     lover: source.lover || false,
     loverMeta: source.lover ? normalizeRelative({ name: typeof source.lover === "string" ? source.lover : source.lover?.name, relation: "相看之人", gender: source.loverGender, alive: true, affection: 64, ...source.loverMeta }, familyName, "partner") : null,
+    loverProfile: source.lover ? normalizeMatchCandidate(source.loverProfile) : null,
     spouse: currentSpouse?.name || null,
     spouseMeta: currentSpouse,
+    spouseProfile: currentSpouse ? normalizeMatchCandidate(source.spouseProfile) : null,
     spouseAffection: clamp(Number(source.spouseAffection ?? 78)),
     spouseHistory: spouseHistory.slice(-6),
     concubines: concubines.map((item, index) => normalizePartner(typeof item === "string" ? { name: item } : item, familyName, "妾室", `concubine-${index}`)),
@@ -3096,6 +3104,15 @@ function openPoetryContest() {
   render();
 }
 
+function cancelPoetryContest() {
+  if (!state) return;
+  state.poetryRound = null;
+  view.page = "place";
+  view.placeId = "";
+  save();
+  render();
+}
+
 function answerPoetry(optionIndex) {
   if (!state || state.dead || !state.poetryRound) return;
   const round = normalizePoetryRound(state.poetryRound);
@@ -3145,7 +3162,7 @@ function recordGambleSeasonResult(won, deltas = []) {
   if (won) {
     season.gambleWins += 1;
     season.gambleStreak += 1;
-    season.gambleLosses = Math.max(0, season.gambleLosses);
+    season.gambleLosses = 0;
     for (const title of GAMBLE_SEASON_TITLES) {
       if (season.gambleStreak >= title.need && !season.titles.includes(title.id)) {
         season.titles.push(title.id);
@@ -3322,7 +3339,8 @@ function applySpouseProfileYear(deltas = []) {
 
 function openMatchmakerBoard() {
   if (!state || state.dead || state.prisonYears > 0 || state.age < 16) return;
-  if (state.family.spouse) {
+  archiveDeceasedSpouse([]);
+  if (state.family.spouse && state.family.spouseMeta?.alive !== false) {
     finishAction("媒人", "你已成婚，媒人拱手道喜，说改日再为子女操心也不迟。", [], "ArrangeMarriage");
     return;
   }
@@ -3337,7 +3355,11 @@ function selectMatchCandidate(candidateId) {
   const candidate = (state.matchPool || []).map(normalizeMatchCandidate).find((item) => item?.id === candidateId);
   if (!candidate) return;
   const deltas = [];
-  const fee = Math.min(30, Math.max(0, state.stats.money));
+  const fee = 30;
+  if (state.stats.money < fee) {
+    finishAction("媒资不足", `托媒细看需先付 ${moneyText(fee)}，你手头不足，只得改日再来。`, [], "ArrangeMarriage");
+    return;
+  }
   changeStat("money", -fee, deltas);
   if (fee) addLedger("媒资", -fee, "托媒人相看人家。");
   changeStat("relationship", randInt(2, 6), deltas);
@@ -3657,8 +3679,9 @@ function yearAdvanceBlockReason() {
   if (state.currentEvent) return "请先处理当前事件再推进流年。";
   if (state.pendingTravel) return "旅途未完，请先走完车马行程。";
   if (state.pendingCaravan) return "押镖途中，请先处理镖路上的抉择。";
+  if (state.poetryRound) return "诗会文斗尚未结束，请先应对下联或弃局。";
   if (state.mystery?.active && view.page === "mystery") return "办案界面中。可点「先放下案卷」再推进流年。";
-  if (state.pendingSurprise && view.overlay === "surprise") return "请先关闭眼前的惊喜弹窗。";
+  if (state.pendingSurprise) return "请先处理眼前的惊喜弹窗。";
   return "";
 }
 
@@ -3667,6 +3690,8 @@ function nextYear() {
   if (block) {
     // 避免静默无响应：若只是弹窗挡着，刷新一次让用户看到提示
     if (state && !state.dead) {
+      if (state.poetryRound) view.page = "poetry";
+      if (state.pendingSurprise) view.overlay = "surprise";
       state.lastDeltas = [{ label: "流年", value: block, type: "text", negative: true }];
       save();
       render();
@@ -3744,8 +3769,8 @@ function nextYear() {
       } else {
         annualSurpriseEvent(state.lastDeltas);
       }
-      // 只有真的没抽出任何事件时才记“平年”，避免盖住其他日志观感
-      addLog("平年", "这一年无甚大事，日子仍照常向前。", state.lastDeltas);
+      // 只有真的没抽出事件或惊喜时才记“平年”，避免秘密邀约与赠礼同时被写成平年
+      if (!state.pendingSurprise) addLog("平年", "这一年无甚大事，日子仍照常向前。", state.lastDeltas);
     }
     finishYear(false);
   } catch (error) {
@@ -4286,7 +4311,7 @@ function advanceFamilyYear(deltas) {
     }
     if (child.spouse) advanceRelationYear(child.spouse, deltas, "spouse");
     for (const grandchild of child.grandchildren || []) advanceGrandchildYear(grandchild, deltas);
-    if (child.spouse?.alive !== false && child.age >= CHILD_MARRIAGE_AGE && child.age <= 50 && child.spouse.age >= CHILD_MARRIAGE_AGE && child.spouse.age <= 50 && (child.grandchildren || []).filter((item) => item.alive !== false).length < 4 && Math.random() < 0.2) {
+    if (child.spouse && child.spouse.alive !== false && child.age >= CHILD_MARRIAGE_AGE && child.age <= 50 && child.spouse.age >= CHILD_MARRIAGE_AGE && child.spouse.age <= 50 && (child.grandchildren || []).filter((item) => item.alive !== false).length < 4 && Math.random() < 0.2) {
       const grandchild = makeGrandchild(child, 0);
       child.grandchildren ||= [];
       child.grandchildren.push(grandchild);
@@ -4336,6 +4361,7 @@ function archiveDeceasedSpouse(deltas = []) {
   const name = state.family.spouse;
   state.family.spouse = null;
   state.family.spouseMeta = null;
+  state.family.spouseProfile = null;
   state.family.spouseAffection = 0;
   state.family.concubineCandidate = null;
   deltas.push({ label: "婚姻", value: "丧偶", negative: true });
@@ -8764,7 +8790,7 @@ function inheritFromChild(id) {
       age: child.age,
       physique: randInt(45, 78),
     }));
-  const inheritedSpouse = heir.heirKind === "child" && heir.spouse?.alive !== false ? heir.spouse : null;
+  const inheritedSpouse = heir.heirKind === "child" && heir.spouse && heir.spouse.alive !== false ? heir.spouse : null;
   const inheritedChildren = heir.heirKind === "child" ? (heir.grandchildren || []).filter((item) => item.alive !== false).map((item) => ({ ...item, relation: item.gender === "female" ? "女儿" : "儿子", parentId: undefined })) : [];
   const directFather = oldGender === "male" ? oldName : spouseName || `${familyName}父`;
   const directMother = oldGender === "female" ? oldName : spouseName || `${familyName}母`;
@@ -8844,8 +8870,8 @@ function inheritFromChild(id) {
     market: { year: -1, factor: 1 },
     caravanMemory: normalizeCaravanMemory(state.caravanMemory),
     family: {
-      father: { name: heirParent ? parentFather : directFather, relation: "父亲", gender: "male", alive: heirParent ? heirParent.gender === "male" ? heirParent.alive !== false : heirParent.spouse?.alive !== false : oldGender !== "male" && !!spouseName, age: heirParent ? (heirParent.gender === "male" ? heirParent.age : heirParent.spouse?.age || Math.max(22, heirAge + 20)) : oldGender === "male" ? state.age : Math.max(22, state.age - randInt(0, 5)), physique: heirParent ? randInt(42, 76) : oldGender === "male" ? 0 : randInt(38, 72), affection: 76 },
-      mother: { name: heirParent ? parentMother : directMother, relation: "母亲", gender: "female", alive: heirParent ? heirParent.gender === "female" ? heirParent.alive !== false : heirParent.spouse?.alive !== false : oldGender !== "female" && !!spouseName, age: heirParent ? (heirParent.gender === "female" ? heirParent.age : heirParent.spouse?.age || Math.max(22, heirAge + 20)) : oldGender === "female" ? state.age : Math.max(22, state.age - randInt(0, 5)), physique: heirParent ? randInt(42, 76) : oldGender === "female" ? 0 : randInt(38, 72), affection: 76 },
+      father: { name: heirParent ? parentFather : directFather, relation: "父亲", gender: "male", alive: heirParent ? heirParent.gender === "male" ? heirParent.alive !== false : !!heirParent.spouse && heirParent.spouse.alive !== false : oldGender !== "male" && !!spouseName, age: heirParent ? (heirParent.gender === "male" ? heirParent.age : heirParent.spouse?.age || Math.max(22, heirAge + 20)) : oldGender === "male" ? state.age : Math.max(22, state.age - randInt(0, 5)), physique: heirParent ? randInt(42, 76) : oldGender === "male" ? 0 : randInt(38, 72), affection: 76 },
+      mother: { name: heirParent ? parentMother : directMother, relation: "母亲", gender: "female", alive: heirParent ? heirParent.gender === "female" ? heirParent.alive !== false : !!heirParent.spouse && heirParent.spouse.alive !== false : oldGender !== "female" && !!spouseName, age: heirParent ? (heirParent.gender === "female" ? heirParent.age : heirParent.spouse?.age || Math.max(22, heirAge + 20)) : oldGender === "female" ? state.age : Math.max(22, state.age - randInt(0, 5)), physique: heirParent ? randInt(42, 76) : oldGender === "female" ? 0 : randInt(38, 72), affection: 76 },
       siblings,
       lover: false,
       spouse: inheritedSpouse?.name || null,
@@ -8984,11 +9010,11 @@ function marryLover() {
   const profile = normalizeMatchCandidate(state.family.loverProfile) || generateMatchCandidate(state.gender === "male" ? "female" : "male");
   if (profile) profile.name = state.family.lover;
   const cost = profile ? profile.bridePrice + randInt(20, 80) : randInt(120, 420);
-  if (state.stats.money < Math.floor(cost * 0.45)) {
+  if (state.stats.money < cost) {
     finishAction("婚仪未成", `彩礼与婚仪约需 ${moneyText(cost)}，手头尚不足，只得暂缓。`, [], "ArrangeMarriage");
     return;
   }
-  const actualCost = Math.min(cost, Math.max(0, state.stats.money));
+  const actualCost = cost;
   changeStat("money", -actualCost, deltas);
   changeStat("mood", randInt(8, 16), deltas);
   changeStat("relationship", randInt(6, 14) + Math.floor((profile?.power || 0) / 25), deltas);
@@ -10985,6 +11011,8 @@ function centerContent() {
   if (state.pendingCaravan) return caravanRunView();
   if (state.eventResult) return eventResultView();
   if (state.currentEvent) return eventView(state.currentEvent);
+  // 文斗是一个需要明确作答或弃局的流程，避免从顶部导航离开后留下幽灵局面。
+  if (state.poetryRound) return poetryView();
   if (view.page === "home") return homeView();
   if (view.page === "place") return placeView();
   if (view.page === "assets") return assetsView();
@@ -11830,6 +11858,8 @@ function relationLabel(value) {
 function travelView() {
   const locked = state.age < 6 || state.prisonYears > 0 || !!state.pendingCaravan;
   state.travelSystem = normalizeTravelSystem(state.travelSystem);
+  state.travelCodex = normalizeTravelCodex(state.travelCodex);
+  const unlockedLandmarks = new Set(state.travelCodex.unlocked);
   const selected = travelDestinationById();
   const carriage = travelCarriage();
   const supply = travelSupply();
@@ -11884,6 +11914,16 @@ function travelView() {
       <section class="travel-section">
         <div class="section-title"><h2>三、备好行囊</h2><small>行囊影响安全、舒适与总路资</small></div>
         <div class="travel-option-grid">${TRAVEL_SUPPLIES.map((item) => `<button class="travel-option ${item.id === supply.id ? "active" : ""}" data-travel-supply="${item.id}"><b>${escapeHtml(item.name)} · ${moneyText(item.cost)}</b><span>安全 +${item.safety} · 舒适 +${item.comfort}</span><small>${escapeHtml(item.note)}</small></button>`).join("")}</div>
+      </section>
+
+      <section class="travel-section travel-codex-section">
+        <div class="section-title"><h2>旅中奇遇图鉴</h2><small>已收录 ${unlockedLandmarks.size}/${TRAVEL_LANDMARKS.length} 处；远游、游学与押镖均可解锁</small></div>
+        <div class="travel-codex-grid">
+          ${TRAVEL_LANDMARKS.map((item) => {
+            const unlocked = unlockedLandmarks.has(item.id);
+            return `<article class="travel-codex-item ${unlocked ? "unlocked" : "locked"}"><b>${unlocked ? escapeHtml(item.name) : "未识之地"}</b><small>${unlocked ? escapeHtml(item.note) : "沿山河继续寻访"}</small></article>`;
+          }).join("")}
+        </div>
       </section>
 
       <footer class="travel-departure">
@@ -12130,18 +12170,19 @@ function poetryView() {
             <span>${escapeHtml(option.text)}<small>点选此下联应和</small></span>
           </button>`).join("")}
       </div>
-      <div class="main-actions"><button class="ghost-btn" data-action="back-places">弃局返回</button></div>
+      <div class="main-actions"><button class="ghost-btn" data-action="cancel-poetry">弃局返回</button></div>
     </article>`;
 }
 
 function matchmakerView() {
   const pool = refreshMatchPool(false);
-  const hasLover = !!state.family.lover && !state.family.spouse;
+  const livingSpouse = !!state.family.spouse && state.family.spouseMeta?.alive !== false;
+  const hasLover = !!state.family.lover && !livingSpouse;
   return `
     <article class="play-card matchmaker-card">
       <p class="eyebrow">联姻策略局</p>
       <h2>细看人家</h2>
-      <p>媒人摊开庚帖：家世、彩礼、性情、生育预期与娘家势力一应写明。选定后可在亲友页成婚；彩礼不足则婚仪难成。</p>
+      <p>媒人摊开庚帖：家世、彩礼、性情、生育预期与娘家势力一应写明。选定需付媒资 ${moneyText(30)}，之后可在亲友页成婚；彩礼不足则婚仪难成。</p>
       ${hasLover ? `<p class="empty-note">当前相看：${escapeHtml(state.family.lover)}（${escapeHtml(matchSummary(state.family.loverProfile))}）。再选会更换对象。</p>` : ""}
       <div class="match-grid">
         ${pool.map((item) => `
@@ -12154,7 +12195,7 @@ function matchmakerView() {
               <li>生育预期 <b>${item.fertility}</b></li>
               <li>容止 ${item.looks} · 识书 ${item.knowledge}</li>
             </ul>
-            <button class="primary-btn" data-match-candidate="${escapeHtml(item.id)}" ${state.family.spouse ? "disabled" : ""}>选定相看</button>
+            <button class="primary-btn" data-match-candidate="${escapeHtml(item.id)}" ${livingSpouse || state.stats.money < 30 ? "disabled" : ""}>选定相看</button>
           </article>`).join("")}
       </div>
       <div class="main-actions">
@@ -12413,11 +12454,17 @@ function touhuControl(field, label, value, minLabel, maxLabel) {
 }
 
 function gambleModeTabs(active) {
+  const season = ensureLeisureSeason();
+  const titles = seasonTitleNames(season.titles);
   return `
     <div class="gamble-mode-tabs">
       <button class="${active === "call" ? "active" : ""}" data-gamble-mode="call">叫骰</button>
       <button class="${active === "paiGow" ? "active" : ""}" data-gamble-mode="paiGow">牌九</button>
       <button class="${active === "bigSmall" ? "active" : ""}" data-gamble-mode="bigSmall">赌大小</button>
+    </div>
+    <div class="gamble-season-note">
+      <span>本季战绩 · ${season.gambleWins} 胜 · 连胜 ${season.gambleStreak}</span>
+      <small>${titles.length ? `已得名号：${escapeHtml(titles.join("、"))}` : "连胜可得博坊名号；连输四局会被暂列黑名单。"}</small>
     </div>`;
 }
 
@@ -12722,6 +12769,17 @@ function bigSmallGambleView(game) {
 function gambleView() {
   state.gamble = normalizeGamble(state.gamble);
   const game = state.gamble;
+  if (isGambleBlacklisted()) {
+    const season = ensureLeisureSeason();
+    return `
+      <article class="play-card gamble-card gamble-closed-card">
+        <p class="eyebrow">博坊 · 黑名单</p>
+        <h2>今夜不接你的局</h2>
+        <p>你近来连番失手，掌柜已经放话：到 ${season.blacklistedUntil} 岁这一年结束前，博坊都不再接你的注。</p>
+        ${game.result?.text ? `<p class="empty-note">末局：${escapeHtml(game.result.text)}</p>` : ""}
+        <div class="main-actions"><button class="ghost-btn" data-action="back-places">离开博坊</button></div>
+      </article>`;
+  }
   if (game.mode === "paiGow") return paiGowGambleView(game);
   if (game.mode === "bigSmall") return bigSmallGambleView(game);
   const money = Math.round(state.stats.money || 0);
@@ -13752,6 +13810,7 @@ app.addEventListener("click", (event) => {
   if (button.dataset.action === "accept-secret") return acceptSecretOffer();
   if (button.dataset.action === "decline-secret") return declineSecretOffer();
   if (button.dataset.action === "open-poetry") return openPoetryContest();
+  if (button.dataset.action === "cancel-poetry") return cancelPoetryContest();
   if (button.dataset.poetryOption !== undefined) return answerPoetry(button.dataset.poetryOption);
   if (button.dataset.matchCandidate) return selectMatchCandidate(button.dataset.matchCandidate);
   if (button.dataset.action === "refresh-match") {
@@ -13805,7 +13864,7 @@ app.addEventListener("click", (event) => {
         state.saveSlot = slot;
         view.screen = "game";
         view.page = "main";
-        view.overlay = state.onboarding?.seen ? "" : "onboarding";
+        view.overlay = state.onboarding?.seen ? (state.pendingSurprise ? "surprise" : "") : "onboarding";
         render();
       }
       return;
@@ -14057,7 +14116,14 @@ document.addEventListener("change", (event) => {
         localStorage.setItem(slotKey(targetSlot), JSON.stringify(importedState));
         updateSlotMeta(targetSlot, importedState);
         if (view.page === "save-manager") render();
-        else { state = importedState; currentSlot = targetSlot; view.screen = "game"; view.page = "main"; render(); }
+        else {
+          state = importedState;
+          currentSlot = targetSlot;
+          view.screen = "game";
+          view.page = "main";
+          view.overlay = state.onboarding?.seen ? (state.pendingSurprise ? "surprise" : "") : "onboarding";
+          render();
+        }
       } else {
         const meta = loadSlotMeta();
         const slot = firstEmptySlot(meta);

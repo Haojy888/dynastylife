@@ -2775,6 +2775,33 @@ p {
   box-shadow: 0 0 18px rgba(255, 228, 94, 0.24);
 }
 
+.gamble-season-note {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 16px;
+  border-bottom: 1px solid rgba(220, 176, 79, 0.2);
+  color: #f2d98d;
+  background: #172234;
+  font-size: 12px;
+}
+
+.gamble-season-note small { color: rgba(247, 239, 228, 0.68); }
+
+.gamble-closed-card {
+  min-height: 430px;
+  padding: 34px;
+  align-content: center;
+  background: radial-gradient(circle at 50% 25%, rgba(166, 55, 57, 0.2), transparent 42%), #172234;
+}
+
+.gamble-closed-card .eyebrow { color: #dcb04f; }
+.gamble-closed-card h2 { color: #f7efe4; }
+.gamble-closed-card > p:not(.eyebrow) { color: rgba(247, 239, 228, 0.72); }
+.gamble-closed-card .empty-note { background: rgba(255, 255, 255, 0.06); }
+.gamble-closed-card .main-actions { margin: 12px -18px -18px; background: transparent; }
+
 .gamble-stage {
   min-height: 760px;
   display: grid;
@@ -4711,6 +4738,28 @@ p {
 .travel-option.active { border-color: var(--accent); background: rgba(47,125,109,.08); }
 .travel-option span { color: var(--accent); font-size: 12px; font-weight: 700; }
 .travel-option small { color: var(--muted); line-height: 1.4; }
+
+.travel-codex-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 9px;
+}
+
+.travel-codex-item {
+  display: grid;
+  gap: 4px;
+  min-height: 74px;
+  align-content: center;
+  padding: 12px;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 248, 0.48);
+}
+
+.travel-codex-item small { color: var(--muted); line-height: 1.35; }
+.travel-codex-item.unlocked { border-style: solid; border-color: rgba(47, 125, 109, 0.42); background: rgba(47, 125, 109, 0.08); }
+.travel-codex-item.unlocked b { color: var(--accent); }
+.travel-codex-item.locked { opacity: 0.58; filter: grayscale(0.65); }
 
 .travel-departure {
   display: grid;

@@ -1055,6 +1055,182 @@ try {
   assert.equal(underageGuard.page, "place", "未成年角色仍能进入美人雅座");
   assert.equal(underageGuard.visit, null, "未成年角色生成了青楼人物状态");
 
+  console.log("quality gate: verifying latest system persistence and interrupted-flow recovery");
+  const newSystemNormalization = await page.evaluate(() => {
+    const source = JSON.parse(JSON.stringify(state));
+    for (const key of ["poetry", "poetryRound", "travelCodex", "leisureSeason", "secrets", "matchPool"]) delete source[key];
+    source.family.spouse = "顾清和";
+    source.family.spouseMeta = { name: "顾清和", relation: "妻子", gender: "female", age: 24, physique: 80, affection: 82, alive: true };
+    source.family.spouseProfile = { id: "persist-spouse", name: "顾清和", gender: "female", familyId: "scholar", personalityId: "gentle", bridePrice: 260, fertility: 72, power: 58, looks: 76, knowledge: 88 };
+    const normalized = normalizeState(source);
+    return {
+      poetryWins: normalized.poetry?.wins,
+      poetryRound: normalized.poetryRound,
+      travelCount: normalized.travelCodex?.unlocked?.length,
+      seasonKey: normalized.leisureSeason?.seasonKey,
+      secrets: normalized.secrets?.length,
+      matchPool: normalized.matchPool?.length,
+      spouseFamily: normalized.family.spouseProfile?.familyId,
+    };
+  });
+  assert.equal(newSystemNormalization.poetryWins, 0, "旧存档没有补全诗会状态");
+  assert.equal(newSystemNormalization.poetryRound, null, "旧存档错误生成了诗会进行局");
+  assert.equal(newSystemNormalization.travelCount, 0, "旧存档没有补全旅行图鉴");
+  assert.ok(Number.isFinite(newSystemNormalization.seasonKey), "旧存档没有补全赛季状态");
+  assert.equal(newSystemNormalization.secrets, 0, "旧存档没有补全秘密身份状态");
+  assert.equal(newSystemNormalization.matchPool, 0, "旧存档没有补全媒人候选池");
+  assert.equal(newSystemNormalization.spouseFamily, "scholar", "读档后丢失了配偶家世资料");
+
+  const poetryFlow = await page.evaluate(() => {
+    state.age = 20;
+    state.year = 120;
+    state.dead = false;
+    state.prisonYears = 0;
+    state.stats.money = 500;
+    state.currentEvent = null;
+    state.eventResult = null;
+    state.pendingSurprise = null;
+    state.pendingTravel = null;
+    state.pendingCaravan = null;
+    state.poetry = createPoetryState();
+    state.poetryRound = null;
+    openPoetryContest();
+    const opened = Boolean(state.poetryRound);
+    view.page = "main";
+    const forcedBack = /data-poetry-option/.test(centerContent());
+    const blocked = yearAdvanceBlockReason();
+    cancelPoetryContest();
+    return { opened, forcedBack, blocked, cleared: state.poetryRound === null, page: view.page };
+  });
+  assert.equal(poetryFlow.opened, true, "诗会未能建立文斗局面");
+  assert.equal(poetryFlow.forcedBack, true, "诗会进行中仍可从顶部导航逃离并遗留幽灵局面");
+  assert.match(poetryFlow.blocked, /诗会文斗/, "诗会未完成时仍可直接推进流年");
+  assert.deepEqual({ cleared: poetryFlow.cleared, page: poetryFlow.page }, { cleared: true, page: "place" }, "弃局没有清理诗会状态并返回活动页");
+
+  const matchmakingEconomy = await page.evaluate(() => {
+    const snapshot = JSON.stringify(state);
+    const candidate = normalizeMatchCandidate({ id: "budget-match", name: "沈知意", gender: "female", familyId: "scholar", personalityId: "gentle", bridePrice: 200, fertility: 74, power: 62, looks: 80, knowledge: 84 });
+    state.family.spouse = null;
+    state.family.spouseMeta = null;
+    state.family.spouseProfile = null;
+    state.family.lover = candidate.name;
+    state.family.loverMeta = normalizeRelative({ name: candidate.name, gender: "female", relation: "相看之人", age: 22, affection: 78, alive: true }, state.name.slice(0, 1), "partner");
+    state.family.loverProfile = candidate;
+    state.stats.money = 150;
+    state.eventResult = null;
+    const oldRandom = Math.random;
+    Math.random = () => 0.5;
+    marryLover();
+    const refused = !state.family.spouse && state.stats.money === 150 && state.eventResult?.title === "婚仪未成";
+    state.eventResult = null;
+    state.stats.money = 500;
+    marryLover();
+    const married = state.family.spouse === candidate.name;
+    const persistedFamily = normalizeState(JSON.parse(JSON.stringify(state))).family.spouseProfile?.familyId;
+    Math.random = oldRandom;
+    state = normalizeState(JSON.parse(snapshot));
+    save();
+    render();
+    return { refused, married, persistedFamily };
+  });
+  assert.equal(matchmakingEconomy.refused, true, "彩礼不足时仍能以部分付款完成婚仪");
+  assert.equal(matchmakingEconomy.married, true, "彩礼充足时无法完成婚仪");
+  assert.equal(matchmakingEconomy.persistedFamily, "scholar", "成婚后配偶家世无法跨存档保留");
+
+  const gambleBlacklist = await page.evaluate(() => {
+    const snapshot = JSON.stringify(state);
+    state.age = 30;
+    state.leisureSeason = createLeisureSeasonState(state.age);
+    const deltas = [];
+    recordGambleSeasonResult(false, deltas);
+    recordGambleSeasonResult(false, deltas);
+    recordGambleSeasonResult(false, deltas);
+    recordGambleSeasonResult(true, deltas);
+    const resetAfterWin = state.leisureSeason.gambleLosses;
+    for (let i = 0; i < 4; i += 1) recordGambleSeasonResult(false, deltas);
+    state.gamble = createGambleRound(50);
+    const closed = /今夜不接你的局/.test(gambleView());
+    const blacklistedUntil = state.leisureSeason.blacklistedUntil;
+    state = normalizeState(JSON.parse(snapshot));
+    save();
+    render();
+    return { resetAfterWin, closed, blacklistedUntil };
+  });
+  assert.equal(gambleBlacklist.resetAfterWin, 0, "博坊胜局没有重置连续败局计数");
+  assert.equal(gambleBlacklist.closed, true, "进入黑名单后博坊仍可继续下注");
+  assert.ok(gambleBlacklist.blacklistedUntil >= 31, "博坊黑名单没有设置有效期限");
+
+  const travelCodexVisible = await page.evaluate(() => {
+    state.travelCodex = { unlocked: [TRAVEL_LANDMARKS[0].id] };
+    view.page = "travel";
+    render();
+    return {
+      heading: document.body.textContent.includes("旅中奇遇图鉴"),
+      unlocked: document.body.textContent.includes(TRAVEL_LANDMARKS[0].name),
+      cards: document.querySelectorAll(".travel-codex-item").length,
+      expectedCards: TRAVEL_LANDMARKS.length,
+    };
+  });
+  assert.equal(travelCodexVisible.heading, true, "旅行奇遇图鉴标题没有在车马页展示");
+  assert.equal(travelCodexVisible.unlocked, true, "已解锁的旅行奇遇没有显示名称");
+  assert.equal(travelCodexVisible.cards, travelCodexVisible.expectedCards, "旅行奇遇图鉴没有展示完整条目");
+
+  await page.evaluate(() => {
+    state.currentEvent = null;
+    state.eventResult = null;
+    state.pendingAchievement = null;
+    state.onboarding = { version: 1, seen: true };
+    state.pendingSurprise = { category: "亲友", title: "读档惊喜", text: "这份礼物不应在刷新后消失。", icon: "FamilyIcon" };
+    view.page = "main";
+    save();
+  });
+  await page.reload({ waitUntil: "domcontentloaded", timeout: 30000 });
+  await page.waitForSelector('[data-action="close-surprise"]', { timeout: 10000 });
+  const restoredSurprise = await page.evaluate(() => ({ overlay: view.overlay, title: state.pendingSurprise?.title }));
+  assert.deepEqual(restoredSurprise, { overlay: "surprise", title: "读档惊喜" }, "刷新后未恢复待处理的惊喜弹窗");
+  await page.click('[data-action="close-surprise"]');
+
+  console.log("quality gate: stress-testing annual flow through late life");
+  const annualStress = await page.evaluate(() => {
+    state.age = 18;
+    state.year = 200;
+    state.dead = false;
+    state.deathReason = "";
+    state.prisonYears = 0;
+    state.stats.physique = 100;
+    state.stats.money = 20000;
+    state.currentEvent = null;
+    state.eventResult = null;
+    state.pendingSurprise = null;
+    state.pendingAchievement = null;
+    state.pendingTravel = null;
+    state.pendingCaravan = null;
+    state.poetryRound = null;
+    const failures = [];
+    const runtimeErrors = [];
+    const originalConsoleError = console.error;
+    console.error = (...args) => runtimeErrors.push(args.map((item) => item?.stack || String(item)).join("\n"));
+    for (let step = 0; step < 55; step += 1) {
+      const before = state.age;
+      nextYear();
+      if (state.eventResult?.title === "流年受阻") failures.push({ age: before, text: state.eventResult.text });
+      state.currentEvent = null;
+      state.eventResult = null;
+      state.pendingSurprise = null;
+      state.pendingAchievement = null;
+      state.prisonYears = 0;
+      state.stats.physique = 100;
+      view.overlay = "";
+      view.page = "main";
+    }
+    console.error = originalConsoleError;
+    save();
+    render();
+    return { age: state.age, failures, runtimeErrors };
+  });
+  assert.equal(annualStress.age, 73, "中晚年压力测试未能连续推进 55 个流年");
+  assert.deepEqual({ failures: annualStress.failures, runtimeErrors: annualStress.runtimeErrors }, { failures: [], runtimeErrors: [] }, "中晚年流年仍出现异常兜底事件");
+
   await page.setViewport({ width: 1440, height: 900, isMobile: false, hasTouch: false, deviceScaleFactor: 1 });
   const shell = await page.$(".game-shell");
   assert.ok(shell, "桌面端游戏主界面未渲染");
