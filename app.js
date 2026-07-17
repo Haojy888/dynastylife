@@ -943,9 +943,9 @@ const ACTIVITY_PLACES = [
   { id: "matchmaker", label: "媒人", icon: "ArrangeMarriage", minAge: 16, note: "问姻缘、托媒人相看人家。", special: "matchmaker" },
   { id: "casino", label: "博坊", icon: "GamblingHouse", minAge: 15, note: "押数博戏，胜负皆伤心动财。", special: "gamble" },
   { id: "parlor", label: "雅戏", icon: "BambooFlute", minAge: 6, note: "五子棋、投壶等清雅游艺，可消磨半日。", special: "miniGames" },
-  { id: "theater", label: "瓦舍风月", icon: "Whorehouse", minAge: 6, note: "听曲看戏，成年后也可入花酒风月。", special: "theater" },
+  { id: "theater", label: "瓦舍风月", icon: "Whorehouse", minAge: 6, note: "男子可听戏寻欢；女子须有从业身份，或冒险女扮男装。", special: "theater" },
   { id: "friends", label: "会友", icon: "FamilyIcon", minAge: 6, note: "探亲访友，关系冷暖都在往来。", activities: ["family", "sister", "restaurant"], special: "friend" },
-  { id: "academy", label: "书院", icon: "Book", minAge: 8, note: "温书求学，也可由此参加科举。", activities: ["academy"], exam: true },
+  { id: "academy", label: "书院", icon: "Book", minAge: 8, note: "温书求学；本朝仅男子可由此参加科举。", activities: ["academy"], exam: true },
   { id: "temple", label: "寺庙", icon: "Temple", minAge: 6, note: "焚香问卜，修身也修心。", activities: ["temple"] },
   { id: "jianghu", label: "江湖暗门", icon: "GamblingHouse", minAge: 15, note: "老千、相士与游方术士出没之处，来钱快，风声也紧。", special: "jianghu" },
   { id: "farm", label: "农田", icon: "Agriculture", minAge: 6, note: "查问农桑，体会民生。", activities: ["agriculture"] },
@@ -2003,7 +2003,54 @@ const FEMALE_SKILLS = [
   { name: "琴艺", icon: "BambooFlute", stat: "mood", value: 4, note: "拨弦成调，心绪自平。" },
   { name: "诗书", icon: "Book", stat: "knowledge", value: 5, note: "闺中读书，也可养才情。" },
   { name: "礼仪", icon: "MainBook", stat: "virtue", value: 4, note: "进退有度，人情更顺。" },
+  { name: "算账", icon: "CashBox", stat: "knowledge", value: 4, note: "识数理账，也能照看家业铺面。" },
+  { name: "岐黄", icon: "MedicineBag", stat: "virtue", value: 4, note: "识药辨脉，为妇孺解病痛。" },
 ];
+
+const FEMALE_SCHOOL_STORIES = {
+  女红: [
+    { title: "错纹嫁衣", content: "同窗替姐姐赶制嫁衣，却把族中忌讳的纹样绣在了衣襟正中。婚期只余三日，塾师让你一同拿主意。", choices: [
+      ["连夜拆线重绣", "你守着灯火逐针拆改，把犯忌纹样换成并蒂莲。手指虽被扎破，嫁衣终于赶在吉日前送出。", { eq: 4, virtue: 3, mood: -2 }],
+      ["以贴绣巧妙遮盖", "你另绣一层祥云贴片覆住旧纹，既省时又不露痕迹，同窗们都来学这门巧法。", { knowledge: 3, favorability: 2 }],
+      ["劝主家从简改衣", "你随塾师登门讲明缘由，劝两家不以一处纹样苛责新妇，竟把一场争执说开了。", { eq: 5, virtue: 2 }],
+    ] },
+  ],
+  琴艺: [
+    { title: "屏后听琴", content: "女学受邀在春宴屏风后奏乐。席上贵客忽然点了一支轻薄艳曲，众人都等着你是否应承。", choices: [
+      ["改奏清雅古调", "你不接艳曲，只以一支《潇湘水云》稳住席面。主人虽有片刻尴尬，女眷却暗暗称许。", { virtue: 4, knowledge: 3 }],
+      ["改词留调", "你保留来客熟悉的曲调，却把歌词换成咏春新句，既不失礼也守住分寸。", { eq: 5, favorability: 2 }],
+      ["托病退席", "你以指伤为由离席，避开了为难，回去后却因临阵退却被塾师罚练三日。", { mood: -2, knowledge: 2 }],
+    ] },
+  ],
+  诗书: [
+    { title: "禁书半卷", content: "书架夹层里藏着半卷前朝才女文集，塾师说其中议论锋利，若被主家看见恐生是非。", choices: [
+      ["抄录后归还", "你连夜抄下其中诗文与批注，再把原卷放回。那些不肯随俗的句子，从此留在心里。", { knowledge: 6, mood: 2 }],
+      ["请塾师公开讲读", "你请塾师删去犯忌处，只讲文章章法与女子见识，原本的禁书竟成了全塾的一堂课。", { knowledge: 4, virtue: 3, favorability: 1 }],
+      ["交还主家封存", "你没有私读，把残卷交给主人家。此举稳妥，却也让一段难得文字重归尘封。", { virtue: 4, mood: -1 }],
+    ] },
+  ],
+  礼仪: [
+    { title: "席次之争", content: "两位同窗的母亲为春宴席次争执不下，一家有钱，一家辈分更长，女学也被卷进人情漩涡。", choices: [
+      ["按宗族长幼排席", "你翻出旧礼按长幼排定，又给富户留足体面，席间终于没有再起争声。", { virtue: 4, eq: 4 }],
+      ["分设两席", "你把长辈席与女学雅席分开，各有名目，两家都觉得自己没有被轻慢。", { eq: 6, relationship: 2 }],
+      ["请塾师独自定夺", "你不愿卷入，让塾师照旧例处理。风波虽平，你也明白礼数背后尽是人情。", { knowledge: 3 }],
+    ] },
+  ],
+  算账: [
+    { title: "嫁妆暗账", content: "同窗母亲请你核对女儿的嫁妆单，账上几匹绸缎被管事重复记了两次，数目不大却足以让新妇过门后受责。", choices: [
+      ["逐项对契", "你按货契、箱号逐项核清，找回被吞下的绸缎，也替新妇免去一场无妄责难。", { knowledge: 5, virtue: 3, favorability: 2 }],
+      ["当面质问管事", "你拿着账页当面追问，管事很快认错补货，却也把你的厉害传遍后院。", { eq: 4, favorability: 3, relationship: -1 }],
+      ["教同窗自己理账", "你不替她包办，只教她设流水、验箱签。日后进门，她也有了守住自己财物的本事。", { knowledge: 4, virtue: 4 }],
+    ] },
+  ],
+  岐黄: [
+    { title: "产房急信", content: "城南一户人家产妇难产，男医不便久留内室，稳婆急来女学寻找懂些岐黄的人帮忙。", choices: [
+      ["随稳婆入内照料", "你按所学烧水净手、安抚产妇，又及时请医开方。直到婴啼响起，众人才松了一口气。", { virtue: 6, knowledge: 4, physique: -2 }],
+      ["整理症状传给郎中", "你隔帘细问脉象与症状，把关键信息写给郎中，方药因此没有耽误。", { knowledge: 6, eq: 2 }],
+      ["请经验老成者前往", "你知道自己学力未足，立刻去请女医前辈，没有为逞强耽搁人命。", { virtue: 5, relationship: 2 }],
+    ] },
+  ],
+};
 
 const CRICKET_NAMES = ["青麻头", "铁弹子", "金钟儿", "紫背将军", "玉尾郎", "乌头勇士"];
 const CHILD_TRAITS = ["聪慧", "活泼", "沉静", "孝顺", "倔强", "早慧", "贪玩", "端方"];
@@ -2083,8 +2130,8 @@ const ACHIEVEMENT_TIERS = {
 
 const LIFE_GOALS = [
   { id: "first-career", tier: "bronze", title: "安身立命", icon: "CashBox", desc: "拥有一份固定营生。", score: 60, done: () => !!state.career, advice: "15 岁后到营生页谋一份差事。" },
-  { id: "first-exam", tier: "bronze", title: "童试入场", icon: "Book", desc: "参加一次正式科举。", score: 50, done: () => state.exam.attempts > 0 || officialExamHistory().length > 0, advice: "15 岁后去书院参加童试。" },
-  { id: "exam-fail", tier: "bronze", title: "名落孙山", icon: "Book", desc: "第一次科举未中。", score: 45, done: () => officialExamFailures() > 0, advice: "考试失利也会增长经验，温课后再来。" },
+  { id: "first-exam", gender: "male", tier: "bronze", title: "童试入场", icon: "Book", desc: "参加一次正式科举。", score: 50, done: () => state.exam.attempts > 0 || officialExamHistory().length > 0, advice: "15 岁后去书院参加童试。" },
+  { id: "exam-fail", gender: "male", tier: "bronze", title: "名落孙山", icon: "Book", desc: "第一次科举未中。", score: 45, done: () => officialExamFailures() > 0, advice: "考试失利也会增长经验，温课后再来。" },
   { id: "first-prison", tier: "bronze", title: "铁窗一梦", icon: "PrisonHeader", desc: "第一次入狱或留下牢狱记录。", score: 50, done: () => state.prisonYears > 0 || state.tags.includes("入狱") || logHas(/入狱|牢狱|余刑/), advice: "有些路走错一次，命册里也会记住。" },
   { id: "first-friend", tier: "bronze", title: "结交一人", icon: "Relationship1", desc: "拥有第一位朋友。", score: 45, done: () => (state.friends || []).some((friend) => friend.alive !== false), advice: "去会友、酒楼或活动里认识新人。" },
   { id: "first-child", tier: "bronze", title: "成家立室", icon: "FamilyIcon", desc: "成婚或拥有子女。", score: 100, done: () => !!state.family.spouse || livingChildren().length > 0, advice: "16 岁后去媒人处相看，或经营亲友关系。" },
@@ -2096,12 +2143,15 @@ const LIFE_GOALS = [
   { id: "medicine-visit", tier: "bronze", title: "问诊抓药", icon: "MedicineBag", desc: "去医馆调理或留下医药记录。", score: 40, done: () => logHas(/医馆|问诊|抓药|药|病症|痊愈/), advice: "体魄低时先去医馆，不要硬撑。" },
   { id: "temple-fate", tier: "bronze", title: "香火因缘", icon: "Temple", desc: "在寺庙或德行事件中留下记录。", score: 40, done: () => state.tags.includes("寺庙因缘") || logHas(/寺庙|焚香|香火|佛|庙/), advice: "去寺庙修心，也能添些德行。" },
   { id: "inventory-five", tier: "bronze", title: "行囊渐满", icon: "Backpack", desc: "行囊物品达到 5 件。", score: 45, done: () => inventoryCount() >= 5, advice: "去市集、黑市或活动中收集物品。" },
+  { id: "women-school-first", gender: "female", tier: "bronze", title: "闺塾初问", icon: "FemaleSkill", desc: "完成第一桩女学选择剧情。", score: 55, done: () => Number(state.femaleLife?.schoolStories || 0) >= 1, advice: "8 岁后去女学修习任一门六艺。" },
+  { id: "women-school-six", gender: "female", tier: "silver", title: "闺塾六艺", icon: "FemaleSkill", desc: "女学六艺都达到 1 级。", score: 145, done: () => FEMALE_SKILLS.every((skill) => skillLevel(skill.name) >= 1), advice: "修习女红、琴艺、诗书、礼仪、算账与岐黄。" },
+  { id: "female-medicine", gender: "female", tier: "silver", title: "女医有成", icon: "MedicineBag", desc: "通过任一女医技艺考校。", score: 135, done: () => (state.exam?.history || []).some((item) => /女医|疮疡|医理/.test(item.stage || "") && item.passed), advice: "15 岁后在女学参加女医技艺考校。" },
 
-  { id: "scholar", tier: "silver", title: "金榜有名", icon: "MainBook", desc: "取得至少秀才功名。", score: 120, done: () => state.exam.rank >= 0, advice: "提高学识后继续科举。" },
-  { id: "juren", tier: "silver", title: "乡试中举", icon: "Book", desc: "通过乡试成为举人。", score: 145, done: () => state.exam.rank >= 1, advice: "秀才之后继续备考乡试。" },
-  { id: "gongshi", tier: "silver", title: "会试登榜", icon: "BookStore", desc: "通过会试成为贡士。", score: 180, done: () => state.exam.rank >= 2, advice: "会试更看学识与备考积累。" },
-  { id: "jinshi", tier: "silver", title: "殿试及第", icon: "Official", desc: "通过殿试成为进士。", score: 260, done: () => hasPalaceAppointment(), advice: "一路通过乡试、会试，再参加殿试。" },
-  { id: "official-entry", tier: "silver", title: "初入流品", icon: "Official", desc: "官阶达到正九品或以上。", score: 130, done: () => officialRankIndex() >= 2, advice: "殿试后任官，积累政绩即可升迁。" },
+  { id: "scholar", gender: "male", tier: "silver", title: "金榜有名", icon: "MainBook", desc: "取得至少秀才功名。", score: 120, done: () => state.exam.rank >= 0, advice: "提高学识后继续科举。" },
+  { id: "juren", gender: "male", tier: "silver", title: "乡试中举", icon: "Book", desc: "通过乡试成为举人。", score: 145, done: () => state.exam.rank >= 1, advice: "秀才之后继续备考乡试。" },
+  { id: "gongshi", gender: "male", tier: "silver", title: "会试登榜", icon: "BookStore", desc: "通过会试成为贡士。", score: 180, done: () => state.exam.rank >= 2, advice: "会试更看学识与备考积累。" },
+  { id: "jinshi", gender: "male", tier: "silver", title: "殿试及第", icon: "Official", desc: "通过殿试成为进士。", score: 260, done: () => hasPalaceAppointment(), advice: "一路通过乡试、会试，再参加殿试。" },
+  { id: "official-entry", gender: "male", tier: "silver", title: "初入流品", icon: "Official", desc: "官阶达到正九品或以上。", score: 130, done: () => officialRankIndex() >= 2, advice: "殿试后任官，积累政绩即可升迁。" },
   { id: "career-level", tier: "silver", title: "本业精熟", icon: "Craftsman", desc: "任一营生达到 3 级。", score: 120, done: () => maxCareerLevel() >= 3, advice: "在营生页持续处理本业事务。" },
   { id: "career-master", tier: "silver", title: "一门老手", icon: "Craftsman", desc: "任一营生达到 5 级。", score: 170, done: () => maxCareerLevel() >= 5, advice: "不要频繁换业，深耕一门更容易升级。" },
   { id: "network", tier: "silver", title: "亲友满座", icon: "Relationship1", desc: "亲友记录达到 8 人。", score: 90, done: () => relationCount() >= 8, advice: "多去会友、酒楼、探亲，扩展人脉。" },
@@ -2116,8 +2166,8 @@ const LIFE_GOALS = [
   { id: "xiangqi-winner", tier: "silver", title: "楚河破阵", icon: "BambooFlute", desc: "象棋赢下一局。", score: 120, done: () => state.miniGames?.record?.xiangqiWins >= 1, advice: "雅戏中的象棋有中档 AI，先稳住子力。" },
   { id: "touhu-three", tier: "silver", title: "投壶入礼", icon: "BambooFlute", desc: "投壶最佳成绩达到 3 矢。", score: 100, done: () => state.miniGames?.record?.touhuBest >= 3, advice: "角度接近 50、力道接近 62 会更稳。" },
 
-  { id: "triple-exam", tier: "gold", title: "连捷登科", icon: "Official", desc: "正式科举一路无败并通过殿试。", score: 360, done: () => hasPalaceAppointment() && officialExamFailures() === 0 && officialExamPassedCount() >= EXAM_STAGES.length, advice: "每一场都备足再考，尽量不要失手。" },
-  { id: "top-official", tier: "gold", title: "位极人臣", icon: "Official", desc: "官阶达到正一品。", score: 420, done: () => officialRankIndex() >= OFFICIAL_RANKS.length - 1, advice: "任官后长期处理公务，政绩足够即可升迁。" },
+  { id: "triple-exam", gender: "male", tier: "gold", title: "连捷登科", icon: "Official", desc: "正式科举一路无败并通过殿试。", score: 360, done: () => hasPalaceAppointment() && officialExamFailures() === 0 && officialExamPassedCount() >= EXAM_STAGES.length, advice: "每一场都备足再考，尽量不要失手。" },
+  { id: "top-official", gender: "male", tier: "gold", title: "位极人臣", icon: "Official", desc: "官阶达到正一品。", score: 420, done: () => officialRankIndex() >= OFFICIAL_RANKS.length - 1, advice: "任官后长期处理公务，政绩足够即可升迁。" },
   { id: "centenarian", tier: "gold", title: "百岁老人", icon: "MedicineBag", desc: "活到 100 岁。", score: 320, done: () => state.age >= 100, advice: "保住体魄，远离高风险事件。" },
   { id: "descendants-full", tier: "gold", title: "子孙满堂", icon: "FamilyIcon", desc: "拥有 6 名在世子女。", score: 260, done: () => livingChildren().length >= 6, advice: "成婚、养家、保住体魄，后半生更容易开枝散叶。" },
   { id: "clan-legacy", tier: "gold", title: "三世家声", icon: "FamilyIcon", desc: "家族传承到第 3 代。", score: 300, done: () => Number(state.lineage?.generation || 1) >= 3, advice: "死亡后选择子女承继，可以延续同一存档。" },
@@ -2474,6 +2524,7 @@ function startLife() {
     crickets: [],
     cricketRecord: { wins: 0, losses: 0, champion: 0 },
     femaleSkills: {},
+    femaleLife: { brothelEntries: 0, disguises: 0, exposures: 0, professionalShows: 0, disguiseActiveYear: -1, schoolStories: 0, schoolLastYear: -1 },
     official: createOfficialState(),
     lineage: { generation: 1, familyName: draft.family, ancestors: [] },
     life: { milestones: [], goals: [] },
@@ -2567,6 +2618,7 @@ function normalizeState(raw) {
   next.cricketRecord.losses = Math.max(0, Number(next.cricketRecord.losses) || 0);
   next.cricketRecord.champion = Math.max(0, Number(next.cricketRecord.champion) || 0);
   next.femaleSkills = next.femaleSkills && typeof next.femaleSkills === "object" ? next.femaleSkills : {};
+  next.femaleLife = normalizeFemaleLife(next.femaleLife);
   next.official = normalizeOfficial(next.official);
   next.lineage = normalizeLineage(next.lineage, next.name.slice(0, 1));
   next.life = normalizeLife(next.life, next.age);
@@ -2642,6 +2694,19 @@ function normalizeState(raw) {
     next.pendingTravel = null;
   }
   return next;
+}
+
+function normalizeFemaleLife(source = {}) {
+  const item = source && typeof source === "object" ? source : {};
+  return {
+    brothelEntries: Math.max(0, Math.round(Number(item.brothelEntries) || 0)),
+    disguises: Math.max(0, Math.round(Number(item.disguises) || 0)),
+    exposures: Math.max(0, Math.round(Number(item.exposures) || 0)),
+    professionalShows: Math.max(0, Math.round(Number(item.professionalShows) || 0)),
+    disguiseActiveYear: Number.isFinite(Number(item.disguiseActiveYear)) ? Number(item.disguiseActiveYear) : -1,
+    schoolStories: Math.max(0, Math.round(Number(item.schoolStories) || 0)),
+    schoolLastYear: Number.isFinite(Number(item.schoolLastYear)) ? Number(item.schoolLastYear) : -1,
+  };
 }
 
 function createPrisonState() {
@@ -3539,7 +3604,11 @@ function normalizeMatchCandidate(candidate) {
 
 function generateMatchCandidate(forcedGender) {
   const gender = forcedGender || (state.gender === "male" ? "female" : "male");
-  const tier = sample(MATCH_FAMILY_TIERS) || MATCH_FAMILY_TIERS[1];
+  const scandal = femaleMarriageScandalLevel();
+  const availableTiers = state.gender === "female" && scandal > 0
+    ? MATCH_FAMILY_TIERS.slice(0, scandal >= 2 ? 2 : 3)
+    : MATCH_FAMILY_TIERS;
+  const tier = sample(availableTiers) || MATCH_FAMILY_TIERS[1];
   const personality = sample(MATCH_PERSONALITIES) || MATCH_PERSONALITIES[0];
   const looks = clamp(randInt(38, 92) + (tier.id === "noble" ? 6 : 0));
   const knowledge = clamp(randInt(28, 86) + (tier.id === "scholar" ? 12 : 0));
@@ -3557,7 +3626,7 @@ function generateMatchCandidate(forcedGender) {
     personalityId: personality.id,
     looks,
     knowledge,
-    note: `${tier.note} 性情${personality.name}，容止约 ${looks}，识书约 ${knowledge}。`,
+    note: `${tier.note} 性情${personality.name}，容止约 ${looks}，识书约 ${knowledge}。${state.gender === "female" && scandal > 0 ? "这家听过你出入瓦舍的流言，言辞间颇多审视。" : ""}`,
   });
 }
 
@@ -3884,7 +3953,7 @@ function selectMatchCandidate(candidateId) {
       relation: "相看之人",
       gender: candidate.gender,
       age: candidate.age,
-      affection: clamp(48 + Math.floor(candidate.looks / 5) + Math.floor(candidate.power / 10)),
+      affection: clamp(48 + Math.floor(candidate.looks / 5) + Math.floor(candidate.power / 10) - femaleMarriageScandalLevel() * 10),
       alive: true,
     },
     state.name.slice(0, 1),
@@ -4938,15 +5007,26 @@ function applyAgeMilestones(deltas = []) {
     SFX.play("milestone");
     state.life.milestones.push(milestone.id);
     for (const [stat, range] of Object.entries(milestone.effects || {})) changeStat(stat, rangeValue(range), deltas);
-    if (milestone.tag && !state.tags.includes(milestone.tag)) state.tags.push(milestone.tag);
-    addLog(milestone.title, milestone.text, deltas);
+    const title = milestone.id === "exam-age" && state.gender === "female" ? "及笄成人" : milestone.title;
+    const text = milestoneTextForPlayer(milestone);
+    const tag = milestone.id === "exam-age" && state.gender === "female" ? "及笄成人" : milestone.tag;
+    if (tag && !state.tags.includes(tag)) state.tags.push(tag);
+    addLog(title, text, deltas);
   }
+}
+
+function milestoneTextForPlayer(milestone) {
+  if (state.gender !== "female") return milestone.text;
+  if (milestone.id === "academy-age") return "你已能入女学或书院旁听，诗书、女红、算账与岐黄都可成为日后立身的本领。";
+  if (milestone.id === "exam-age") return "十五岁渐近成人。本朝女子不得参加科举，你可以继续女学、参加女医技艺考校，或选择适合自己的营生。";
+  if (milestone.id === "property-age") return "乡里已把你当作能独当一面的大人，置产、经商、授学、行医与经营本业都成了正路。";
+  return milestone.text;
 }
 
 function unlockLifeGoals() {
   state.life ||= normalizeLife();
   const unlocked = [];
-  for (const goal of LIFE_GOALS) {
+  for (const goal of availableLifeGoals()) {
     if (!goal?.id || typeof goal.done !== "function") continue;
     if (state.life.goals.includes(goal.id) || !goal.done()) continue;
     state.life.goals.push(goal.id);
@@ -4969,17 +5049,25 @@ function unlockLifeGoals() {
 }
 
 function lifePhase() {
-  return LIFE_PHASES.find((phase) => state.age <= phase.max) || LIFE_PHASES[LIFE_PHASES.length - 1];
+  const phase = LIFE_PHASES.find((item) => state.age <= item.max) || LIFE_PHASES[LIFE_PHASES.length - 1];
+  if (state.gender !== "female") return phase;
+  if (phase.max === 14) return { ...phase, focus: "读书女学", tip: "可去女学修习六艺，也能在书院读经赴诗会。" };
+  if (phase.max === 24) return { ...phase, name: "芳华", focus: "女学营生", tip: "本朝女子不能科举，可走女医、教习、歌舞、女红或其他营生道路。" };
+  return phase;
+}
+
+function availableLifeGoals() {
+  return LIFE_GOALS.filter((goal) => !goal.gender || goal.gender === state.gender);
 }
 
 function completedGoals() {
   const doneIds = new Set(state.life?.goals || []);
-  return LIFE_GOALS.filter((goal) => doneIds.has(goal.id) || goal.done());
+  return availableLifeGoals().filter((goal) => doneIds.has(goal.id) || goal.done());
 }
 
 function nextGoals(limit = 3) {
   const doneIds = new Set(state.life?.goals || []);
-  return LIFE_GOALS.filter((goal) => !doneIds.has(goal.id) && !goal.done()).slice(0, limit);
+  return availableLifeGoals().filter((goal) => !doneIds.has(goal.id) && !goal.done()).slice(0, limit);
 }
 
 function achievementTierRank(tier = "bronze") {
@@ -4994,7 +5082,7 @@ function achievementTierText(goal) {
 function achievementsByTier() {
   const doneIds = new Set(completedGoals().map((goal) => goal.id));
   return Object.keys(ACHIEVEMENT_TIERS).map((tier) => {
-    const goals = LIFE_GOALS.filter((goal) => (goal.tier || "bronze") === tier);
+    const goals = availableLifeGoals().filter((goal) => (goal.tier || "bronze") === tier);
     const done = goals.filter((goal) => doneIds.has(goal.id));
     return { tier, meta: ACHIEVEMENT_TIERS[tier], goals, done };
   });
@@ -5076,6 +5164,7 @@ function lifeInsight() {
   if (state.dead) return "一生已定，可在命册里查看总评。";
   if (state.stats.physique < 35) return "体魄偏弱，先去医馆调理，别让好局半途折损。";
   if (state.age < MAIN_EXAM_MIN_AGE) return lifePhase().tip;
+  if (state.age >= MAIN_EXAM_MIN_AGE && state.gender === "female" && !state.career) return "女子不能应科举，可去女学深化六艺、参加女医考校，或先谋一份营生。";
   if (state.age >= MAIN_EXAM_MIN_AGE && state.exam.rank < 0) return "童试已经开放，若想走科举路，现在该去书院了。";
   if (!state.career) return "还没有固定营生，先谋一份差事会让钱财更稳。";
   if (!(state.assets || []).length && state.stats.money >= 300) return "手头已有余钱，可以考虑置办家产。";
@@ -5838,6 +5927,7 @@ function chooseOption(index) {
     if (event.kind === "prisonYear") return resolvePrisonYear(event, choice);
     if (event.kind === "culturalEvent") return resolveCulturalEvent(event, choice);
     if (event.kind === "worldArc") return resolveWorldArcEvent(event, choice);
+    if (event.kind === "femaleSchool") return resolveFemaleSchoolEvent(event, choice);
 
     const deltas = applyResults(choice.results || []);
     state.lastDeltas = mergeDeltas(state.pendingActivity?.deltas, deltas);
@@ -6000,6 +6090,11 @@ function applyResults(results) {
       continue;
     }
     if (method === "GoToWhoreHouse") {
+      if (state.gender === "female" && femaleTheaterAccessMode() !== "professional") {
+        changeStat("mood", -randInt(0, 2), deltas);
+        deltas.push({ label: "瓦舍", value: "女客止步", type: "text" });
+        continue;
+      }
       changeStat("money", -randInt(20, 80), deltas);
       changeStat("mood", randInt(2, 8), deltas);
       continue;
@@ -7271,6 +7366,111 @@ function upgradeTravelCarriage(action) {
   finishAction("车马升级", `你在车马铺换置了${next.name}。${next.note}`, deltas, next.icon);
 }
 
+function femaleTheaterAccessMode() {
+  if (state.gender !== "female") return "patron";
+  state.femaleLife = normalizeFemaleLife(state.femaleLife);
+  const careerName = String(state.career?.name || "");
+  if (/歌姬|舞姬|琴师|乐伎|乐伶|戏班|女伶|厨娘|跑堂/.test(careerName) || (state.tags || []).some((tag) => /青楼从业|教坊乐户|戏班女伶|瓦舍女工/.test(tag))) return "professional";
+  if (Number(state.femaleLife.disguiseActiveYear) === Number(state.year)) return "disguised";
+  return "forbidden";
+}
+
+function femaleMarriageScandalLevel() {
+  if (state.gender !== "female") return 0;
+  state.femaleLife = normalizeFemaleLife(state.femaleLife);
+  return Math.max(0, state.femaleLife.exposures + ((state.tags || []).includes("风月轻薄之名") ? 1 : 0));
+}
+
+function exposeFemaleTheater(reason = "男装被识破") {
+  state.femaleLife = normalizeFemaleLife(state.femaleLife);
+  const deltas = [];
+  state.femaleLife.exposures += 1;
+  state.femaleLife.disguiseActiveYear = -1;
+  changeStat("favorability", -randInt(16, 28), deltas);
+  changeStat("relationship", -randInt(6, 13), deltas);
+  changeStat("virtue", -randInt(3, 8), deltas);
+  changeStat("mood", -randInt(7, 14), deltas);
+  if (!state.tags.includes("风月轻薄之名")) state.tags.push("风月轻薄之名");
+  state.matchPool = [];
+  if (state.family.loverMeta) {
+    state.family.loverMeta.affection = clamp(Number(state.family.loverMeta.affection || 60) - randInt(8, 16));
+    state.family.spouseAffection = state.family.loverMeta.affection;
+  }
+  const text = `${reason}。鸨母叫人把你赶出门外，街边看客一路指点，流言很快传进媒人和亲族耳中。此后相看人家会更少，高门也会避开这桩名声。`;
+  addLog("瓦舍失仪 · 身份败露", text, deltas);
+  state.lastDeltas = deltas;
+  state.eventResult = { title: "男装身份败露", text, deltas, icon: "AwkwardStatus", scene: "lantern" };
+  save();
+  render();
+}
+
+function attemptFemaleTheaterDisguise() {
+  if (!state || state.gender !== "female" || state.dead || state.prisonYears > 0 || state.age < 16 || femaleTheaterAccessMode() === "professional") return;
+  state.femaleLife = normalizeFemaleLife(state.femaleLife);
+  const cost = 45;
+  if (state.stats.money < cost) return finishAction("男装未成", `置办合身男装、束发巾与靴子至少要 ${moneyText(cost)}，你手头不足。`, [{ label: "钱财", value: "不足", negative: true }], "CashBox");
+  const deltas = [];
+  changeStat("money", -cost, deltas);
+  addLedger("置办男装", -cost, "为混入瓦舍置办男装与束发用具。 ");
+  state.femaleLife.disguises += 1;
+  const exposureChance = clamp(38 + Number(state.stats.looks || 50) * 0.12 - Number(state.stats.eq || 50) * 0.28 - Number(state.stats.knowledge || 50) * 0.08, 10, 48) / 100;
+  if (Math.random() < exposureChance) return exposeFemaleTheater("你刚压低嗓音报上假名，门房便从步态与耳洞看出破绽，当众扯落了你的方巾");
+  state.femaleLife.disguiseActiveYear = state.year;
+  state.femaleLife.brothelEntries += 1;
+  changeStat("eq", randInt(2, 5), deltas);
+  changeStat("mood", randInt(1, 4), deltas);
+  if (!state.tags.includes("曾女扮男装")) state.tags.push("曾女扮男装");
+  const text = "你束胸易服、压低帽檐，以外地少年身份混过门房。今岁之内可用这身装束听曲看戏，但每一次在楼中逗留，都有被识破并毁损名誉的风险。";
+  state.lastDeltas = deltas;
+  addLog("女扮男装入瓦舍", text, deltas);
+  state.eventResult = { title: "男装混入", text, deltas, icon: "Whorehouse", scene: "lantern" };
+  save();
+  render();
+}
+
+function performFemaleTheaterAction(actionId) {
+  if (!state || state.gender !== "female" || state.dead || state.prisonYears > 0) return;
+  const mode = femaleTheaterAccessMode();
+  const deltas = [];
+  if (mode === "professional") {
+    const backstageWorker = /厨娘|跑堂/.test(state.career?.name || "");
+    const performance = backstageWorker
+      ? actionId === "rehearse"
+        ? sample(["你在后台清点衣箱、道具和茶具，缺漏都写在交接簿上。前楼再热闹，你也只守自己的工位。", "你帮戏班收好水袖与乐器，又将散场器具一一归位，随女工们从侧门结伴离开。"])
+        : sample(["你在后台备茶传菜，只往女眷席与戏班歇处走动。酒席散前便结清工钱，随同伴一道离坊。", "今晚客多，你在灶间与后台来回照应，却从不踏进客人寻欢的雅座。收工后，管事按数发下工钱。"])
+      : actionId === "rehearse"
+        ? sample(["你随班中姐妹在空台对拍、换位、收袖，反复排到掌灯。演出未开，你却把最容易出错的地方练稳了。", "你替新入班的女伶校准唱腔，又与乐师重新定调。台前尚无看客，后台功夫却半点不少。"])
+        : sample(["你随戏班登台献艺，唱罢便依班规从侧门离开，没有在酒席间停留。赏钱由班主当场分清。", "你受邀在女眷席前隔帘献艺，一曲终了便收拾乐器随同伴离坊，不与寻欢客人周旋。"]);
+    if (actionId === "rehearse") {
+      changeStat(backstageWorker ? "eq" : "knowledge", randInt(2, 5), deltas);
+      changeStat("mood", randInt(-1, 3), deltas);
+    } else {
+      const pay = randInt(55, 140);
+      changeStat("money", pay, deltas);
+      changeStat("favorability", randInt(1, 4), deltas);
+      changeStat(backstageWorker ? "eq" : "looks", randInt(1, 3), deltas);
+      addLedger(backstageWorker ? "瓦舍女工" : "瓦舍登台", pay, backstageWorker ? "以后台女工身份当值。" : "以歌舞女伶身份受邀献艺。 ");
+      state.femaleLife.professionalShows += 1;
+    }
+    finishAction(actionId === "rehearse" ? (backstageWorker ? "整理后台" : "后台排演") : (backstageWorker ? "后台当值" : "应邀登台"), performance, deltas, backstageWorker ? "Restaurant" : actionId === "rehearse" ? "BambooFlute" : "FlowerChiefTitle");
+    return;
+  }
+  if (mode !== "disguised") return;
+  const daring = actionId === "explore";
+  const cost = daring ? 70 : 28;
+  if (state.stats.money < cost) return finishAction("囊中羞涩", `这身男装虽混过门房，入座仍需 ${moneyText(cost)}。`, [{ label: "钱财", value: "不足", negative: true }], "CashBox");
+  changeStat("money", -cost, deltas);
+  addLedger("男装入瓦舍", -cost, daring ? "混入后楼旁观酒席。" : "压低帽檐听曲看戏。 ");
+  const risk = clamp((daring ? 34 : 16) + Number(state.stats.looks || 50) * 0.1 - Number(state.stats.eq || 50) * 0.16, 8, 52) / 100;
+  if (Math.random() < risk) return exposeFemaleTheater(daring ? "你在后楼驻足太久，被识得女声的侍女叫破身份" : "散场拥挤中方巾被人撞落，束发与耳洞暴露在人前");
+  changeStat("mood", daring ? randInt(5, 10) : randInt(3, 7), deltas);
+  changeStat(daring ? "eq" : "knowledge", randInt(2, 5), deltas);
+  const text = daring
+    ? "你借送酒人群混到后楼，只隔屏看了一阵宴饮与歌舞便及时抽身。那些纸醉金迷的排场让你大开眼界，也让你更清楚此地并非女子可以久留之所。"
+    : "你始终压低帽檐坐在末席，只听一折新戏、一曲琵琶便随人潮离开。无人看穿身份，这场越界冒险暂时只留在自己的命册里。";
+  finishAction(daring ? "男装探看后楼" : "男装听曲", text, deltas, "Whorehouse");
+}
+
 function useSpecialPlace(id) {
   if (!state || state.dead || state.prisonYears > 0) return;
   const deltas = [];
@@ -7291,6 +7491,7 @@ function useSpecialPlace(id) {
     render();
     return;
   } else if (id === "theater") {
+    if (state.gender === "female") return;
     const story = sample(THEATER_WATCH_STORIES);
     applyEffectRanges(story.effects, deltas);
     if (story.friend) addFriend();
@@ -8929,7 +9130,7 @@ function newGambleRound() {
 }
 
 function startCourtesanContest(forceNew = false) {
-  if (!state || state.dead || state.prisonYears > 0 || state.age < COURTESAN_MIN_AGE) return;
+  if (!state || state.gender !== "male" || state.dead || state.prisonYears > 0 || state.age < COURTESAN_MIN_AGE) return;
   if (state.courtesanContest && !forceNew) {
     view.page = "courtesanContest";
     save();
@@ -8977,6 +9178,7 @@ function courtesanRoundLine(candidate, roundId, score) {
 }
 
 function chooseCourtesanAction(candidateId, actionId) {
+  if (state.gender !== "male") return;
   const contest = normalizeCourtesanContest(state.courtesanContest);
   const round = COURTESAN_ROUNDS[contest?.round || 0];
   if (!contest || !round || actionId !== round.id) return;
@@ -9023,6 +9225,7 @@ function chooseCourtesanAction(candidateId, actionId) {
 }
 
 function finishCourtesanContest() {
+  if (state.gender !== "male") return;
   const contest = normalizeCourtesanContest(state.courtesanContest);
   if (!contest || contest.round < COURTESAN_ROUNDS.length) return;
   const ranking = [...contest.candidates].sort((a, b) => b.score - a.score);
@@ -9069,7 +9272,7 @@ function finishCourtesanContest() {
 }
 
 function startCourtesanParlor(forceNew = false) {
-  if (!state || state.dead || state.prisonYears > 0 || state.age < COURTESAN_MIN_AGE) return;
+  if (!state || state.gender !== "male" || state.dead || state.prisonYears > 0 || state.age < COURTESAN_MIN_AGE) return;
   const currentYear = Number(state.year ?? state.age ?? 0);
   const existing = normalizeCourtesanVisit(state.courtesanVisit);
   state.courtesanVisit = !forceNew && existing?.startedYear === currentYear ? existing : createCourtesanVisit();
@@ -9080,7 +9283,7 @@ function startCourtesanParlor(forceNew = false) {
 }
 
 function chooseBrothelCompanion(candidateId, actionId) {
-  if (!state || state.dead || state.prisonYears > 0 || state.age < COURTESAN_MIN_AGE) return;
+  if (!state || state.gender !== "male" || state.dead || state.prisonYears > 0 || state.age < COURTESAN_MIN_AGE) return;
   const visit = normalizeCourtesanVisit(state.courtesanVisit);
   const action = BROTHEL_ACTIONS[actionId];
   const candidate = visit?.candidates.find((item) => item.id === candidateId);
@@ -9133,6 +9336,7 @@ function chooseBrothelCompanion(candidateId, actionId) {
 
 function performPlaceAction(id) {
   if (!state || state.dead || state.prisonYears > 0) return;
+  if (state.gender === "female" && ["theaterWatch", "pleasureRisk", "courtesanContest", "courtesanParlor"].includes(id)) return;
   if (id === "prepareExam") return prepareExam();
   if (id === "poetryMeet") return openPoetryContest();
   if (id === "courtesanContest") return startCourtesanContest();
@@ -9142,7 +9346,13 @@ function performPlaceAction(id) {
   let title = "去处";
   let text = "";
   let iconName = "Activity";
-  if (id === "medicineTreat") {
+  if (id === "academyReading") {
+    changeStat("knowledge", randInt(3, 7), deltas);
+    changeStat("mood", randInt(-2, 2), deltas);
+    title = "书院研读";
+    text = "你在书院借得经史与前人笔记，隔帘听先生讲章法。虽不能下场应举，文字与见识仍可成为谋生、教书和持家的根基。";
+    iconName = "Book";
+  } else if (id === "medicineTreat") {
     const cost = state.diseases.length ? randInt(45, 130) : randInt(20, 60);
     if (state.stats.money < cost) return;
     changeStat("money", -cost, deltas);
@@ -9469,12 +9679,43 @@ function attendParty(index) {
 function studyFemaleSkill(index) {
   const skill = FEMALE_SKILLS[Number(index)];
   if (!skill || state.gender !== "female" || state.age < 8) return;
+  state.femaleLife = normalizeFemaleLife(state.femaleLife);
+  const story = sample(FEMALE_SCHOOL_STORIES[skill.name]) || FEMALE_SCHOOL_STORIES.诗书[0];
+  state.currentEvent = {
+    kind: "femaleSchool",
+    skillIndex: Number(index),
+    title: `${skill.name} · ${story.title}`,
+    content: story.content,
+    children: story.choices.map(([title, content, effects]) => ({
+      title,
+      content,
+      effects,
+      note: Object.entries(effects).map(([key, value]) => `${STAT_LABELS[key] || key}${Number(value) >= 0 ? "+" : ""}${value}`).join(" · "),
+    })),
+  };
+  view.page = "main";
+  save();
+  render();
+}
+
+function resolveFemaleSchoolEvent(event, choice) {
+  const skill = FEMALE_SKILLS[Number(event.skillIndex)];
+  if (!skill || state.gender !== "female") return;
   const deltas = [];
   state.femaleSkills[skill.name] = skillLevel(skill.name) + 1;
   changeStat(skill.stat, skill.value, deltas);
-  changeStat("mood", randInt(-2, 2), deltas);
+  for (const [stat, amount] of Object.entries(choice.effects || {})) changeStat(stat, amount, deltas);
   if (!state.tags.includes("女学")) state.tags.push("女学");
-  finishAction("女学", `你修习${skill.name}。${skill.note}`, deltas, skill.icon);
+  state.femaleLife = normalizeFemaleLife(state.femaleLife);
+  state.femaleLife.schoolStories += 1;
+  state.femaleLife.schoolLastYear = state.year;
+  state.currentEvent = null;
+  state.lastDeltas = deltas;
+  const text = `${choice.content} 此后你对${skill.name}又熟了一层。${skill.note}`;
+  addLog(`女学 · ${event.title}`, text, deltas);
+  state.eventResult = { title: choice.title, text, deltas, icon: skill.icon, scene: "ink" };
+  save();
+  render();
 }
 
 function sendLetter() {
@@ -9643,7 +9884,7 @@ function teachChild(id) {
 }
 
 function redeemCourtesan(candidateId) {
-  if (!state || state.dead || state.prisonYears > 0 || state.age < COURTESAN_MIN_AGE) return;
+  if (!state || state.gender !== "male" || state.dead || state.prisonYears > 0 || state.age < COURTESAN_MIN_AGE) return;
   const visit = normalizeCourtesanVisit(state.courtesanVisit);
   const candidate = visit?.candidates.find((item) => item.id === candidateId);
   if (!visit || !candidate || candidate.affection < COURTESAN_REDEEM_AFFECTION || candidate.visits < COURTESAN_REDEEM_VISITS) return;
@@ -10576,7 +10817,7 @@ function consumeExamPrep() {
 }
 
 function canPrepareExam() {
-  return !state.dead && !state.currentEvent && !state.eventResult && state.prisonYears <= 0 && state.age >= 8;
+  return state.gender === "male" && !state.dead && !state.currentEvent && !state.eventResult && state.prisonYears <= 0 && state.age >= 8;
 }
 
 function prepareExam() {
@@ -10613,15 +10854,17 @@ function careerLockedReason(career) {
   if (state.career) return state.career.name === career?.name ? "当前营生" : `须先辞去${currentCareerName()}`;
   const genderRequire = Number(career?.genderRequire ?? career?.GenderRequire);
   if (genderRequire === 1 && state.gender !== "female") return "女子可任";
+  if (careerKind(career) === "official" && state.gender === "female") return "本朝女子不得由科举入仕";
   if (careerKind(career) === "official" && !hasPalaceAppointment()) return "殿试后可任职";
   return "";
 }
 
 function canOpenExam() {
-  return !state.dead && !state.currentEvent && !state.eventResult && !state.pendingCaravan && state.prisonYears <= 0 && state.age >= MAIN_EXAM_MIN_AGE && !examTakenThisYear() && state.exam.rank < EXAM_STAGES.length - 1 && imperialQuestionPool().length > 0;
+  return state.gender === "male" && !state.dead && !state.currentEvent && !state.eventResult && !state.pendingCaravan && state.prisonYears <= 0 && state.age >= MAIN_EXAM_MIN_AGE && !examTakenThisYear() && state.exam.rank < EXAM_STAGES.length - 1 && imperialQuestionPool().length > 0;
 }
 
 function examStatusNote() {
+  if (state.gender === "female") return `<p class="empty-note">本朝科举仅取男子，女子不能参加童试、乡试、会试或殿试。你仍可在女学修习诗书、算学与岐黄，并参加女医技艺考校。</p>`;
   const next = state.exam.rank >= EXAM_STAGES.length - 1 ? null : EXAM_STAGES[state.exam.rank + 1];
   const title = state.exam.rank >= 0 ? EXAM_TITLES[state.exam.rank] : "白身";
   let reason = "APK 题库未加载。";
@@ -10636,7 +10879,9 @@ function examStatusNote() {
 
 function canOpenExtraExam(type) {
   if (state.dead || state.currentEvent || state.eventResult || state.pendingCaravan || state.prisonYears > 0 || state.age < MAIN_EXAM_MIN_AGE || examTakenThisYear()) return false;
-  if ((type === "female" || type?.startsWith?.("female-")) && state.gender !== "female") return false;
+  const femaleAssessment = type === "female" || type?.startsWith?.("female-");
+  if (femaleAssessment && state.gender !== "female") return false;
+  if (!femaleAssessment && state.gender === "female") return false;
   return extraExamQuestions(type).length > 0;
 }
 
@@ -10839,7 +11084,7 @@ function accuseMystery(suspectId) {
 }
 
 function openExamUnderworld() {
-  if (state.age < MAIN_EXAM_MIN_AGE || state.dead || state.prisonYears > 0) return;
+  if (state.gender !== "male" || state.age < MAIN_EXAM_MIN_AGE || state.dead || state.prisonYears > 0) return;
   state.underworld = normalizeUnderworld(state.underworld);
   if (!state.underworld.broker) state.underworld.broker = { name: sample(["铁算盘", "陆三眼", "贡院鼠", "白纸扇"]), trust: randInt(28, 72), lastYear: state.year };
   view.page = "examUnderworld";
@@ -10848,7 +11093,7 @@ function openExamUnderworld() {
 }
 
 function canUseExamCheat(method) {
-  if (!method || state.stats.money < method.cost || state.exam.current || examTakenThisYear() || state.exam.rank >= EXAM_STAGES.length - 1) return false;
+  if (state.gender !== "male" || !method || state.stats.money < method.cost || state.exam.current || examTakenThisYear() || state.exam.rank >= EXAM_STAGES.length - 1) return false;
   if (method.requireExaminer && !(state.stats.relationship >= 70 || state.friends.some((item) => /考官|学政|官员/.test(item.relation || "")))) return false;
   return true;
 }
@@ -10924,10 +11169,7 @@ function startExam() {
       writingStyle: "",
     };
   } else {
-    const pool = [
-      ...imperialQuestionPool(),
-      ...(state.gender === "female" ? femaleQuestionPool() : []),
-    ];
+    const pool = imperialQuestionPool();
     const questions = pickMany(pool, stage.count).map((question) => {
       const answers = shuffle(question.answers || []);
       return {
@@ -10966,7 +11208,6 @@ function startExtraExam(type) {
     extraStage: config,
     questions,
   };
-  state.exam.attempts += 1;
   view.page = "exam";
   save();
   render();
@@ -11090,7 +11331,9 @@ function submitExam() {
     const rawScore = (current.questions || []).filter((question) => question.selected && question.selected === question.correct).length;
     score = Math.min(current.questions.length, rawScore + prepBonus);
     passed = score >= stage.pass;
-    text = `${stage.name}放榜，答中 ${rawScore}/${current.questions.length} 题${prepBonus ? `，备考补益折作 ${score} 分` : ""}，${passed ? `取中${stage.title}` : "名落孙山"}。`;
+    text = current.extraType
+      ? `${stage.name}考校，答中 ${rawScore}/${current.questions.length} 题，${passed ? `通过考校，获评“${stage.title}”` : "尚未达到行内认可，仍需研习"}。这份评定属于技艺认证，不记作科举功名。`
+      : `${stage.name}放榜，答中 ${rawScore}/${current.questions.length} 题${prepBonus ? `，备考补益折作 ${score} 分` : ""}，${passed ? `取中${stage.title}` : "名落孙山"}。`;
   } else {
     const topic = normalizePalaceTopic(current.topic || sample(palaceQuestionPool()) || SUPPLEMENTAL_PALACE_TOPICS[0]);
     const knowledgeScore = Math.round((state.stats.knowledge || 0) * 0.55);
@@ -11962,8 +12205,8 @@ function onboardingOverlay() {
   const firstStep = state.age < 1
     ? "先点“开始第一年”，让第一件人生事件发生。"
     : state.age < MAIN_EXAM_MIN_AGE
-      ? "先关注体魄、学识和家中关系，等 15 岁后再选营生或科举。"
-      : "可以先去“营生”谋一份差事，或去“书院”参加科举。";
+      ? `先关注体魄、学识和家中关系，等 15 岁后再选营生${state.gender === "male" ? "或科举" : "；女学从 8 岁开放"}。`
+      : state.gender === "female" ? "可以先去“女学”修习六艺、参加女医考校，或在“营生”谋一份差事。" : "可以先去“营生”谋一份差事，或去“书院”参加科举。";
   const firstAction = state.age < 1
     ? `<button class="primary-btn" data-action="onboarding-next-year">开始第一年</button>`
     : `<button class="primary-btn" data-action="finish-onboarding">知道了</button>`;
@@ -11987,7 +12230,7 @@ function onboardingOverlay() {
           </section>
           <section class="onboarding-card">
             <strong>能干什么</strong>
-            <p>你可以经营属性，照顾亲友，买房置业，参加科举，当官办事，也能去瓦舍、博坊、雅戏和行商押镖。</p>
+            <p>${state.gender === "female" ? "你可以经营属性、照顾亲友、修习女学六艺、谋生置业、婚育传家；也能读经、行医、行商或投身歌舞本业。科举与青楼寻欢则受时代身份限制。" : "你可以经营属性，照顾亲友，买房置业，参加科举，当官办事，也能去瓦舍、博坊、雅戏和行商押镖。"}</p>
           </section>
           <section class="onboarding-card highlight">
             <strong>第一步做什么</strong>
@@ -11999,7 +12242,7 @@ function onboardingOverlay() {
           <li><b>看状态</b><span>左侧是心情、体魄、学识等核心属性，体魄太低会有生命风险。</span></li>
           <li><b>点中间事件</b><span>人生事件会给你选择，不同选项会改属性、钱财和关系。</span></li>
           <li><b>用右侧页签</b><span>右侧能查看命册、亲友、背包、账本和资料，后面会越来越重要。</span></li>
-          <li><b>长大后解锁</b><span>15 岁后开放营生和童试，18 岁后会开放更多成人活动。</span></li>
+          <li><b>长大后解锁</b><span>${state.gender === "female" ? "8 岁开放女学，15 岁后开放营生和女医考校；科举仅向男子开放。" : "15 岁后开放营生和童试，18 岁后会开放更多成人活动。"}</span></li>
         </ol>
 
         <div class="onboarding-actions">
@@ -12207,7 +12450,7 @@ function secretLineSummary() {
   const activeCase = activeMysteryCase();
   const learned = state.jianghu?.skills?.length || 0;
   return {
-    exam: cheat ? `已布置“${cheat.name}”` : state.underworld?.records?.attempts ? `暗试 ${state.underworld.records.attempts} 次` : "五种门路待选择",
+    exam: state.gender === "female" ? "本朝女子不得应举" : cheat ? `已布置“${cheat.name}”` : state.underworld?.records?.attempts ? `暗试 ${state.underworld.records.attempts} 次` : "五种门路待选择",
     mystery: activeCase ? `${activeCase.title} · ${state.mystery.active.clues.length}/4 线索` : state.mystery?.completed?.length ? `已结 ${state.mystery.completed.length}/6 案` : "六宗奇案待开卷",
     jianghu: state.jianghu?.prophecy ? `${Math.max(0, state.jianghu.prophecy.dueYear - state.year)} 年后卦应` : learned ? `已习 ${learned}/5 门奇术` : "拜师学习五门奇术",
   };
@@ -12487,6 +12730,7 @@ function activityView() {
 }
 
 function courtesanContestView() {
+  if (state.gender === "female") return femaleTheaterClosedView();
   const contest = normalizeCourtesanContest(state.courtesanContest);
   if (!contest) {
     return `
@@ -12575,6 +12819,7 @@ function courtesanCandidateCard(candidate, index, round, finished, giftCost) {
 }
 
 function courtesanParlorView() {
+  if (state.gender === "female") return femaleTheaterClosedView();
   const visit = normalizeCourtesanVisit(state.courtesanVisit);
   if (!visit) {
     return `
@@ -12609,6 +12854,16 @@ function courtesanParlorView() {
         <button class="secondary-btn" data-action="brothel-refresh">换一批美人</button>
         <button class="ghost-btn" data-action="back-places">返回瓦舍</button>
       </div>
+    </article>`;
+}
+
+function femaleTheaterClosedView() {
+  return `
+    <article class="play-card female-theater-closed">
+      <p class="eyebrow">瓦舍门禁</p>
+      <h2>女客不得入后楼消遣</h2>
+      <p>这里是男子寻欢宴饮之所。女子若无登台、伴乐或做工身份，不能以客人身份进入美人雅座与佳丽竞选。</p>
+      <div class="main-actions"><button class="primary-btn" data-place="theater">回到瓦舍门前</button><button class="ghost-btn" data-action="back-places">返回活动</button></div>
     </article>`;
 }
 
@@ -12789,7 +13044,7 @@ function placeView() {
     <article class="play-card place-card">
       <p class="eyebrow">活动</p>
       <h2>${escapeHtml(place.label)}</h2>
-      <p>${escapeHtml(place.note)}</p>
+      <p>${escapeHtml(placeDescription(place))}</p>
       ${locked ? `<p class="empty-note">${escapeHtml(lockReason)}</p>` : ""}
       <div class="button-list">
         ${(place.activities || []).map((id) => {
@@ -12804,7 +13059,7 @@ function placeView() {
         ${place.special ? specialPlaceButton(place, locked) : ""}
         ${place.exam ? `<button class="list-btn" data-action="open-exam" ${canOpenExam() ? "" : "disabled"}>
           ${icon("OfficialSchool", "科举")}
-          <span>科举考试<small>${stripTags(examStatusNote())}</small></span>
+          <span>${state.gender === "female" ? "女子不得应科举" : "科举考试"}<small>${stripTags(examStatusNote())}</small></span>
         </button>` : ""}
       </div>
       <div class="main-actions">
@@ -12815,6 +13070,10 @@ function placeView() {
 }
 
 function placeActionButtons(place, locked) {
+  if (place.id === "theater" && state.gender === "female") return femaleTheaterActionButtons(locked);
+  if (place.id === "academy" && state.gender === "female") return `
+    <button class="list-btn" data-place-action="academyReading" ${locked ? "disabled" : ""}>${icon("Book", "经史研读")}<span>经史研读<small>可增长学识，但不取得科举功名</small></span></button>
+    <button class="list-btn" data-place-action="poetryMeet" ${locked || state.age < 12 ? "disabled" : ""}>${icon("MainBook", "诗会文斗")}<span>诗会文斗<small>${state.age < 12 ? "12 岁后开放" : "以才学会友，不属于科举考试"}</small></span></button>`;
   const actions = {
     medicine: [
       ["medicineTreat", "问诊抓药", "花钱治病或调理体魄", "MedicineBag"],
@@ -12853,6 +13112,36 @@ function placeActionButtons(place, locked) {
   }).join("");
 }
 
+function femaleTheaterActionButtons(locked) {
+  const mode = femaleTheaterAccessMode();
+  if (mode === "professional") {
+    const backstageWorker = /厨娘|跑堂/.test(state.career?.name || "");
+    return `
+      <section class="female-access-panel legal">
+        <b>从业通行 · 仅限登台做工</b>
+        <p>你以${escapeHtml(state.career?.name || "女伶")}身份由侧门随班入场，可以排演、登台、对接乐师与道具；演毕须离开，不能在后楼以客人身份寻欢。</p>
+      </section>
+      <button class="list-btn" data-female-theater-action="${backstageWorker ? "work" : "perform"}" ${locked ? "disabled" : ""}>${icon(backstageWorker ? "Restaurant" : "FlowerChiefTitle", backstageWorker ? "后台当值" : "应邀登台")}<span>${backstageWorker ? "后台当值" : "应邀登台"}<small>${backstageWorker ? "以女工身份备茶理席，只在工作区域停留" : "以工作身份演出，散场即离开，并取得班资"}</small></span></button>
+      <button class="list-btn" data-female-theater-action="rehearse" ${locked ? "disabled" : ""}>${icon(backstageWorker ? "Activity" : "BambooFlute", backstageWorker ? "整理后台" : "后台排演")}<span>${backstageWorker ? "整理后台" : "后台排演"}<small>${backstageWorker ? "清点道具、衣箱与器具，不进入客人雅座" : "与戏班、乐师对词定拍，不进入寻欢酒席"}</small></span></button>`;
+  }
+  if (mode === "disguised") {
+    return `
+      <section class="female-access-panel disguise">
+        <b>男装潜入 · 今岁伪装尚未失效</b>
+        <p>你以外地少年身份混入。听曲风险较低，探看后楼风险更高；一旦被识破，将损失大量名望、人际与婚嫁机会。</p>
+      </section>
+      <button class="list-btn" data-female-theater-action="listen" ${locked ? "disabled" : ""}>${icon("BambooFlute", "男装听曲")}<span>压低帽檐听曲<small>花费 28 · 较低败露风险 · 增长学识与心情</small></span></button>
+      <button class="list-btn danger-list-btn" data-female-theater-action="explore" ${locked ? "disabled" : ""}>${icon("Whorehouse", "探看后楼")}<span>混入后楼观场<small>花费 70 · 高败露风险 · 只作旁观，不可久留</small></span></button>`;
+  }
+  return `
+    <section class="female-access-panel forbidden">
+      <b>女客止步</b>
+      <p>青楼后楼是男子寻欢之地。普通女子独自进入会被视作轻薄失仪，流言会直接损害名望与婚嫁。歌姬、舞姬、乐伎和戏班女伶可因工作短暂入内。</p>
+      <div><span>合法身份：歌姬 / 舞姬 / 乐伎 / 戏班女伶</span><span>特殊玩法：十六岁后女扮男装，成功可听曲看戏，败露会遭羞辱并留下恶名</span></div>
+    </section>
+    <button class="list-btn danger-list-btn" data-action="female-theater-disguise" ${locked || state.age < 16 || state.stats.money < 45 ? "disabled" : ""}>${icon("Whorehouse", "女扮男装")}<span>女扮男装试闯门房<small>${state.age < 16 ? "16 岁后开放" : state.stats.money < 45 ? "需 45 铜钱置办男装" : "花费 45 · 处世与学识降低败露风险"}</small></span></button>`;
+}
+
 function activityPlacesView() {
   const blocked = state.dead || !!state.currentEvent || !!state.eventResult || !!state.pendingCaravan || state.prisonYears > 0;
   return `
@@ -12866,7 +13155,7 @@ function activityPlacesView() {
           return `<button class="place-btn" data-place="${escapeHtml(place.id)}" ${reason ? "disabled" : ""}>
             ${icon(place.icon, place.label)}
             <span>${escapeHtml(place.label)}</span>
-            <small>${escapeHtml(reason || place.note)}</small>
+            <small>${escapeHtml(reason || placeDescription(place))}</small>
           </button>`;
         }).join("")}
       </div>
@@ -12874,6 +13163,17 @@ function activityPlacesView() {
         <button class="ghost-btn" data-action="back-main">返回</button>
       </div>
     </article>`;
+}
+
+function placeDescription(place) {
+  if (place?.id === "academy" && state.gender === "female") return "可读经史、赴诗会；本朝女子不得参加童试、乡试、会试与殿试。";
+  if (place?.id === "theater" && state.gender === "female") {
+    const mode = femaleTheaterAccessMode();
+    if (mode === "professional") return "你可凭歌舞从业身份入内登台，演毕须随班离开，不能逗留寻欢。";
+    if (mode === "disguised") return "你今岁以男装身份潜入，可听曲探看；一旦败露将严重损害名望与婚嫁。";
+    return "普通女客不得进入后楼；从业女伶可工作出入，十六岁后也可冒险女扮男装。";
+  }
+  return place?.note || "";
 }
 
 function placeLockReason(place) {
@@ -12924,7 +13224,23 @@ function specialPlaceButton(place, locked) {
   }
   if (place.special === "womenSchool") {
     const genderLocked = state.gender !== "female";
-    return `${FEMALE_SKILLS.map((item, index) => `<button class="list-btn" data-female-skill="${index}" ${locked || genderLocked ? "disabled" : ""}>${icon(item.icon, item.name)}<span>${escapeHtml(item.name)}<small>${genderLocked ? "仅女子可学" : `${skillLevel(item.name)} 级 · ${escapeHtml(item.note)}`}</small></span></button>`).join("")}`;
+    state.femaleLife = normalizeFemaleLife(state.femaleLife);
+    return `
+      <section class="female-school-intro">
+        <div><b>闺塾六艺</b><span>不以科名为终点，而以识字、治家、谋生与济人为用。</span></div>
+        <strong>${genderLocked ? "男子止步" : `已历 ${state.femaleLife.schoolStories} 桩女学见闻`}</strong>
+      </section>
+      ${FEMALE_SKILLS.map((item, index) => `<button class="list-btn" data-female-skill="${index}" ${locked || genderLocked ? "disabled" : ""}>${icon(item.icon, item.name)}<span>${escapeHtml(item.name)}<small>${genderLocked ? "女学仅收女子" : `${skillLevel(item.name)} 级 · ${escapeHtml(item.note)} · 修习会触发专属剧情`}</small></span></button>`).join("")}
+      <section class="female-assessment-panel">
+        <b>女医技艺考校 · 15 岁后</b>
+        <p>这些是医术与照护能力的行内考校，不授秀才、举人或进士功名，也不能据此入仕。</p>
+        <div>
+          <button class="text-btn inline-action" data-exam-extra="female" ${canOpenExtraExam("female") ? "" : "disabled"}>女医合考</button>
+          <button class="text-btn inline-action" data-exam-extra="female-sore" ${canOpenExtraExam("female-sore") ? "" : "disabled"}>疮疡考校</button>
+          <button class="text-btn inline-action" data-exam-extra="female-one" ${canOpenExtraExam("female-one") ? "" : "disabled"}>医理总论一</button>
+          <button class="text-btn inline-action" data-exam-extra="female-two" ${canOpenExtraExam("female-two") ? "" : "disabled"}>医理总论二</button>
+        </div>
+      </section>`;
   }
   if (place.special === "party") {
     const themes = DATA.database?.partyThemes || [];
@@ -13477,6 +13793,7 @@ function matchmakerView() {
       <p class="eyebrow">联姻策略局</p>
       <h2>细看人家</h2>
       <p>媒人摊开庚帖：家世、彩礼、性情、生育预期与娘家势力一应写明。选定需付媒资 ${moneyText(30)}，之后可在亲友页成婚；彩礼不足则婚仪难成。</p>
+      ${femaleMarriageScandalLevel() ? `<p class="match-scandal-warning">坊间仍在议论你女扮男装出入瓦舍之事。高门庚帖已经避开，现有相看对象的初始情分也会降低；往后可凭善行与本业慢慢重建名望。</p>` : ""}
       ${hasLover ? `<p class="empty-note">当前相看：${escapeHtml(state.family.lover)}（${escapeHtml(matchSummary(state.family.loverProfile))}）。再选会更换对象。</p>` : ""}
       <div class="match-grid">
         ${pool.map((item) => `
@@ -13512,12 +13829,12 @@ function codexView() {
       <p>${escapeHtml(lifeInsight())}</p>
       <section class="score-grid">
         ${scoreTile("阶段", `${lifePhase().name} · ${lifePhase().focus}`)}
-        ${scoreTile("成就", `${doneIds.size}/${LIFE_GOALS.length}`)}
+        ${scoreTile("成就", `${doneIds.size}/${availableLifeGoals().length}`)}
         ${scoreTile("命册", `${state.log.length} 件事`)}
         ${scoreTile("亲友", `${relationCount()} 人`)}
       </section>
       <section class="codex-section">
-        <div class="section-title"><h2>成就总览</h2><strong>${doneIds.size}/${LIFE_GOALS.length}</strong></div>
+        <div class="section-title"><h2>成就总览</h2><strong>${doneIds.size}/${availableLifeGoals().length}</strong></div>
         <div class="achievement-tier-summary">
           ${tierGroups.map((group) => `
             <span class="${group.tier}">
@@ -13550,8 +13867,8 @@ function codexView() {
         <div class="timeline-list">
           ${AGE_MILESTONES.map((item) => `
             <article class="timeline-item ${triggered.has(item.id) ? "done" : ""}">
-              <b>${item.age}岁 · ${escapeHtml(item.title)}</b>
-              <p>${escapeHtml(triggered.has(item.id) ? item.text : "尚未走到此年。")}</p>
+              <b>${item.age}岁 · ${escapeHtml(item.id === "exam-age" && state.gender === "female" ? "及笄成人" : item.title)}</b>
+              <p>${escapeHtml(triggered.has(item.id) ? milestoneTextForPlayer(item) : "尚未走到此年。")}</p>
             </article>`).join("")}
         </div>
       </section>
@@ -14245,7 +14562,7 @@ function endingShareData(score = lifeScore(), inheritedMoney = Math.max(20, Math
     assetCount: assets.length,
     childCount: children.length,
     goalCount: goals.length,
-    goalTotal: LIFE_GOALS.length,
+    goalTotal: availableLifeGoals().length,
     logCount: (state.log || []).length,
     tags,
     highlights: highlightPool.slice(0, 5),
@@ -14530,7 +14847,7 @@ function secretsView() {
   const summary = secretLineSummary();
   const totalHeat = Math.round(Number(state.underworld?.heat || 0) + Number(state.jianghu?.heat || 0));
   const examinerReady = state.career && careerKind(state.career) === "official" && officialRankIndex() >= 4;
-  const examReady = state.age >= MAIN_EXAM_MIN_AGE && !state.dead && state.prisonYears <= 0 && !examTakenThisYear() && !state.exam.current && state.exam.rank < EXAM_STAGES.length - 1;
+  const examReady = state.gender === "male" && state.age >= MAIN_EXAM_MIN_AGE && !state.dead && state.prisonYears <= 0 && !examTakenThisYear() && !state.exam.current && state.exam.rank < EXAM_STAGES.length - 1;
   const mysteryReady = state.age >= 16 && !state.dead && state.prisonYears <= 0;
   const jianghuReady = state.age >= 15 && !state.dead && state.prisonYears <= 0;
   const completedCases = new Map((state.mystery?.completed || []).map((item) => [item.caseId, item]));
@@ -14546,9 +14863,9 @@ function secretsView() {
           <div class="secret-line-icon">${icon("Book", "科举舞弊")}</div>
           <span class="secret-line-tag">科举 · 黑灰产业链</span>
           <h3>贡院暗门</h3>
-          <p>与作弊中介交涉，从夹带到买题布置五种手段；考官身份还会反向收到卖题邀约。</p>
+          <p>${state.gender === "female" ? "本朝科场不许女子入试，因此贡院作弊链也不会向女性角色开放。女学、女医与本业技艺是另一条成长道路。" : "与作弊中介交涉，从夹带到买题布置五种手段；考官身份还会反向收到卖题邀约。"}</p>
           <div class="secret-line-state"><b>${escapeHtml(summary.exam)}</b><small>风声 ${Math.round(state.underworld?.heat || 0)} · 得手 ${state.underworld?.records?.successes || 0} · 败露 ${state.underworld?.records?.exposed || 0}</small></div>
-          <button class="primary-btn" data-action="${examinerReady ? "start-secret-bribe" : "open-secret-exam"}" ${examinerReady || examReady ? "" : "disabled"}>${examinerReady ? "查看今科买题密函" : state.age < 15 ? "15 岁解锁" : state.exam.rank >= EXAM_STAGES.length - 1 ? "科名已尽，任考官后开启卖题" : examTakenThisYear() ? "今年已试" : "去见作弊中介"}</button>
+          <button class="primary-btn" data-action="${examinerReady ? "start-secret-bribe" : "open-secret-exam"}" ${examinerReady || examReady ? "" : "disabled"}>${state.gender === "female" ? "女子不得入贡院" : examinerReady ? "查看今科买题密函" : state.age < 15 ? "15 岁解锁" : state.exam.rank >= EXAM_STAGES.length - 1 ? "科名已尽，任考官后开启卖题" : examTakenThisYear() ? "今年已试" : "去见作弊中介"}</button>
         </article>
         <article class="secret-line-card mystery-line">
           <div class="secret-line-icon">${icon("PrisonHeader", "离奇案件")}</div>
@@ -14647,6 +14964,24 @@ function jianghuView() {
 
 function examView() {
   const current = state.exam.current;
+  if (!current && state.gender === "female") {
+    return `
+      <article class="play-card exam-card female-exam-closed">
+        <p class="eyebrow">书院 · 科场门外</p>
+        <h2>女子不得应科举</h2>
+        <p>本朝童试、乡试、会试与殿试只录男子。你可以读经习字、赴诗会增长才学，却不能取得秀才、举人或进士功名，也不能借贡院暗门舞弊入场。</p>
+        <section class="female-route-note">
+          <b>女性可走的学业道路</b>
+          <span>女学六艺：女红、琴艺、诗书、礼仪、算账、岐黄</span>
+          <span>十五岁后可参加女医合考与疮疡、医理考校；这些属于技艺认证，不是科举功名。</span>
+        </section>
+        <div class="main-actions">
+          <button class="primary-btn" data-place="womenSchool">前往女学</button>
+          <button class="secondary-btn" data-place="academy">留在书院读书</button>
+          <button class="ghost-btn" data-action="back-places">返回活动</button>
+        </div>
+      </article>`;
+  }
   if (!current) {
     const stage = EXAM_STAGES[Math.min(state.exam.rank + 1, EXAM_STAGES.length - 1)];
     return `
@@ -14748,8 +15083,9 @@ function eventView(event) {
   const prisonEvent = event.kind === "prisonYear";
   const culturalEvent = event.kind === "culturalEvent";
   const worldEvent = event.kind === "worldArc";
+  const femaleSchoolEvent = event.kind === "femaleSchool";
   const darkEvent = ["examinerBribe", "underworldConsequence", "jianghuProphecy", "secretIntroduction"].includes(event.kind);
-  const eyebrow = worldEvent ? `${state.dynasty.eraName}${state.dynasty.reignYear}年 · 天下主线` : prisonEvent ? `牢狱流年 · 余刑 ${state.prisonYears} 年` : culturalEvent ? `${CULTURAL_SEASONS[event.season]?.name || "四时"}时 · ${event.culturalType === "festival" ? "传统节日" : "二十四节气"}` : event.kind === "secretIntroduction" ? "奇闻暗线开启" : event.kind === "examinerBribe" ? "贡院暗局" : event.kind === "underworldConsequence" ? "旧账追门" : event.kind === "jianghuProphecy" ? "江湖命数" : official ? "官场考验" : familyStory ? "家事流年" : careerCase ? "本业专案" : fortuneEvent ? "签运应验" : "事件";
+  const eyebrow = worldEvent ? `${state.dynasty.eraName}${state.dynasty.reignYear}年 · 天下主线` : femaleSchoolEvent ? "女学 · 闺塾见闻" : prisonEvent ? `牢狱流年 · 余刑 ${state.prisonYears} 年` : culturalEvent ? `${CULTURAL_SEASONS[event.season]?.name || "四时"}时 · ${event.culturalType === "festival" ? "传统节日" : "二十四节气"}` : event.kind === "secretIntroduction" ? "奇闻暗线开启" : event.kind === "examinerBribe" ? "贡院暗局" : event.kind === "underworldConsequence" ? "旧账追门" : event.kind === "jianghuProphecy" ? "江湖命数" : official ? "官场考验" : familyStory ? "家事流年" : careerCase ? "本业专案" : fortuneEvent ? "签运应验" : "事件";
   return `
     <article class="play-card event-card ${prisonEvent ? "prison-event" : ""} ${culturalEvent ? `culture-event season-${event.season}` : ""} ${worldEvent ? "world-event" : ""}">
       <p class="eyebrow">${eyebrow}</p>
@@ -14760,7 +15096,7 @@ function eventView(event) {
           options.length
             ? options.map(({ child, index }) => `<button class="choice-btn ${official || careerCase ? "official-choice" : ""}" data-choice="${index}" ${child.disabled ? "disabled" : ""}>
               <span>${escapeHtml(child.title || "继续")}</span>
-              ${(official || familyStory || careerCase || fortuneEvent || darkEvent || prisonEvent || culturalEvent || worldEvent) && child.note ? `<small>${escapeHtml(child.note)}</small>` : ""}
+              ${(official || familyStory || careerCase || fortuneEvent || darkEvent || prisonEvent || culturalEvent || worldEvent || femaleSchoolEvent) && child.note ? `<small>${escapeHtml(child.note)}</small>` : ""}
             </button>`).join("")
             : `<button class="primary-btn" data-action="finish-event">继续</button>`
         }
@@ -14780,7 +15116,7 @@ function deathView() {
       <h2>${escapeHtml(state.name)}</h2>
       <p>${escapeHtml(state.name)}享年${state.age}岁，${escapeHtml(state.deathReason || "命数已尽")}。命格总评：${escapeHtml(lifeGrade(score))}，${score} 分。若妻子尚在或有子孙，可由家人承继家业继续此存档。</p>
       <section class="score-grid">
-        ${scoreTile("达成成就", `${completedGoals().length}/${LIFE_GOALS.length}`)}
+      ${scoreTile("达成成就", `${completedGoals().length}/${availableLifeGoals().length}`)}
         ${scoreTile("命册经历", `${state.log.length} 件`)}
         ${scoreTile("功名", state.exam.rank >= 0 ? EXAM_TITLES[state.exam.rank] : "白身")}
         ${scoreTile("家业", `${state.assets.length} 处`)}
@@ -14847,7 +15183,7 @@ function historyPanel() {
       <h2>命册</h2>
       <div class="life-summary">
         <strong>${escapeHtml(lifeGrade())} · ${lifeScore()} 分</strong>
-        <small>${completedGoals().length}/${LIFE_GOALS.length} 个成就 · ${state.log.length} 件经历</small>
+          <small>${completedGoals().length}/${availableLifeGoals().length} 个成就 · ${state.log.length} 件经历</small>
       </div>
       <div class="record-list">${state.log.map(logItem).join("") || `<p class="empty-note">暂无记录</p>`}</div>
     </section>`;
@@ -14872,7 +15208,7 @@ function overviewPanel() {
       ${infoLine("亲友", `${relationCount()} 人`)}
       ${infoLine("经历", `${state.log.length} 件事`)}
       <div class="goal-mini">
-        <strong>已成成就 ${done.length}/${LIFE_GOALS.length}</strong>
+          <strong>已成成就 ${done.length}/${availableLifeGoals().length}</strong>
         ${done.slice(0, 4).map((goal) => `<span>${escapeHtml(goal.title)}</span>`).join("") || `<small>尚未达成成就</small>`}
       </div>
       <div class="goal-mini todo">
@@ -15249,9 +15585,11 @@ app.addEventListener("click", (event) => {
     return;
   }
   if (button.dataset.action === "cancel-exam") {
+    const femaleAssessment = state.exam.current?.extraType === "female" || state.exam.current?.extraType?.startsWith?.("female-");
     state.exam.current = null;
-    view.page = "activity";
-    view.activityId = "academy";
+    view.page = femaleAssessment ? "place" : "activity";
+    view.placeId = femaleAssessment ? "womenSchool" : "";
+    view.activityId = femaleAssessment ? "" : "academy";
     save();
     render();
     return;
@@ -15329,6 +15667,7 @@ app.addEventListener("click", (event) => {
   if (button.dataset.guessValue) return chooseGuessValue(button.dataset.guessValue);
   if (button.dataset.guessRounds) return setGuessRounds(button.dataset.guessRounds);
   if (button.dataset.brothelAction) return chooseBrothelCompanion(button.dataset.brothelId, button.dataset.brothelAction);
+  if (button.dataset.femaleTheaterAction) return performFemaleTheaterAction(button.dataset.femaleTheaterAction);
   if (button.dataset.redeemCourtesan) return redeemCourtesan(button.dataset.redeemCourtesan);
   if (button.dataset.courtesanAction) return chooseCourtesanAction(button.dataset.courtesanId, button.dataset.courtesanAction);
   if (button.dataset.paiGowTile !== undefined) return selectPaiGowTile(button.dataset.paiGowTile);
@@ -15353,6 +15692,7 @@ app.addEventListener("click", (event) => {
   if (button.dataset.action === "courtesan-contest-start") return startCourtesanContest(true);
   if (button.dataset.action === "courtesan-contest-finish") return finishCourtesanContest();
   if (button.dataset.action === "brothel-refresh") return startCourtesanParlor(true);
+  if (button.dataset.action === "female-theater-disguise") return attemptFemaleTheaterDisguise();
   if (button.dataset.specialPlace) return useSpecialPlace(button.dataset.specialPlace);
   if (button.dataset.placeAction) return performPlaceAction(button.dataset.placeAction);
   if (button.dataset.cricketAction) return cricketAction(button.dataset.cricketAction, button.dataset.cricketId || "");

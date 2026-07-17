@@ -5125,3 +5125,52 @@ p {
   .world-era strong { font-size: 21px; }
   .world-metrics, .world-local-grid, .world-factions > div:last-child { grid-template-columns: 1fr; }
 }
+
+/* 女性线：科场边界、瓦舍身份与女学剧情 */
+.female-access-panel,
+.female-school-intro,
+.female-assessment-panel,
+.female-route-note,
+.match-scandal-warning {
+  display: grid;
+  gap: 7px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid rgba(126, 84, 61, .18);
+  border-radius: 14px;
+  background: rgba(255, 251, 242, .76);
+}
+.female-access-panel b,
+.female-school-intro b,
+.female-assessment-panel b,
+.female-route-note b { color: #6f4637; font-size: 15px; }
+.female-access-panel p,
+.female-assessment-panel p,
+.female-route-note span,
+.female-school-intro span { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.65; }
+.female-access-panel > div,
+.female-assessment-panel > div { display: flex; flex-wrap: wrap; gap: 8px; }
+.female-access-panel > div > span { padding: 6px 9px; border-radius: 9px; background: rgba(255,255,255,.58); color: var(--muted); font-size: 12px; line-height: 1.5; }
+.female-access-panel.legal { border-color: rgba(72, 126, 95, .28); box-shadow: inset 4px 0 0 rgba(72, 126, 95, .58); }
+.female-access-panel.disguise { border-color: rgba(166, 112, 45, .3); background: rgba(191, 143, 65, .09); box-shadow: inset 4px 0 0 rgba(166, 112, 45, .62); }
+.female-access-panel.forbidden,
+.match-scandal-warning { border-color: rgba(151, 67, 55, .28); background: rgba(151, 67, 55, .07); box-shadow: inset 4px 0 0 rgba(151, 67, 55, .62); }
+.danger-list-btn { border-color: rgba(151, 67, 55, .28) !important; background: rgba(151, 67, 55, .05) !important; }
+.female-school-intro { grid-template-columns: 1fr auto; align-items: center; background: linear-gradient(120deg, rgba(108, 142, 116, .1), rgba(207, 167, 92, .09)); }
+.female-school-intro > div { display: grid; gap: 4px; }
+.female-school-intro strong { color: #55725f; font-size: 13px; }
+.female-assessment-panel { margin-top: 4px; border-color: rgba(76, 119, 96, .23); }
+.female-assessment-panel .text-btn { min-height: 34px; padding: 7px 11px; }
+.female-route-note { margin: 15px 0; background: linear-gradient(120deg, rgba(112, 140, 118, .09), rgba(255, 251, 242, .82)); }
+.match-scandal-warning { color: #7f453c; line-height: 1.65; }
+.female-exam-closed,
+.female-theater-closed { border-color: rgba(136, 78, 57, .22); box-shadow: inset 0 5px 0 rgba(136, 78, 57, .5); }
+
+@media (max-width: 760px) {
+  .female-school-intro { grid-template-columns: 1fr; }
+  .female-access-panel,
+  .female-school-intro,
+  .female-assessment-panel,
+  .female-route-note { padding: 12px; }
+  .female-assessment-panel > div .text-btn { flex: 1 1 calc(50% - 8px); }
+}

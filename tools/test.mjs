@@ -609,6 +609,157 @@ try {
   await clearBlockingUi();
   await page.waitForNetworkIdle({ idleTime: 100, timeout: 5000 }).catch(() => {});
 
+  console.log("quality gate: verifying female exam, brothel access and women school rules");
+  const femaleRules = await page.evaluate(() => {
+    const oldSave = JSON.parse(JSON.stringify(state));
+    delete oldSave.femaleLife;
+    oldSave.gender = "female";
+    const normalized = normalizeState(oldSave).femaleLife;
+
+    state.gender = "female";
+    state.age = 22;
+    state.year = 22;
+    state.dead = false;
+    state.prisonYears = 0;
+    state.currentEvent = null;
+    state.eventResult = null;
+    state.pendingCaravan = null;
+    state.career = null;
+    state.tags = state.tags.filter((tag) => !["风月轻薄之名", "曾女扮男装", "青楼从业", "教坊乐户", "戏班女伶"].includes(tag));
+    state.stats.money = 10000;
+    state.stats.favorability = 80;
+    state.stats.relationship = 80;
+    state.stats.eq = 90;
+    state.stats.knowledge = 90;
+    state.exam = { rank: -1, attempts: 0, history: [], current: null, lastYear: -1 };
+    state.femaleLife = normalizeFemaleLife();
+
+    view.page = "place";
+    view.placeId = "theater";
+    render();
+    const forbidden = {
+      mode: femaleTheaterAccessMode(),
+      disguiseButtons: document.querySelectorAll('[data-action="female-theater-disguise"]').length,
+      patronButtons: document.querySelectorAll("[data-brothel-action], [data-redeem-courtesan]").length,
+      warning: document.querySelector(".female-access-panel.forbidden")?.textContent || "",
+    };
+
+    const exam = {
+      open: canOpenExam(),
+      prepare: canPrepareExam(),
+    };
+    openExamUnderworld();
+    exam.underworldOpened = view.page === "examUnderworld";
+    view.page = "exam";
+    render();
+    exam.title = document.querySelector(".female-exam-closed h2")?.textContent || "";
+
+    view.page = "place";
+    view.placeId = "theater";
+    const originalRandom = Math.random;
+    Math.random = () => 0.99;
+    attemptFemaleTheaterDisguise();
+    Math.random = originalRandom;
+    const disguise = {
+      mode: femaleTheaterAccessMode(),
+      entries: state.femaleLife.brothelEntries,
+      title: state.eventResult?.title,
+    };
+    state.eventResult = null;
+    render();
+    disguise.actionButtons = document.querySelectorAll("[data-female-theater-action]").length;
+    disguise.patronButtons = document.querySelectorAll("[data-brothel-action], [data-redeem-courtesan]").length;
+
+    state.stats.favorability = 80;
+    state.stats.relationship = 80;
+    exposeFemaleTheater("专项测试中身份被识破");
+    const exposed = {
+      count: state.femaleLife.exposures,
+      favorability: state.stats.favorability,
+      relationship: state.stats.relationship,
+      tag: state.tags.includes("风月轻薄之名"),
+    };
+    state.eventResult = null;
+    state.matchPool = [];
+    const scandalPool = refreshMatchPool(true);
+    exposed.matchTiers = scandalPool.map((item) => item.familyId);
+
+    state.career = { name: "歌姬", customKind: "female" };
+    state.femaleLife.disguiseActiveYear = -1;
+    view.page = "place";
+    view.placeId = "theater";
+    render();
+    const professional = {
+      mode: femaleTheaterAccessMode(),
+      workButtons: document.querySelectorAll("[data-female-theater-action]").length,
+      patronButtons: document.querySelectorAll("[data-brothel-action], [data-redeem-courtesan]").length,
+      legalText: document.querySelector(".female-access-panel.legal")?.textContent || "",
+    };
+
+    state.career = null;
+    state.currentEvent = null;
+    state.eventResult = null;
+    state.femaleSkills = {};
+    studyFemaleSkill(0);
+    const school = {
+      kind: state.currentEvent?.kind,
+      choices: state.currentEvent?.children?.length,
+      title: state.currentEvent?.title,
+    };
+    chooseOption(0);
+    school.level = state.femaleSkills["女红"];
+    school.stories = state.femaleLife.schoolStories;
+    school.result = state.eventResult?.title;
+
+    state.eventResult = null;
+    state.exam.lastYear = -1;
+    startExtraExam("female");
+    const assessment = {
+      type: state.exam.current?.extraType,
+      attempts: state.exam.attempts,
+    };
+    state.exam.current = null;
+    const femaleGoalIds = availableLifeGoals().map((goal) => goal.id);
+
+    state.gender = "male";
+    state.career = null;
+    state.currentEvent = null;
+    state.eventResult = null;
+    view.page = "main";
+    view.placeId = "";
+    render();
+    return { normalized, forbidden, exam, disguise, exposed, professional, school, assessment, femaleGoalIds };
+  });
+  assert.deepEqual(femaleRules.normalized, { brothelEntries: 0, disguises: 0, exposures: 0, professionalShows: 0, disguiseActiveYear: -1, schoolStories: 0, schoolLastYear: -1 }, "旧女性存档没有补全女性线状态");
+  assert.equal(femaleRules.exam.open, false, "女性仍可参加正式科举");
+  assert.equal(femaleRules.exam.prepare, false, "女性仍可累积科举备考进度");
+  assert.equal(femaleRules.exam.underworldOpened, false, "女性仍能进入贡院作弊暗门");
+  assert.match(femaleRules.exam.title, /女子不得应科举/, "女性书院页没有明确说明科举限制");
+  assert.equal(femaleRules.forbidden.mode, "forbidden", "普通女性没有被瓦舍门禁拦下");
+  assert.equal(femaleRules.forbidden.disguiseButtons, 1, "普通女性缺少女扮男装入口");
+  assert.equal(femaleRules.forbidden.patronButtons, 0, "普通女性仍能看到美人消遣交互");
+  assert.match(femaleRules.forbidden.warning, /婚嫁|名望/, "瓦舍门禁没有说明名誉与婚嫁后果");
+  assert.equal(femaleRules.disguise.mode, "disguised", "女扮男装成功后没有获得当年潜入身份");
+  assert.equal(femaleRules.disguise.entries, 1, "女扮男装成功没有记入进入次数");
+  assert.equal(femaleRules.disguise.actionButtons, 2, "男装潜入后没有提供听曲与探看互动");
+  assert.equal(femaleRules.disguise.patronButtons, 0, "男装女性错误获得了男性寻欢交互");
+  assert.equal(femaleRules.exposed.tag, true, "男装败露没有留下名誉标签");
+  assert.ok(femaleRules.exposed.favorability <= 64 && femaleRules.exposed.relationship <= 74, "男装败露对名望与人际惩罚过轻");
+  assert.equal(femaleRules.exposed.matchTiers.every((tier) => ["humble", "small"].includes(tier)), true, "瓦舍丑闻没有压低女性相看门第");
+  assert.equal(femaleRules.professional.mode, "professional", "歌姬没有取得合法工作通行身份");
+  assert.equal(femaleRules.professional.workButtons, 2, "从业女性缺少登台与排演互动");
+  assert.equal(femaleRules.professional.patronButtons, 0, "从业女性仍能以客人身份寻欢");
+  assert.match(femaleRules.professional.legalText, /演毕|离开|不能/, "从业通行没有明确演出后离场规则");
+  assert.equal(femaleRules.school.kind, "femaleSchool", "修习女学没有触发专属剧情");
+  assert.equal(femaleRules.school.choices, 3, "女学剧情没有提供三个处理选择");
+  assert.equal(femaleRules.school.level, 1, "完成女学剧情没有提升对应技艺");
+  assert.equal(femaleRules.school.stories, 1, "女学剧情没有写入女性线记录");
+  assert.equal(femaleRules.assessment.type, "female", "女医考校没有从女学入口启动");
+  assert.equal(femaleRules.assessment.attempts, 0, "女医技艺考校被错误记作正式科举次数");
+  assert.equal(femaleRules.femaleGoalIds.includes("first-exam"), false, "女性成就目标仍在要求参加童试");
+  assert.equal(femaleRules.femaleGoalIds.includes("women-school-six"), true, "女性成就目标没有接入女学六艺");
+  await clearBlockingUi();
+
   console.log("quality gate: verifying expanded daily stories");
   const expandedDaily = await page.evaluate(() => {
     state.age = 36;
