@@ -1387,7 +1387,9 @@ try {
     state.family.loverMeta = null;
     state.family.loverProfile = null;
     state.stats.money = 5000;
-    state.matchPool = [];
+    state.matchPool = [normalizeMatchCandidate({ id: "legacy-female-match", name: "旧帖女子", gender: "female", familyId: "small", personalityId: "gentle" })];
+    const upgradedPool = refreshMatchPool(false);
+    const legacyUpgraded = upgradedPool.length === 3 && upgradedPool.every((item) => item.archetypeId && item.portrait);
     const pool = refreshMatchPool(true);
     view.page = "matchmaker";
     render();
@@ -1397,6 +1399,7 @@ try {
       allMapped: pool.every((item) => item.gender === "female" && item.portrait?.startsWith("assets/match-female-") && item.title),
       imageCount: document.querySelectorAll(".match-card .match-portrait img").length,
       inquiryButtons: document.querySelectorAll("[data-match-inquire]").length,
+      legacyUpgraded,
     };
     const first = pool[0];
     inquireMatchCandidate(first.id);
@@ -1429,7 +1432,7 @@ try {
     render();
     return { initial, inquiry, selected, reverseLinePreserved };
   });
-  assert.deepEqual(femaleMatchPortraits.initial, { count: 3, uniqueArchetypes: 3, allMapped: true, imageCount: 3, inquiryButtons: 3 }, "女性婚配候选头像、身份或去重映射异常");
+  assert.deepEqual(femaleMatchPortraits.initial, { count: 3, uniqueArchetypes: 3, allMapped: true, imageCount: 3, inquiryButtons: 3, legacyUpgraded: true }, "女性婚配候选头像、身份、旧帖升级或去重映射异常");
   assert.equal(femaleMatchPortraits.inquiry.inquired, true, "托媒问话没有写入候选状态");
   assert.equal(femaleMatchPortraits.inquiry.scene, true, "身份专属相看剧情过短或缺失");
   assert.ok(femaleMatchPortraits.inquiry.score >= 12 && femaleMatchPortraits.inquiry.score <= 98, "合帖契合度越界");

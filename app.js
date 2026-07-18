@@ -4203,11 +4203,12 @@ function generateMatchCandidate(forcedGender, forcedArchetype = null) {
 
 function refreshMatchPool(force = false) {
   if (!state) return [];
+  const gender = state.gender === "male" ? "female" : "male";
   if (!force && Array.isArray(state.matchPool) && state.matchPool.length) {
     state.matchPool = state.matchPool.map(normalizeMatchCandidate).filter(Boolean);
-    if (state.matchPool.length) return state.matchPool;
+    const needsPortraitUpgrade = gender === "female" && state.matchPool.some((item) => !item.archetypeId || !item.portrait);
+    if (state.matchPool.length && !needsPortraitUpgrade) return state.matchPool;
   }
-  const gender = state.gender === "male" ? "female" : "male";
   if (gender === "female") {
     const choices = [...FEMALE_MATCH_ARCHETYPES].sort(() => Math.random() - 0.5).slice(0, 3);
     state.matchPool = choices.map((archetype) => generateMatchCandidate(gender, archetype));
