@@ -54,6 +54,43 @@ try {
   await page.click('[data-action="onboarding-next-year"]');
   console.log("quality gate: life started");
 
+  console.log("quality gate: verifying event illustration routing and responsive frame");
+  const eventIllustrations = await page.evaluate(async () => {
+    const routes = {
+      familyStory: "event-life.webp",
+      femaleSchool: "event-study.webp",
+      officialCase: "event-official.webp",
+      careerCase: "event-career.webp",
+      culturalEvent: "event-culture.webp",
+      prisonYear: "event-prison.webp",
+      secretIntroduction: "event-jianghu.webp",
+      worldArc: "event-world.webp",
+      clanCouncil: "event-clan.webp",
+      regionalEvent: "event-region.webp",
+      fortuneEvent: "event-fortune.webp",
+    };
+    const mapped = Object.fromEntries(Object.keys(routes).map((kind) => [kind, eventSceneArt({ kind }).src.split("/").pop()]));
+    const responses = await Promise.all(Object.values(EVENT_SCENE_ART).map(async (item) => {
+      const response = await fetch(item.src);
+      return { src: item.src, status: response.status, type: response.headers.get("content-type") };
+    }));
+    const scene = document.querySelector(".event-scene");
+    const image = scene?.querySelector("img");
+    return {
+      routes,
+      mapped,
+      assetCount: Object.keys(EVENT_SCENE_ART).length,
+      responses,
+      rendered: !!scene && !!image && image.getAttribute("src") === "assets/event-life.webp",
+      overflow: document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+    };
+  });
+  assert.deepEqual(eventIllustrations.mapped, eventIllustrations.routes, "事件类型没有路由到对应插画");
+  assert.equal(eventIllustrations.assetCount, 11, "流年事件插画数量不完整");
+  assert.equal(eventIllustrations.rendered, true, "流年事件卡没有渲染插画");
+  assert.equal(eventIllustrations.overflow, true, "流年事件插画导致移动端横向溢出");
+  assert.ok(eventIllustrations.responses.every((item) => item.status === 200 && item.type === "image/webp"), "存在无法加载的 WebP 事件插画");
+
   async function savedAge() {
     return page.evaluate(() => {
       const meta = JSON.parse(localStorage.getItem("dynasty-life-save-meta") || "[]");

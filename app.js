@@ -913,6 +913,54 @@ const MAIN_DOORS = [
   { id: "secrets", label: "奇闻暗线", icon: "PrisonHeader", featured: true },
 ];
 
+const EVENT_SCENE_ART = {
+  life: { src: "assets/event-life.webp", label: "人间日常", focus: "64% 50%" },
+  study: { src: "assets/event-study.webp", label: "寒窗问学", focus: "65% 50%" },
+  official: { src: "assets/event-official.webp", label: "官署公堂", focus: "64% 50%" },
+  career: { src: "assets/event-career.webp", label: "市井百业", focus: "61% 50%" },
+  culture: { src: "assets/event-culture.webp", label: "华夏岁时", focus: "56% 50%" },
+  prison: { src: "assets/event-prison.webp", label: "铁窗流年", focus: "68% 50%" },
+  jianghu: { src: "assets/event-jianghu.webp", label: "江湖暗门", focus: "66% 50%" },
+  world: { src: "assets/event-world.webp", label: "天下风云", focus: "61% 50%" },
+  clan: { src: "assets/event-clan.webp", label: "宗族议事", focus: "62% 50%" },
+  region: { src: "assets/event-region.webp", label: "地方纪事", focus: "60% 50%" },
+  fortune: { src: "assets/event-fortune.webp", label: "古寺签运", focus: "67% 50%" },
+};
+
+const EVENT_KIND_SCENES = {
+  dailyStory: "life",
+  familyStory: "life",
+  femaleSchool: "study",
+  officialCase: "official",
+  careerCase: "career",
+  culturalEvent: "culture",
+  prisonYear: "prison",
+  secretIntroduction: "jianghu",
+  examinerBribe: "jianghu",
+  underworldConsequence: "jianghu",
+  jianghuProphecy: "jianghu",
+  worldArc: "world",
+  clanCouncil: "clan",
+  regionalEvent: "region",
+  fortuneEvent: "fortune",
+};
+
+const EVENT_ACTIVITY_SCENES = {
+  academy: "study",
+  administration: "official",
+  prison: "prison",
+  agriculture: "career",
+  medicine: "career",
+  alchemy: "career",
+  news: "region",
+  restaurant: "region",
+  flowerwine: "culture",
+  whorehouse: "culture",
+  temple: "fortune",
+  family: "life",
+  sister: "life",
+};
+
 const CLAN_RULES = [
   { id: "education", name: "重教崇文", motto: "贫不废书，富不忘学", note: "族学进益更快；每年需从公中支出束脩。", benefit: "子孙学业 +2", cost: 10 },
   { id: "relief", name: "义仓济族", motto: "有余相济，患难相扶", note: "灾年可稳住各房人心；平年也要持续补仓。", benefit: "凝聚 +3", cost: 12 },
@@ -16044,6 +16092,25 @@ function palaceExamView(stage, current) {
     </article>`;
 }
 
+function eventSceneArt(event = {}) {
+  let key = EVENT_KIND_SCENES[event.kind] || EVENT_ACTIVITY_SCENES[state.pendingActivity?.id];
+  if (!key) {
+    const text = `${event.title || ""}${event.content || ""}${event.history || ""}`;
+    if (/牢|狱|刑|囚|秋审|越狱/.test(text)) key = "prison";
+    else if (/科举|贡院|书院|私塾|读书|文章|策问|先生|女学/.test(text)) key = "study";
+    else if (/官府|县衙|公堂|审案|官员|朝廷|奏疏|升迁/.test(text)) key = "official";
+    else if (/江湖|老千|算命|卦|骗|黑市|舞弊|买题|中介/.test(text)) key = "jianghu";
+    else if (/节气|节日|祭祖|庙会|元宵|端午|中秋|除夕/.test(text)) key = "culture";
+    else if (/宗族|宗祠|族谱|族议|家规|旁支/.test(text)) key = "clan";
+    else if (/皇帝|王朝|党争|边患|战乱|天下|灾情/.test(text)) key = "world";
+    else if (/签运|求签|寺庙|佛|香火|因果/.test(text)) key = "fortune";
+    else if (/州府|地方|乡里|旅途|车马|商队|迁居/.test(text)) key = "region";
+    else if (/营生|买卖|掌柜|工匠|医者|农田|本业/.test(text)) key = "career";
+    else key = "life";
+  }
+  return { key, ...(EVENT_SCENE_ART[key] || EVENT_SCENE_ART.life) };
+}
+
 function examHistory() {
   return `
     <section class="log-preview">
@@ -16065,9 +16132,14 @@ function eventView(event) {
   const clanEvent = event.kind === "clanCouncil";
   const regionalEvent = event.kind === "regionalEvent";
   const darkEvent = ["examinerBribe", "underworldConsequence", "jianghuProphecy", "secretIntroduction"].includes(event.kind);
+  const sceneArt = eventSceneArt(event);
   const eyebrow = worldEvent ? `${state.dynasty.eraName}${state.dynasty.reignYear}年 · 天下主线` : regionalEvent ? `${travelDestinationByStaticId(event.regionId).name} · 地方纪事` : clanEvent ? `${state.clan.familyName}氏 · 合族议事` : femaleSchoolEvent ? "女学 · 闺塾见闻" : prisonEvent ? `牢狱流年 · 余刑 ${state.prisonYears} 年` : culturalEvent ? `${CULTURAL_SEASONS[event.season]?.name || "四时"}时 · ${event.culturalType === "festival" ? "传统节日" : "二十四节气"}` : event.kind === "secretIntroduction" ? "奇闻暗线开启" : event.kind === "examinerBribe" ? "贡院暗局" : event.kind === "underworldConsequence" ? "旧账追门" : event.kind === "jianghuProphecy" ? "江湖命数" : official ? "官场考验" : familyStory ? "家事流年" : careerCase ? "本业专案" : fortuneEvent ? "签运应验" : "事件";
   return `
     <article class="play-card event-card ${prisonEvent ? "prison-event" : ""} ${culturalEvent ? `culture-event season-${event.season}` : ""} ${worldEvent ? "world-event" : ""} ${clanEvent ? "clan-event" : ""} ${regionalEvent ? "regional-event" : ""}">
+      <figure class="event-scene event-scene-${sceneArt.key}" style="--event-focus:${sceneArt.focus}">
+        <img src="${sceneArt.src}" alt="${escapeHtml(sceneArt.label)}场景插画" width="1600" height="900" decoding="async" fetchpriority="high" />
+        <figcaption><span>流年画卷</span><b>${escapeHtml(sceneArt.label)}</b></figcaption>
+      </figure>
       <p class="eyebrow">${eyebrow}</p>
       <h2>${escapeHtml(event.title || "事件")}</h2>
       <p>${formatText(fillPlaceholders(event.content || event.history || "", false))}</p>
