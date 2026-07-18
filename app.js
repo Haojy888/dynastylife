@@ -1644,6 +1644,177 @@ const MATCH_PERSONALITIES = [
   { id: "aloof", name: "清高", knowledge: [1, 3], relationship: [-2, 1], conflict: 0.15, note: "雅致有余，人情略疏。" },
 ];
 
+const FEMALE_MATCH_ARCHETYPES = [
+  {
+    id: "scholar",
+    title: "书香闺秀",
+    portrait: "assets/match-female-scholar.webp",
+    familyId: "scholar",
+    familyName: "书香门第",
+    personalityIds: ["gentle", "aloof", "clever"],
+    age: [19, 25], power: [44, 62], fertility: [52, 70], bridePrice: [280, 480], looks: [66, 88], knowledge: [80, 96],
+    tagline: "读过经史，也愿把寻常日子过得有章法。",
+    note: "父兄以诗书传家，家中看重品行与才学，不愿只凭财势结亲。",
+    preference: ["knowledge", "virtue"],
+    courtshipTitle: "隔帘论书",
+    courtshipScenes: [
+      "媒人传来一页题签。她没有问你家中田亩，先问你读书究竟是为功名，还是为明理。",
+      "隔着花窗，她请你替一册残卷补出末句。答得未必华美，是否诚恳却瞒不过她。",
+      "她托媒人问：若夫妻见解不同，你会据理相争、敷衍避开，还是容彼此把话说完？",
+    ],
+    marriageText: "婚后书案添了一盏灯，她与你校书论世，也把家中账目整理得井井有条。",
+    annualStories: ["她替你整理旧书，意外找出一封牵涉师门的旧札。", "她在家中开了小小书塾，邻里子弟渐渐登门。"],
+    annualEffect: { knowledge: [1, 3], mood: [0, 2] },
+  },
+  {
+    id: "embroiderer",
+    title: "绣坊绣娘",
+    portrait: "assets/match-female-embroiderer.webp",
+    familyId: "small",
+    familyName: "手艺人家",
+    personalityIds: ["gentle", "plain", "clever"],
+    age: [20, 27], power: [20, 38], fertility: [60, 78], bridePrice: [140, 280], looks: [62, 86], knowledge: [42, 68],
+    tagline: "针脚细密，性子也耐得住琐碎光阴。",
+    note: "自幼在绣坊学艺，手中有稳定进项，更在意对方是否尊重她的手艺。",
+    preference: ["virtue", "eq"],
+    courtshipTitle: "绣坊问针",
+    courtshipScenes: [
+      "她送来一方未收针的并蒂纹样，请你说说成婚之后，可愿让她继续接绣坊的活计。",
+      "媒人领你看过绣坊。她不善虚言，只问若家中拮据，夫妻能否一同熬过淡季。",
+      "她把一处故意绣错的花叶指给你看，笑问你遇上家人犯错，是先责备还是先补救。",
+    ],
+    marriageText: "她把绣架安在窗边，细针密线换来家用，也让寻常衣物都有了温度。",
+    annualStories: ["她接到一幅大绣屏的急单，家中灯火连亮数夜。", "旧主顾意图压价，她请你一同决定是忍让还是另寻门路。"],
+    annualEffect: { money: [5, 24], virtue: [0, 2] },
+  },
+  {
+    id: "official",
+    title: "官宦小姐",
+    portrait: "assets/match-female-official.webp",
+    familyId: "noble",
+    familyName: "官宦世家",
+    personalityIds: ["clever", "aloof", "gentle"],
+    age: [20, 26], power: [80, 94], fertility: [44, 62], bridePrice: [680, 980], looks: [74, 94], knowledge: [68, 90],
+    tagline: "礼数周全，门第背后也有必须承担的人情。",
+    note: "长在深宅，熟悉礼法与官场往来；这桩婚事既是姻缘，也会牵动两家声势。",
+    preference: ["favorability", "relationship"],
+    courtshipTitle: "门第问答",
+    courtshipScenes: [
+      "她家没有先问彩礼，而是让管事递来三张宾客名帖，试探你是否懂得席间分寸。",
+      "她问得直白：若岳家卷入朝局，你会借势而上、避嫌自保，还是先查清是非？",
+      "隔着屏风，她谈起母亲多年维系宗亲的辛劳，想知道你把婚姻看作助力还是同路。",
+    ],
+    marriageText: "婚礼宾客盈门。她带来的不只有嫁妆，还有一张复杂而有分量的人情网。",
+    annualStories: ["岳家送来一封请托信，事情不大，背后却牵着几位官员。", "她主持一场家宴，替你化开了两家多年的旧嫌。"],
+    annualEffect: { favorability: [1, 3], relationship: [0, 2] },
+  },
+  {
+    id: "military",
+    title: "将门之女",
+    portrait: "assets/match-female-military.webp",
+    familyId: "gentry",
+    familyName: "将门世家",
+    personalityIds: ["fiery", "clever", "plain"],
+    age: [20, 27], power: [66, 84], fertility: [52, 70], bridePrice: [460, 760], looks: [68, 90], knowledge: [48, 72],
+    tagline: "会骑射，也不愿把一生困在虚礼里。",
+    note: "父兄常年戍边，她熟悉军伍规矩，最厌轻诺与怯懦。",
+    preference: ["physique", "virtue"],
+    courtshipTitle: "校场试胆",
+    courtshipScenes: [
+      "她没有设茶席，只让人牵来一匹性烈的马，问你遇到险事是逞强、退避，还是先看清局势。",
+      "她将一张边关舆图铺在案上，问若婚后父兄有难，你能否容她亲自奔走。",
+      "一支羽箭钉在你面前的靶上。她笑说自己脾气直，想听的也只是一句实话。",
+    ],
+    marriageText: "她卸下护腕换上婚服，却仍把弓留在廊下；从此家中多了一位能并肩担事的人。",
+    annualStories: ["边关传来父兄消息，她连夜整理行装，想请你同去接应。", "乡里盗患渐起，她召集护院操练，引来邻里议论。"],
+    annualEffect: { physique: [1, 3], virtue: [0, 2] },
+  },
+  {
+    id: "farmer",
+    title: "农家姑娘",
+    portrait: "assets/match-female-farmer.webp",
+    familyId: "small",
+    familyName: "殷实农家",
+    personalityIds: ["plain", "gentle", "fiery"],
+    age: [19, 26], power: [18, 34], fertility: [68, 86], bridePrice: [90, 220], looks: [58, 82], knowledge: [28, 54],
+    tagline: "不说漂亮话，却知道一餐一饭从哪里来。",
+    note: "家中有几亩薄田，四时劳作从不躲懒，最盼婚后日子安稳实在。",
+    preference: ["virtue", "physique"],
+    courtshipTitle: "秋院看家",
+    courtshipScenes: [
+      "她端来新蒸的米糕，问你若遇荒年，是先卖田保体面，还是一家人缩衣节食守住根本。",
+      "媒人带你走过晒谷场。她边翻谷边问，成婚后你可会嫌弃她手上有劳作的茧。",
+      "家中幼弟忽然打翻粮筐，她没有责骂，只招呼众人一起收拾，也悄悄看你的反应。",
+    ],
+    marriageText: "她带来几袋新种和满院爽朗笑声，柴米虽琐碎，日子却一天天扎下根。",
+    annualStories: ["她试种的新谷收成颇好，邻里纷纷来问种法。", "娘家遭了小灾，她想拿出积蓄接济，却怕你心中不快。"],
+    annualEffect: { money: [4, 18], physique: [0, 2] },
+  },
+  {
+    id: "fallen-noble",
+    title: "落魄士族",
+    portrait: "assets/match-female-fallen-noble.webp",
+    familyId: "scholar",
+    familyName: "没落士族",
+    personalityIds: ["aloof", "gentle", "clever"],
+    age: [22, 29], power: [24, 44], fertility: [48, 66], bridePrice: [160, 340], looks: [68, 90], knowledge: [76, 94],
+    tagline: "旧宅渐空，礼数与风骨却还留在身上。",
+    note: "祖上曾显达，如今只剩旧宅与藏书；她既不愿卖惨，也不肯拿往日门第压人。",
+    preference: ["knowledge", "eq"],
+    courtshipTitle: "旧宅残书",
+    courtshipScenes: [
+      "旧宅漏雨，她仍把几箱家藏护得严整，问你若成婚，可愿保住这些无甚市价的旧书。",
+      "她坦言家中尚有旧债，不愿婚后才让你得知；随后静静等你的答复。",
+      "媒人夸她祖上显贵，她却打断话头，只问你看重的是旧姓、才学，还是眼前这个人。",
+    ],
+    marriageText: "婚仪不算铺张。她带进门的是几箱旧书、几笔旧债，以及不肯折损的清醒自尊。",
+    annualStories: ["有人高价求购她家的旧谱，她在补贴家用与守护家藏之间犹豫。", "昔日故交忽然登门，带来一桩能够重振门楣的机会。"],
+    annualEffect: { knowledge: [1, 3], eq: [0, 2] },
+  },
+  {
+    id: "merchant",
+    title: "富商之女",
+    portrait: "assets/match-female-merchant.webp",
+    familyId: "merchant",
+    familyName: "富商之家",
+    personalityIds: ["shrewd", "clever", "gentle"],
+    age: [20, 27], power: [48, 68], fertility: [52, 70], bridePrice: [360, 620], looks: [70, 92], knowledge: [58, 82],
+    tagline: "会看账，也看得懂银钱背后的人心。",
+    note: "自幼跟着父亲查账看货，嫁妆丰厚，却不愿被当作一只会生钱的钱箱。",
+    preference: ["eq", "money"],
+    courtshipTitle: "账房试算",
+    courtshipScenes: [
+      "她给你看一笔故意做错的货账，真正想知道的不是你算得多快，而是会不会不懂装懂。",
+      "她问若嫁妆由她亲自经营，你会觉得伤了丈夫体面，还是愿意各展所长。",
+      "一名掌柜来报亏损，她先听缘由再查凭据，随后请你评一评该罚、该留还是该帮。",
+    ],
+    marriageText: "十里红妆之外，她还带来自己的账簿与主意；家业从此多了一双精明而不失温度的眼睛。",
+    annualStories: ["她察觉一笔货款有异，顺藤摸瓜牵出商号中的内贼。", "她想拿私房开一间小铺，邀你决定是稳守家财还是放手一试。"],
+    annualEffect: { money: [12, 42], eq: [0, 2] },
+  },
+  {
+    id: "doctor",
+    title: "民间医女",
+    portrait: "assets/match-female-doctor.webp",
+    familyId: "small",
+    familyName: "医者人家",
+    personalityIds: ["gentle", "clever", "plain"],
+    age: [22, 29], power: [26, 46], fertility: [48, 68], bridePrice: [180, 360], looks: [66, 88], knowledge: [72, 92],
+    tagline: "识药理、见生死，更珍惜平安相守。",
+    note: "随父行医多年，常要出门问诊；她希望未来夫家不会阻她继续救人。",
+    preference: ["virtue", "knowledge"],
+    courtshipTitle: "药香问心",
+    courtshipScenes: [
+      "问诊途中忽有人求救，她先放下相看茶席替人诊脉，回来后只问你是否介意久等。",
+      "她摆出两味相似药材，请你不必辨药，只说若亲人久病，愿意付出多少耐心。",
+      "她坦言行医难免接触陌生男子与脏污病症，想知道你重流言，还是重人命。",
+    ],
+    marriageText: "药箱与嫁妆一同进门。她仍时常出诊，也总会在深夜替家人留一盏温药的灯。",
+    annualStories: ["城中时疫初起，她想开门施药，却也担心把病气带回家中。", "一位贫妇无钱问诊，她悄悄垫了药资，回家才与你说起。"],
+    annualEffect: { physique: [1, 3], virtue: [0, 2] },
+  },
+];
+
 /** 秘密与身份（高风险可选） */
 const SECRET_DEFS = [
   {
@@ -3939,7 +4110,8 @@ function normalizeSecrets(secrets) {
 function normalizeMatchCandidate(candidate) {
   const source = candidate && typeof candidate === "object" ? candidate : null;
   if (!source) return null;
-  const tier = MATCH_FAMILY_TIERS.find((item) => item.id === source.familyId) || MATCH_FAMILY_TIERS[1];
+  const archetype = FEMALE_MATCH_ARCHETYPES.find((item) => item.id === source.archetypeId) || null;
+  const tier = MATCH_FAMILY_TIERS.find((item) => item.id === (source.familyId || archetype?.familyId)) || MATCH_FAMILY_TIERS[1];
   const personality = MATCH_PERSONALITIES.find((item) => item.id === source.personalityId) || MATCH_PERSONALITIES[0];
   const gender = source.gender === "male" ? "male" : "female";
   const name = String(source.name || "").trim() || makePersonName(gender);
@@ -3949,7 +4121,7 @@ function normalizeMatchCandidate(candidate) {
     gender,
     age: clamp(Math.round(Number(source.age) || randInt(16, 28)), 15, 40),
     familyId: tier.id,
-    familyName: tier.name,
+    familyName: String(source.familyName || archetype?.familyName || tier.name),
     power: clamp(Math.round(Number(source.power ?? tier.power)), 1, 100),
     fertility: clamp(Math.round(Number(source.fertility ?? tier.fertility)), 20, 95),
     bridePrice: Math.max(40, Math.round(Number(source.bridePrice ?? tier.brideBase) || tier.brideBase)),
@@ -3957,12 +4129,52 @@ function normalizeMatchCandidate(candidate) {
     personality: personality.name,
     looks: clamp(Math.round(Number(source.looks) || randInt(40, 88))),
     knowledge: clamp(Math.round(Number(source.knowledge) || randInt(30, 80))),
-    note: String(source.note || `${tier.note} 性情${personality.name}。`).trim(),
+    archetypeId: archetype?.id || "",
+    title: String(source.title || archetype?.title || (gender === "female" ? "待字闺中" : "青年才俊")),
+    portrait: String(source.portrait || archetype?.portrait || ""),
+    tagline: String(source.tagline || archetype?.tagline || "媒人说此人家世清楚，愿择良缘。"),
+    note: String(source.note || archetype?.note || `${tier.note} 性情${personality.name}。`).trim(),
+    inquired: !!source.inquired,
+    courtshipTitle: String(source.courtshipTitle || archetype?.courtshipTitle || "托媒问话"),
+    courtshipText: String(source.courtshipText || ""),
+    compatibility: source.compatibility !== null && source.compatibility !== undefined && Number.isFinite(Number(source.compatibility))
+      ? clamp(Math.round(Number(source.compatibility)), 1, 99)
+      : null,
   };
 }
 
-function generateMatchCandidate(forcedGender) {
+function femaleMatchArchetype(id) {
+  return FEMALE_MATCH_ARCHETYPES.find((item) => item.id === id) || null;
+}
+
+function generateFemaleMatchCandidate(forcedArchetype = null) {
+  const archetype = forcedArchetype || sample(FEMALE_MATCH_ARCHETYPES) || FEMALE_MATCH_ARCHETYPES[0];
+  const personalityPool = MATCH_PERSONALITIES.filter((item) => archetype.personalityIds.includes(item.id));
+  const personality = sample(personalityPool) || MATCH_PERSONALITIES[0];
+  return normalizeMatchCandidate({
+    name: makePersonName("female"),
+    gender: "female",
+    age: rangeValue(archetype.age),
+    familyId: archetype.familyId,
+    familyName: archetype.familyName,
+    power: rangeValue(archetype.power),
+    fertility: rangeValue(archetype.fertility),
+    bridePrice: rangeValue(archetype.bridePrice),
+    personalityId: personality.id,
+    looks: rangeValue(archetype.looks),
+    knowledge: rangeValue(archetype.knowledge),
+    archetypeId: archetype.id,
+    title: archetype.title,
+    portrait: archetype.portrait,
+    tagline: archetype.tagline,
+    note: archetype.note,
+    courtshipTitle: archetype.courtshipTitle,
+  });
+}
+
+function generateMatchCandidate(forcedGender, forcedArchetype = null) {
   const gender = forcedGender || (state.gender === "male" ? "female" : "male");
+  if (gender === "female") return generateFemaleMatchCandidate(forcedArchetype);
   const scandal = femaleMarriageScandalLevel();
   const availableTiers = state.gender === "female" && scandal > 0
     ? MATCH_FAMILY_TIERS.slice(0, scandal >= 2 ? 2 : 3)
@@ -3996,8 +4208,48 @@ function refreshMatchPool(force = false) {
     if (state.matchPool.length) return state.matchPool;
   }
   const gender = state.gender === "male" ? "female" : "male";
-  state.matchPool = [generateMatchCandidate(gender), generateMatchCandidate(gender), generateMatchCandidate(gender)];
+  if (gender === "female") {
+    const choices = [...FEMALE_MATCH_ARCHETYPES].sort(() => Math.random() - 0.5).slice(0, 3);
+    state.matchPool = choices.map((archetype) => generateMatchCandidate(gender, archetype));
+  } else {
+    state.matchPool = [generateMatchCandidate(gender), generateMatchCandidate(gender), generateMatchCandidate(gender)];
+  }
   return state.matchPool;
+}
+
+function matchCompatibility(candidate) {
+  const archetype = femaleMatchArchetype(candidate?.archetypeId);
+  const preferences = archetype?.preference || ["virtue", "eq"];
+  const preferredScore = preferences.reduce((sum, stat) => {
+    const value = stat === "money" ? clamp(Number(state.stats.money || 0) / 12) : clamp(Number(state.stats[stat] || 0));
+    return sum + value;
+  }, 0) / preferences.length;
+  const personalFit = (Number(candidate.knowledge || 50) + Number(candidate.looks || 50) + Number(candidate.power || 40)) / 3;
+  return clamp(Math.round(18 + preferredScore * 0.58 + personalFit * 0.24 - femaleMarriageScandalLevel() * 8), 12, 98);
+}
+
+function matchCompatibilityLabel(score) {
+  if (score >= 86) return "天作之合";
+  if (score >= 72) return "彼此投契";
+  if (score >= 58) return "可慢慢相知";
+  if (score >= 42) return "尚需磨合";
+  return "话不投机";
+}
+
+function inquireMatchCandidate(candidateId) {
+  if (!state || state.dead || state.prisonYears > 0) return;
+  const index = (state.matchPool || []).findIndex((item) => item?.id === candidateId);
+  if (index < 0) return;
+  const candidate = normalizeMatchCandidate(state.matchPool[index]);
+  if (!candidate || candidate.inquired) return;
+  const archetype = femaleMatchArchetype(candidate.archetypeId);
+  candidate.inquired = true;
+  candidate.compatibility = matchCompatibility(candidate);
+  candidate.courtshipTitle = archetype?.courtshipTitle || "托媒问话";
+  candidate.courtshipText = sample(archetype?.courtshipScenes) || `媒人替你问过话。${candidate.name}更看重日后的诚意与担当，不愿只凭一张庚帖定终身。`;
+  state.matchPool[index] = candidate;
+  save();
+  render();
 }
 
 function matchSummary(profile) {
@@ -4256,6 +4508,7 @@ function applySpouseProfileYear(deltas = []) {
   if (!profile || !state.family.spouse || state.family.spouseMeta?.alive === false) return;
   const tier = MATCH_FAMILY_TIERS.find((item) => item.id === profile.familyId) || MATCH_FAMILY_TIERS[0];
   const personality = MATCH_PERSONALITIES.find((item) => item.id === profile.personalityId) || MATCH_PERSONALITIES[0];
+  const archetype = femaleMatchArchetype(profile.archetypeId);
   const moneyGain = rangeValue(tier.moneyYear || [0, 0]);
   if (moneyGain) {
     changeStat("money", moneyGain, deltas);
@@ -4277,6 +4530,16 @@ function applySpouseProfileYear(deltas = []) {
   } else if (Math.random() > 0.7) {
     state.family.spouseAffection = clamp(Number(state.family.spouseAffection ?? 78) + randInt(1, 3));
   }
+  if (archetype && Math.random() < 0.26) {
+    applyEffectRanges(archetype.annualEffect, deltas);
+    state.family.spouseAffection = clamp(Number(state.family.spouseAffection ?? 78) + randInt(1, 3));
+    if (state.family.spouseMeta) state.family.spouseMeta.affection = state.family.spouseAffection;
+    addLog(
+      `${archetype.title}·家中近事`,
+      `${state.family.spouse}：${sample(archetype.annualStories)}`,
+      [{ label: "情分", value: state.family.spouseAffection }]
+    );
+  }
 }
 
 function openMatchmakerBoard() {
@@ -4286,7 +4549,7 @@ function openMatchmakerBoard() {
     finishAction("媒人", "你已成婚，媒人拱手道喜，说改日再为子女操心也不迟。", [], "ArrangeMarriage");
     return;
   }
-  refreshMatchPool(true);
+  refreshMatchPool(false);
   view.page = "matchmaker";
   save();
   render();
@@ -4305,6 +4568,7 @@ function selectMatchCandidate(candidateId) {
   changeStat("money", -fee, deltas);
   if (fee) addLedger("媒资", -fee, "托媒人相看人家。");
   changeStat("relationship", randInt(2, 6), deltas);
+  const compatibilityBoost = candidate.compatibility === null ? 0 : Math.round((candidate.compatibility - 50) / 7);
   state.family.lover = candidate.name;
   state.family.loverMeta = normalizeRelative(
     {
@@ -4312,7 +4576,11 @@ function selectMatchCandidate(candidateId) {
       relation: "相看之人",
       gender: candidate.gender,
       age: candidate.age,
-      affection: clamp(48 + Math.floor(candidate.looks / 5) + Math.floor(candidate.power / 10) - femaleMarriageScandalLevel() * 10),
+      affection: clamp(48 + Math.floor(candidate.looks / 5) + Math.floor(candidate.power / 10) + compatibilityBoost - femaleMarriageScandalLevel() * 10),
+      portrait: candidate.portrait,
+      archetypeId: candidate.archetypeId,
+      title: candidate.title,
+      occupation: candidate.title,
       alive: true,
     },
     state.name.slice(0, 1),
@@ -4323,8 +4591,8 @@ function selectMatchCandidate(candidateId) {
   state.matchPool = [];
   view.page = "relations";
   finishAction(
-    "媒人细看",
-    `媒人替你细说${candidate.name}：${candidate.familyName}，性情${candidate.personality}，开价彩礼约 ${moneyText(candidate.bridePrice)}，生育预期 ${candidate.fertility}。${candidate.note}`,
+    candidate.inquired ? candidate.courtshipTitle : "媒人细看",
+    `${candidate.inquired ? candidate.courtshipText : `媒人替你细说${candidate.name}。`} ${candidate.name}出自${candidate.familyName}，性情${candidate.personality}，彩礼约 ${moneyText(candidate.bridePrice)}。${candidate.compatibility === null ? candidate.note : `媒人评作“${matchCompatibilityLabel(candidate.compatibility)}”，契合度 ${candidate.compatibility}。`}`,
     deltas,
     "ArrangeMarriage"
   );
@@ -11244,8 +11512,9 @@ function marryLover() {
   state.family.loverProfile = null;
   state.matchPool = [];
   addLedger("婚仪", -actualCost, `与${state.family.spouse}成婚。`);
+  const archetype = femaleMatchArchetype(profile?.archetypeId);
   const profileText = profile
-    ? `对方出自${profile.familyName}，性情${profile.personality}，彩礼婚仪约 ${moneyText(actualCost)}。婚后娘家势力与性情，都会慢慢显在日子里。`
+    ? `${archetype?.marriageText || `对方出自${profile.familyName}，性情${profile.personality}。`} 婚仪共用 ${moneyText(actualCost)}；往后的家事、人情与际遇，也会随这段姻缘继续展开。`
     : "自此家中多了一位同路人。";
   finishAction("成婚", `红烛高照，你与${state.family.spouse}成礼。${profileText}`, deltas, "ArrangeMarriage");
 }
@@ -14437,9 +14706,12 @@ function personCard(person, targetId = "") {
   const debtText = person.debt ? ` · 欠情 ${moneyText(person.debt)}` : "";
   const agencyText = person.alive === false ? "" : ` · ${person.occupation || "料理家业"} · ${person.disposition || "重情"} · 志向“${person.ambition || "求安稳"}”${person.marriedTo ? ` · 已与${person.marriedTo}成婚` : ""}`;
   const statusText = person.alive === false ? `已故${ageText}` : `${relationLabel(affection)}${ageText}${physiqueText}${debtText}${agencyText}${partnerStatusText(person)}${familyStoryStatus(person)}`;
+  const avatar = person.portrait
+    ? `<img class="person-portrait" src="${escapeHtml(person.portrait)}" alt="${escapeHtml(person.name || person.relation || "亲友")}" loading="lazy">`
+    : icon(relativeAvatarIcon(person), person.relation);
   return `
     <article class="person-card">
-      <div class="person-avatar ${person.gender === "female" ? "female" : ""}">${icon(relativeAvatarIcon(person), person.relation)}</div>
+      <div class="person-avatar ${person.gender === "female" ? "female" : ""} ${person.portrait ? "has-portrait" : ""}">${avatar}</div>
       <div>
         <strong><span>${escapeHtml(person.relation || "亲友")}</span>${escapeHtml(person.name || "无名")}</strong>
         <div class="meter"><i style="width:${affection}%"></i></div>
@@ -14840,15 +15112,32 @@ function matchmakerView() {
       <div class="match-grid">
         ${pool.map((item) => `
           <article class="match-card">
-            <strong>${escapeHtml(item.name)} · ${item.age}岁</strong>
-            <small>${escapeHtml(item.familyName)} · 势力 ${item.power} · 性情${escapeHtml(item.personality)}</small>
-            <p>${escapeHtml(item.note)}</p>
-            <ul class="match-stats">
-              <li>彩礼约 <b>${moneyText(item.bridePrice)}</b></li>
-              <li>生育预期 <b>${item.fertility}</b></li>
-              <li>容止 ${item.looks} · 识书 ${item.knowledge}</li>
-            </ul>
-            <button class="primary-btn" data-match-candidate="${escapeHtml(item.id)}" ${livingSpouse || state.stats.money < 30 ? "disabled" : ""}>选定相看</button>
+            <div class="match-portrait ${item.portrait ? "" : "is-placeholder"}">
+              ${item.portrait
+                ? `<img src="${escapeHtml(item.portrait)}" alt="${escapeHtml(`${item.title} ${item.name}`)}" loading="lazy">`
+                : icon(item.gender === "female" ? "FamilyBetrothedAvatar" : "FamilyHusbandAvatar", item.title)}
+              <span><small>媒妁庚帖</small><b>${escapeHtml(item.title)}</b></span>
+            </div>
+            <div class="match-card-body">
+              <header><strong>${escapeHtml(item.name)} · ${item.age}岁</strong><small>${escapeHtml(item.familyName)} · 势力 ${item.power} · 性情${escapeHtml(item.personality)}</small></header>
+              <p class="match-tagline">“${escapeHtml(item.tagline)}”</p>
+              <p>${escapeHtml(item.note)}</p>
+              <ul class="match-stats">
+                <li>彩礼约 <b>${moneyText(item.bridePrice)}</b></li>
+                <li>生育预期 <b>${item.fertility}</b></li>
+                <li>容止 ${item.looks} · 识书 ${item.knowledge}</li>
+              </ul>
+              ${item.inquired ? `
+                <section class="match-courtship">
+                  <strong>${escapeHtml(item.courtshipTitle)}</strong>
+                  <p>${escapeHtml(item.courtshipText)}</p>
+                  <div class="match-compatibility"><span>媒人合帖：${escapeHtml(matchCompatibilityLabel(item.compatibility))}</span><b>${item.compatibility}</b></div>
+                </section>` : `<p class="match-inquiry-hint">先托媒问一句，才能知道庚帖之外的心性与所求。</p>`}
+              <div class="match-card-actions">
+                <button class="secondary-btn" data-match-inquire="${escapeHtml(item.id)}" ${item.inquired ? "disabled" : ""}>${item.inquired ? "已问过话" : "托媒问话"}</button>
+                <button class="primary-btn" data-match-candidate="${escapeHtml(item.id)}" ${livingSpouse || state.stats.money < 30 ? "disabled" : ""}>选定相看</button>
+              </div>
+            </div>
           </article>`).join("")}
       </div>
       <div class="main-actions">
@@ -16515,6 +16804,7 @@ app.addEventListener("click", (event) => {
   if (button.dataset.action === "open-poetry") return openPoetryContest();
   if (button.dataset.action === "cancel-poetry") return cancelPoetryContest();
   if (button.dataset.poetryOption !== undefined) return answerPoetry(button.dataset.poetryOption);
+  if (button.dataset.matchInquire) return inquireMatchCandidate(button.dataset.matchInquire);
   if (button.dataset.matchCandidate) return selectMatchCandidate(button.dataset.matchCandidate);
   if (button.dataset.action === "refresh-match") {
     refreshMatchPool(true);
