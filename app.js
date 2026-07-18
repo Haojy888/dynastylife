@@ -1485,6 +1485,17 @@ const REGION_PROFILES = {
   qingya: { epithet: "云顶药谷", industry: "药材、香火与山货", custom: "山中人敬畏自然与因果，救命的真本领最能换来信任。", settleCost: 460, incident: ["药谷争采", "一味稀有药材忽然被抢采，寺僧、药农与外来商贩争执不休。"], factions: [{ id: "temple", name: "云顶古寺", type: "寺院", stat: "virtue", note: "维持山路、施药与香火秩序，在乡民中颇有威望。" }, { id: "herbalists", name: "青崖药户", type: "行会", stat: "knowledge", note: "药农、采山人与郎中共享山中物候与药路。" }] },
 };
 
+const REGION_SCENE_ART = {
+  qingping: { hero: "assets/region-qingping.webp", thumb: "assets/region-qingping-thumb.webp", alt: "清平县水乡街巷与河桥", focus: "50% 52%" },
+  yunzhou: { hero: "assets/region-yunzhou.webp", thumb: "assets/region-yunzhou-thumb.webp", alt: "云州边关、商队与雄城", focus: "50% 50%" },
+  luocheng: { hero: "assets/region-luocheng.webp", thumb: "assets/region-luocheng-thumb.webp", alt: "洛城书院园林与文人雅集", focus: "50% 52%" },
+  jiangling: { hero: "assets/region-jiangling.webp", thumb: "assets/region-jiangling-thumb.webp", alt: "江陵码头舟船与十里水埠", focus: "52% 52%" },
+  liangdu: { hero: "assets/region-liangdu.webp", thumb: "assets/region-liangdu-thumb.webp", alt: "梁都宫城与朱雀御街", focus: "50% 48%" },
+  kunbei: { hero: "assets/region-kunbei.webp", thumb: "assets/region-kunbei-thumb.webp", alt: "昆北雪山、石城与马市", focus: "59% 52%" },
+  sudi: { hero: "assets/region-sudi.webp", thumb: "assets/region-sudi-thumb.webp", alt: "苏堤水乡、画桥与春日园林", focus: "51% 52%" },
+  qingya: { hero: "assets/region-qingya.webp", thumb: "assets/region-qingya-thumb.webp", alt: "青崖山云海、古寺与药谷", focus: "50% 52%" },
+};
+
 const TRAVEL_CARRIAGES = [
   { level: 1, name: "轻便驿车", comfort: 0, safety: 0, icon: "RepairCarriage", note: "车身轻，走近路尚可，遇烂路便颠簸。" },
   { level: 2, name: "四轮篷车", comfort: 6, safety: 8, price: 480, icon: "CarShop", note: "带篷布与储物格，远行更稳，也能多备行囊。" },
@@ -3045,6 +3056,10 @@ function normalizeTravelSystem(source) {
 
 function travelDestinationByStaticId(id) {
   return TRAVEL_DESTINATIONS.find((item) => item.id === id) || TRAVEL_DESTINATIONS[0];
+}
+
+function regionSceneArt(regionId) {
+  return REGION_SCENE_ART[regionId] || REGION_SCENE_ART.qingping;
 }
 
 function regionIdFromLocation(location = "清平县") {
@@ -13577,16 +13592,19 @@ function regionsView() {
       <div class="regional-map-grid">${TRAVEL_DESTINATIONS.map((destination) => {
         const item = regional.regions[destination.id];
         const profile = REGION_PROFILES[destination.id];
+        const art = regionSceneArt(destination.id);
         const isCurrent = destination.id === currentId;
         const isHome = destination.id === regional.residenceId;
         return `<button class="regional-map-card ${destination.id === selectedId ? "active" : ""} ${isCurrent ? "current" : ""}" data-region-select="${destination.id}">
-          ${icon(destination.icon, destination.name)}<span><b>${escapeHtml(destination.name)}</b><small>${escapeHtml(profile.epithet)} · ${escapeHtml(regionalStandingLabel(item.reputation))}</small></span><strong>${item.reputation}</strong>
+          <span class="regional-map-scene" style="--region-focus:${art.focus}"><img src="${art.thumb}" alt="" width="640" height="427" loading="lazy" decoding="async" /><i>${isHome ? "家门" : isCurrent ? "在此" : item.visits ? `到访 ${item.visits} 次` : "未访"}</i></span>
+          <span class="regional-map-head"><span><b>${escapeHtml(destination.name)}</b><small>${escapeHtml(profile.epithet)} · ${escapeHtml(regionalStandingLabel(item.reputation))}</small></span><strong>${item.reputation}</strong></span>
           <div class="meter"><i style="width:${item.reputation}%"></i></div><em>${isHome ? "家门" : isCurrent ? "在此" : item.visits ? `到访 ${item.visits} 次` : "尚未到访"}</em>
         </button>`;
       }).join("")}</div>
     </section>
 
     <article class="play-card regional-detail">
+      <div class="regional-detail-scene" style="--region-focus:${regionSceneArt(selectedId).focus}"><img src="${regionSceneArt(selectedId).hero}" alt="${escapeHtml(regionSceneArt(selectedId).alt)}" width="1400" height="933" decoding="async" fetchpriority="high" /><span><small>${escapeHtml(selectedProfile.epithet)}</small><b>${escapeHtml(selectedDestination.name)}</b></span></div>
       <header><div>${icon(selectedDestination.icon, selectedDestination.name)}</div><section><p class="eyebrow">${escapeHtml(selectedProfile.epithet)} · ${escapeHtml(regionalStandingLabel(selectedState.reputation))}</p><h2>${escapeHtml(selectedDestination.name)}</h2><p>${escapeHtml(selectedProfile.custom)}</p></section><strong>${selectedState.reputation}<small>地方声望</small></strong></header>
       <div class="regional-local-facts"><span><b>本地生计</b>${escapeHtml(selectedProfile.industry)}</span><span><b>当地联系人</b>${localContacts.length} 人</span><span><b>名下产业</b>${localAssets.length} 处</span><span><b>到访记录</b>${selectedState.visits} 次</span></div>
       ${local ? `<div class="regional-public-actions">
@@ -14521,18 +14539,16 @@ function travelView() {
           ${TRAVEL_DESTINATIONS.map((item, index) => {
             const memory = state.travelSystem.memories[item.id];
             const standing = state.regional?.regions?.[item.id]?.reputation || 0;
+            const art = regionSceneArt(item.id);
             const active = item.id === selected.id;
             return `<button class="travel-destination ${active ? "active" : ""} ${state.travelSystem.stamps.includes(item.id) ? "visited" : ""}" data-travel="${index}" ${locked ? "disabled" : ""}>
-              <span class="destination-icon">${icon(item.icon, item.name)}</span>
-              <strong>${escapeHtml(item.name)}</strong>
-              <small>${item.days}日路程 · 风险 ${item.risk}</small>
-              <em>${escapeHtml(item.landmark)}</em>
-              ${memory.trips ? `<b>已游 ${memory.trips} 次</b>` : ""}<b class="regional-map-standing">声望 ${standing} · ${escapeHtml(regionalStandingLabel(standing))}</b>
+              <span class="destination-scene" style="--region-focus:${art.focus}"><img src="${art.thumb}" alt="" width="640" height="427" loading="lazy" decoding="async" /><i>${icon(item.icon, item.name)}</i></span>
+              <span class="destination-copy"><strong>${escapeHtml(item.name)}</strong><small>${item.days}日路程 · 风险 ${item.risk}</small><em>${escapeHtml(item.landmark)}</em>${memory.trips ? `<b>已游 ${memory.trips} 次</b>` : ""}<b class="regional-map-standing">声望 ${standing} · ${escapeHtml(regionalStandingLabel(standing))}</b></span>
             </button>`;
           }).join("")}
         </div>
         <div class="selected-route-card">
-          <div>${icon(selected.icon, selected.name)}<span><b>${escapeHtml(selected.name)} · ${escapeHtml(selected.landmark)}</b><small>${escapeHtml(selected.story)}</small></span></div>
+          <div class="selected-route-scene" style="--region-focus:${regionSceneArt(selected.id).focus}"><img src="${regionSceneArt(selected.id).hero}" alt="${escapeHtml(regionSceneArt(selected.id).alt)}" width="1400" height="933" decoding="async" /><span><b>${escapeHtml(selected.name)} · ${escapeHtml(selected.landmark)}</b><small>${escapeHtml(selected.story)}</small></span></div>
           <p>${escapeHtml(selected.note)} · 基础路资 ${moneyText(selected.cost)} · 预计 ${selected.days} 日</p>
         </div>
       </section>
@@ -14576,7 +14592,7 @@ function travelRunView() {
     const canSettle = state.age >= 15 && localRegion.reputation >= 35 && state.stats.money >= profile.settleCost && state.regional.residenceId !== destination.id;
     return `
       <article class="play-card travel-run-card travel-arrival">
-        <div class="arrival-mark">${icon(destination.icon, destination.name)}</div>
+        <div class="travel-arrival-scene" style="--region-focus:${regionSceneArt(destination.id).focus}"><img src="${regionSceneArt(destination.id).hero}" alt="${escapeHtml(regionSceneArt(destination.id).alt)}" width="1400" height="933" decoding="async" fetchpriority="high" /><span><small>山河抵达</small><b>${escapeHtml(destination.name)} · ${escapeHtml(destination.landmark)}</b></span></div>
         <p class="eyebrow">抵达 · ${escapeHtml(destination.name)}</p>
         <h2>${escapeHtml(destination.landmark)}在望</h2>
         <p>${escapeHtml(destination.story)}一路行程评定：${travelQualityLabel(run.quality)}（${Math.round(run.quality)}）。你还可以选择一项当地游历。</p>

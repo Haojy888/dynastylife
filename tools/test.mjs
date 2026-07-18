@@ -953,7 +953,7 @@ try {
   });
   assert.deepEqual(oldTravelSave, { level: 1, condition: 100, pending: null, destinations: 8 }, "旧存档没有正确补全车马旅行状态");
 
-  const travelSetup = await page.evaluate(() => {
+  const travelSetup = await page.evaluate(async () => {
     state.age = 30;
     state.year = 62;
     state.stats.money = 10000;
@@ -969,6 +969,13 @@ try {
     travelTo(2);
     selectTravelCompanion("spouse");
     selectTravelSupply("luxury");
+    const mapping = Object.fromEntries(TRAVEL_DESTINATIONS.map((item) => [item.id, [regionSceneArt(item.id).hero.split("/").pop(), regionSceneArt(item.id).thumb.split("/").pop()]]));
+    const assetResponses = await Promise.all(Object.values(REGION_SCENE_ART).flatMap((item) => [item.hero, item.thumb]).map(async (src) => {
+      const response = await fetch(src);
+      return { src, status: response.status, type: response.headers.get("content-type") };
+    }));
+    const landscapeCards = document.querySelectorAll(".destination-scene > img").length;
+    const selectedLandscape = document.querySelector(".selected-route-scene img")?.getAttribute("src");
     const money = state.stats.money;
     startTravelJourney();
     return {
@@ -978,6 +985,10 @@ try {
       eventCount: state.pendingTravel?.events.length,
       spent: state.stats.money < money,
       destinationCards: document.querySelectorAll("[data-travel]").length,
+      landscapeCards,
+      selectedLandscape,
+      mapping,
+      assetResponses,
     };
   });
   assert.equal(travelSetup.destination, "luocheng", "选择目的地后没有按路线启程");
@@ -986,15 +997,29 @@ try {
   assert.ok(travelSetup.eventCount >= 2, "远行没有生成多阶段途中事件");
   assert.equal(travelSetup.spent, true, "旅行没有扣除路资");
   assert.equal(travelSetup.destinationCards, 0, "启程后仍停留在旅行准备页");
+  assert.equal(travelSetup.landscapeCards, 8, "车马路线没有显示八地风景缩略图");
+  assert.equal(travelSetup.selectedLandscape, "assets/region-luocheng.webp", "洛城路线没有使用对应高清风景图");
+  assert.deepEqual(travelSetup.mapping, {
+    qingping: ["region-qingping.webp", "region-qingping-thumb.webp"],
+    yunzhou: ["region-yunzhou.webp", "region-yunzhou-thumb.webp"],
+    luocheng: ["region-luocheng.webp", "region-luocheng-thumb.webp"],
+    jiangling: ["region-jiangling.webp", "region-jiangling-thumb.webp"],
+    liangdu: ["region-liangdu.webp", "region-liangdu-thumb.webp"],
+    kunbei: ["region-kunbei.webp", "region-kunbei-thumb.webp"],
+    sudi: ["region-sudi.webp", "region-sudi-thumb.webp"],
+    qingya: ["region-qingya.webp", "region-qingya-thumb.webp"],
+  }, "八地风景图片映射发生错位");
+  assert.ok(travelSetup.assetResponses.every((item) => item.status === 200 && item.type === "image/webp"), "存在无法加载的八地 WebP 风景资源");
 
   const travelArrival = await page.evaluate(() => {
     while (state.pendingTravel && state.pendingTravel.index < state.pendingTravel.events.length) resolveTravelChoice(0);
     const html = travelRunView();
-    return { index: state.pendingTravel?.index, total: state.pendingTravel?.events.length, hasActivities: /data-travel-local/.test(html), history: state.pendingTravel?.history.length };
+    return { index: state.pendingTravel?.index, total: state.pendingTravel?.events.length, hasActivities: /data-travel-local/.test(html), history: state.pendingTravel?.history.length, arrivalLandscape: document.querySelector(".travel-arrival-scene img")?.getAttribute("src") };
   });
   assert.equal(travelArrival.index, travelArrival.total, "途中事件完成后没有抵达目的地");
   assert.equal(travelArrival.hasActivities, true, "抵达后没有提供当地游历活动");
   assert.ok(travelArrival.history >= travelArrival.total + 1, "旅途札记没有记录途中选择");
+  assert.equal(travelArrival.arrivalLandscape, "assets/region-luocheng.webp", "洛城抵达过场没有使用对应风景图");
 
   const travelComplete = await page.evaluate(() => {
     completeTravelActivity("landmark");
@@ -1012,10 +1037,11 @@ try {
   const travelMobileOverflow = await page.evaluate(() => {
     view.page = "travel";
     render();
-    return { viewport: document.documentElement.clientWidth, document: document.documentElement.scrollWidth, cards: document.querySelectorAll(".travel-destination").length, supplies: document.querySelectorAll("[data-travel-supply]").length };
+    return { viewport: document.documentElement.clientWidth, document: document.documentElement.scrollWidth, cards: document.querySelectorAll(".travel-destination").length, landscapes: document.querySelectorAll(".destination-scene > img").length, supplies: document.querySelectorAll("[data-travel-supply]").length };
   });
   assert.equal(travelMobileOverflow.document, travelMobileOverflow.viewport, "新版车马页面在移动端横向溢出");
   assert.equal(travelMobileOverflow.cards, 8, "车马页面没有显示全部旅行目的地");
+  assert.equal(travelMobileOverflow.landscapes, 8, "移动端车马页面缺少八地风景图");
   assert.equal(travelMobileOverflow.supplies, 3, "车马页面缺少行囊选择");
 
   console.log("quality gate: verifying exam underworld, mysteries and jianghu systems");
@@ -1798,7 +1824,7 @@ try {
 
     view.page = "regions";
     render();
-    const ui = { map: document.querySelectorAll(".regional-map-card").length, factions: document.querySelectorAll(".regional-faction-card").length, summary: document.querySelectorAll(".regional-summary span").length, overflow: document.documentElement.scrollWidth <= document.documentElement.clientWidth };
+    const ui = { map: document.querySelectorAll(".regional-map-card").length, landscapes: document.querySelectorAll(".regional-map-scene img").length, detailLandscape: document.querySelector(".regional-detail-scene img")?.getAttribute("src"), factions: document.querySelectorAll(".regional-faction-card").length, summary: document.querySelectorAll(".regional-summary span").length, overflow: document.documentElement.scrollWidth <= document.documentElement.clientWidth };
     const carried = carryRegionalAcrossInheritance(state.regional, 18, "李承远");
     const inheritance = { residence: carried.residenceId, regions: Object.keys(carried.regions).length, alliances: carried.alliances.length, resetYear: carried.lastAnnualYear, chronicle: carried.chronicle[0]?.title };
 
@@ -1820,7 +1846,7 @@ try {
   assert.equal(regionalSystems.incomeLinked, true, "地方声望与盟友没有提高当地产业收益");
   assert.deepEqual(regionalSystems.settlement, { residence: "yunzhou", settled: true, pending: null }, "迁居没有更新家门、定居状态或清理旅行流程");
   assert.deepEqual(regionalSystems.eventResult, { kind: "regionalEvent", recorded: true, reputationRaised: true }, "地方年度事件没有开启、结算或改变声望");
-  assert.deepEqual(regionalSystems.ui, { map: 8, factions: 2, summary: 4, overflow: true }, "九州声望页面缺少八地版图、势力卡片、总览或发生移动端溢出");
+  assert.deepEqual(regionalSystems.ui, { map: 8, landscapes: 8, detailLandscape: "assets/region-yunzhou.webp", factions: 2, summary: 4, overflow: true }, "九州声望页面缺少八地风景、势力卡片、总览或发生移动端溢出");
   assert.deepEqual(regionalSystems.inheritance, { residence: "yunzhou", regions: 8, alliances: 1, resetYear: 17, chronicle: "地方人脉承继" }, "地域声望、盟友、定居地与纪事没有跨代继承");
 
   console.log("quality gate: stress-testing annual flow through late life");
