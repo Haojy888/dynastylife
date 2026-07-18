@@ -1584,6 +1584,102 @@ try {
   assert.deepEqual(prisonCulture.cultureMobile, { cards: 40, overflow: true }, "华夏岁时图鉴在移动端缺项或横向溢出");
   assert.deepEqual(prisonCulture.prisonMobile, { metrics: 5, overflow: true }, "牢狱主界面在移动端缺项或横向溢出");
 
+  console.log("quality gate: verifying clan management, genealogy and NPC relationship network");
+  const clanSystems = await page.evaluate(() => {
+    const snapshot = JSON.stringify(state);
+    const oldRandom = Math.random;
+    const legacy = JSON.parse(snapshot);
+    delete legacy.clan;
+    const normalizedLegacy = normalizeState(legacy);
+    const oldSave = {
+      familyName: normalizedLegacy.clan.familyName,
+      branches: normalizedLegacy.clan.branches.length,
+      projects: Object.keys(normalizedLegacy.clan.projects).length,
+      rules: normalizedLegacy.clan.activeRules.length,
+    };
+
+    state.age = 35;
+    state.year = 80;
+    state.dead = false;
+    state.prisonYears = 0;
+    state.currentEvent = null;
+    state.eventResult = null;
+    state.pendingAchievement = null;
+    state.stats.money = 8000;
+    state.clan = createClanState(state.lineage.familyName);
+    state.family.siblings = [normalizeRelative({ id: "clan-sibling", name: `${state.lineage.familyName}仲和`, relation: "弟弟", gender: "male", age: 30, alive: true, physique: 80, affection: 72, householdSeparated: true }, state.lineage.familyName, "sibling")];
+    const child = normalizeChild({ id: "child-clan-heir", name: `${state.lineage.familyName}承宗`, relation: "儿子", gender: "male", age: 22, alive: true, physique: 82, affection: 75, study: 40, spouse: { id: "clan-inlaw", name: "顾宜家", relation: "儿媳", gender: "female", age: 21, alive: true, physique: 78, affection: 70 }, grandchildren: [] }, state.lineage.familyName);
+    state.family.children = [child];
+    syncClanBranches();
+    const branchCount = state.clan.branches.length;
+
+    donateToClan(500);
+    state.eventResult = null;
+    toggleClanRule("education");
+    state.eventResult = null;
+    toggleClanRule("commerce");
+    state.eventResult = null;
+    toggleClanRule("relief");
+    const rules = [...state.clan.activeRules];
+    state.eventResult = null;
+    state.clan.treasury = 3000;
+    upgradeClanHall();
+    state.eventResult = null;
+    upgradeClanProject("school");
+    state.eventResult = null;
+    const management = { hall: state.clan.hallLevel, school: state.clan.projects.school, treasury: state.clan.treasury, rules };
+
+    Math.random = () => 0.1;
+    state.clan.lastAdvancedYear = -1;
+    const childStudyBefore = child.study;
+    advanceClanYear([]);
+    const annual = { relationEdges: state.clan.relations.length, chronicle: state.clan.chronicle.length, childStudy: child.study - childStudyBefore, advanced: state.clan.lastAdvancedYear === state.year };
+
+    state.currentEvent = null;
+    state.eventResult = null;
+    state.clan.lastCouncilYear = -1;
+    const cohesionBefore = state.clan.cohesion;
+    startClanCouncil();
+    const councilKind = state.currentEvent?.kind;
+    resolveClanCouncil(state.currentEvent, state.currentEvent.children[0]);
+    const council = { kind: councilKind, settled: state.clan.lastCouncilYear === state.year, cohesionRaised: state.clan.cohesion > cohesionBefore, records: state.clan.councils };
+    state.eventResult = null;
+
+    view.page = "clan";
+    render();
+    const ui = {
+      metrics: document.querySelectorAll(".clan-metric").length,
+      branches: document.querySelectorAll(".clan-branch-card").length,
+      projects: document.querySelectorAll(".clan-project-card").length,
+      tree: document.querySelectorAll(".genealogy-tree").length,
+      edges: document.querySelectorAll(".clan-edge").length,
+      overflow: document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+    };
+    const carried = carryClanAcrossInheritance(state.clan, 18, child.name, state.clan.familyName);
+    const inheritance = { hall: carried.hallLevel, school: carried.projects.school, relations: carried.relations.length, resetYear: carried.lastAdvancedYear, chronicle: carried.chronicle[0]?.title };
+
+    Math.random = oldRandom;
+    state = normalizeState(JSON.parse(snapshot));
+    view.page = "main";
+    view.overlay = "";
+    save();
+    render();
+    return { oldSave, branchCount, management, annual, council, ui, inheritance };
+  });
+  assert.ok(clanSystems.oldSave.familyName && clanSystems.oldSave.branches >= 1, "旧存档没有自动补齐宗族主房与姓氏");
+  assert.deepEqual({ projects: clanSystems.oldSave.projects, rules: clanSystems.oldSave.rules }, { projects: 3, rules: 0 }, "旧存档没有自动补齐公中、族产与家规状态");
+  assert.equal(clanSystems.branchCount, 3, "兄弟分家和子女成婚没有转化为主房之外的支房");
+  assert.equal(clanSystems.management.hall, 1, "宗祠升级没有生效");
+  assert.equal(clanSystems.management.school, 1, "族学扩建没有生效");
+  assert.deepEqual(clanSystems.management.rules, ["education", "commerce"], "家规没有限制为最多同时两条");
+  assert.ok(clanSystems.management.treasury >= 0, "宗族建设导致公中钱成为负数");
+  assert.equal(clanSystems.annual.advanced, true, "宗族年度结算没有记录当前流年");
+  assert.ok(clanSystems.annual.relationEdges >= 1 && clanSystems.annual.chronicle >= 1, "族人没有形成彼此之间的长期关系或宗族纪事");
+  assert.ok(clanSystems.annual.childStudy >= 2, "重教家规与族学没有作用到子女学业");
+  assert.deepEqual(clanSystems.council, { kind: "clanCouncil", settled: true, cohesionRaised: true, records: 1 }, "合族议事没有完整开启并结算");
+  assert.deepEqual(clanSystems.ui, { metrics: 4, branches: 3, projects: 3, tree: 1, edges: 1, overflow: true }, "宗族页面缺少指标、族谱、支房、族产、关系网或发生移动端溢出");
+  assert.deepEqual(clanSystems.inheritance, { hall: 1, school: 1, relations: 1, resetYear: 17, chronicle: "门户承继" }, "跨代承继没有保留宗祠、族产、人物关系与宗族纪事");
+
   console.log("quality gate: stress-testing annual flow through late life");
   const annualStress = await page.evaluate(() => {
     state.age = 18;

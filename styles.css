@@ -5174,3 +5174,100 @@ p {
   .female-route-note { padding: 12px; }
   .female-assessment-panel > div .text-btn { flex: 1 1 calc(50% - 8px); }
 }
+
+/* 第二阶段：宗族经营、族谱与人物关系网 */
+.clan-pulse { width: 100%; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 13px; padding: 13px 15px; border: 1px solid rgba(101,86,52,.24); border-radius: 15px; background: linear-gradient(115deg, rgba(80,117,82,.1), rgba(210,173,91,.13)); color: var(--ink); text-align: left; }
+.clan-pulse > span:nth-child(2) { display: grid; gap: 3px; min-width: 0; }
+.clan-pulse small { color: var(--muted); }
+.clan-pulse strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.clan-pulse em { color: #755f35; font-size: 12px; font-style: normal; }
+.clan-seal { display: grid; place-items: center; min-width: 52px; height: 48px; padding: 0 8px; border-radius: 12px; background: #536f58; color: #fff9e8; font-weight: 800; letter-spacing: .08em; box-shadow: inset 0 0 0 2px rgba(255,255,255,.15); }
+
+.clan-dashboard { border-color: rgba(87,105,70,.26); background: linear-gradient(140deg, rgba(82,119,84,.1), rgba(235,215,165,.13) 52%, rgba(139,94,61,.07)); }
+.clan-event { border-color: rgba(82,117,87,.3); box-shadow: inset 0 5px 0 rgba(82,117,87,.7); }
+.clan-hero { display: grid; grid-template-columns: 116px 1fr; gap: 19px; align-items: center; }
+.clan-hero h2 { margin: 3px 0 8px; font-size: clamp(24px,3vw,35px); }
+.clan-hero section > p:last-child { margin: 0; color: var(--muted); line-height: 1.7; }
+.clan-emblem { display: grid; place-items: center; align-content: center; min-height: 116px; padding: 12px; border-radius: 50%; background: #536f58; color: #fff8dd; box-shadow: inset 0 0 0 5px rgba(255,255,255,.12),0 13px 30px rgba(55,74,59,.18); }
+.clan-emblem small { opacity: .76; letter-spacing: .18em; }
+.clan-emblem strong { font-size: 28px; }
+.clan-emblem span { font-size: 12px; }
+.clan-metrics { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 9px; margin-top: 18px; }
+.clan-metric { display: grid; gap: 4px; min-width: 0; padding: 13px; border: 1px solid rgba(80,104,75,.13); border-radius: 13px; background: rgba(255,255,255,.58); }
+.clan-metric span,.clan-metric small { color: var(--muted); }
+.clan-metric span { font-size: 12px; }
+.clan-metric strong { font-size: 22px; }
+.clan-metric small { line-height: 1.45; }
+.clan-actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 14px; }
+
+.genealogy-section,.clan-project-section,.clan-branch-section,.clan-network-section { display: grid; gap: 11px; }
+.genealogy-tree { position: relative; display: grid; gap: 16px; padding: 18px; overflow: hidden; border: 1px solid rgba(104,78,51,.17); border-radius: 16px; background: linear-gradient(rgba(255,252,241,.86),rgba(242,232,202,.74)); }
+.genealogy-tree::before { content: ""; position: absolute; inset: 20px 50% 20px auto; width: 1px; background: rgba(113,84,54,.18); }
+.genealogy-level { position: relative; z-index: 1; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.genealogy-level > small { flex: 0 0 100%; color: #8b7047; text-align: center; letter-spacing: .2em; }
+.genealogy-person { display: grid; gap: 2px; min-width: 124px; padding: 10px 12px; border: 1px solid rgba(92,105,72,.2); border-radius: 11px; background: rgba(255,255,255,.82); text-align: center; box-shadow: 0 3px 10px rgba(83,67,46,.06); }
+.genealogy-person b { font-size: 14px; }
+.genealogy-person span { color: var(--muted); font-size: 11px; }
+.genealogy-person.deceased { filter: grayscale(.7); opacity: .68; }
+.genealogy-level.current .genealogy-person:first-of-type { border-color: rgba(66,111,77,.48); background: rgba(77,124,87,.1); box-shadow: inset 0 3px 0 #54795d; }
+
+.clan-management-grid { display: grid; grid-template-columns: minmax(230px,.7fr) minmax(0,1.6fr); gap: 11px; }
+.clan-hall-card,.clan-rule-panel { display: grid; align-content: start; gap: 9px; padding: 16px; border: 1px solid var(--line); border-radius: 15px; background: rgba(255,253,247,.74); }
+.clan-hall-card > span,.clan-rule-panel > span { color: var(--muted); font-size: 12px; }
+.clan-hall-card h3,.clan-rule-panel h3 { margin: 0; }
+.clan-hall-card p { margin: 0; color: var(--muted); line-height: 1.6; }
+.hall-steps { display: flex; gap: 8px; padding: 8px 0; }
+.hall-steps i { display: grid; place-items: center; width: 32px; height: 32px; border: 1px dashed rgba(91,87,61,.3); border-radius: 50%; color: var(--muted); font-style: normal; }
+.hall-steps i.built { border-style: solid; background: #58725c; color: white; }
+.clan-rule-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
+.clan-rule { display: grid; gap: 3px; padding: 11px; border: 1px solid var(--line); border-radius: 11px; background: rgba(255,255,255,.65); color: var(--ink); text-align: left; }
+.clan-rule span,.clan-rule small { color: var(--muted); line-height: 1.45; }
+.clan-rule span { font-size: 12px; }
+.clan-rule.active { border-color: rgba(70,120,82,.48); background: rgba(70,120,82,.1); box-shadow: inset 3px 0 0 #52775b; }
+
+.clan-project-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 9px; }
+.clan-project-card { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 10px; padding: 13px; border: 1px solid var(--line); border-radius: 13px; background: rgba(255,253,247,.72); }
+.clan-project-card > img { width: 44px; height: 44px; object-fit: contain; }
+.clan-project-card > span { display: grid; gap: 3px; min-width: 0; }
+.clan-project-card small { color: var(--muted); line-height: 1.45; }
+.clan-project-card button { grid-column: 1/-1; width: 100%; }
+.clan-branch-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 9px; }
+.clan-branch-card { display: grid; gap: 6px; min-width: 0; padding: 14px; border: 1px solid var(--line); border-radius: 13px; background: rgba(255,253,247,.72); }
+.clan-branch-card.main { border-color: rgba(77,117,83,.38); background: rgba(77,117,83,.07); }
+.clan-branch-card > span,.clan-branch-card small,.clan-branch-card p { color: var(--muted); }
+.clan-branch-card h3,.clan-branch-card p { margin: 0; }
+.clan-branch-card p { font-size: 12px; line-height: 1.5; }
+.clan-branch-card .meter i { background: linear-gradient(90deg,#6b8d70,#c39d50); }
+
+.clan-network-list { display: grid; gap: 8px; }
+.clan-edge { display: grid; grid-template-columns: minmax(80px,.5fr) minmax(140px,1.2fr) minmax(80px,.5fr); align-items: center; gap: 10px; padding: 12px 14px; border: 1px solid rgba(74,115,82,.2); border-radius: 12px; background: rgba(255,255,255,.62); }
+.clan-edge > b:last-of-type { text-align: right; }
+.clan-edge > span { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 7px; color: #53705a; }
+.clan-edge em { font-size: 12px; font-style: normal; }
+.clan-edge i { height: 3px; border-radius: 9px; background: linear-gradient(90deg,#89aa8f var(--edge),rgba(120,130,113,.14) var(--edge)); }
+.clan-edge small { color: var(--muted); }
+.clan-edge p { grid-column: 1/-1; margin: 0; color: var(--muted); font-size: 12px; line-height: 1.55; }
+.clan-edge.conflict { border-color: rgba(160,72,56,.25); }
+.clan-edge.conflict > span { color: #9a5044; }
+.clan-edge.conflict i { background: linear-gradient(90deg,#b46456 var(--edge),rgba(130,110,100,.14) var(--edge)); }
+.clan-chronicle .info-card { border-left: 3px solid rgba(82,117,87,.45); }
+
+@media (max-width: 980px) {
+  .clan-metrics,.clan-project-grid,.clan-branch-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .clan-management-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 760px) {
+  .clan-pulse { grid-template-columns: auto 1fr; }
+  .clan-pulse em { grid-column: 2; }
+  .clan-pulse strong { white-space: normal; }
+  .clan-hero { grid-template-columns: 1fr; }
+  .clan-emblem { width: 92px; min-height: 92px; }
+  .clan-metrics,.clan-rule-grid,.clan-project-grid,.clan-branch-grid { grid-template-columns: 1fr; }
+  .clan-actions > button { width: 100%; }
+  .genealogy-tree { padding: 14px 10px; }
+  .genealogy-person { min-width: min(124px,calc(50% - 5px)); flex: 1 1 120px; }
+  .clan-edge { grid-template-columns: 1fr; text-align: left; }
+  .clan-edge > b:last-of-type { text-align: left; }
+  .clan-edge p { grid-column: 1; }
+}

@@ -904,12 +904,30 @@ const COURTESAN_QUESTIONS = [
 const MAIN_DOORS = [
   { id: "world", label: "天下风云", icon: "Official", featured: true },
   { id: "home", label: "家中", icon: "FamilyIcon" },
+  { id: "clan", label: "宗族家谱", icon: "Courtyard", featured: true },
   { id: "assets", label: "家产", icon: "House" },
   { id: "relations", label: "亲友", icon: "FamilyIcon" },
   { id: "activities", label: "活动", icon: "Activity" },
   { id: "culture", label: "华夏岁时", icon: "Temple" },
   { id: "secrets", label: "奇闻暗线", icon: "PrisonHeader", featured: true },
 ];
+
+const CLAN_RULES = [
+  { id: "education", name: "重教崇文", motto: "贫不废书，富不忘学", note: "族学进益更快；每年需从公中支出束脩。", benefit: "子孙学业 +2", cost: 10 },
+  { id: "relief", name: "义仓济族", motto: "有余相济，患难相扶", note: "灾年可稳住各房人心；平年也要持续补仓。", benefit: "凝聚 +3", cost: 12 },
+  { id: "seniority", name: "长幼有序", motto: "敬宗睦族，各守其分", note: "议事更容易达成共识，但年轻支房偶有不满。", benefit: "凝聚 +2", cost: 0 },
+  { id: "independence", name: "各房自立", motto: "分灶不分亲，各凭本事", note: "旁支经营更活跃，但宗族向心力略有损耗。", benefit: "支房财力增长", cost: 0 },
+  { id: "reputation", name: "清议守名", motto: "不欺乡里，不辱门楣", note: "家声增长更快，犯错的族人也更难被宽容。", benefit: "家声 +3", cost: 0 },
+  { id: "commerce", name: "商贾兴家", motto: "通有无，裕宗族", note: "公中进项增加，但清流亲族未必认同。", benefit: "公中钱 +18", cost: 0 },
+];
+
+const CLAN_PROJECTS = [
+  { id: "farmland", name: "义田", icon: "Agriculture", note: "置田收租，所得归公中，用来赡孤恤寡。", costs: [220, 700, 1800] },
+  { id: "school", name: "族学", icon: "Book", note: "延师课读，让各房子弟都有开蒙进学之处。", costs: [260, 820, 2100] },
+  { id: "granary", name: "义仓", icon: "CashBox", note: "平年积谷，灾年放粮，能稳住族人与乡里。", costs: [200, 650, 1650] },
+];
+
+const CLAN_HALL_COSTS = [0, 480, 1400, 3600];
 
 const EXAM_CHEAT_METHODS = [
   { id: "carry", name: "夹带小抄", cost: 35, boost: 1, risk: 22, heat: 12, note: "花费最低，只能多答一题；入场搜检最容易露馅。" },
@@ -2155,6 +2173,9 @@ const LIFE_GOALS = [
   { id: "career-level", tier: "silver", title: "本业精熟", icon: "Craftsman", desc: "任一营生达到 3 级。", score: 120, done: () => maxCareerLevel() >= 3, advice: "在营生页持续处理本业事务。" },
   { id: "career-master", tier: "silver", title: "一门老手", icon: "Craftsman", desc: "任一营生达到 5 级。", score: 170, done: () => maxCareerLevel() >= 5, advice: "不要频繁换业，深耕一门更容易升级。" },
   { id: "network", tier: "silver", title: "亲友满座", icon: "Relationship1", desc: "亲友记录达到 8 人。", score: 90, done: () => relationCount() >= 8, advice: "多去会友、酒楼、探亲，扩展人脉。" },
+  { id: "clan-hall", tier: "silver", title: "宗祠初成", icon: "Courtyard", desc: "修建第一阶宗祠。", score: 135, done: () => Number(state.clan?.hallLevel || 0) >= 1, advice: "在宗族家谱中捐资公中，再修建宗祠。" },
+  { id: "clan-branches", tier: "silver", title: "开枝散叶", icon: "FamilyIcon", desc: "宗族形成三房以上。", score: 150, done: () => (state.clan?.branches || []).length >= 3, advice: "兄弟分家、成年子女成婚后都会形成新的支房。" },
+  { id: "clan-network", tier: "silver", title: "族脉相连", icon: "Relationship1", desc: "族人之间形成五条长期关系。", score: 150, done: () => (state.clan?.relations || []).length >= 5, advice: "推进流年，让族人彼此结盟、提携、借贷或化解争端。" },
   { id: "healthy", tier: "silver", title: "身强体健", icon: "MedicineBag", desc: "体魄达到 85。", score: 80, done: () => state.stats.physique >= 85, advice: "去医馆调理，少碰风险活动。" },
   { id: "renown", tier: "silver", title: "一方闻名", icon: "Activity", desc: "名望达到 60。", score: 120, done: () => state.stats.favorability >= 60, advice: "处理官府事务、活动事件或积累善名。" },
   { id: "assets-three", tier: "silver", title: "田宅成基", icon: "House", desc: "拥有 3 处家产。", score: 130, done: () => (state.assets || []).length >= 3, advice: "重复购置田宅铺面，家业会越来越稳。" },
@@ -2171,6 +2192,7 @@ const LIFE_GOALS = [
   { id: "centenarian", tier: "gold", title: "百岁老人", icon: "MedicineBag", desc: "活到 100 岁。", score: 320, done: () => state.age >= 100, advice: "保住体魄，远离高风险事件。" },
   { id: "descendants-full", tier: "gold", title: "子孙满堂", icon: "FamilyIcon", desc: "拥有 6 名在世子女。", score: 260, done: () => livingChildren().length >= 6, advice: "成婚、养家、保住体魄，后半生更容易开枝散叶。" },
   { id: "clan-legacy", tier: "gold", title: "三世家声", icon: "FamilyIcon", desc: "家族传承到第 3 代。", score: 300, done: () => Number(state.lineage?.generation || 1) >= 3, advice: "死亡后选择子女承继，可以延续同一存档。" },
+  { id: "clan-flourish", tier: "gold", title: "望族成章", icon: "Courtyard", desc: "家声达到 85、宗祠三阶且三项族产都已建成。", score: 360, done: () => Number(state.clan?.prestige || 0) >= 85 && Number(state.clan?.hallLevel || 0) >= 3 && CLAN_PROJECTS.every((item) => Number(state.clan?.projects?.[item.id] || 0) >= 1), advice: "经营宗祠、家规、公中与三项族产，让一门真正成为地方望族。" },
   { id: "great-estate", tier: "gold", title: "广厦连甍", icon: "RoundDragonHouse", desc: "拥有 10 处家产或家产年入达到 600。", score: 300, done: () => (state.assets || []).length >= 10 || annualAssetIncome() >= 600, advice: "多买可重复房产，并逐步扩建。" },
   { id: "gold-hoard", tier: "gold", title: "金满箱奁", icon: "CashBox", desc: "钱财达到三万文。", score: 300, done: () => state.stats.money >= 30000, advice: "把营生、押镖、家产和买卖结合起来。" },
   { id: "all-stats", tier: "gold", title: "六艺俱优", icon: "MainBook", desc: "六项基础属性都达到 90。", score: 300, done: () => allStatsAt(90), advice: "读书、医馆、会友、活动要均衡经营。" },
@@ -2527,6 +2549,7 @@ function startLife() {
     femaleLife: { brothelEntries: 0, disguises: 0, exposures: 0, professionalShows: 0, disguiseActiveYear: -1, schoolStories: 0, schoolLastYear: -1 },
     official: createOfficialState(),
     lineage: { generation: 1, familyName: draft.family, ancestors: [] },
+    clan: createClanState(draft.family),
     life: { milestones: [], goals: [] },
     study: { prep: 0, lastYear: -1 },
     gamble: createGambleRound(50),
@@ -2658,6 +2681,8 @@ function normalizeState(raw) {
   next.caravanMemory = normalizeCaravanMemory(next.caravanMemory);
   next.pendingCaravan = normalizeCaravanRun(next.pendingCaravan, next.age);
   next.family = normalizeFamily(next.family, next.name.slice(0, 1));
+  next.clan = normalizeClanState(next.clan, next.lineage?.familyName || next.name.slice(0, 1));
+  syncClanBranches(next);
   next.familyStories = normalizeFamilyStories(next.familyStories);
   next.templeFortune = normalizeTempleFortune(next.templeFortune);
   next.underworld = normalizeUnderworld(next.underworld);
@@ -3458,6 +3483,151 @@ function normalizeLineage(lineage, familyName) {
     familyName: source.familyName || familyName,
     ancestors: Array.isArray(source.ancestors) ? source.ancestors.slice(0, 12) : [],
   };
+}
+
+function createClanState(familyName = "李") {
+  return {
+    familyName,
+    prestige: 22,
+    cohesion: 58,
+    treasury: 0,
+    hallLevel: 0,
+    activeRules: [],
+    projects: { farmland: 0, school: 0, granary: 0 },
+    branches: [],
+    relations: [],
+    chronicle: [],
+    lastAdvancedYear: -1,
+    lastCouncilYear: -1,
+    councils: 0,
+  };
+}
+
+function normalizeClanState(source, familyName = "李") {
+  const base = source && typeof source === "object" ? source : {};
+  const defaults = createClanState(familyName);
+  const validRules = new Set(CLAN_RULES.map((item) => item.id));
+  const normalizeBranch = (branch, index) => ({
+    id: String(branch?.id || `clan-branch-${index}`),
+    name: String(branch?.name || `${familyName}氏支房`),
+    leaderId: String(branch?.leaderId || ""),
+    leaderName: String(branch?.leaderName || "族中长者"),
+    origin: String(branch?.origin || "分房另居"),
+    wealth: clampNumber(branch?.wealth, 0, 100, 35),
+    influence: clampNumber(branch?.influence, 0, 100, 25),
+    cohesion: clampNumber(branch?.cohesion, 0, 100, 55),
+    establishedGeneration: Math.max(1, Math.round(Number(branch?.establishedGeneration) || 1)),
+    memberIds: Array.isArray(branch?.memberIds) ? [...new Set(branch.memberIds.map(String).filter(Boolean))].slice(0, 12) : [],
+  });
+  const relations = Array.isArray(base.relations) ? base.relations : [];
+  return {
+    ...defaults,
+    ...base,
+    familyName: String(base.familyName || familyName),
+    prestige: clampNumber(base.prestige, 0, 100, defaults.prestige),
+    cohesion: clampNumber(base.cohesion, 0, 100, defaults.cohesion),
+    treasury: Math.max(0, Math.round(Number(base.treasury) || 0)),
+    hallLevel: clampNumber(Math.round(Number(base.hallLevel) || 0), 0, 3, 0),
+    activeRules: Array.isArray(base.activeRules) ? [...new Set(base.activeRules.map(String).filter((id) => validRules.has(id)))].slice(0, 2) : [],
+    projects: Object.fromEntries(CLAN_PROJECTS.map((project) => [project.id, clampNumber(Math.round(Number(base.projects?.[project.id]) || 0), 0, 3, 0)])),
+    branches: Array.isArray(base.branches) ? base.branches.filter((item) => item && typeof item === "object").map(normalizeBranch).slice(0, 24) : [],
+    relations: relations.filter((item) => item && typeof item === "object" && item.fromId && item.toId).map((item) => ({
+      id: String(item.id || [item.fromId, item.toId].sort().join("::")),
+      fromId: String(item.fromId),
+      fromName: String(item.fromName || "族人"),
+      toId: String(item.toId),
+      toName: String(item.toName || "族人"),
+      type: ["同盟", "龃龉", "提携", "借贷", "姻亲", "和解"].includes(item.type) ? item.type : "往来",
+      score: clampNumber(item.score, -100, 100, 0),
+      text: String(item.text || "族人之间有了新的往来。"),
+      year: Number.isFinite(Number(item.year)) ? Number(item.year) : 0,
+      generation: Math.max(1, Math.round(Number(item.generation) || 1)),
+    })).slice(0, 48),
+    chronicle: Array.isArray(base.chronicle) ? base.chronicle.filter((item) => item && typeof item === "object").map((item) => ({
+      year: Number(item.year || 0), generation: Math.max(1, Number(item.generation || 1)), title: String(item.title || "宗族纪事"), text: String(item.text || "")
+    })).slice(0, 48) : [],
+    lastAdvancedYear: Number.isFinite(Number(base.lastAdvancedYear)) ? Number(base.lastAdvancedYear) : -1,
+    lastCouncilYear: Number.isFinite(Number(base.lastCouncilYear)) ? Number(base.lastCouncilYear) : -1,
+    councils: Math.max(0, Math.round(Number(base.councils) || 0)),
+  };
+}
+
+function clanPersonId(person) {
+  return String(person?.id || person?.name || "");
+}
+
+function clanPeople(host = state) {
+  if (!host?.family) return [];
+  const children = host.family.children || [];
+  const people = [
+    host.family.father,
+    host.family.mother,
+    ...(host.family.siblings || []),
+    host.family.spouseMeta,
+    ...(host.family.concubines || []),
+    ...children,
+    ...children.flatMap((child) => [child.spouse, ...(child.grandchildren || [])]),
+  ].filter((person) => person && person.alive !== false);
+  const seen = new Set();
+  return people.filter((person) => {
+    const id = clanPersonId(person);
+    if (!id || seen.has(id)) return false;
+    seen.add(id);
+    return true;
+  });
+}
+
+function syncClanBranches(host = state) {
+  if (!host?.clan || !host?.family) return;
+  const existing = new Map((host.clan.branches || []).map((branch) => [branch.id, branch]));
+  const generation = Math.max(1, Number(host.lineage?.generation || 1));
+  const mainId = "clan-main-house";
+  const main = existing.get(mainId) || {
+    id: mainId, name: `${host.clan.familyName || host.name?.slice(0, 1) || "李"}氏主房`, leaderId: "player", leaderName: host.name || "主事人", origin: "承继祖业", wealth: 55, influence: 45, cohesion: 70, establishedGeneration: generation, memberIds: [],
+  };
+  main.leaderName = host.name || main.leaderName;
+  main.establishedGeneration = Math.min(main.establishedGeneration || generation, generation);
+  main.memberIds = [host.family.spouseMeta, ...(host.family.children || [])].filter(Boolean).map(clanPersonId).filter(Boolean).slice(0, 12);
+  existing.set(mainId, main);
+
+  const branchCandidates = [
+    ...(host.family.siblings || []).filter((person) => person.householdSeparated || person.marriedTo),
+    ...(host.family.children || []).filter((person) => person.spouse && person.alive !== false),
+  ];
+  for (const person of branchCandidates) {
+    const personId = clanPersonId(person);
+    if (!personId) continue;
+    const id = `clan-branch-${personId}`;
+    const branch = existing.get(id) || {
+      id,
+      name: `${person.name}房`,
+      leaderId: personId,
+      leaderName: person.name,
+      origin: person.id?.startsWith?.("child-") ? "子女成婚开房" : "兄弟姊妹分房",
+      wealth: clampNumber(person.wealth, 0, 100, randInt(28, 58)),
+      influence: clampNumber(person.influence, 0, 100, randInt(18, 48)),
+      cohesion: clampNumber(person.affection, 0, 100, 58),
+      establishedGeneration: generation,
+      memberIds: [],
+    };
+    branch.leaderName = person.name;
+    branch.memberIds = [person.spouse, ...(person.grandchildren || [])].filter(Boolean).map(clanPersonId).filter(Boolean).slice(0, 12);
+    existing.set(id, branch);
+  }
+  host.clan.branches = [...existing.values()].slice(0, 24);
+}
+
+function carryClanAcrossInheritance(source, startYear, newLeader, familyName, generation = Math.max(1, Number(state?.lineage?.generation || 1))) {
+  const clan = normalizeClanState(JSON.parse(JSON.stringify(source || createClanState(familyName))), familyName);
+  clan.familyName = familyName || clan.familyName;
+  clan.lastAdvancedYear = Number(startYear) - 1;
+  clan.lastCouncilYear = -1;
+  const main = clan.branches.find((branch) => branch.id === "clan-main-house");
+  if (main) main.leaderName = newLeader;
+  clan.branches = clan.branches.filter((branch) => branch.id === "clan-main-house" || branch.leaderName !== newLeader);
+  clan.chronicle.unshift({ year: Number(startYear), generation: Math.max(1, Number(generation || 1)), title: "门户承继", text: `${newLeader}接过宗族账簿、家规与宗祠香火。` });
+  clan.chronicle = clan.chronicle.slice(0, 48);
+  return clan;
 }
 
 function normalizeCricket(cricket) {
@@ -4737,6 +4907,231 @@ function advanceNpcAgencyYear(deltas = []) {
   }
 }
 
+function addClanChronicle(title, text) {
+  if (!state.clan || typeof state.clan !== "object") state.clan = createClanState(state.lineage?.familyName || state.name.slice(0, 1));
+  if (!Array.isArray(state.clan.chronicle)) state.clan.chronicle = [];
+  state.clan.chronicle.unshift({ year: state.year, generation: Number(state.lineage?.generation || 1), title, text });
+  state.clan.chronicle = state.clan.chronicle.slice(0, 48);
+}
+
+function upsertClanRelation(first, second, type, score, text) {
+  if (!first || !second) return null;
+  const firstId = clanPersonId(first);
+  const secondId = clanPersonId(second);
+  if (!firstId || !secondId || firstId === secondId) return null;
+  const pair = [firstId, secondId].sort();
+  const id = pair.join("::");
+  let edge = state.clan.relations.find((item) => item.id === id);
+  if (!edge) {
+    edge = { id, fromId: firstId, fromName: first.name, toId: secondId, toName: second.name, type, score: 0, text, year: state.year, generation: Number(state.lineage?.generation || 1) };
+    state.clan.relations.unshift(edge);
+  }
+  edge.type = type;
+  edge.score = clampNumber(Number(edge.score || 0) + Number(score || 0), -100, 100, 0);
+  edge.text = text;
+  edge.year = state.year;
+  edge.generation = Number(state.lineage?.generation || 1);
+  edge.fromName = first.name;
+  edge.toName = second.name;
+  state.clan.relations = state.clan.relations.slice(0, 48);
+  return edge;
+}
+
+function advanceClanRelationshipYear() {
+  const candidates = clanPeople().filter((person) => Number(person.age || 0) >= 12);
+  if (candidates.length < 2 || Math.random() > 0.66) return;
+  const first = sample(candidates);
+  const second = sample(candidates.filter((person) => clanPersonId(person) !== clanPersonId(first)));
+  if (!first || !second) return;
+  ensureNpcAgency(first);
+  ensureNpcAgency(second);
+  const roll = Math.random();
+  let type = "同盟";
+  let score = 8;
+  let text = `${first.name}与${second.name}一同料理祭田，两房来往渐密。`;
+  if (roll < 0.2) {
+    type = "提携";
+    score = 10;
+    const elder = Number(first.age || 0) >= Number(second.age || 0) ? first : second;
+    const younger = elder === first ? second : first;
+    elder.wealth = clamp(Number(elder.wealth || 40) - 3);
+    younger.influence = clamp(Number(younger.influence || 20) + 5);
+    text = `${elder.name}看重${younger.name}的志向，替其引见门路、补足束脩，族中多称这是一段提携之谊。`;
+  } else if (roll < 0.4) {
+    type = "借贷";
+    score = 4;
+    first.wealth = clamp(Number(first.wealth || 40) - 4);
+    second.wealth = clamp(Number(second.wealth || 40) + 5);
+    text = `${second.name}一时周转不开，${first.name}从自家账上借出一笔钱。人情已经记下，日后还不还得清仍未可知。`;
+  } else if (roll < 0.58) {
+    type = "龃龉";
+    score = -12;
+    first.affection = clamp(Number(first.affection || 60) - 3);
+    second.affection = clamp(Number(second.affection || 60) - 3);
+    state.clan.cohesion = clamp(state.clan.cohesion - 3);
+    text = `${first.name}与${second.name}为祭田收成和座次争执不下。话虽被族老劝住，两房心里都留下了疙瘩。`;
+  } else {
+    const existing = state.clan.relations.find((item) => item.id === [clanPersonId(first), clanPersonId(second)].sort().join("::"));
+    if (existing?.score < 0) {
+      type = "和解";
+      score = 14;
+      state.clan.cohesion = clamp(state.clan.cohesion + 3);
+      text = `${first.name}与${second.name}在宗祠长谈，把旧日争执逐条说开，终于重新同席饮茶。`;
+    }
+  }
+  upsertClanRelation(first, second, type, score, text);
+  rememberNpcMoment(first, "族中往来", text, score > 0 ? 1 : -1);
+  rememberNpcMoment(second, "族中往来", text, score > 0 ? 1 : -1);
+  addClanChronicle(`${type} · ${first.name}与${second.name}`, text);
+}
+
+function advanceClanYear(deltas = []) {
+  state.clan = normalizeClanState(state.clan, state.lineage?.familyName || state.name.slice(0, 1));
+  if (Number(state.clan.lastAdvancedYear) === Number(state.year)) return;
+  syncClanBranches();
+  const clan = state.clan;
+  const branchCount = Math.max(0, clan.branches.length - 1);
+  const farmland = Number(clan.projects.farmland || 0);
+  const school = Number(clan.projects.school || 0);
+  const granary = Number(clan.projects.granary || 0);
+  let income = farmland * 12 + clan.hallLevel * 4 + branchCount * 2;
+  if (clan.activeRules.includes("commerce")) income += 18 + branchCount * 3;
+  const upkeep = clan.activeRules.reduce((sum, id) => sum + Number(CLAN_RULES.find((rule) => rule.id === id)?.cost || 0), 0) + clan.hallLevel * 2;
+  const beforeTreasury = clan.treasury;
+  clan.treasury = Math.max(0, Math.round(clan.treasury + income - upkeep));
+  if (clan.activeRules.includes("education")) {
+    const descendants = [...(state.family.children || []), ...(state.family.children || []).flatMap((child) => child.grandchildren || [])].filter((person) => person.alive !== false);
+    for (const child of descendants) child.study = clamp(Number(child.study || 0) + 2 + school);
+    clan.prestige = clamp(clan.prestige + 1 + school);
+  }
+  if (clan.activeRules.includes("relief")) clan.cohesion = clamp(clan.cohesion + 3 + granary);
+  if (clan.activeRules.includes("seniority")) clan.cohesion = clamp(clan.cohesion + 2);
+  if (clan.activeRules.includes("independence")) {
+    for (const branch of clan.branches.filter((item) => item.id !== "clan-main-house")) branch.wealth = clamp(branch.wealth + randInt(1, 4));
+    clan.cohesion = clamp(clan.cohesion - 1);
+  }
+  if (clan.activeRules.includes("reputation")) clan.prestige = clamp(clan.prestige + 3);
+  if (granary && Number(state.dynasty?.local?.disaster || 0) >= 40) {
+    clan.cohesion = clamp(clan.cohesion + granary * 2);
+    clan.prestige = clamp(clan.prestige + granary);
+    addClanChronicle("开仓济困", `地方灾情渐重，${clan.familyName}氏义仓按册放粮，各房与邻里都得了接济。`);
+  }
+  if (clan.hallLevel) clan.prestige = clamp(clan.prestige + clan.hallLevel);
+  advanceClanRelationshipYear();
+  clan.lastAdvancedYear = state.year;
+  if (clan.treasury !== beforeTreasury) deltas.push({ label: "宗族公中", value: clan.treasury - beforeTreasury, negative: clan.treasury < beforeTreasury });
+}
+
+function clanActionResult(title, text, deltas = []) {
+  unlockLifeGoals();
+  finishAction(title, text, deltas, "Courtyard");
+}
+
+function donateToClan(amount) {
+  amount = Math.max(0, Math.round(Number(amount) || 0));
+  if (!amount || state.age < 15 || state.stats.money < amount || state.dead || state.prisonYears > 0) return;
+  const deltas = [];
+  changeStat("money", -amount, deltas);
+  state.clan.treasury += amount;
+  state.clan.prestige = clamp(state.clan.prestige + Math.max(1, Math.floor(amount / 250)));
+  addLedger("捐入族中公账", -amount, `交由${state.clan.familyName}氏宗族公中支用。`);
+  addClanChronicle("捐资公中", `${state.name}捐入 ${moneyText(amount)}，用于宗祠、族产与周济各房。`);
+  clanActionResult("捐资宗族", `你把 ${moneyText(amount)}交给族中账房，当众记入公账。往后修祠、办学与赈济，都有了一份根基。`, deltas);
+}
+
+function toggleClanRule(id) {
+  const rule = CLAN_RULES.find((item) => item.id === id);
+  if (!rule || state.age < 15 || state.dead || state.prisonYears > 0) return;
+  const active = state.clan.activeRules;
+  if (active.includes(id)) state.clan.activeRules = active.filter((item) => item !== id);
+  else if (active.length < 2) state.clan.activeRules.push(id);
+  else return clanActionResult("家规未改", "一门同时最多奉行两条核心家规。若要另立新规，需先撤下一条旧规。", [{ label: "家规", value: "至多两条", negative: true }]);
+  const enabled = state.clan.activeRules.includes(id);
+  state.clan.cohesion = clamp(state.clan.cohesion + (enabled ? 1 : -1));
+  addClanChronicle(enabled ? "立下家规" : "撤下家规", `${state.name}${enabled ? "召集各房，共同立下" : "经族议暂撤"}“${rule.name}”。`);
+  clanActionResult(enabled ? "家规落印" : "家规更易", `${rule.motto}。${enabled ? "从今往后，各房流年都会受到这条家规影响。" : "旧规收回族谱附页，给新的治家方向让出位置。"}`, [{ label: "家规", value: enabled ? rule.name : `撤下${rule.name}` }]);
+}
+
+function upgradeClanHall() {
+  const nextLevel = Number(state.clan.hallLevel || 0) + 1;
+  const cost = CLAN_HALL_COSTS[nextLevel];
+  if (!cost || state.clan.treasury < cost || state.age < 15 || state.dead || state.prisonYears > 0) return;
+  state.clan.treasury -= cost;
+  state.clan.hallLevel = nextLevel;
+  state.clan.prestige = clamp(state.clan.prestige + 8 + nextLevel * 2);
+  state.clan.cohesion = clamp(state.clan.cohesion + 5);
+  addClanChronicle("营建宗祠", `${state.name}主持修成第${nextLevel}阶宗祠，神主、祭器与族谱从此有了安放之所。`);
+  clanActionResult("宗祠升阶", `梁木落位，匾额高悬。${state.clan.familyName}氏宗祠已达 ${nextLevel}/3 阶，各房共同祭祖，也更愿在大事上听取族议。`, [{ label: "公中钱", value: -cost, negative: true }, { label: "家声", value: 8 + nextLevel * 2 }]);
+}
+
+function upgradeClanProject(id) {
+  const project = CLAN_PROJECTS.find((item) => item.id === id);
+  const current = Number(state.clan.projects?.[id] || 0);
+  const cost = project?.costs?.[current];
+  if (!project || !cost || state.clan.treasury < cost || state.age < 15 || state.dead || state.prisonYears > 0) return;
+  state.clan.treasury -= cost;
+  state.clan.projects[id] = current + 1;
+  state.clan.prestige = clamp(state.clan.prestige + 4 + current * 2);
+  if (id === "granary") state.clan.cohesion = clamp(state.clan.cohesion + 4);
+  addClanChronicle(`扩建${project.name}`, `${state.name}动用公中 ${moneyText(cost)}，将${project.name}经营到第 ${current + 1} 阶。`);
+  clanActionResult(`${project.name}扩建`, `${project.note}如今已达 ${current + 1}/3 阶，往后的年度结算会持续产生宗族收益。`, [{ label: "公中钱", value: -cost, negative: true }, { label: project.name, value: current + 1 }]);
+}
+
+function startClanCouncil() {
+  if (state.age < 15 || state.dead || state.prisonYears > 0 || state.clan.lastCouncilYear === state.year) return;
+  syncClanBranches();
+  const dispute = state.clan.relations.find((item) => item.score < 0);
+  const subject = dispute ? `${dispute.fromName}与${dispute.toName}的旧隙` : state.clan.projects.school ? "族学束脩与各房出资" : "公中钱该先用于何处";
+  state.currentEvent = {
+    id: `clan-council-${state.year}`,
+    kind: "clanCouncil",
+    title: "宗祠合族议事",
+    content: `各房在宗祠依次落座。今日要议的是${subject}。你身为主事人，必须给出一条能让众人带回各房的说法。`,
+    icon: "Courtyard",
+    children: [
+      { id: "harmony", title: "先息争端，共修族谱", note: "重人情与秩序 · 凝聚大增", content: "你让有旧隙的两房当面陈词，再由族老逐条裁断。酒过三巡，至少表面上重新坐回了一张桌。", clanEffects: { cohesion: 11, prestige: 2 } },
+      { id: "school", title: "优先补足族学束脩", note: `重长远教养 · 需公中 ${moneyText(120)}`, content: "你把公中账簿摊开，先拨出师资与纸墨钱。各房不论贫富，适龄子弟都可按日入学。", cost: 120, clanEffects: { prestige: 8, cohesion: 3 }, disabled: state.clan.treasury < 120 },
+      { id: "branches", title: "按各房人口分配红利", note: `重眼前公平 · 需公中 ${moneyText(90)}`, content: "你按各房人口、年景与困顿程度分配公中余钱。有人嫌少，但无人能说账目不清。", cost: 90, clanEffects: { cohesion: 7, prestige: 1 }, disabled: state.clan.treasury < 90 },
+    ],
+  };
+  save();
+  render();
+}
+
+function resolveClanCouncil(event, choice) {
+  const deltas = [];
+  if (choice.cost) {
+    if (state.clan.treasury < choice.cost) return;
+    state.clan.treasury -= choice.cost;
+    deltas.push({ label: "公中钱", value: -choice.cost, negative: true });
+  }
+  state.clan.cohesion = clamp(state.clan.cohesion + Number(choice.clanEffects?.cohesion || 0));
+  state.clan.prestige = clamp(state.clan.prestige + Number(choice.clanEffects?.prestige || 0));
+  if (choice.id === "school") {
+    const descendants = [...(state.family.children || []), ...(state.family.children || []).flatMap((child) => child.grandchildren || [])].filter((person) => person.alive !== false);
+    for (const child of descendants) child.study = clamp(Number(child.study || 0) + 5);
+    deltas.push({ label: "子孙学业", value: 5 });
+  }
+  if (choice.id === "branches") for (const branch of state.clan.branches) branch.cohesion = clamp(branch.cohesion + 5);
+  if (choice.id === "harmony") {
+    for (const edge of state.clan.relations.filter((item) => item.score < 0)) {
+      edge.score = Math.min(0, edge.score + 14);
+      if (edge.score >= 0) edge.type = "和解";
+    }
+  }
+  state.clan.lastCouncilYear = state.year;
+  state.clan.councils += 1;
+  deltas.push({ label: "宗族凝聚", value: Number(choice.clanEffects?.cohesion || 0) });
+  addClanChronicle(`族议 · ${choice.title}`, choice.content);
+  state.currentEvent = null;
+  state.lastDeltas = deltas;
+  state.eventResult = { title: choice.title, text: `${choice.content} 此议写入族谱议事册，来年各房都会看见结果。`, deltas, icon: "Courtyard", scene: "incense" };
+  addLog("宗族议事", choice.content, deltas);
+  unlockLifeGoals();
+  save();
+  render();
+}
+
 function worldArcCandidates() {
   const world = state.dynasty;
   const available = Object.keys(WORLD_ARCS).filter((id) => !world.completedArcs.includes(id));
@@ -4899,6 +5294,7 @@ function nextYear() {
       changeStat("mood", -randInt(1, 4), state.lastDeltas);
       changeStat("physique", randInt(-4, -1), state.lastDeltas);
       advanceFamilyYear(state.lastDeltas);
+      advanceClanYear(state.lastDeltas);
       advanceNpcAgencyYear(state.lastDeltas);
       advanceCricketYear(state.lastDeltas);
       if (shouldDie()) {
@@ -4927,6 +5323,7 @@ function nextYear() {
     applyWorldAnnualImpact(state.lastDeltas);
     if (state.diseases.length) changeStat("physique", -state.diseases.length, state.lastDeltas);
     advanceFamilyYear(state.lastDeltas);
+    advanceClanYear(state.lastDeltas);
     if (typeof applySpouseProfileYear === "function") applySpouseProfileYear(state.lastDeltas);
     advanceCricketYear(state.lastDeltas);
     if (typeof runSecretYear === "function") runSecretYear(state.lastDeltas);
@@ -4992,6 +5389,7 @@ function finishYear(runAftermath = true) {
 
 function runAnnualAftermath(deltas = state.lastDeltas) {
   advanceFamilyYear(deltas);
+  advanceClanYear(deltas);
   advanceCricketYear(deltas);
   annualSurpriseEvent(deltas);
 }
@@ -5928,6 +6326,7 @@ function chooseOption(index) {
     if (event.kind === "culturalEvent") return resolveCulturalEvent(event, choice);
     if (event.kind === "worldArc") return resolveWorldArcEvent(event, choice);
     if (event.kind === "femaleSchool") return resolveFemaleSchoolEvent(event, choice);
+    if (event.kind === "clanCouncil") return resolveClanCouncil(event, choice);
 
     const deltas = applyResults(choice.results || []);
     state.lastDeltas = mergeDeltas(state.pendingActivity?.deltas, deltas);
@@ -10242,6 +10641,7 @@ function inheritFromChild(id) {
       familyName,
       ancestors,
     },
+    clan: carryClanAcrossInheritance(state.clan, startAge, heir.name, familyName, generation + generationStep),
     life: { milestones: [], goals: [] },
     study: { prep: Math.floor(heirStudy / 4), lastYear: -1 },
     gamble: createGambleRound(50),
@@ -10350,6 +10750,7 @@ function inheritFromSpouse(heir) {
     femaleSkills: { 诗书: Math.max(0, Math.floor(Number(heir.study || 35) / 20)) },
     official: createOfficialState(),
     lineage: { generation, familyName: old.lineage?.familyName || oldName.slice(0, 1), ancestors },
+    clan: carryClanAcrossInheritance(old.clan, heirAge, heir.name, old.lineage?.familyName || oldName.slice(0, 1), generation),
     life: { milestones: [], goals: [] },
     study: { prep: Math.floor(Number(heir.study || 35) / 5), lastYear: -1 },
     family: {
@@ -12412,6 +12813,7 @@ function centerContent() {
   if (view.page === "codex") return codexView();
   if (view.page === "culture") return cultureView();
   if (view.page === "world") return worldView();
+  if (view.page === "clan") return clanView();
   if (view.page === "gamble") return gambleView();
   if (view.page === "miniGames") return miniGamesView();
   if (view.page === "courtesanContest") return courtesanContestView();
@@ -12613,6 +13015,107 @@ function worldPulseView() {
     </button>`;
 }
 
+function clanPulseView() {
+  syncClanBranches();
+  const clan = state.clan;
+  const latest = clan.chronicle[0];
+  return `
+    <button class="clan-pulse" data-door="clan">
+      <span class="clan-seal">${escapeHtml(clan.familyName)}氏</span>
+      <span><small>宗族家谱 · ${clan.branches.length} 房 · ${clan.relations.length} 条族脉</small><strong>${escapeHtml(latest?.title || "宗祠香火尚待经营")}</strong></span>
+      <em>家声 ${Math.round(clan.prestige)} · 凝聚 ${Math.round(clan.cohesion)}</em>
+    </button>`;
+}
+
+function clanTreeNode(person, fallbackRelation = "族人") {
+  if (!person) return "";
+  const name = person.name || "未具名";
+  const relation = person.relation || fallbackRelation;
+  const detail = person.alive === false ? "已故" : Number.isFinite(Number(person.age)) ? `${Math.round(person.age)}岁` : "在世";
+  return `<article class="genealogy-person ${person.alive === false ? "deceased" : ""}"><b>${escapeHtml(name)}</b><span>${escapeHtml(relation)} · ${escapeHtml(detail)}</span></article>`;
+}
+
+function clanView() {
+  state.clan = normalizeClanState(state.clan, state.lineage?.familyName || state.name.slice(0, 1));
+  syncClanBranches();
+  const clan = state.clan;
+  const generation = Math.max(1, Number(state.lineage?.generation || 1));
+  const hallNext = clan.hallLevel < 3 ? CLAN_HALL_COSTS[clan.hallLevel + 1] : 0;
+  const adultBlocked = state.age < 15 || state.dead || state.prisonYears > 0;
+  const parents = [state.family.father, state.family.mother].filter(Boolean);
+  const partners = [state.family.spouseMeta, ...(state.family.concubines || [])].filter(Boolean);
+  const children = state.family.children || [];
+  const descendants = children.flatMap((child) => child.grandchildren || []);
+  const ancestors = state.lineage?.ancestors || [];
+  return `
+    <article class="play-card clan-dashboard">
+      <div class="clan-hero">
+        <div class="clan-emblem"><small>宗族</small><strong>${escapeHtml(clan.familyName)}</strong><span>第${generation}代</span></div>
+        <section><p class="eyebrow">宗族经营 · 家谱传承</p><h2>${escapeHtml(clan.familyName)}氏宗族</h2><p>主角之外，每位亲人也会经营自己的营生、婚姻与人情。兄弟分家、子女成婚会形成支房；族人之间的提携、借贷与争执，会逐年写入族谱。</p></section>
+      </div>
+      <div class="clan-metrics">
+        <article class="clan-metric"><span>家声</span><strong>${Math.round(clan.prestige)}</strong><small>乡里与各房对门楣的评价</small></article>
+        <article class="clan-metric"><span>凝聚</span><strong>${Math.round(clan.cohesion)}</strong><small>决定争端、援助与族议结果</small></article>
+        <article class="clan-metric"><span>公中钱</span><strong>${moneyText(clan.treasury, { compact: true })}</strong><small>只用于宗祠、族产和周济</small></article>
+        <article class="clan-metric"><span>支房</span><strong>${clan.branches.length}</strong><small>${clan.relations.length} 条长期关系</small></article>
+      </div>
+      <div class="clan-actions">
+        <button class="secondary-btn" data-clan-donate="100" ${adultBlocked || state.stats.money < 100 ? "disabled" : ""}>捐入公中 · ${moneyText(100)}</button>
+        <button class="secondary-btn" data-clan-donate="500" ${adultBlocked || state.stats.money < 500 ? "disabled" : ""}>厚捐 · ${moneyText(500)}</button>
+        <button class="primary-btn" data-action="clan-council" ${adultBlocked || clan.lastCouncilYear === state.year ? "disabled" : ""}>${clan.lastCouncilYear === state.year ? "今岁族议已毕" : "召集合族议事"}</button>
+        <button class="ghost-btn" data-action="back-main">返回流年</button>
+      </div>
+    </article>
+
+    <section class="genealogy-section">
+      <div class="section-title"><h2>族谱世系</h2><span>上溯 ${ancestors.length} 代记名 · 下见 ${descendants.length} 名孙辈</span></div>
+      <div class="genealogy-tree">
+        ${ancestors.length ? `<div class="genealogy-level ancestors"><small>先人</small>${ancestors.slice(0, 4).map((person) => clanTreeNode({ ...person, relation: "先祖", alive: false })).join("")}</div>` : ""}
+        <div class="genealogy-level parents"><small>尊亲</small>${parents.map((person) => clanTreeNode(person)).join("") || `<span class="empty-note">尊亲名讳未录</span>`}</div>
+        <div class="genealogy-level current"><small>本代</small>${clanTreeNode({ id: "player", name: state.name, relation: "主事人", age: state.age, alive: !state.dead })}${partners.map((person) => clanTreeNode(person, "配偶")).join("")}</div>
+        ${children.length ? `<div class="genealogy-level children"><small>子女与姻亲</small>${children.map((child) => `${clanTreeNode(child)}${child.spouse ? clanTreeNode(child.spouse) : ""}`).join("")}</div>` : ""}
+        ${descendants.length ? `<div class="genealogy-level descendants"><small>孙辈</small>${descendants.map((person) => clanTreeNode(person)).join("")}</div>` : ""}
+      </div>
+    </section>
+
+    <section class="clan-management-grid">
+      <article class="clan-hall-card">
+        <span>香火中枢</span><h3>宗祠 ${clan.hallLevel}/3 阶</h3>
+        <p>${clan.hallLevel ? "神主、祭器与族谱已有固定之所。宗祠每年提升家声，也让各房更愿共同议事。" : "目前只在家中设一方简案。修建宗祠后，祭祖、族议与家谱才有真正的公共空间。"}</p>
+        <div class="hall-steps">${[1, 2, 3].map((level) => `<i class="${level <= clan.hallLevel ? "built" : ""}">${level}</i>`).join("")}</div>
+        <button class="primary-btn" data-action="clan-hall-upgrade" ${adultBlocked || !hallNext || clan.treasury < hallNext ? "disabled" : ""}>${hallNext ? `修至 ${clan.hallLevel + 1} 阶 · ${moneyText(hallNext)}` : "宗祠已臻完备"}</button>
+      </article>
+      <article class="clan-rule-panel">
+        <span>家规 · 至多同时奉行两条</span><h3>${clan.activeRules.length ? clan.activeRules.map((id) => CLAN_RULES.find((rule) => rule.id === id)?.name).filter(Boolean).join("、") : "尚未立下核心家规"}</h3>
+        <div class="clan-rule-grid">${CLAN_RULES.map((rule) => `<button class="clan-rule ${clan.activeRules.includes(rule.id) ? "active" : ""}" data-clan-rule="${rule.id}" ${adultBlocked ? "disabled" : ""}><b>${escapeHtml(rule.name)}</b><span>${escapeHtml(rule.motto)}</span><small>${escapeHtml(rule.benefit)} · ${escapeHtml(rule.note)}</small></button>`).join("")}</div>
+      </article>
+    </section>
+
+    <section class="clan-project-section">
+      <div class="section-title"><h2>三项族产</h2><span>按年产生收益与保护</span></div>
+      <div class="clan-project-grid">${CLAN_PROJECTS.map((project) => {
+        const level = Number(clan.projects[project.id] || 0);
+        const cost = project.costs[level];
+        return `<article class="clan-project-card">${icon(project.icon, project.name)}<span><b>${escapeHtml(project.name)} ${level}/3</b><small>${escapeHtml(project.note)}</small></span><button class="text-btn" data-clan-project="${project.id}" ${adultBlocked || !cost || clan.treasury < cost ? "disabled" : ""}>${cost ? `扩建 · ${moneyText(cost)}` : "已完备"}</button></article>`;
+      }).join("")}</div>
+    </section>
+
+    <section class="clan-branch-section">
+      <div class="section-title"><h2>各房门户</h2><span>${clan.branches.length} 房入谱</span></div>
+      <div class="clan-branch-grid">${clan.branches.map((branch) => `<article class="clan-branch-card ${branch.id === "clan-main-house" ? "main" : ""}"><span>${escapeHtml(branch.origin)}</span><h3>${escapeHtml(branch.name)}</h3><p>主事：${escapeHtml(branch.leaderName)} · 财力 ${Math.round(branch.wealth)} · 声势 ${Math.round(branch.influence)}</p><div class="meter"><i style="width:${clamp(branch.cohesion)}%"></i></div><small>向心 ${Math.round(branch.cohesion)}</small></article>`).join("")}</div>
+    </section>
+
+    <section class="clan-network-section">
+      <div class="section-title"><h2>人物关系网</h2><span>不是所有关系都围着主角发生</span></div>
+      <div class="clan-network-list">${clan.relations.slice(0, 10).map((edge) => `<article class="clan-edge ${edge.score < 0 ? "conflict" : ""}"><b>${escapeHtml(edge.fromName)}</b><span><em>${escapeHtml(edge.type)}</em><i style="--edge:${Math.min(100, Math.abs(edge.score))}%"></i><small>${edge.score > 0 ? "+" : ""}${Math.round(edge.score)}</small></span><b>${escapeHtml(edge.toName)}</b><p>${escapeHtml(edge.text)}</p></article>`).join("") || `<p class="empty-note">族人之间尚未形成长期关系。推进流年后，他们会彼此提携、借贷、结盟，也可能生出龃龉。</p>`}</div>
+    </section>
+
+    <section class="log-preview clan-chronicle">
+      <div class="section-title"><h2>宗族纪事</h2><span>族议 ${clan.councils} 次</span></div>
+      ${clan.chronicle.slice(0, 10).map((item) => infoCard(`第${item.generation}代 · ${item.year}年 · ${item.title}`, item.text)).join("") || `<p class="empty-note">族谱新页尚空，第一次捐资、分房或族议会在这里落笔。</p>`}
+    </section>`;
+}
+
 function worldView() {
   state.dynasty = normalizeDynastyState(state.dynasty);
   const world = state.dynasty;
@@ -12680,6 +13183,7 @@ function overviewView() {
       </div>
     </article>
     ${worldPulseView()}
+    ${clanPulseView()}
     ${secretPulseView()}
     <section class="goal-strip">
       ${goals.map((goal) => `
@@ -15084,10 +15588,11 @@ function eventView(event) {
   const culturalEvent = event.kind === "culturalEvent";
   const worldEvent = event.kind === "worldArc";
   const femaleSchoolEvent = event.kind === "femaleSchool";
+  const clanEvent = event.kind === "clanCouncil";
   const darkEvent = ["examinerBribe", "underworldConsequence", "jianghuProphecy", "secretIntroduction"].includes(event.kind);
-  const eyebrow = worldEvent ? `${state.dynasty.eraName}${state.dynasty.reignYear}年 · 天下主线` : femaleSchoolEvent ? "女学 · 闺塾见闻" : prisonEvent ? `牢狱流年 · 余刑 ${state.prisonYears} 年` : culturalEvent ? `${CULTURAL_SEASONS[event.season]?.name || "四时"}时 · ${event.culturalType === "festival" ? "传统节日" : "二十四节气"}` : event.kind === "secretIntroduction" ? "奇闻暗线开启" : event.kind === "examinerBribe" ? "贡院暗局" : event.kind === "underworldConsequence" ? "旧账追门" : event.kind === "jianghuProphecy" ? "江湖命数" : official ? "官场考验" : familyStory ? "家事流年" : careerCase ? "本业专案" : fortuneEvent ? "签运应验" : "事件";
+  const eyebrow = worldEvent ? `${state.dynasty.eraName}${state.dynasty.reignYear}年 · 天下主线` : clanEvent ? `${state.clan.familyName}氏 · 合族议事` : femaleSchoolEvent ? "女学 · 闺塾见闻" : prisonEvent ? `牢狱流年 · 余刑 ${state.prisonYears} 年` : culturalEvent ? `${CULTURAL_SEASONS[event.season]?.name || "四时"}时 · ${event.culturalType === "festival" ? "传统节日" : "二十四节气"}` : event.kind === "secretIntroduction" ? "奇闻暗线开启" : event.kind === "examinerBribe" ? "贡院暗局" : event.kind === "underworldConsequence" ? "旧账追门" : event.kind === "jianghuProphecy" ? "江湖命数" : official ? "官场考验" : familyStory ? "家事流年" : careerCase ? "本业专案" : fortuneEvent ? "签运应验" : "事件";
   return `
-    <article class="play-card event-card ${prisonEvent ? "prison-event" : ""} ${culturalEvent ? `culture-event season-${event.season}` : ""} ${worldEvent ? "world-event" : ""}">
+    <article class="play-card event-card ${prisonEvent ? "prison-event" : ""} ${culturalEvent ? `culture-event season-${event.season}` : ""} ${worldEvent ? "world-event" : ""} ${clanEvent ? "clan-event" : ""}">
       <p class="eyebrow">${eyebrow}</p>
       <h2>${escapeHtml(event.title || "事件")}</h2>
       <p>${formatText(fillPlaceholders(event.content || event.history || "", false))}</p>
@@ -15096,7 +15601,7 @@ function eventView(event) {
           options.length
             ? options.map(({ child, index }) => `<button class="choice-btn ${official || careerCase ? "official-choice" : ""}" data-choice="${index}" ${child.disabled ? "disabled" : ""}>
               <span>${escapeHtml(child.title || "继续")}</span>
-              ${(official || familyStory || careerCase || fortuneEvent || darkEvent || prisonEvent || culturalEvent || worldEvent || femaleSchoolEvent) && child.note ? `<small>${escapeHtml(child.note)}</small>` : ""}
+              ${(official || familyStory || careerCase || fortuneEvent || darkEvent || prisonEvent || culturalEvent || worldEvent || femaleSchoolEvent || clanEvent) && child.note ? `<small>${escapeHtml(child.note)}</small>` : ""}
             </button>`).join("")
             : `<button class="primary-btn" data-action="finish-event">继续</button>`
         }
@@ -15206,6 +15711,7 @@ function overviewPanel() {
       ${infoLine("促织", `${state.crickets.length} 只 · 胜 ${state.cricketRecord.wins || 0}`)}
       ${state.career && careerKind(state.career) === "official" ? infoLine("官评", `${officialTitle()} · 政绩 ${state.official.merit || 0}`) : ""}
       ${infoLine("亲友", `${relationCount()} 人`)}
+      ${infoLine("宗族", `${state.clan?.familyName || state.name.slice(0, 1)}氏 · ${state.clan?.branches?.length || 1}房 · 家声 ${Math.round(state.clan?.prestige || 0)}`)}
       ${infoLine("经历", `${state.log.length} 件事`)}
       <div class="goal-mini">
           <strong>已成成就 ${done.length}/${availableLifeGoals().length}</strong>
@@ -15643,6 +16149,11 @@ app.addEventListener("click", (event) => {
     return;
   }
   if (button.dataset.choice !== undefined) return chooseOption(Number(button.dataset.choice));
+  if (button.dataset.clanDonate) return donateToClan(button.dataset.clanDonate);
+  if (button.dataset.clanRule) return toggleClanRule(button.dataset.clanRule);
+  if (button.dataset.clanProject) return upgradeClanProject(button.dataset.clanProject);
+  if (button.dataset.action === "clan-hall-upgrade") return upgradeClanHall();
+  if (button.dataset.action === "clan-council") return startClanCouncil();
   if (button.dataset.examCheat) return prepareExamCheat(button.dataset.examCheat);
   if (button.dataset.mysteryInvestigate) return investigateMystery(button.dataset.mysteryInvestigate);
   if (button.dataset.mysteryAccuse) return accuseMystery(button.dataset.mysteryAccuse);
