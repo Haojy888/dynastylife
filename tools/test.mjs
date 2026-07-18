@@ -1680,6 +1680,112 @@ try {
   assert.deepEqual(clanSystems.ui, { metrics: 4, branches: 3, projects: 3, tree: 1, edges: 1, overflow: true }, "宗族页面缺少指标、族谱、支房、族产、关系网或发生移动端溢出");
   assert.deepEqual(clanSystems.inheritance, { hall: 1, school: 1, relations: 1, resetYear: 17, chronicle: "门户承继" }, "跨代承继没有保留宗祠、族产、人物关系与宗族纪事");
 
+  console.log("quality gate: verifying regional reputation, factions, settlement and local property links");
+  const regionalSystems = await page.evaluate(() => {
+    const snapshot = JSON.stringify(state);
+    const oldRandom = Math.random;
+    Math.random = () => 0.1;
+    const legacy = JSON.parse(snapshot);
+    legacy.location = "洛城";
+    delete legacy.regional;
+    const normalizedLegacy = normalizeState(legacy);
+    const oldSave = { residence: normalizedLegacy.regional.residenceId, regions: Object.keys(normalizedLegacy.regional.regions).length, factions: Object.keys(normalizedLegacy.regional.regions.luocheng.factionFavor).length };
+
+    state.age = 32;
+    state.year = 90;
+    state.dead = false;
+    state.prisonYears = 0;
+    state.currentEvent = null;
+    state.pendingAnnualEvent = null;
+    state.eventResult = null;
+    state.pendingAchievement = null;
+    state.pendingSurprise = null;
+    state.pendingCaravan = null;
+    state.stats.money = 12000;
+    state.stats.eq = 100;
+    state.stats.knowledge = 100;
+    state.location = "清平县";
+    state.regional = createRegionalState("qingping");
+    state.travelSystem = createTravelSystem();
+    state.travelSystem.memories = normalizeTravelSystem(state.travelSystem).memories;
+    state.regional.regions.yunzhou.reputation = 40;
+    state.pendingTravel = normalizeTravelRun({ id: "regional-arrival", destinationId: "yunzhou", origin: "清平县", index: 0, events: [], companionId: "alone", companionName: "独行", supplyId: "steady", quality: 72, spent: 35, history: [{ title: "启程", text: "你由清平前往云州。", ok: true }] });
+    completeTravelActivity("faction");
+    const arrival = { current: state.regional.currentId, location: state.location, reputation: state.regional.regions.yunzhou.reputation, favor: state.regional.regions.yunzhou.factionFavor.guild, contacts: state.friends.filter((friend) => friend.regionId === "yunzhou").length };
+    state.eventResult = null;
+    state.pendingAchievement = null;
+
+    const region = state.regional.regions.yunzhou;
+    region.lastActionYear = -1;
+    state.career = { name: "镖师行商", customKind: "caravan" };
+    interactRegionalFaction("yunzhou", "guild");
+    const factionVisit = { acted: region.lastActionYear === state.year, favor: region.factionFavor.guild, reputation: region.reputation };
+    state.eventResult = null;
+    state.pendingAchievement = null;
+    region.factionFavor.guild = 65;
+    region.reputation = 55;
+    formRegionalAlliance("yunzhou", "guild");
+    const alliance = state.regional.alliances.some((item) => item.regionId === "yunzhou" && item.factionId === "guild");
+    state.eventResult = null;
+    state.pendingAchievement = null;
+
+    state.assets = [];
+    buyAsset(0);
+    const regionalAsset = { regionId: state.assets[0].regionId, location: state.assets[0].location };
+    state.assets[0].condition = 100;
+    state.assets[0].level = 1;
+    state.assets[0].mode = "rent";
+    state.regional.regions.yunzhou.reputation = 0;
+    state.regional.alliances = [];
+    const lowIncome = annualAssetIncome();
+    state.regional.regions.yunzhou.reputation = 100;
+    state.regional.alliances = [{ regionId: "yunzhou", factionId: "guild", year: state.year }];
+    const highIncome = annualAssetIncome();
+
+    state.pendingTravel = normalizeTravelRun({ id: "regional-settle", destinationId: "yunzhou", origin: "云州", index: 0, events: [], companionId: "alone", companionName: "独行", supplyId: "steady", quality: 80, spent: 0, history: [] });
+    state.regional.regions.yunzhou.reputation = 50;
+    state.eventResult = null;
+    completeTravelActivity("settle");
+    const settlement = { residence: state.regional.residenceId, settled: state.regional.regions.yunzhou.settled, pending: state.pendingTravel };
+    state.eventResult = null;
+    state.pendingAchievement = null;
+
+    state.regional.regions.yunzhou.lastEventYear = -1;
+    const repBeforeEvent = state.regional.regions.yunzhou.reputation;
+    const localEvent = annualRegionalEvent();
+    state.currentEvent = localEvent;
+    resolveRegionalEvent(localEvent, localEvent.children[0]);
+    const eventResult = { kind: localEvent.kind, recorded: state.regional.regions.yunzhou.lastEventYear === state.year, reputationRaised: state.regional.regions.yunzhou.reputation > repBeforeEvent };
+    state.eventResult = null;
+    state.pendingAchievement = null;
+
+    view.page = "regions";
+    render();
+    const ui = { map: document.querySelectorAll(".regional-map-card").length, factions: document.querySelectorAll(".regional-faction-card").length, summary: document.querySelectorAll(".regional-summary span").length, overflow: document.documentElement.scrollWidth <= document.documentElement.clientWidth };
+    const carried = carryRegionalAcrossInheritance(state.regional, 18, "李承远");
+    const inheritance = { residence: carried.residenceId, regions: Object.keys(carried.regions).length, alliances: carried.alliances.length, resetYear: carried.lastAnnualYear, chronicle: carried.chronicle[0]?.title };
+
+    Math.random = oldRandom;
+    state = normalizeState(JSON.parse(snapshot));
+    view.page = "main";
+    view.overlay = "";
+    save();
+    render();
+    return { oldSave, arrival, factionVisit, alliance, regionalAsset, incomeLinked: highIncome > lowIncome, settlement, eventResult, ui, inheritance };
+  });
+  assert.deepEqual(regionalSystems.oldSave, { residence: "luocheng", regions: 8, factions: 2 }, "旧存档没有按所在地补齐八地声望与地方势力");
+  assert.equal(regionalSystems.arrival.current, "yunzhou", "旅行抵达后没有更新当前地域");
+  assert.equal(regionalSystems.arrival.location, "云州", "旅行抵达后没有更新所在地名称");
+  assert.ok(regionalSystems.arrival.reputation > 40 && regionalSystems.arrival.favor >= 8 && regionalSystems.arrival.contacts >= 1, "抵达后拜会地方势力没有增加声望、好感或联系人");
+  assert.ok(regionalSystems.factionVisit.acted && regionalSystems.factionVisit.favor > regionalSystems.arrival.favor && regionalSystems.factionVisit.reputation > regionalSystems.arrival.reputation, "本业拜会没有写入年度地方行动或势力关系");
+  assert.equal(regionalSystems.alliance, true, "势力好感与地方声望达标后无法结成盟友");
+  assert.deepEqual(regionalSystems.regionalAsset, { regionId: "yunzhou", location: "云州" }, "新购家产没有登记所在州府");
+  assert.equal(regionalSystems.incomeLinked, true, "地方声望与盟友没有提高当地产业收益");
+  assert.deepEqual(regionalSystems.settlement, { residence: "yunzhou", settled: true, pending: null }, "迁居没有更新家门、定居状态或清理旅行流程");
+  assert.deepEqual(regionalSystems.eventResult, { kind: "regionalEvent", recorded: true, reputationRaised: true }, "地方年度事件没有开启、结算或改变声望");
+  assert.deepEqual(regionalSystems.ui, { map: 8, factions: 2, summary: 4, overflow: true }, "九州声望页面缺少八地版图、势力卡片、总览或发生移动端溢出");
+  assert.deepEqual(regionalSystems.inheritance, { residence: "yunzhou", regions: 8, alliances: 1, resetYear: 17, chronicle: "地方人脉承继" }, "地域声望、盟友、定居地与纪事没有跨代继承");
+
   console.log("quality gate: stress-testing annual flow through late life");
   const annualStress = await page.evaluate(() => {
     state.age = 18;

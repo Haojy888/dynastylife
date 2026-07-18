@@ -905,6 +905,7 @@ const MAIN_DOORS = [
   { id: "world", label: "天下风云", icon: "Official", featured: true },
   { id: "home", label: "家中", icon: "FamilyIcon" },
   { id: "clan", label: "宗族家谱", icon: "Courtyard", featured: true },
+  { id: "regions", label: "九州声望", icon: "RepairCarriage", featured: true },
   { id: "assets", label: "家产", icon: "House" },
   { id: "relations", label: "亲友", icon: "FamilyIcon" },
   { id: "activities", label: "活动", icon: "Activity" },
@@ -1424,6 +1425,17 @@ const TRAVEL_DESTINATIONS = [
   { id: "sudi", name: "苏堤水乡", cost: 62, days: 5, risk: 14, note: "桥多水密，园林与丝坊闻名。", stat: "looks", icon: "Courtyard", landmark: "烟雨画桥", souvenir: "苏堤香囊", story: "画桥两岸粉墙黛瓦，雨落河面时最有江南意趣。", landmarks: ["jiangling-water","study-tour"] },
   { id: "qingya", name: "青崖山", cost: 48, days: 4, risk: 38, note: "山寺、药谷与险峰相连。", stat: "virtue", icon: "Temple", landmark: "云顶古寺", souvenir: "青崖平安结", story: "石阶穿云而上，半山药香与钟声常被雾气送来。", landmarks: ["study-tour","qingping-temple"] },
 ];
+
+const REGION_PROFILES = {
+  qingping: { epithet: "故里田畴", industry: "粮米、竹器与县学", custom: "乡里重宗族旧情，也最看一个人的日常名声。", settleCost: 180, incident: ["河渠争水", "两村争用春灌旧渠，县中乡绅与农户各执一词。"], factions: [{ id: "elders", name: "清平乡约", type: "乡绅", stat: "virtue", note: "主持乡约、祭田与赈济，最重德行家声。" }, { id: "clerks", name: "县衙书吏", type: "官府", stat: "knowledge", note: "熟悉户籍钱粮与衙门门路，能通晓地方消息。" }] },
+  yunzhou: { epithet: "九门商埠", industry: "商栈、马帮与边贸", custom: "货单就是信用，能不能按时交货比出身更重要。", settleCost: 520, incident: ["商路封检", "边关忽然加严货检，九门商栈的车队全堵在城外。"], factions: [{ id: "guild", name: "九门商会", type: "行会", stat: "eq", note: "掌握仓栈、牙行与大宗货路，富而多疑。" }, { id: "garrison", name: "云州边军", type: "军府", stat: "physique", note: "守关护路，也需要粮秣、医药与可靠向导。" }] },
+  luocheng: { epithet: "书院文薮", industry: "书业、碑拓与讲学", custom: "士林清议传播极快，一篇好文章或一场失礼都能传遍诸院。", settleCost: 650, incident: ["书院禁碑", "新任学官欲封存一方争议旧碑，诸生联名请求公开辨读。"], factions: [{ id: "academy", name: "白鹿书院", type: "士林", stat: "knowledge", note: "诸生、山长与藏书家构成洛城最有分量的清议。" }, { id: "printers", name: "洛城书坊会", type: "行会", stat: "eq", note: "刻工、纸坊与书商相互照应，能让文章真正流传。" }] },
+  jiangling: { epithet: "十里水埠", industry: "漕运、丝绢与舟楫", custom: "码头人情来得快也散得快，守信用才能在水路站稳。", settleCost: 580, incident: ["漕船滞港", "连日水涨，漕船与民船争泊，码头脚夫已经停工。"], factions: [{ id: "boat", name: "江陵船帮", type: "行会", stat: "eq", note: "掌船工、脚夫与水路规矩，消息比官文更快。" }, { id: "silk", name: "绫罗织户", type: "商户", stat: "looks", note: "丝坊女工与绸商盘根错节，既讲手艺也讲行情。" }] },
+  liangdu: { epithet: "天街帝里", industry: "官署、行会与百业", custom: "京畿门路层层相套，一点声名能被放大，一桩丑闻也无处藏身。", settleCost: 1400, incident: ["御街清坊", "京兆府要整顿御街摊铺，老字号与贫户都面临迁撤。"], factions: [{ id: "censor", name: "京畿清议", type: "士林", stat: "virtue", note: "御史、名士与书院互通声气，最看重清名与立场。" }, { id: "capitalGuild", name: "天街百业会", type: "行会", stat: "eq", note: "百年商号共同议价，也能替外乡人打开京城门路。" }] },
+  kunbei: { epithet: "朔风雄城", industry: "马市、皮货与军需", custom: "北地尚武直爽，真本事比漂亮话更容易赢得尊敬。", settleCost: 760, incident: ["马市疫惊", "朔风马市忽有良驹倒毙，军府怀疑疫病，商贩却怕封市。"], factions: [{ id: "horse", name: "朔风马帮", type: "行会", stat: "physique", note: "驯马人、皮货商与向导组成的边地联盟。" }, { id: "frontier", name: "昆北军府", type: "军府", stat: "knowledge", note: "负责边防、军需与互市，赏罚分明而戒心很重。" }] },
+  sudi: { epithet: "烟雨画桥", industry: "丝坊、园林与精工", custom: "水乡讲究体面与细节，手艺、审美和温和处世都能换来口碑。", settleCost: 880, incident: ["丝坊压价", "外地大商压低新丝收价，小织户想联名停机抗议。"], factions: [{ id: "weavers", name: "苏堤丝坊", type: "行会", stat: "looks", note: "织户、绣娘与绸商共同维持水乡最重要的生计。" }, { id: "garden", name: "园林雅社", type: "士林", stat: "knowledge", note: "园主、画师与文士以诗画往来，也左右地方风雅名声。" }] },
+  qingya: { epithet: "云顶药谷", industry: "药材、香火与山货", custom: "山中人敬畏自然与因果，救命的真本领最能换来信任。", settleCost: 460, incident: ["药谷争采", "一味稀有药材忽然被抢采，寺僧、药农与外来商贩争执不休。"], factions: [{ id: "temple", name: "云顶古寺", type: "寺院", stat: "virtue", note: "维持山路、施药与香火秩序，在乡民中颇有威望。" }, { id: "herbalists", name: "青崖药户", type: "行会", stat: "knowledge", note: "药农、采山人与郎中共享山中物候与药路。" }] },
+};
 
 const TRAVEL_CARRIAGES = [
   { level: 1, name: "轻便驿车", comfort: 0, safety: 0, icon: "RepairCarriage", note: "车身轻，走近路尚可，遇烂路便颠簸。" },
@@ -2202,6 +2214,10 @@ const LIFE_GOALS = [
   { id: "legend-book", tier: "gold", title: "命册厚重", icon: "MainBook", desc: "命册记录达到 80 件。", score: 260, done: () => (state.log || []).length >= 80, advice: "多参与活动、经营亲友和家业，命册自然丰厚。" },
   { id: "poetry-win", tier: "bronze", title: "诗会夺魁", icon: "MainBook", desc: "诗会文斗获胜 3 次。", score: 80, done: () => (state.poetry?.wins || 0) >= 3, advice: "12 岁后去书院或宴会参加诗会文斗。" },
   { id: "travel-codex", tier: "silver", title: "足迹半天下", icon: "RepairCarriage", desc: "旅中奇遇图鉴解锁 6 处。", score: 90, done: () => (state.travelCodex?.unlocked || []).length >= 6, advice: "多乘车马远行，或走押镖、游学之路。" },
+  { id: "regional-name", tier: "bronze", title: "一地有名", icon: "RepairCarriage", desc: "在任一州府的地方声望达到 30。", score: 70, done: () => Object.values(state.regional?.regions || {}).some((item) => Number(item.reputation || 0) >= 30), advice: "旅行抵达后拜访地方人物，或在九州声望页参与地方事务。" },
+  { id: "regional-ally", tier: "silver", title: "地头相援", icon: "Relationship1", desc: "与一个地方势力结为盟友。", score: 155, done: () => (state.regional?.alliances || []).length >= 1, advice: "在当地连续拜会同一势力，将好感提升到 60 后正式结盟。" },
+  { id: "regional-settle", tier: "silver", title: "择城而居", icon: "House", desc: "离开故乡，在另一座州府正式定居。", score: 165, done: () => state.regional?.residenceId && state.regional.residenceId !== "qingping", advice: "把当地声望提升到 35，备足迁居费用后在抵达页选择定居。" },
+  { id: "regional-network", tier: "gold", title: "声达八方", icon: "Official", desc: "八个地区声望都达到 25。", score: 380, done: () => TRAVEL_DESTINATIONS.every((destination) => Number(state.regional?.regions?.[destination.id]?.reputation || 0) >= 25), advice: "走遍八地并长期经营当地势力、产业和民望。" },
   { id: "cricket-season", tier: "bronze", title: "促织赛季魁", icon: "Cricket", desc: "获得任一促织赛季称号。", score: 70, done: () => (state.leisureSeason?.titles || []).some((id) => String(id).startsWith("cricket-")), advice: "去促织处参加大赛，攒本季胜场。" },
   { id: "match-strategy", tier: "silver", title: "良缘有策", icon: "ArrangeMarriage", desc: "通过联姻策略局选定配偶并成婚。", score: 80, done: () => !!state.family?.spouse && !!state.family?.spouseProfile, advice: "16 岁后去媒人处细看家世、彩礼与性情再定亲。" },
   { id: "secret-keep", tier: "gold", title: "隐秘一生", icon: "Letter", desc: "持有秘密至终老且从未败露。", score: 100, done: () => state.dead && (state.secrets || []).some((item) => item && !item.exposed), advice: "黑市或中年后可沾染暗事，败露代价极高。" },
@@ -2559,6 +2575,7 @@ function startLife() {
     brothelRecords: { visits: 0, favorites: [] },
     market: { year: -1, factor: 1 },
     travelSystem: createTravelSystem(),
+    regional: createRegionalState("qingping"),
     pendingTravel: null,
     caravanMemory: {},
     pendingCaravan: null,
@@ -2677,6 +2694,8 @@ function normalizeState(raw) {
   next.secrets = normalizeSecrets(next.secrets);
   next.matchPool = Array.isArray(next.matchPool) ? next.matchPool.map(normalizeMatchCandidate).filter(Boolean).slice(0, 3) : [];
   next.travelSystem = normalizeTravelSystem(next.travelSystem);
+  next.regional = normalizeRegionalState(next.regional, next.location);
+  next.assets = next.assets.map((asset) => normalizeRegionalAsset(asset, next.location));
   next.pendingTravel = normalizeTravelRun(next.pendingTravel);
   next.caravanMemory = normalizeCaravanMemory(next.caravanMemory);
   next.pendingCaravan = normalizeCaravanRun(next.pendingCaravan, next.age);
@@ -2974,6 +2993,113 @@ function normalizeTravelSystem(source) {
     stamps: Array.isArray(base.stamps) ? [...new Set(base.stamps.map(String))].slice(0, 20) : [],
     totalTrips: Math.max(0, Math.round(Number(base.totalTrips) || 0)),
   };
+}
+
+function travelDestinationByStaticId(id) {
+  return TRAVEL_DESTINATIONS.find((item) => item.id === id) || TRAVEL_DESTINATIONS[0];
+}
+
+function regionIdFromLocation(location = "清平县") {
+  const text = String(location || "");
+  return TRAVEL_DESTINATIONS.find((item) => text.includes(item.name) || item.name.includes(text))?.id || "qingping";
+}
+
+function createRegionalState(residenceId = "qingping") {
+  const validResidence = REGION_PROFILES[residenceId] ? residenceId : "qingping";
+  return {
+    residenceId: validResidence,
+    currentId: validResidence,
+    selectedId: validResidence,
+    regions: Object.fromEntries(TRAVEL_DESTINATIONS.map((destination) => [destination.id, {
+      reputation: destination.id === validResidence ? 18 : 0,
+      visits: destination.id === validResidence ? 1 : 0,
+      factionFavor: Object.fromEntries((REGION_PROFILES[destination.id]?.factions || []).map((faction) => [faction.id, 0])),
+      lastActionYear: -1,
+      lastEventYear: -1,
+      settled: destination.id === validResidence,
+    }])),
+    alliances: [],
+    chronicle: [],
+    lastAnnualYear: -1,
+  };
+}
+
+function normalizeRegionalState(source, location = "清平县") {
+  const locationId = regionIdFromLocation(location);
+  const base = source && typeof source === "object" ? source : {};
+  const residenceId = REGION_PROFILES[base.residenceId] ? base.residenceId : locationId;
+  const defaults = createRegionalState(residenceId);
+  const regions = {};
+  for (const destination of TRAVEL_DESTINATIONS) {
+    const item = base.regions?.[destination.id] && typeof base.regions[destination.id] === "object" ? base.regions[destination.id] : {};
+    regions[destination.id] = {
+      reputation: clampNumber(item.reputation, 0, 100, destination.id === residenceId ? 18 : 0),
+      visits: Math.max(0, Math.round(Number(item.visits) || (destination.id === residenceId ? 1 : 0))),
+      factionFavor: Object.fromEntries((REGION_PROFILES[destination.id]?.factions || []).map((faction) => [faction.id, clampNumber(item.factionFavor?.[faction.id], -100, 100, 0)])),
+      lastActionYear: Number.isFinite(Number(item.lastActionYear)) ? Number(item.lastActionYear) : -1,
+      lastEventYear: Number.isFinite(Number(item.lastEventYear)) ? Number(item.lastEventYear) : -1,
+      settled: destination.id === residenceId || !!item.settled,
+    };
+  }
+  const alliances = Array.isArray(base.alliances) ? base.alliances.filter((item) => item && REGION_PROFILES[item.regionId]?.factions.some((faction) => faction.id === item.factionId)).map((item) => ({ regionId: String(item.regionId), factionId: String(item.factionId), year: Number(item.year || 0) })).slice(0, 16) : [];
+  return {
+    ...defaults,
+    ...base,
+    residenceId,
+    currentId: REGION_PROFILES[base.currentId] ? base.currentId : locationId,
+    selectedId: REGION_PROFILES[base.selectedId] ? base.selectedId : locationId,
+    regions,
+    alliances,
+    chronicle: Array.isArray(base.chronicle) ? base.chronicle.filter((item) => item && typeof item === "object").map((item) => ({ year: Number(item.year || 0), regionId: REGION_PROFILES[item.regionId] ? item.regionId : "qingping", title: String(item.title || "地方纪事"), text: String(item.text || "") })).slice(0, 60) : [],
+    lastAnnualYear: Number.isFinite(Number(base.lastAnnualYear)) ? Number(base.lastAnnualYear) : -1,
+  };
+}
+
+function normalizeRegionalAsset(asset, fallbackLocation = "清平县") {
+  const source = asset && typeof asset === "object" ? asset : {};
+  const regionId = REGION_PROFILES[source.regionId] ? source.regionId : regionIdFromLocation(source.location || fallbackLocation);
+  return { ...source, regionId, location: String(source.location || travelDestinationByStaticId(regionId).name) };
+}
+
+function carryRegionalAcrossInheritance(source, startYear, heirName) {
+  const regional = normalizeRegionalState(JSON.parse(JSON.stringify(source || createRegionalState())), travelDestinationByStaticId(source?.residenceId || "qingping").name);
+  for (const item of Object.values(regional.regions)) {
+    item.reputation = Math.round(item.reputation * 0.82);
+    item.factionFavor = Object.fromEntries(Object.entries(item.factionFavor).map(([id, favor]) => [id, Math.round(Number(favor || 0) * 0.72)]));
+    item.lastActionYear = -1;
+    item.lastEventYear = -1;
+  }
+  regional.lastAnnualYear = Number(startYear) - 1;
+  regional.chronicle.unshift({ year: Number(startYear), regionId: regional.residenceId, title: "地方人脉承继", text: `${heirName}接过各地往来名帖、商约与旧日声望。` });
+  return regional;
+}
+
+function regionalStandingLabel(value) {
+  if (value >= 80) return "一方柱石";
+  if (value >= 60) return "地方名流";
+  if (value >= 40) return "颇有声望";
+  if (value >= 20) return "渐被认得";
+  return value > 0 ? "初来乍到" : "无人识得";
+}
+
+function regionalStateFor(id = state.regional?.currentId) {
+  const regionId = REGION_PROFILES[id] ? id : regionIdFromLocation(state.location);
+  if (!state.regional?.regions?.[regionId]) state.regional = normalizeRegionalState(state.regional, state.location);
+  return state.regional.regions[regionId];
+}
+
+function recordRegionalChronicle(regionId, title, text) {
+  state.regional.chronicle.unshift({ year: state.year, regionId, title, text });
+  state.regional.chronicle = state.regional.chronicle.slice(0, 60);
+}
+
+function changeRegionalReputation(regionId, amount, deltas = []) {
+  const region = regionalStateFor(regionId);
+  const before = region.reputation;
+  region.reputation = clamp(region.reputation + Number(amount || 0));
+  const actual = region.reputation - before;
+  if (actual) deltas.push({ label: `${travelDestinationByStaticId(regionId).name}声望`, value: actual, negative: actual < 0 });
+  return actual;
 }
 
 function normalizeTravelRun(run) {
@@ -5132,6 +5258,203 @@ function resolveClanCouncil(event, choice) {
   render();
 }
 
+function currentRegionalId() {
+  if (!state.regional?.regions) state.regional = normalizeRegionalState(state.regional, state.location);
+  const id = regionIdFromLocation(state.location);
+  state.regional.currentId = id;
+  return id;
+}
+
+function regionalFaction(regionId, factionId) {
+  return REGION_PROFILES[regionId]?.factions.find((item) => item.id === factionId) || null;
+}
+
+function regionalCareerFits(faction) {
+  const kind = state.career ? careerKind(state.career) : "";
+  if (["官府", "军府"].includes(faction?.type)) return kind === "official";
+  if (["行会", "商户"].includes(faction?.type)) return ["craft", "service", "labor", "caravan"].includes(kind);
+  if (faction?.type === "寺院") return ["mystic", "healer"].includes(worldCareerRole()) || Number(state.stats.virtue || 0) >= 70;
+  if (faction?.type === "士林") return Number(state.stats.knowledge || 0) >= 70 || state.exam.rank >= 0;
+  if (faction?.type === "乡绅") return Number(state.clan?.prestige || 0) >= 45 || Number(state.stats.virtue || 0) >= 65;
+  return false;
+}
+
+function addRegionalContact(regionId, faction = null) {
+  const gender = Math.random() > 0.5 ? "male" : "female";
+  const relation = faction ? `${faction.name}联系人` : `${travelDestinationByStaticId(regionId).name}故交`;
+  const friend = normalizeFriend({ id: `region-${regionId}-${Date.now()}-${Math.random().toString(16).slice(2)}`, name: makePersonName(gender), gender, relation, age: randInt(20, 55), affection: randInt(48, 72), lastMet: state.age, regionId, occupation: faction ? faction.name : REGION_PROFILES[regionId].industry });
+  state.friends.push(friend);
+  return friend;
+}
+
+function interactRegionalFaction(regionId, factionId) {
+  const faction = regionalFaction(regionId, factionId);
+  const region = regionalStateFor(regionId);
+  if (!faction || currentRegionalId() !== regionId || state.age < 15 || state.dead || state.prisonYears > 0 || region.lastActionYear === state.year) return;
+  const cost = 45;
+  if (state.stats.money < cost) return;
+  const deltas = [];
+  changeStat("money", -cost, deltas);
+  addLedger("地方拜会", -cost, `备礼拜会${travelDestinationByStaticId(regionId).name}${faction.name}。`);
+  const fit = regionalCareerFits(faction);
+  const stat = faction.stat || "eq";
+  const success = randInt(1, 100) + Math.floor(Number(state.stats[stat] || 50) / 4) + (fit ? 22 : 0) >= 48;
+  const favor = success ? randInt(9, 15) + (fit ? 4 : 0) : randInt(2, 6);
+  region.factionFavor[faction.id] = clampNumber(region.factionFavor[faction.id] + favor, -100, 100, 0);
+  changeRegionalReputation(regionId, success ? (fit ? 8 : 5) : 2, deltas);
+  region.lastActionYear = state.year;
+  if (success && !state.friends.some((friend) => friend.regionId === regionId && friend.relation === `${faction.name}联系人`)) addRegionalContact(regionId, faction);
+  const text = success
+    ? `你备下地方礼数拜会${faction.name}。${fit ? `凭借${state.career?.name || "过往阅历"}的门路，你很快听懂了他们真正关心的事情。` : "你没有急着求人，只把来意、信用与能做的事说得明白。"}`
+    : `你登门拜会${faction.name}，席间话虽客气，对方却仍把你当作初来乍到的外乡人。`;
+  recordRegionalChronicle(regionId, `拜会${faction.name}`, text);
+  unlockLifeGoals();
+  finishAction(`地方往来 · ${faction.name}`, `${text} 当前势力好感 ${region.factionFavor[faction.id]}，地方声望 ${region.reputation}。`, deltas, travelDestinationByStaticId(regionId).icon);
+}
+
+function performRegionalPublicAction(regionId, action) {
+  const region = regionalStateFor(regionId);
+  const profile = REGION_PROFILES[regionId];
+  if (!profile || currentRegionalId() !== regionId || state.age < 15 || state.dead || state.prisonYears > 0 || region.lastActionYear === state.year) return;
+  const deltas = [];
+  let title = "地方事务";
+  let text = "";
+  if (action === "relief") {
+    const cost = 120;
+    if (state.stats.money < cost) return;
+    changeStat("money", -cost, deltas);
+    changeStat("virtue", 3, deltas);
+    changeRegionalReputation(regionId, 11, deltas);
+    addLedger("地方赈济", -cost, `在${travelDestinationByStaticId(regionId).name}周济贫弱。`);
+    title = "周济地方";
+    text = `你没有只在名册上留钱，而是同里正逐户核对困顿人家。${profile.custom}`;
+  } else if (action === "service") {
+    const fit = state.career ? 1 : 0;
+    const stat = fit ? careerSkillKeys()[0] : "eq";
+    const success = randInt(1, 100) + Number(state.stats[stat] || 50) / 3 >= 50;
+    changeRegionalReputation(regionId, success ? 8 : 3, deltas);
+    changeStat(success ? "favorability" : "knowledge", success ? 2 : 1, deltas);
+    title = success ? "办妥地方委托" : "摸清地方门道";
+    text = success ? `你用${state.career?.name || "平日所学"}替当地处理了一桩棘手差事，做事的名声比名帖更快传开。` : "你接下一桩地方委托，却发现本地规矩远比想象复杂。事情虽未尽善，也算摸清门道。";
+  } else if (action === "host") {
+    const cost = 80;
+    if (state.stats.money < cost) return;
+    changeStat("money", -cost, deltas);
+    changeStat("relationship", 4, deltas);
+    changeRegionalReputation(regionId, 6, deltas);
+    addLedger("地方会席", -cost, `在${travelDestinationByStaticId(regionId).name}设席会友。`);
+    if (!state.friends.some((friend) => friend.regionId === regionId)) addRegionalContact(regionId);
+    title = "设席会友";
+    text = "你邀来本地商户、塾师和里正，不急着谈生意，只先听各家说起这一方水土的难处与机会。";
+  } else return;
+  region.lastActionYear = state.year;
+  recordRegionalChronicle(regionId, title, text);
+  unlockLifeGoals();
+  finishAction(`${travelDestinationByStaticId(regionId).name} · ${title}`, text, deltas, travelDestinationByStaticId(regionId).icon);
+}
+
+function formRegionalAlliance(regionId, factionId) {
+  const faction = regionalFaction(regionId, factionId);
+  const region = regionalStateFor(regionId);
+  if (!faction || currentRegionalId() !== regionId || region.reputation < 45 || Number(region.factionFavor[factionId] || 0) < 60 || state.regional.alliances.some((item) => item.regionId === regionId && item.factionId === factionId)) return;
+  state.regional.alliances.push({ regionId, factionId, year: state.year });
+  region.reputation = clamp(region.reputation + 8);
+  recordRegionalChronicle(regionId, `结盟${faction.name}`, `${state.name}与${faction.name}互换名帖，约定在商路、急难与地方事务上彼此照应。`);
+  unlockLifeGoals();
+  finishAction("地方盟约", `你与${faction.name}正式结为地方盟友。往后当地产业收益更稳，地域事件中也会多一条可用门路。`, [{ label: "地方盟友", value: faction.name }, { label: `${travelDestinationByStaticId(regionId).name}声望`, value: 8 }], travelDestinationByStaticId(regionId).icon);
+}
+
+function settleInRegion(regionId) {
+  const destination = travelDestinationByStaticId(regionId);
+  const profile = REGION_PROFILES[regionId];
+  const region = regionalStateFor(regionId);
+  if (!profile || currentRegionalId() !== regionId || state.age < 15 || region.reputation < 35 || state.stats.money < profile.settleCost || state.regional.residenceId === regionId) return;
+  const deltas = [];
+  changeStat("money", -profile.settleCost, deltas);
+  changeStat("mood", 5, deltas);
+  addLedger("迁居安宅", -profile.settleCost, `举家定居${destination.name}。`);
+  const former = travelDestinationByStaticId(state.regional.residenceId).name;
+  state.regional.residenceId = regionId;
+  region.settled = true;
+  state.location = destination.name;
+  state.regional.currentId = regionId;
+  recordRegionalChronicle(regionId, "举家迁居", `${state.name}从${former}迁居${destination.name}，重新安顿家眷、户籍与产业往来。`);
+  if (state.clan) addClanChronicle("迁居开基", `${state.name}率主房从${former}迁至${destination.name}，族谱另记新居。`);
+  unlockLifeGoals();
+  finishAction(`定居${destination.name}`, `你花 ${moneyText(profile.settleCost)}安顿宅舍、户籍与家眷。从今以后，这里是归程所向；远游结束仍可在别处停留，但家门落在${destination.name}。`, deltas, "House");
+}
+
+function advanceRegionalYear(deltas = []) {
+  state.regional = normalizeRegionalState(state.regional, state.location);
+  if (state.regional.lastAnnualYear === state.year) return;
+  const residence = regionalStateFor(state.regional.residenceId);
+  const residenceAssets = (state.assets || []).filter((asset) => asset.regionId === state.regional.residenceId).length;
+  residence.reputation = clamp(residence.reputation + (residenceAssets >= 2 ? 2 : 1));
+  for (const alliance of state.regional.alliances) {
+    const region = regionalStateFor(alliance.regionId);
+    region.reputation = clamp(region.reputation + 1);
+    region.factionFavor[alliance.factionId] = clampNumber(region.factionFavor[alliance.factionId] + 1, -100, 100, 0);
+  }
+  state.regional.lastAnnualYear = state.year;
+  deltas.push({ label: "居地声望", value: residenceAssets >= 2 ? 2 : 1 });
+}
+
+function annualRegionalEvent() {
+  if (!state || state.dead || state.prisonYears > 0 || state.age < 15 || Math.random() > 0.32) return null;
+  const regionId = currentRegionalId();
+  const region = regionalStateFor(regionId);
+  if (region.lastEventYear === state.year) return null;
+  const profile = REGION_PROFILES[regionId];
+  const [title, content] = profile.incident;
+  const ally = state.regional.alliances.find((item) => item.regionId === regionId);
+  const faction = ally ? regionalFaction(regionId, ally.factionId) : profile.factions[0];
+  return {
+    id: `regional-${regionId}-${state.year}`,
+    kind: "regionalEvent",
+    regionId,
+    factionId: faction.id,
+    title: `${travelDestinationByStaticId(regionId).name} · ${title}`,
+    content,
+    icon: travelDestinationByStaticId(regionId).icon,
+    children: [
+      { id: "mediate", title: "查清情由，居中调停", note: `${STAT_LABELS[faction.stat] || "处世"}检定${regionalCareerFits(faction) ? ` · ${state.career?.name || "当前身份"}可发挥专长` : ""}`, content: "你逐方听取说法，再把账册、旧例与眼前难处摆到一处。", approach: "mediate" },
+      { id: "fund", title: "出资补上最急缺口", note: `需 ${moneyText(110)} · 地方声望提升稳定`, content: "你先拿出钱解决眼前最急的一环，再要求各方公开后续账目。", approach: "fund", cost: 110, disabled: state.stats.money < 110 },
+      { id: "faction", title: `借${faction.name}的门路处置`, note: `${ally ? "盟友出面，效果更强" : "增加势力好感，也可能被视为偏袒"}`, content: `你请${faction.name}出面整合人手与名册，让地方内部先拿出方案。`, approach: "faction" },
+    ],
+  };
+}
+
+function resolveRegionalEvent(event, choice) {
+  const region = regionalStateFor(event.regionId);
+  const faction = regionalFaction(event.regionId, event.factionId);
+  const deltas = [];
+  let success = true;
+  if (choice.cost) {
+    if (state.stats.money < choice.cost) return;
+    changeStat("money", -choice.cost, deltas);
+    addLedger("地方急务", -choice.cost, event.title);
+  }
+  if (choice.approach === "mediate") success = randInt(1, 100) + Number(state.stats[faction.stat] || 50) / 3 + (regionalCareerFits(faction) ? 20 : 0) >= 55;
+  if (choice.approach === "faction") {
+    const allied = state.regional.alliances.some((item) => item.regionId === event.regionId && item.factionId === faction.id);
+    region.factionFavor[faction.id] = clampNumber(region.factionFavor[faction.id] + (allied ? 10 : 7), -100, 100, 0);
+    success = allied || randInt(1, 100) + region.factionFavor[faction.id] >= 58;
+  }
+  const rep = success ? (choice.approach === "fund" ? 11 : choice.approach === "faction" ? 8 : 10) : -5;
+  changeRegionalReputation(event.regionId, rep, deltas);
+  changeStat(success ? "favorability" : "mood", success ? 3 : -3, deltas);
+  region.lastEventYear = state.year;
+  const result = success ? `${choice.content} 几日后，争端终于有了各方都能勉强接受的章程。` : `${choice.content} 然而地方旧怨比想象更深，你的方案没能服众，反而招来几句外乡人多事的议论。`;
+  recordRegionalChronicle(event.regionId, event.title, result);
+  state.currentEvent = null;
+  state.lastDeltas = deltas;
+  state.eventResult = { title: success ? "地方事平" : "调处未果", text: result, deltas, icon: event.icon, scene: "travel" };
+  addLog(`地方纪事 · ${event.title}`, result, deltas);
+  unlockLifeGoals();
+  save();
+  render();
+}
+
 function worldArcCandidates() {
   const world = state.dynasty;
   const available = Object.keys(WORLD_ARCS).filter((id) => !world.completedArcs.includes(id));
@@ -5324,6 +5647,7 @@ function nextYear() {
     if (state.diseases.length) changeStat("physique", -state.diseases.length, state.lastDeltas);
     advanceFamilyYear(state.lastDeltas);
     advanceClanYear(state.lastDeltas);
+    advanceRegionalYear(state.lastDeltas);
     if (typeof applySpouseProfileYear === "function") applySpouseProfileYear(state.lastDeltas);
     advanceCricketYear(state.lastDeltas);
     if (typeof runSecretYear === "function") runSecretYear(state.lastDeltas);
@@ -5346,6 +5670,7 @@ function nextYear() {
       annualFamilyStoryEvent() ||
       annualOfficialCaseEvent() ||
       annualSecretIntroductionEvent() ||
+      annualRegionalEvent() ||
       chooseEvent();
     const culturalEvent = annualCulturalEvent();
     state.currentEvent = culturalEvent || annualEvent;
@@ -5390,6 +5715,7 @@ function finishYear(runAftermath = true) {
 function runAnnualAftermath(deltas = state.lastDeltas) {
   advanceFamilyYear(deltas);
   advanceClanYear(deltas);
+  advanceRegionalYear(deltas);
   advanceCricketYear(deltas);
   annualSurpriseEvent(deltas);
 }
@@ -6327,6 +6653,7 @@ function chooseOption(index) {
     if (event.kind === "worldArc") return resolveWorldArcEvent(event, choice);
     if (event.kind === "femaleSchool") return resolveFemaleSchoolEvent(event, choice);
     if (event.kind === "clanCouncil") return resolveClanCouncil(event, choice);
+    if (event.kind === "regionalEvent") return resolveRegionalEvent(event, choice);
 
     const deltas = applyResults(choice.results || []);
     state.lastDeltas = mergeDeltas(state.pendingActivity?.deltas, deltas);
@@ -7469,7 +7796,11 @@ function annualAssetIncome() {
     const modeFactor = item.mode === "self" ? 1.18 : 0.92;
     const worldFactor = state.dynasty ? clamp(0.72 + state.dynasty.prosperity / 190 + state.dynasty.local.sentiment / 500 - state.dynasty.local.disaster / 240, 0.52, 1.42) : 1;
     const grainFactor = /田|庄|农/.test(item.name || item.label || "") && state.dynasty ? clamp(state.dynasty.local.grainPrice / 100, 0.7, 1.55) : 1;
-    return sum + Math.round(Number(item.income || 0) * level * modeFactor * condition * worldFactor * grainFactor * (0.75 + Math.random() * 0.5));
+    const regionId = REGION_PROFILES[item.regionId] ? item.regionId : regionIdFromLocation(item.location || state.location);
+    const regional = state.regional?.regions?.[regionId];
+    const allied = state.regional?.alliances?.some((alliance) => alliance.regionId === regionId);
+    const regionalFactor = regional ? clamp(0.86 + regional.reputation / 250 + (allied ? 0.08 : 0), 0.86, 1.34) : 1;
+    return sum + Math.round(Number(item.income || 0) * level * modeFactor * condition * worldFactor * grainFactor * regionalFactor * (0.75 + Math.random() * 0.5));
   }, 0);
 }
 
@@ -7487,7 +7818,8 @@ function assetMarketEvent(deltas = []) {
   changeStat("money", amount, deltas);
   asset.condition = clamp(Number(asset.condition ?? 72) + (good ? randInt(-2, 4) : -randInt(5, 14)), 15, 120);
   const title = good ? "家产旺收" : "家产修缮";
-  const text = good ? `${displayName}今年行情不错，额外添了一笔进项。` : `${displayName}需修缮打点，额外折了一笔钱。`;
+  const assetRegion = travelDestinationByStaticId(asset.regionId || regionIdFromLocation(asset.location)).name;
+  const text = good ? `${assetRegion}的${displayName}今年行情不错，地方口碑也替你省了几道关节，额外添了一笔进项。` : `${assetRegion}的${displayName}需修缮打点，额外折了一笔钱。`;
   addLedger(title, amount, text);
   addLog(title, text, [{ label: "家产", value: displayName }, { label: "钱财", value: amount, stat: "money" }]);
 }
@@ -7510,6 +7842,8 @@ function buyAsset(index) {
     level: 1,
     condition: randInt(62, 88),
     mode: "rent",
+    regionId: currentRegionalId(),
+    location: travelDestinationByStaticId(currentRegionalId()).name,
   };
   state.assets.push(owned);
   const count = assetCountByName(item.name);
@@ -7694,6 +8028,8 @@ function completeTravelActivity(activityId) {
   const run = normalizeTravelRun(state.pendingTravel);
   if (!run || run.index < run.events.length) return;
   const destination = travelDestinationById(run.destinationId);
+  const regional = regionalStateFor(destination.id);
+  const profile = REGION_PROFILES[destination.id];
   const deltas = [];
   let title = "游历";
   let text = "";
@@ -7702,6 +8038,7 @@ function completeTravelActivity(activityId) {
     changeStat("mood", randInt(3, 7), deltas);
     title = `游览${destination.landmark}`;
     text = `${destination.story}你在${destination.landmark}停留半日，把沿途所见细细记在心里。`;
+    changeRegionalReputation(destination.id, 4, deltas);
   } else if (activityId === "souvenir") {
     const cost = 30;
     if (state.stats.money < cost) return;
@@ -7710,12 +8047,34 @@ function completeTravelActivity(activityId) {
     addInventoryItem(destination.souvenir, deltas);
     title = "采买风物";
     text = `你在${destination.name}的市集挑中${destination.souvenir}，也尝过几样当地吃食。`;
-  } else {
+    changeRegionalReputation(destination.id, 2, deltas);
+  } else if (activityId === "locals") {
     changeStat("relationship", randInt(4, 8), deltas);
     changeStat("eq", randInt(2, 5), deltas);
-    if (Math.random() < 0.45) addFriend();
+    if (Math.random() < 0.7 && !state.friends.some((friend) => friend.regionId === destination.id)) addRegionalContact(destination.id);
     title = "拜访当地人";
     text = `你在${destination.name}随席听谈，与当地人聊起风土、行当与远方消息。`;
+    changeRegionalReputation(destination.id, 7, deltas);
+  } else if (activityId === "faction") {
+    const faction = [...profile.factions].sort((a, b) => Number(regional.factionFavor[b.id] || 0) - Number(regional.factionFavor[a.id] || 0))[0];
+    regional.factionFavor[faction.id] = clampNumber(regional.factionFavor[faction.id] + 8, -100, 100, 0);
+    changeRegionalReputation(destination.id, 6, deltas);
+    if (!state.friends.some((friend) => friend.regionId === destination.id && friend.relation === `${faction.name}联系人`)) addRegionalContact(destination.id, faction);
+    title = `拜会${faction.name}`;
+    text = `你按当地礼数投帖拜会${faction.name}，先谈沿途见闻，再问这一地真正紧要的生计与规矩。`;
+  } else if (activityId === "settle") {
+    if (state.age < 15 || regional.reputation < 35 || state.stats.money < profile.settleCost || state.regional.residenceId === destination.id) return;
+    const former = travelDestinationByStaticId(state.regional.residenceId).name;
+    changeStat("money", -profile.settleCost, deltas);
+    changeStat("mood", 5, deltas);
+    addLedger("迁居安宅", -profile.settleCost, `由${former}迁居${destination.name}。`);
+    state.regional.residenceId = destination.id;
+    regional.settled = true;
+    title = `定居${destination.name}`;
+    text = `你花 ${moneyText(profile.settleCost)}安置宅舍、户籍与家眷，从${former}正式迁居${destination.name}。这座城从旅途终点变成了新的家门。`;
+    if (state.clan) addClanChronicle("迁居开基", `${state.name}率主房从${former}迁至${destination.name}，族谱另记新居。`);
+  } else {
+    return;
   }
   const target = run.companionId !== "alone" ? findRelationTarget(run.companionId) : null;
   if (target?.person) {
@@ -7731,9 +8090,15 @@ function completeTravelActivity(activityId) {
   if (!state.travelSystem.stamps.includes(destination.id)) state.travelSystem.stamps.push(destination.id);
   tryUnlockTravelLandmarks(destination.landmarks || [], deltas, 0.9);
   if (activityId === "landmark") tryUnlockTravelLandmarks(["study-tour"], deltas, 0.35);
+  regional.visits += 1;
+  changeRegionalReputation(destination.id, 2, deltas);
   state.location = destination.name;
+  state.regional.currentId = destination.id;
+  state.regional.selectedId = destination.id;
+  recordRegionalChronicle(destination.id, title, text);
   const routeStory = run.history.map((item) => item.text).join(" ");
   state.pendingTravel = null;
+  unlockLifeGoals();
   finishAction(`${destination.name} · ${title}`, `${routeStory} 抵达后，${text} 本次旅途评定为 ${travelQualityLabel(run.quality)}（${Math.round(run.quality)}）。`, deltas, destination.icon || "RepairCarriage");
 }
 
@@ -10603,6 +10968,7 @@ function inheritFromChild(id) {
     year: startAge,
     location: state.location,
     dynasty: carryDynastyAcrossInheritance(state.dynasty, state.year, startAge),
+    regional: carryRegionalAcrossInheritance(state.regional, startAge, heir.name),
     stats: {
       mood: clamp(50 + Math.floor((heir.affection || 60) / 10) - (heirAge < 12 ? 4 : 0)),
       physique: clamp(42 + Math.floor(heirVirtue / 6) + randInt(-4, 8)),
@@ -10717,6 +11083,7 @@ function inheritFromSpouse(heir) {
     year: heirAge,
     location: old.location,
     dynasty: carryDynastyAcrossInheritance(old.dynasty, old.year, heirAge),
+    regional: carryRegionalAcrossInheritance(old.regional, heirAge, heir.name),
     stats: {
       mood: clamp(48 + Math.floor(Number(heir.affection || 70) / 12)),
       physique: clamp(Number(heir.physique || 60)),
@@ -12814,6 +13181,7 @@ function centerContent() {
   if (view.page === "culture") return cultureView();
   if (view.page === "world") return worldView();
   if (view.page === "clan") return clanView();
+  if (view.page === "regions") return regionsView();
   if (view.page === "gamble") return gambleView();
   if (view.page === "miniGames") return miniGamesView();
   if (view.page === "courtesanContest") return courtesanContestView();
@@ -13027,6 +13395,20 @@ function clanPulseView() {
     </button>`;
 }
 
+function regionalPulseView() {
+  state.regional = normalizeRegionalState(state.regional, state.location);
+  const currentId = regionIdFromLocation(state.location);
+  const destination = travelDestinationByStaticId(currentId);
+  const region = state.regional.regions[currentId];
+  const localAssetCount = (state.assets || []).filter((asset) => asset.regionId === currentId).length;
+  return `
+    <button class="regional-pulse" data-door="regions">
+      <span class="regional-seal">${escapeHtml(destination.name.slice(0, 2))}</span>
+      <span><small>九州声望 · 当前在${escapeHtml(destination.name)} · 家门在${escapeHtml(travelDestinationByStaticId(state.regional.residenceId).name)}</small><strong>${escapeHtml(REGION_PROFILES[currentId].epithet)} · ${escapeHtml(regionalStandingLabel(region.reputation))}</strong></span>
+      <em>声望 ${region.reputation} · 产业 ${localAssetCount} · 盟友 ${state.regional.alliances.filter((item) => item.regionId === currentId).length}</em>
+    </button>`;
+}
+
 function clanTreeNode(person, fallbackRelation = "族人") {
   if (!person) return "";
   const name = person.name || "未具名";
@@ -13116,6 +13498,90 @@ function clanView() {
     </section>`;
 }
 
+function regionsView() {
+  state.regional = normalizeRegionalState(state.regional, state.location);
+  const regional = state.regional;
+  const currentId = currentRegionalId();
+  const selectedId = REGION_PROFILES[regional.selectedId] ? regional.selectedId : currentId;
+  const selectedDestination = travelDestinationByStaticId(selectedId);
+  const selectedProfile = REGION_PROFILES[selectedId];
+  const selectedState = regional.regions[selectedId];
+  const local = currentId === selectedId;
+  const residence = travelDestinationByStaticId(regional.residenceId);
+  const discovered = Object.values(regional.regions).filter((item) => item.visits > 0 || item.reputation > 0).length;
+  const localAssets = (state.assets || []).filter((asset) => asset.regionId === selectedId);
+  const localContacts = (state.friends || []).filter((friend) => friend.regionId === selectedId && friend.alive !== false);
+  const blocked = state.dead || state.prisonYears > 0 || state.age < 15 || selectedState.lastActionYear === state.year;
+  return `
+    <article class="play-card regional-dashboard">
+      <div class="regional-hero">
+        <div class="regional-compass"><small>行迹</small><strong>${discovered}/8</strong><span>州府入册</span></div>
+        <section><p class="eyebrow">第三阶段 · 地域社会</p><h2>你的名声，在每座城都不一样</h2><p>地方声望来自旅行、赈济、职业服务、产业经营和势力往来。声望会影响当地产业收益、迁居资格与事件解法；结成盟友后，门路也可传给下一代。</p></section>
+      </div>
+      <div class="regional-summary">
+        <span><b>${escapeHtml(residence.name)}</b>家门所在</span><span><b>${escapeHtml(travelDestinationByStaticId(currentId).name)}</b>当前停留</span><span><b>${regional.alliances.length}</b>地方盟友</span><span><b>${regional.chronicle.length}</b>地方纪事</span>
+      </div>
+      <div class="main-actions"><button class="secondary-btn" data-action="open-travel">打开车马版图</button><button class="ghost-btn" data-action="back-main">返回流年</button></div>
+    </article>
+
+    <section class="regional-map-section">
+      <div class="section-title"><h2>八地声望版图</h2><span>点击州府查看势力与门路</span></div>
+      <div class="regional-map-grid">${TRAVEL_DESTINATIONS.map((destination) => {
+        const item = regional.regions[destination.id];
+        const profile = REGION_PROFILES[destination.id];
+        const isCurrent = destination.id === currentId;
+        const isHome = destination.id === regional.residenceId;
+        return `<button class="regional-map-card ${destination.id === selectedId ? "active" : ""} ${isCurrent ? "current" : ""}" data-region-select="${destination.id}">
+          ${icon(destination.icon, destination.name)}<span><b>${escapeHtml(destination.name)}</b><small>${escapeHtml(profile.epithet)} · ${escapeHtml(regionalStandingLabel(item.reputation))}</small></span><strong>${item.reputation}</strong>
+          <div class="meter"><i style="width:${item.reputation}%"></i></div><em>${isHome ? "家门" : isCurrent ? "在此" : item.visits ? `到访 ${item.visits} 次` : "尚未到访"}</em>
+        </button>`;
+      }).join("")}</div>
+    </section>
+
+    <article class="play-card regional-detail">
+      <header><div>${icon(selectedDestination.icon, selectedDestination.name)}</div><section><p class="eyebrow">${escapeHtml(selectedProfile.epithet)} · ${escapeHtml(regionalStandingLabel(selectedState.reputation))}</p><h2>${escapeHtml(selectedDestination.name)}</h2><p>${escapeHtml(selectedProfile.custom)}</p></section><strong>${selectedState.reputation}<small>地方声望</small></strong></header>
+      <div class="regional-local-facts"><span><b>本地生计</b>${escapeHtml(selectedProfile.industry)}</span><span><b>当地联系人</b>${localContacts.length} 人</span><span><b>名下产业</b>${localAssets.length} 处</span><span><b>到访记录</b>${selectedState.visits} 次</span></div>
+      ${local ? `<div class="regional-public-actions">
+        <button class="secondary-btn" data-regional-public="service" data-region-id="${selectedId}" ${blocked ? "disabled" : ""}>以本业接一桩地方委托</button>
+        <button class="secondary-btn" data-regional-public="relief" data-region-id="${selectedId}" ${blocked || state.stats.money < 120 ? "disabled" : ""}>周济地方 · ${moneyText(120)}</button>
+        <button class="secondary-btn" data-regional-public="host" data-region-id="${selectedId}" ${blocked || state.stats.money < 80 ? "disabled" : ""}>设席会友 · ${moneyText(80)}</button>
+        ${selectedState.lastActionYear === state.year ? `<small>今岁已处理过一桩地方事务，来年再访。</small>` : ""}
+      </div>` : `<p class="regional-away-note">你目前不在${escapeHtml(selectedDestination.name)}。地方事务必须亲自到场，先乘车马前往。</p><div class="main-actions"><button class="primary-btn" data-region-travel="${selectedId}">前往${escapeHtml(selectedDestination.name)}</button></div>`}
+    </article>
+
+    <section class="regional-factions-section">
+      <div class="section-title"><h2>${escapeHtml(selectedDestination.name)}地方势力</h2><span>好感 60、地方声望 45 可结盟</span></div>
+      <div class="regional-faction-grid">${selectedProfile.factions.map((faction) => {
+        const favor = Number(selectedState.factionFavor[faction.id] || 0);
+        const allied = regional.alliances.some((item) => item.regionId === selectedId && item.factionId === faction.id);
+        return `<article class="regional-faction-card ${allied ? "allied" : ""}"><span>${escapeHtml(faction.type)}${allied ? " · 已结盟" : ""}</span><h3>${escapeHtml(faction.name)}</h3><p>${escapeHtml(faction.note)}</p><div class="meter"><i style="width:${clamp(Math.max(0, favor))}%"></i></div><small>势力好感 ${favor}${regionalCareerFits(faction) ? ` · ${escapeHtml(state.career?.name || "当前阅历")}契合` : ""}</small><div>
+          <button class="text-btn" data-regional-faction="${faction.id}" data-region-id="${selectedId}" ${!local || blocked || state.stats.money < 45 ? "disabled" : ""}>投帖拜会 · ${moneyText(45)}</button>
+          <button class="text-btn" data-regional-alliance="${faction.id}" data-region-id="${selectedId}" ${!local || allied || favor < 60 || selectedState.reputation < 45 ? "disabled" : ""}>${allied ? "盟约已立" : "正式结盟"}</button>
+        </div></article>`;
+      }).join("")}</div>
+    </section>
+
+    <section class="log-preview regional-chronicle">
+      <div class="section-title"><h2>地方纪事</h2><span>${escapeHtml(selectedDestination.name)}篇</span></div>
+      ${regional.chronicle.filter((item) => item.regionId === selectedId).slice(0, 10).map((item) => infoCard(`${item.year}年 · ${item.title}`, item.text)).join("") || `<p class="empty-note">这里尚未留下你的地方故事。旅行、拜会、置产或处理地方事件都会落笔。</p>`}
+    </section>`;
+}
+
+function selectRegionalRegion(regionId) {
+  if (!REGION_PROFILES[regionId]) return;
+  state.regional.selectedId = regionId;
+  save();
+  render();
+}
+
+function openRegionalTravel(regionId = state.regional?.selectedId) {
+  const index = TRAVEL_DESTINATIONS.findIndex((item) => item.id === regionId);
+  if (index >= 0) state.travelSystem.selectedDestination = regionId;
+  view.page = "travel";
+  save();
+  render();
+}
+
 function worldView() {
   state.dynasty = normalizeDynastyState(state.dynasty);
   const world = state.dynasty;
@@ -13184,6 +13650,7 @@ function overviewView() {
     </article>
     ${worldPulseView()}
     ${clanPulseView()}
+    ${regionalPulseView()}
     ${secretPulseView()}
     <section class="goal-strip">
       ${goals.map((goal) => `
@@ -13786,7 +14253,7 @@ function assetsView() {
     <article class="play-card assets-card">
       <p class="eyebrow">财产</p>
       <h2>${locked ? "禁令" : "置办家产"}</h2>
-      <p>${locked ? "依律，你年岁尚幼，无法购置家产。" : "家产会在每年推进时带来些许收益，也会记入账本。"}</p>
+      <p>${locked ? "依律，你年岁尚幼，无法购置家产。" : `家产会登记所在州府。当地声望与势力盟约会提高收益；你目前在${escapeHtml(travelDestinationByStaticId(currentRegionalId()).name)}置产。`}</p>
       ${locked ? `<p class="empty-note">需满 15 岁后开放家产购置。</p>` : ""}
       <div class="asset-owned">
         ${state.assets.length ? state.assets.map(assetCard).join("") : `<p class="empty-note">尚无家产。</p>`}
@@ -13815,7 +14282,7 @@ function assetCard(asset, index) {
   return `
     <article class="record-item asset-card">
       <strong>${escapeHtml(displayName)} <span>${mode} · ${level}级 · 状态${condition}</span></strong>
-      <p>${escapeHtml(asset.desc || "家中产业")} · 年入 ${moneyText(asset.income || 0)}</p>
+      <p>${escapeHtml(asset.desc || "家中产业")} · 所在 ${escapeHtml(asset.location || travelDestinationByStaticId(asset.regionId).name)} · 年入 ${moneyText(asset.income || 0)}</p>
       <span class="mini-actions">
         <button class="text-btn inline-action" data-asset-action="repair" data-asset-index="${index}" ${state.stats.money < Math.max(30, Math.round((asset.income || 20) * 1.6)) ? "disabled" : ""}>修缮</button>
         <button class="text-btn inline-action" data-asset-action="expand" data-asset-index="${index}" ${state.stats.money < Math.max(120, Math.round((asset.price || 200) * 0.38)) ? "disabled" : ""}>扩建</button>
@@ -13982,10 +14449,11 @@ function travelView() {
   const cost = travelTripCost(selected);
   const nextCarriage = TRAVEL_CARRIAGES[state.travelSystem.carriageLevel];
   const repairCost = Math.max(20, Math.round((100 - state.travelSystem.condition) * 1.6));
+  const residence = travelDestinationByStaticId(state.regional?.residenceId || regionIdFromLocation(state.location));
   return `
     <article class="play-card travel-card travel-hub">
       <header class="travel-hero">
-        <div><p class="eyebrow">车马 · 山河游历</p><h2>从${escapeHtml(state.location)}启程</h2><p>${locked ? "年岁尚幼或身不由己，暂不可远行。" : "选路线、约旅伴、备行囊。途中会遇见不同事件，抵达后还可游览、访友或采买风物。"}</p></div>
+        <div><p class="eyebrow">车马 · 山河游历</p><h2>从${escapeHtml(state.location)}启程</h2><p>${locked ? "年岁尚幼或身不由己，暂不可远行。" : `家门定在${escapeHtml(residence.name)}。选路线、约旅伴、备行囊；抵达后可经营地方声望、拜会势力或择城定居。`}</p></div>
         <div class="travel-passport"><span>游历印记</span><strong>${state.travelSystem.stamps.length}/${TRAVEL_DESTINATIONS.length}</strong><small>累计 ${state.travelSystem.totalTrips} 次远游</small></div>
       </header>
 
@@ -14004,13 +14472,14 @@ function travelView() {
         <div class="travel-map">
           ${TRAVEL_DESTINATIONS.map((item, index) => {
             const memory = state.travelSystem.memories[item.id];
+            const standing = state.regional?.regions?.[item.id]?.reputation || 0;
             const active = item.id === selected.id;
             return `<button class="travel-destination ${active ? "active" : ""} ${state.travelSystem.stamps.includes(item.id) ? "visited" : ""}" data-travel="${index}" ${locked ? "disabled" : ""}>
               <span class="destination-icon">${icon(item.icon, item.name)}</span>
               <strong>${escapeHtml(item.name)}</strong>
               <small>${item.days}日路程 · 风险 ${item.risk}</small>
               <em>${escapeHtml(item.landmark)}</em>
-              ${memory.trips ? `<b>已游 ${memory.trips} 次</b>` : ""}
+              ${memory.trips ? `<b>已游 ${memory.trips} 次</b>` : ""}<b class="regional-map-standing">声望 ${standing} · ${escapeHtml(regionalStandingLabel(standing))}</b>
             </button>`;
           }).join("")}
         </div>
@@ -14054,6 +14523,9 @@ function travelRunView() {
   const destination = travelDestinationById(run.destinationId);
   const progress = run.events.length ? Math.round((run.index / run.events.length) * 100) : 100;
   if (run.index >= run.events.length) {
+    const localRegion = regionalStateFor(destination.id);
+    const profile = REGION_PROFILES[destination.id];
+    const canSettle = state.age >= 15 && localRegion.reputation >= 35 && state.stats.money >= profile.settleCost && state.regional.residenceId !== destination.id;
     return `
       <article class="play-card travel-run-card travel-arrival">
         <div class="arrival-mark">${icon(destination.icon, destination.name)}</div>
@@ -14065,6 +14537,8 @@ function travelRunView() {
           <button class="arrival-activity" data-travel-local="landmark">${icon(destination.icon, destination.landmark)}<span><b>游览名胜</b><small>细看${escapeHtml(destination.landmark)}，增长${escapeHtml(STAT_LABELS[destination.stat] || destination.stat)}与心情</small></span></button>
           <button class="arrival-activity" data-travel-local="souvenir" ${state.stats.money < 30 ? "disabled" : ""}>${icon("BookStore", destination.souvenir)}<span><b>采买风物 · ${moneyText(30)}</b><small>收藏${escapeHtml(destination.souvenir)}，带回一件旅途纪念</small></span></button>
           <button class="arrival-activity" data-travel-local="locals">${icon("FamilyFriendAvatar", "当地人")}<span><b>拜访当地人</b><small>听风土消息、结交人物，也许认识新友</small></span></button>
+          <button class="arrival-activity" data-travel-local="faction">${icon("Official", "地方势力")}<span><b>投帖地方势力</b><small>认识${escapeHtml(profile.factions[0].name)}或${escapeHtml(profile.factions[1].name)}，积累长期门路</small></span></button>
+          <button class="arrival-activity settle-activity" data-travel-local="settle" ${canSettle ? "" : "disabled"}>${icon("House", "择城定居")}<span><b>${state.regional.residenceId === destination.id ? "此地已是家门" : `举家迁居 · ${moneyText(profile.settleCost)}`}</b><small>${state.age < 15 ? "15 岁后可迁居" : localRegion.reputation < 35 ? `当地声望需 35，当前 ${localRegion.reputation}` : state.stats.money < profile.settleCost ? "迁居费用不足" : "安置户籍、宅舍与家眷，从此以此地为归处"}</small></span></button>
         </div>
         ${travelHistoryHtml(run.history)}
       </article>`;
@@ -15589,10 +16063,11 @@ function eventView(event) {
   const worldEvent = event.kind === "worldArc";
   const femaleSchoolEvent = event.kind === "femaleSchool";
   const clanEvent = event.kind === "clanCouncil";
+  const regionalEvent = event.kind === "regionalEvent";
   const darkEvent = ["examinerBribe", "underworldConsequence", "jianghuProphecy", "secretIntroduction"].includes(event.kind);
-  const eyebrow = worldEvent ? `${state.dynasty.eraName}${state.dynasty.reignYear}年 · 天下主线` : clanEvent ? `${state.clan.familyName}氏 · 合族议事` : femaleSchoolEvent ? "女学 · 闺塾见闻" : prisonEvent ? `牢狱流年 · 余刑 ${state.prisonYears} 年` : culturalEvent ? `${CULTURAL_SEASONS[event.season]?.name || "四时"}时 · ${event.culturalType === "festival" ? "传统节日" : "二十四节气"}` : event.kind === "secretIntroduction" ? "奇闻暗线开启" : event.kind === "examinerBribe" ? "贡院暗局" : event.kind === "underworldConsequence" ? "旧账追门" : event.kind === "jianghuProphecy" ? "江湖命数" : official ? "官场考验" : familyStory ? "家事流年" : careerCase ? "本业专案" : fortuneEvent ? "签运应验" : "事件";
+  const eyebrow = worldEvent ? `${state.dynasty.eraName}${state.dynasty.reignYear}年 · 天下主线` : regionalEvent ? `${travelDestinationByStaticId(event.regionId).name} · 地方纪事` : clanEvent ? `${state.clan.familyName}氏 · 合族议事` : femaleSchoolEvent ? "女学 · 闺塾见闻" : prisonEvent ? `牢狱流年 · 余刑 ${state.prisonYears} 年` : culturalEvent ? `${CULTURAL_SEASONS[event.season]?.name || "四时"}时 · ${event.culturalType === "festival" ? "传统节日" : "二十四节气"}` : event.kind === "secretIntroduction" ? "奇闻暗线开启" : event.kind === "examinerBribe" ? "贡院暗局" : event.kind === "underworldConsequence" ? "旧账追门" : event.kind === "jianghuProphecy" ? "江湖命数" : official ? "官场考验" : familyStory ? "家事流年" : careerCase ? "本业专案" : fortuneEvent ? "签运应验" : "事件";
   return `
-    <article class="play-card event-card ${prisonEvent ? "prison-event" : ""} ${culturalEvent ? `culture-event season-${event.season}` : ""} ${worldEvent ? "world-event" : ""} ${clanEvent ? "clan-event" : ""}">
+    <article class="play-card event-card ${prisonEvent ? "prison-event" : ""} ${culturalEvent ? `culture-event season-${event.season}` : ""} ${worldEvent ? "world-event" : ""} ${clanEvent ? "clan-event" : ""} ${regionalEvent ? "regional-event" : ""}">
       <p class="eyebrow">${eyebrow}</p>
       <h2>${escapeHtml(event.title || "事件")}</h2>
       <p>${formatText(fillPlaceholders(event.content || event.history || "", false))}</p>
@@ -15601,7 +16076,7 @@ function eventView(event) {
           options.length
             ? options.map(({ child, index }) => `<button class="choice-btn ${official || careerCase ? "official-choice" : ""}" data-choice="${index}" ${child.disabled ? "disabled" : ""}>
               <span>${escapeHtml(child.title || "继续")}</span>
-              ${(official || familyStory || careerCase || fortuneEvent || darkEvent || prisonEvent || culturalEvent || worldEvent || femaleSchoolEvent || clanEvent) && child.note ? `<small>${escapeHtml(child.note)}</small>` : ""}
+              ${(official || familyStory || careerCase || fortuneEvent || darkEvent || prisonEvent || culturalEvent || worldEvent || femaleSchoolEvent || clanEvent || regionalEvent) && child.note ? `<small>${escapeHtml(child.note)}</small>` : ""}
             </button>`).join("")
             : `<button class="primary-btn" data-action="finish-event">继续</button>`
         }
@@ -15712,6 +16187,7 @@ function overviewPanel() {
       ${state.career && careerKind(state.career) === "official" ? infoLine("官评", `${officialTitle()} · 政绩 ${state.official.merit || 0}`) : ""}
       ${infoLine("亲友", `${relationCount()} 人`)}
       ${infoLine("宗族", `${state.clan?.familyName || state.name.slice(0, 1)}氏 · ${state.clan?.branches?.length || 1}房 · 家声 ${Math.round(state.clan?.prestige || 0)}`)}
+      ${infoLine("地域", `家门 ${travelDestinationByStaticId(state.regional?.residenceId || "qingping").name} · 地方盟友 ${state.regional?.alliances?.length || 0}`)}
       ${infoLine("经历", `${state.log.length} 件事`)}
       <div class="goal-mini">
           <strong>已成成就 ${done.length}/${availableLifeGoals().length}</strong>
@@ -16056,6 +16532,7 @@ app.addEventListener("click", (event) => {
     render();
     return;
   }
+  if (button.dataset.action === "open-travel") return openRegionalTravel();
   if (button.dataset.action === "back-places") {
     view.page = "place";
     view.placeId = "";
@@ -16149,6 +16626,11 @@ app.addEventListener("click", (event) => {
     return;
   }
   if (button.dataset.choice !== undefined) return chooseOption(Number(button.dataset.choice));
+  if (button.dataset.regionSelect) return selectRegionalRegion(button.dataset.regionSelect);
+  if (button.dataset.regionTravel) return openRegionalTravel(button.dataset.regionTravel);
+  if (button.dataset.regionalPublic) return performRegionalPublicAction(button.dataset.regionId, button.dataset.regionalPublic);
+  if (button.dataset.regionalFaction) return interactRegionalFaction(button.dataset.regionId, button.dataset.regionalFaction);
+  if (button.dataset.regionalAlliance) return formRegionalAlliance(button.dataset.regionId, button.dataset.regionalAlliance);
   if (button.dataset.clanDonate) return donateToClan(button.dataset.clanDonate);
   if (button.dataset.clanRule) return toggleClanRule(button.dataset.clanRule);
   if (button.dataset.clanProject) return upgradeClanProject(button.dataset.clanProject);

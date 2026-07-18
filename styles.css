@@ -5271,3 +5271,82 @@ p {
   .clan-edge > b:last-of-type { text-align: left; }
   .clan-edge p { grid-column: 1; }
 }
+
+/* 第三阶段：地域社会、地方声望与势力网络 */
+.regional-pulse { width: 100%; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 13px; padding: 13px 15px; border: 1px solid rgba(74,104,118,.23); border-radius: 15px; background: linear-gradient(115deg,rgba(75,117,128,.1),rgba(216,179,103,.13)); color: var(--ink); text-align: left; }
+.regional-pulse > span:nth-child(2) { display: grid; gap: 3px; min-width: 0; }
+.regional-pulse small { color: var(--muted); }
+.regional-pulse strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.regional-pulse em { color: #55717a; font-size: 12px; font-style: normal; }
+.regional-seal { display: grid; place-items: center; width: 50px; height: 48px; border-radius: 50%; background: #537684; color: #fff9e8; font-weight: 800; box-shadow: inset 0 0 0 3px rgba(255,255,255,.16); }
+.regional-event { border-color: rgba(74,112,126,.3); box-shadow: inset 0 5px 0 rgba(74,112,126,.7); }
+
+.regional-dashboard { border-color: rgba(71,108,121,.25); background: linear-gradient(140deg,rgba(71,111,126,.1),rgba(228,206,154,.12) 55%,rgba(100,127,89,.08)); }
+.regional-hero { display: grid; grid-template-columns: 116px 1fr; gap: 19px; align-items: center; }
+.regional-hero h2 { margin: 3px 0 8px; font-size: clamp(24px,3vw,35px); }
+.regional-hero section > p:last-child { margin: 0; color: var(--muted); line-height: 1.7; }
+.regional-compass { display: grid; place-items: center; align-content: center; width: 116px; min-height: 116px; padding: 12px; border-radius: 50%; background: radial-gradient(circle,#668791 0 39%,#496c78 40% 43%,#d8c28b 44% 47%,#557683 48%); color: #fff9e8; box-shadow: 0 13px 30px rgba(50,76,85,.2); }
+.regional-compass small { letter-spacing: .18em; opacity: .76; }
+.regional-compass strong { font-size: 26px; }
+.regional-compass span { font-size: 11px; }
+.regional-summary { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 9px; margin-top: 18px; }
+.regional-summary span { display: grid; gap: 4px; padding: 12px; border: 1px solid rgba(75,105,113,.12); border-radius: 12px; background: rgba(255,255,255,.58); color: var(--muted); font-size: 12px; }
+.regional-summary b { color: var(--ink); font-size: 18px; }
+
+.regional-map-section,.regional-factions-section { display: grid; gap: 10px; }
+.regional-map-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 9px; }
+.regional-map-card { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px; min-width: 0; padding: 12px; border: 1px solid var(--line); border-radius: 13px; background: rgba(255,253,247,.72); color: var(--ink); text-align: left; }
+.regional-map-card > img { width: 36px; height: 36px; object-fit: contain; }
+.regional-map-card > span { display: grid; gap: 2px; min-width: 0; }
+.regional-map-card span small { overflow: hidden; color: var(--muted); text-overflow: ellipsis; white-space: nowrap; }
+.regional-map-card > strong { font-size: 22px; }
+.regional-map-card .meter { grid-column: 1/-1; }
+.regional-map-card .meter i { background: linear-gradient(90deg,#608995,#c0a45f); }
+.regional-map-card em { grid-column: 1/-1; color: var(--muted); font-size: 11px; font-style: normal; }
+.regional-map-card.active { border-color: rgba(73,115,130,.5); background: rgba(73,115,130,.09); box-shadow: inset 0 3px 0 #557d8a; }
+.regional-map-card.current em { color: #3f7583; font-weight: 700; }
+
+.regional-detail { border-color: rgba(75,107,116,.2); }
+.regional-detail > header { display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: center; }
+.regional-detail > header > div { display: grid; place-items: center; width: 66px; height: 66px; border-radius: 16px; background: rgba(75,115,128,.1); }
+.regional-detail > header img { width: 44px; height: 44px; object-fit: contain; }
+.regional-detail > header h2,.regional-detail > header p { margin: 0; }
+.regional-detail > header section > p:last-child { color: var(--muted); line-height: 1.6; }
+.regional-detail > header > strong { display: grid; text-align: right; color: #4c7682; font-size: 30px; }
+.regional-detail > header > strong small { color: var(--muted); font-size: 11px; }
+.regional-local-facts { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 8px; margin-top: 15px; }
+.regional-local-facts span { display: grid; gap: 3px; padding: 10px 12px; border-radius: 10px; background: rgba(75,115,128,.06); color: var(--muted); font-size: 12px; }
+.regional-local-facts b { color: var(--ink); }
+.regional-public-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 13px; }
+.regional-public-actions small { flex: 1 0 100%; color: var(--muted); }
+.regional-away-note { margin: 14px 0 0; padding: 11px 13px; border-left: 3px solid #62838e; background: rgba(79,116,127,.07); color: var(--muted); }
+
+.regional-faction-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+.regional-faction-card { display: grid; gap: 7px; padding: 15px; border: 1px solid var(--line); border-radius: 14px; background: rgba(255,253,247,.74); }
+.regional-faction-card > span { color: #587986; font-size: 12px; }
+.regional-faction-card h3,.regional-faction-card p { margin: 0; }
+.regional-faction-card p,.regional-faction-card > small { color: var(--muted); line-height: 1.55; }
+.regional-faction-card .meter i { background: linear-gradient(90deg,#608995,#c7a75c); }
+.regional-faction-card > div:last-child { display: flex; flex-wrap: wrap; gap: 8px; }
+.regional-faction-card.allied { border-color: rgba(180,137,50,.45); background: linear-gradient(135deg,rgba(200,161,77,.1),rgba(255,253,247,.8)); box-shadow: inset 3px 0 0 #b48c3f; }
+.regional-chronicle .info-card { border-left: 3px solid rgba(76,116,128,.45); }
+.regional-map-standing { color: #577b86 !important; font-size: 10px !important; }
+.settle-activity { border-color: rgba(164,124,54,.28) !important; background: rgba(190,151,73,.07) !important; }
+
+@media (max-width: 980px) {
+  .regional-map-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .regional-summary,.regional-local-facts { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+
+@media (max-width: 760px) {
+  .regional-pulse { grid-template-columns: auto 1fr; }
+  .regional-pulse em { grid-column: 2; }
+  .regional-pulse strong { white-space: normal; }
+  .regional-hero { grid-template-columns: 1fr; }
+  .regional-compass { width: 92px; min-height: 92px; }
+  .regional-map-grid,.regional-summary,.regional-local-facts,.regional-faction-grid { grid-template-columns: 1fr; }
+  .regional-detail > header { grid-template-columns: auto 1fr; }
+  .regional-detail > header > strong { grid-column: 2; text-align: left; }
+  .regional-public-actions > button { width: 100%; }
+  .regional-faction-card > div:last-child > button { flex: 1 1 100%; }
+}
