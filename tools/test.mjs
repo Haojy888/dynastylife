@@ -1374,7 +1374,7 @@ try {
   assert.equal(matchmakingEconomy.married, true, "彩礼充足时无法完成婚仪");
   assert.equal(matchmakingEconomy.persistedFamily, "scholar", "成婚后配偶家世无法跨存档保留");
 
-  const femaleMatchPortraits = await page.evaluate(() => {
+  const matchPortraits = await page.evaluate(() => {
     const snapshot = JSON.stringify(state);
     state.gender = "male";
     state.age = 24;
@@ -1393,7 +1393,7 @@ try {
     const pool = refreshMatchPool(true);
     view.page = "matchmaker";
     render();
-    const initial = {
+    const female = {
       count: pool.length,
       uniqueArchetypes: new Set(pool.map((item) => item.archetypeId)).size,
       allMapped: pool.every((item) => item.gender === "female" && item.portrait?.startsWith("assets/match-female-") && item.title),
@@ -1404,14 +1404,14 @@ try {
     const first = pool[0];
     inquireMatchCandidate(first.id);
     const asked = normalizeMatchCandidate(state.matchPool.find((item) => item.id === first.id));
-    const inquiry = {
+    female.inquiry = {
       inquired: asked.inquired,
       scene: asked.courtshipText.length > 20,
       score: asked.compatibility,
       visible: /媒人合帖/.test(document.querySelector(".match-courtship")?.textContent || ""),
     };
     selectMatchCandidate(first.id);
-    const selected = {
+    female.selected = {
       portrait: state.family.loverMeta?.portrait,
       profilePortrait: state.family.loverProfile?.portrait,
       archetypeId: state.family.loverProfile?.archetypeId,
@@ -1420,27 +1420,78 @@ try {
     state.eventResult = null;
     view.page = "relations";
     render();
-    selected.relationImage = Boolean(document.querySelector('.person-avatar img[src^="assets/match-female-"]'));
+    female.selected.relationImage = Boolean(document.querySelector('.person-avatar img[src^="assets/match-female-"]'));
 
     state = normalizeState(JSON.parse(snapshot));
     state.gender = "female";
-    state.matchPool = [];
+    state.age = 24;
+    state.dead = false;
+    state.prisonYears = 0;
+    state.family.spouse = null;
+    state.family.spouseMeta = null;
+    state.family.spouseProfile = null;
+    state.family.lover = null;
+    state.family.loverMeta = null;
+    state.family.loverProfile = null;
+    state.stats.money = 5000;
+    state.tags = (state.tags || []).filter((tag) => !["风月轻薄之名", "曾女扮男装"].includes(tag));
+    state.femaleLife = normalizeFemaleLife();
+    state.matchPool = [normalizeMatchCandidate({ id: "legacy-male-match", name: "旧帖男子", gender: "male", familyId: "small", personalityId: "plain" })];
+    const upgradedMalePool = refreshMatchPool(false);
+    const legacyMaleUpgraded = upgradedMalePool.length === 3 && upgradedMalePool.every((item) => item.archetypeId && item.portrait);
     const malePool = refreshMatchPool(true);
-    const reverseLinePreserved = malePool.every((item) => item.gender === "male" && !item.portrait && !item.archetypeId);
+    view.page = "matchmaker";
+    render();
+    const male = {
+      count: malePool.length,
+      uniqueArchetypes: new Set(malePool.map((item) => item.archetypeId)).size,
+      allMapped: malePool.every((item) => item.gender === "male" && item.portrait?.startsWith("assets/match-male-") && item.title),
+      imageCount: document.querySelectorAll('.match-card .match-portrait img[src^="assets/match-male-"]').length,
+      inquiryButtons: document.querySelectorAll("[data-match-inquire]").length,
+      legacyUpgraded: legacyMaleUpgraded,
+    };
+    const firstMale = malePool[0];
+    inquireMatchCandidate(firstMale.id);
+    const askedMale = normalizeMatchCandidate(state.matchPool.find((item) => item.id === firstMale.id));
+    male.inquiry = {
+      inquired: askedMale.inquired,
+      scene: askedMale.courtshipText.length > 20,
+      score: askedMale.compatibility,
+      visible: /媒人合帖/.test(document.querySelector(".match-courtship")?.textContent || ""),
+    };
+    selectMatchCandidate(firstMale.id);
+    male.selected = {
+      portrait: state.family.loverMeta?.portrait,
+      profilePortrait: state.family.loverProfile?.portrait,
+      archetypeId: state.family.loverProfile?.archetypeId,
+    };
+    state.eventResult = null;
+    marryLover();
+    male.marriage = {
+      spouse: state.family.spouse,
+      portrait: state.family.spouseMeta?.portrait,
+      archetypeId: state.family.spouseProfile?.archetypeId,
+      story: String(state.eventResult?.text || "").length > 35,
+    };
+    state.eventResult = null;
+    view.page = "relations";
+    render();
+    male.marriage.relationImage = Boolean(document.querySelector('.person-avatar img[src^="assets/match-male-"]'));
     state = normalizeState(JSON.parse(snapshot));
     save();
     render();
-    return { initial, inquiry, selected, reverseLinePreserved };
+    return { female, male };
   });
-  assert.deepEqual(femaleMatchPortraits.initial, { count: 3, uniqueArchetypes: 3, allMapped: true, imageCount: 3, inquiryButtons: 3, legacyUpgraded: true }, "女性婚配候选头像、身份、旧帖升级或去重映射异常");
-  assert.equal(femaleMatchPortraits.inquiry.inquired, true, "托媒问话没有写入候选状态");
-  assert.equal(femaleMatchPortraits.inquiry.scene, true, "身份专属相看剧情过短或缺失");
-  assert.ok(femaleMatchPortraits.inquiry.score >= 12 && femaleMatchPortraits.inquiry.score <= 98, "合帖契合度越界");
-  assert.equal(femaleMatchPortraits.inquiry.visible, true, "托媒问话结果没有呈现在相亲卡片中");
-  assert.equal(femaleMatchPortraits.selected.portrait, femaleMatchPortraits.selected.profilePortrait, "选定相看后头像未同步至亲友关系");
-  assert.ok(femaleMatchPortraits.selected.archetypeId, "选定相看后身份资料丢失");
-  assert.equal(femaleMatchPortraits.selected.relationImage, true, "亲友页没有显示相看对象头像");
-  assert.equal(femaleMatchPortraits.reverseLinePreserved, true, "女性主角的男性婚配候选被错误套用女性头像");
+  assert.deepEqual({ count: matchPortraits.female.count, uniqueArchetypes: matchPortraits.female.uniqueArchetypes, allMapped: matchPortraits.female.allMapped, imageCount: matchPortraits.female.imageCount, inquiryButtons: matchPortraits.female.inquiryButtons, legacyUpgraded: matchPortraits.female.legacyUpgraded }, { count: 3, uniqueArchetypes: 3, allMapped: true, imageCount: 3, inquiryButtons: 3, legacyUpgraded: true }, "女性婚配候选头像、身份、旧帖升级或去重映射异常");
+  assert.equal(matchPortraits.female.inquiry.inquired && matchPortraits.female.inquiry.scene && matchPortraits.female.inquiry.visible, true, "女性候选托媒问话没有完整呈现");
+  assert.ok(matchPortraits.female.inquiry.score >= 12 && matchPortraits.female.inquiry.score <= 98, "女性候选合帖契合度越界");
+  assert.equal(matchPortraits.female.selected.portrait, matchPortraits.female.selected.profilePortrait, "女性候选头像未同步至亲友关系");
+  assert.ok(matchPortraits.female.selected.archetypeId && matchPortraits.female.selected.relationImage, "女性候选身份或关系头像丢失");
+  assert.deepEqual({ count: matchPortraits.male.count, uniqueArchetypes: matchPortraits.male.uniqueArchetypes, allMapped: matchPortraits.male.allMapped, imageCount: matchPortraits.male.imageCount, inquiryButtons: matchPortraits.male.inquiryButtons, legacyUpgraded: matchPortraits.male.legacyUpgraded }, { count: 3, uniqueArchetypes: 3, allMapped: true, imageCount: 3, inquiryButtons: 3, legacyUpgraded: true }, "男性婚配候选头像、身份、旧帖升级或去重映射异常");
+  assert.equal(matchPortraits.male.inquiry.inquired && matchPortraits.male.inquiry.scene && matchPortraits.male.inquiry.visible, true, "男性候选托媒问话没有完整呈现");
+  assert.ok(matchPortraits.male.inquiry.score >= 12 && matchPortraits.male.inquiry.score <= 98, "男性候选合帖契合度越界");
+  assert.equal(matchPortraits.male.selected.portrait, matchPortraits.male.selected.profilePortrait, "男性候选头像未同步至相看关系");
+  assert.ok(matchPortraits.male.marriage.spouse && matchPortraits.male.marriage.archetypeId && matchPortraits.male.marriage.story && matchPortraits.male.marriage.relationImage, "男性候选成婚、婚后身份剧情或亲友头像未延续");
 
   const gambleBlacklist = await page.evaluate(() => {
     const snapshot = JSON.stringify(state);
