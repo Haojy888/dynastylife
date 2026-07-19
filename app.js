@@ -4735,6 +4735,41 @@ function applySpouseProfileYear(deltas = []) {
   }
 }
 
+function upgradeLegacyLoverProfile() {
+  if (!state?.family?.lover) return null;
+  const existing = normalizeMatchCandidate(state.family.loverProfile);
+  if (existing?.archetypeId && existing?.portrait) {
+    state.family.loverProfile = existing;
+    return existing;
+  }
+  const gender = state.gender === "male" ? "female" : "male";
+  const profile = generateMatchCandidate(gender);
+  profile.name = state.family.lover;
+  const legacyAge = Number(state.family.loverMeta?.age);
+  if (Number.isFinite(legacyAge)) profile.age = clamp(Math.round(legacyAge), 15, 40);
+  const affection = clamp(Number(state.family.loverMeta?.affection ?? state.family.spouseAffection ?? 64));
+  state.family.loverProfile = profile;
+  state.family.loverMeta = normalizeRelative(
+    {
+      ...state.family.loverMeta,
+      name: profile.name,
+      relation: "相看之人",
+      gender: profile.gender,
+      age: profile.age,
+      affection,
+      portrait: profile.portrait,
+      archetypeId: profile.archetypeId,
+      title: profile.title,
+      occupation: profile.title,
+      alive: true,
+    },
+    state.name.slice(0, 1),
+    "partner"
+  );
+  state.family.spouseAffection = affection;
+  return profile;
+}
+
 function openMatchmakerBoard() {
   if (!state || state.dead || state.prisonYears > 0 || state.age < 16) return;
   archiveDeceasedSpouse([]);
@@ -4742,6 +4777,7 @@ function openMatchmakerBoard() {
     finishAction("媒人", "你已成婚，媒人拱手道喜，说改日再为子女操心也不迟。", [], "ArrangeMarriage");
     return;
   }
+  upgradeLegacyLoverProfile();
   refreshMatchPool(false);
   view.page = "matchmaker";
   save();
@@ -8792,27 +8828,7 @@ function useSpecialPlace(id) {
     title = "会友";
     text = "你走动亲友，席间闲谈让彼此更亲近。";
   } else if (id === "matchmaker") {
-    const name = makePersonName(state.gender === "male" ? "female" : "male");
-    if (state.family.spouse && state.gender === "male") {
-      if ((state.family.concubines || []).length >= 3) {
-        title = "媒人";
-        text = "媒人见你已有三房侧室，劝你先把内宅人情料理妥当，不肯再递新人名帖。";
-      } else {
-        state.family.concubineCandidate = normalizePartner({ name, relation: "待纳侧室", gender: "female", affection: randInt(48, 68), intimacy: 12 }, state.name.slice(0, 1), "待纳侧室", "concubine-candidate");
-        changeStat("relationship", randInt(2, 6), deltas);
-        title = "媒人递帖";
-        text = `媒人听说你已有正妻，又递来${name}的名帖。若有意纳为侧室，可回亲友页再作决定。`;
-      }
-    } else if (state.family.spouse) {
-      title = "媒人";
-      text = "媒人知道你已有婚配，只与你说了几户亲友近况，没有再替你另牵姻缘。";
-    } else {
-      state.family.lover = name;
-      state.family.loverMeta = normalizeRelative({ name, relation: "相看之人", gender: state.gender === "male" ? "female" : "male", affection: 64 }, state.name.slice(0, 1), "partner");
-      changeStat("relationship", randInt(3, 8), deltas);
-      title = "媒人";
-      text = `媒人替你相看了${name}，说是颇有缘分。`;
-    }
+    return openMatchmakerBoard();
   } else if (id === "blackMarket") {
     return openBlackMarket();
   }

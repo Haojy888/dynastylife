@@ -1374,6 +1374,79 @@ try {
   assert.equal(matchmakingEconomy.married, true, "彩礼充足时无法完成婚仪");
   assert.equal(matchmakingEconomy.persistedFamily, "scholar", "成婚后配偶家世无法跨存档保留");
 
+  const matchmakerEntry = await page.evaluate(() => {
+    const snapshot = JSON.stringify(state);
+    state.gender = "female";
+    state.age = 25;
+    state.dead = false;
+    state.prisonYears = 0;
+    state.currentEvent = null;
+    state.eventResult = null;
+    state.pendingCaravan = null;
+    state.pendingTravel = null;
+    state.pendingSurprise = null;
+    state.pendingAchievement = null;
+    state.poetryRound = null;
+    state.family.spouse = null;
+    state.family.spouseMeta = null;
+    state.family.spouseProfile = null;
+    state.family.lover = null;
+    state.family.loverMeta = null;
+    state.family.loverProfile = null;
+    state.stats.money = 5000;
+    state.tags = (state.tags || []).filter((tag) => !["风月轻薄之名", "曾女扮男装"].includes(tag));
+    state.femaleLife = normalizeFemaleLife();
+    state.matchPool = [];
+    view.page = "place";
+    view.placeId = "matchmaker";
+    view.overlay = "";
+    render();
+    const entry = document.querySelector('[data-special-place="matchmaker"]');
+    entry?.click();
+    const fresh = {
+      hasEntry: !!entry,
+      page: view.page,
+      result: state.eventResult?.title || "",
+      cards: document.querySelectorAll(".match-card").length,
+      portraits: document.querySelectorAll('.match-portrait img[src^="assets/match-male-"]').length,
+      lover: state.family.lover,
+    };
+
+    state.eventResult = null;
+    state.family.lover = "郑彦玮";
+    state.family.loverMeta = normalizeRelative(
+      { name: "郑彦玮", relation: "相看之人", gender: "male", age: 26, affection: 64, alive: true },
+      state.name.slice(0, 1),
+      "partner"
+    );
+    state.family.loverProfile = null;
+    view.page = "place";
+    view.placeId = "matchmaker";
+    openMatchmakerBoard();
+    const migrated = {
+      page: view.page,
+      name: state.family.loverProfile?.name,
+      portrait: state.family.loverProfile?.portrait,
+      archetypeId: state.family.loverProfile?.archetypeId,
+      metaPortrait: state.family.loverMeta?.portrait,
+      summary: /郑彦玮/.test(document.querySelector(".empty-note")?.textContent || ""),
+    };
+    state = normalizeState(JSON.parse(snapshot));
+    save();
+    render();
+    return { fresh, migrated };
+  });
+  assert.deepEqual(
+    { hasEntry: matchmakerEntry.fresh.hasEntry, page: matchmakerEntry.fresh.page, result: matchmakerEntry.fresh.result, cards: matchmakerEntry.fresh.cards, portraits: matchmakerEntry.fresh.portraits, lover: matchmakerEntry.fresh.lover },
+    { hasEntry: true, page: "matchmaker", result: "", cards: 3, portraits: 3, lover: null },
+    "联姻策略局入口仍触发旧媒人结果，未进入候选人面板"
+  );
+  assert.equal(matchmakerEntry.migrated.page, "matchmaker", "旧媒人相看记录无法进入新面板");
+  assert.equal(matchmakerEntry.migrated.name, "郑彦玮", "旧媒人相看对象姓名在升级时丢失");
+  assert.ok(matchmakerEntry.migrated.archetypeId && matchmakerEntry.migrated.portrait?.startsWith("assets/match-male-"), "旧媒人相看对象没有补齐男性身份与头像");
+  assert.equal(matchmakerEntry.migrated.metaPortrait, matchmakerEntry.migrated.portrait, "旧媒人相看对象头像没有同步到亲友关系");
+  assert.equal(matchmakerEntry.migrated.summary, true, "旧媒人相看对象没有显示在新面板");
+
   const matchPortraits = await page.evaluate(() => {
     const snapshot = JSON.stringify(state);
     state.gender = "male";
