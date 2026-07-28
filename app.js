@@ -1023,6 +1023,14 @@ const ACTIVITY_PLACES = [
   { id: "womenSchool", label: "女学", icon: "FemaleSkill", minAge: 8, note: "女子可修习闺塾技艺。", special: "womenSchool" },
 ];
 
+const ACTIVITY_GROUPS = [
+  { id: "daily", label: "日常民生", note: "养身、置物与体察民情", places: ["medicine", "inn", "farm", "market"] },
+  { id: "study", label: "求学修习", note: "读书、女学与玄门技艺", places: ["academy", "womenSchool", "alchemy"] },
+  { id: "social", label: "人情往来", note: "亲友、婚姻与宴席门路", places: ["friends", "matchmaker", "party", "official"] },
+  { id: "leisure", label: "游艺消遣", note: "雅戏、促织与市井风月", places: ["parlor", "cricket", "theater", "casino"] },
+  { id: "adventure", label: "江湖险途", note: "奇术暗门，收益与风险并存", places: ["jianghu", "temple"] },
+];
+
 const CUSTOM_CAREERS = [
   {
     name: "镖师行商",
@@ -2632,7 +2640,7 @@ const LIFE_GOALS = [
   { id: "secret-keep", tier: "gold", title: "隐秘一生", icon: "Letter", desc: "持有秘密至终老且从未败露。", score: 100, done: () => state.dead && (state.secrets || []).some((item) => item && !item.exposed), advice: "黑市或中年后可沾染暗事，败露代价极高。" },
   { id: "prison-survivor", tier: "silver", title: "铁窗三载", icon: "PrisonHeader", desc: "累计度过三年有完整剧情的牢狱生活。", score: 120, done: () => Number(state.prison?.yearsServed || 0) >= 3, advice: "在牢中每年都要处理生存、劳役、人情与申诉。" },
   { id: "prison-appeal", tier: "silver", title: "秋审翻卷", icon: "MainBook", desc: "在狱中申诉或联名作证获得减刑。", score: 140, done: () => (state.prison?.records || []).some((item) => /申诉得准|众证减刑/.test(item.title || "")), advice: "读残卷积累申诉线索，再把握秋审机会。" },
-  { id: "culture-first", tier: "bronze", title: "岁时入册", icon: "Temple", desc: "亲历四个传统节日或节气。", score: 60, done: () => (state.culturalCalendar?.seen || []).length >= 4, advice: "每年流转都会遇见一则节日或节气故事。" },
+  { id: "culture-first", tier: "bronze", title: "岁时入册", icon: "Temple", desc: "亲历四个传统节日或节气。", score: 60, done: () => (state.culturalCalendar?.seen || []).length >= 4, advice: "随流年留心节日、节气与四时物候。" },
   { id: "culture-four-seasons", tier: "silver", title: "四时有序", icon: "MainBook", desc: "春夏秋冬都留下岁时记录。", score: 130, done: () => Object.keys(CULTURAL_SEASONS).every((season) => Number(state.culturalCalendar?.seasonCounts?.[season] || 0) > 0), advice: "随流年经历完整的春生、夏长、秋收、冬藏。" },
   { id: "culture-terms", tier: "silver", title: "节令通览", icon: "MainBook", desc: "解锁十二个不同节气。", score: 160, done: () => (state.culturalCalendar?.seen || []).filter((id) => id.startsWith("term-")).length >= 12, advice: "在华夏岁时图鉴里记录物候、农事与起居。" },
   { id: "culture-complete", tier: "gold", title: "岁时大成", icon: "Temple", desc: "解锁全部二十四节气与十六个传统节日。", score: 420, done: () => (state.culturalCalendar?.seen || []).length >= CULTURAL_CALENDAR_ITEMS.length, advice: "让一生走遍四十则岁时文化。" },
@@ -5350,6 +5358,9 @@ function annualCulturalEvent() {
   if (!state || state.dead || state.prisonYears > 0 || state.age < 2) return null;
   state.culturalCalendar = normalizeCulturalCalendar(state.culturalCalendar);
   const calendar = state.culturalCalendar;
+  // 岁时文化是人生的底色，不应每年都抢在个人命运之前。隔年呈现一次完整互动，
+  // 其余年份让家事、职业、婚姻与地方事件直接登场。
+  if (calendar.total > 0 && state.age % 2 === 1) return null;
   const seasons = Object.keys(CULTURAL_SEASONS);
   const season = seasons[calendar.total % seasons.length];
   const preferredType = calendar.total % 2 === 0 ? "term" : "festival";
@@ -7614,12 +7625,13 @@ function takeCareer(index) {
     ensureOfficialNetwork();
     recordOfficialPost("入仕");
   }
-  state.lastDeltas = [{ label: "营生", value: career.name }];
-  addLog("谋职", careerJoinText(career), state.lastDeltas);
+  const deltas = [{ label: "营生", value: career.name }];
+  const firstAction = careerActions()[0];
+  const careerGuide = careerKind(career) === "official" ? "上官" : careerKind(career) === "mystic" ? "师门" : "东家";
+  const firstStep = firstAction ? `${careerGuide}交代的第一桩差事是“${firstAction[1]}”：${firstAction[2]}` : "先熟悉规矩，再凭本事站稳脚跟。";
   unlockLifeGoals();
   view.tab = careerKind(career) === "caravan" ? "career" : "overview";
-  save();
-  render();
+  finishAction(`初入${career.name}`, `${careerJoinText(career)} ${firstStep}`, deltas, careerIcon(careerKind(career)));
 }
 
 function careerKind(career = state.career) {
@@ -13445,7 +13457,7 @@ function talentCard(item, type) {
 
 function renderGame() {
   return `
-    <main class="app-shell game-shell">
+    <main class="app-shell game-shell ${view.page !== "main" ? "focus-page" : ""}">
       <header class="topbar">
         <div class="identity">
           <button class="avatar profile-trigger" data-overlay="profile" title="资料">${profileAvatarHtml("top-avatar-img")}</button>
@@ -14192,10 +14204,15 @@ function overviewView() {
         <button class="secondary-btn" data-page="place" data-place="activities">安排活动</button>
       </div>
     </article>
-    ${worldPulseView()}
-    ${clanPulseView()}
-    ${regionalPulseView()}
-    ${secretPulseView()}
+    <details class="overview-secondary" ${state.dynasty?.activeArc || secretLineNoticeCount() ? "open" : ""}>
+      <summary><span><b>天下与家门</b><small>朝局、宗族、地域与奇闻暗线</small></span><em>${state.dynasty?.activeArc || secretLineNoticeCount() ? "有新动静" : "按需展开"}</em></summary>
+      <div class="overview-secondary-body">
+        ${worldPulseView()}
+        ${clanPulseView()}
+        ${regionalPulseView()}
+        ${secretPulseView()}
+      </div>
+    </details>
     <section class="goal-strip">
       ${goals.map((goal) => `
         <article class="goal-card">
@@ -16788,21 +16805,48 @@ function overviewPanel() {
 
 function activityPanel() {
   const blocked = state.dead || !!state.currentEvent || !!state.pendingCaravan || state.prisonYears > 0;
+  const placeButton = (place) => {
+    const reason = blocked ? "当前有事未了" : placeLockReason(place);
+    const detail = reason || place.note || "进入地点页面";
+    return `
+      <button class="list-btn" data-place="${escapeHtml(place.id)}" ${reason ? "disabled" : ""}>
+        ${icon(place.icon, place.label)}
+        <span>${escapeHtml(place.label)}<small>${escapeHtml(detail)}</small></span>
+      </button>`;
+  };
   return `
     <section class="panel-content">
       <h2>活动</h2>
       ${state.prisonYears > 0 ? `<p class="empty-note">刑期未满，暂不能外出活动。</p>` : ""}
-      <div class="button-list">
-        ${ACTIVITY_PLACES.map((place) => {
-          const reason = blocked ? "当前有事未了" : placeLockReason(place);
+      <div class="activity-groups">
+        ${ACTIVITY_GROUPS.map((group) => {
+          const places = group.places.map((id) => ACTIVITY_PLACES.find((place) => place.id === id)).filter(Boolean);
           return `
-          <button class="list-btn" data-place="${escapeHtml(place.id)}" ${reason ? "disabled" : ""}>
-            ${icon(place.icon, place.label)}
-            <span>${escapeHtml(place.label)}<small>${escapeHtml(reason || "进入地点页面")}</small></span>
-          </button>`;
+            <section class="activity-group" data-activity-group="${escapeHtml(group.id)}">
+              <header><span><b>${escapeHtml(group.label)}</b><small>${escapeHtml(group.note)}</small></span><em>${places.length}处</em></header>
+              <div class="button-list">${places.map(placeButton).join("")}</div>
+            </section>`;
         }).join("")}
       </div>
     </section>`;
+}
+
+const CAREER_FILTERS = [
+  ["eligible", "适合我"],
+  ["official", "官场"],
+  ["craft", "匠艺"],
+  ["service", "市井"],
+  ["female", "女业"],
+  ["jianghu", "江湖"],
+];
+
+function careerFilterId(career) {
+  const kind = careerKind(career);
+  if (kind === "official") return "official";
+  if (["craft", "art"].includes(kind)) return "craft";
+  if (["service", "labor", "common"].includes(kind)) return "service";
+  if (kind === "female") return "female";
+  return "jianghu";
 }
 
 function careerPanel() {
@@ -16811,6 +16855,18 @@ function careerPanel() {
   const kind = state.career ? careerKind(state.career) : "";
   const officialCareer = kind === "official";
   const progress = state.career ? (state.careerProgress[state.career.name] || { exp: 0, level: 1 }) : null;
+  const selectedFilter = CAREER_FILTERS.some(([id]) => id === view.careerFilter) ? view.careerFilter : "eligible";
+  const entries = careers.map((career, index) => ({ career, index, lockReason: careerLockedReason(career), group: careerFilterId(career) }));
+  const filteredEntries = selectedFilter === "eligible"
+    ? entries.filter((item) => !item.lockReason)
+    : entries.filter((item) => item.group === selectedFilter);
+  const availableEntries = filteredEntries.filter((item) => !item.lockReason);
+  const lockedEntries = filteredEntries.filter((item) => item.lockReason);
+  const careerCard = ({ career, index, lockReason }) => `
+    <button class="career-card" data-career="${index}" ${blocked || lockReason ? "disabled" : ""}>
+      <strong>${escapeHtml(career.name || "营生")}</strong>
+      <span>${escapeHtml(careerDisplayText(career, lockReason))}</span>
+    </button>`;
   return `
     <section class="panel-content">
       <h2>营生</h2>
@@ -16829,16 +16885,13 @@ function careerPanel() {
             <span>${escapeHtml(label)}<small>${escapeHtml(note)}</small></span>
           </button>`).join("")}
       </div>` : ""}
-      <div class="career-list">
-        ${careers.map((career, index) => {
-          const lockReason = careerLockedReason(career);
-          return `
-          <button class="career-card" data-career="${index}" ${blocked || lockReason ? "disabled" : ""}>
-            <strong>${escapeHtml(career.name || "营生")}</strong>
-            <span>${escapeHtml(careerDisplayText(career, lockReason))}</span>
-          </button>`;
-        }).join("")}
+      <nav class="career-filters" aria-label="职业分类">
+        ${CAREER_FILTERS.map(([id, label]) => `<button class="${selectedFilter === id ? "active" : ""}" data-career-filter="${id}" aria-pressed="${selectedFilter === id}">${escapeHtml(label)}</button>`).join("")}
+      </nav>
+      <div class="career-list career-available-list">
+        ${availableEntries.map(careerCard).join("") || `<p class="empty-note">${state.career ? "当前已有营生，辞职后可重新择业。" : "这一类暂时没有符合身份与年龄的营生。"}</p>`}
       </div>
+      ${lockedEntries.length ? `<details class="career-locked-list"><summary>尚未解锁 · ${lockedEntries.length}项</summary><div class="career-list">${lockedEntries.map(careerCard).join("")}</div></details>` : ""}
     </section>`;
 }
 
@@ -17299,6 +17352,11 @@ app.addEventListener("click", (event) => {
   if (button.dataset.travelUpgrade) return upgradeTravelCarriage(button.dataset.travelUpgrade);
   if (button.dataset.action === "travel-depart") return startTravelJourney();
   if (button.dataset.travel !== undefined) return travelTo(button.dataset.travel);
+  if (button.dataset.careerFilter) {
+    view.careerFilter = button.dataset.careerFilter;
+    render();
+    return;
+  }
   if (button.dataset.career !== undefined) return takeCareer(button.dataset.career);
   if (button.dataset.careerAction) return performCareerAction(button.dataset.careerAction);
   if (button.dataset.examExtra) return startExtraExam(button.dataset.examExtra);

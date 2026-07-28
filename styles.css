@@ -5564,3 +5564,294 @@ p {
   .regional-map-scene img,
   .regional-detail-scene > img { animation: none !important; transition: none !important; transform: none !important; }
 }
+
+/* 体验优先改造：先让玩家看到命运，再按需展开信息。 */
+.game-shell.focus-page .game-layout {
+  grid-template-columns: minmax(0, 1180px);
+  justify-content: center;
+}
+
+.game-shell.focus-page .stats-panel,
+.game-shell.focus-page .detail-panel {
+  display: none;
+}
+
+.game-shell.focus-page .center-panel {
+  width: 100%;
+  padding: clamp(18px, 2.4vw, 30px);
+}
+
+.overview-secondary {
+  margin: 12px 0 4px;
+  overflow: hidden;
+  border: 1px solid rgba(47, 125, 109, 0.16);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.34);
+}
+
+.overview-secondary > summary {
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 10px 14px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.overview-secondary > summary::-webkit-details-marker,
+.career-locked-list > summary::-webkit-details-marker {
+  display: none;
+}
+
+.overview-secondary > summary span {
+  display: grid;
+  gap: 3px;
+}
+
+.overview-secondary > summary small {
+  color: var(--muted);
+}
+
+.overview-secondary > summary em {
+  flex: 0 0 auto;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: rgba(47, 125, 109, 0.09);
+  color: var(--accent);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.overview-secondary-body {
+  display: grid;
+  gap: 10px;
+  padding: 0 12px 12px;
+}
+
+.activity-groups {
+  display: grid;
+  gap: 18px;
+}
+
+.activity-group {
+  display: grid;
+  gap: 9px;
+}
+
+.activity-group > header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 2px;
+}
+
+.activity-group > header span {
+  display: grid;
+  gap: 2px;
+}
+
+.activity-group > header b {
+  font-size: 15px;
+}
+
+.activity-group > header small {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.activity-group > header em {
+  color: var(--accent);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.activity-group .button-list {
+  gap: 8px;
+}
+
+.career-filters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  margin: 14px 0;
+}
+
+.career-filters button {
+  min-height: 42px;
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.55);
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.career-filters button.active {
+  border-color: transparent;
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(47, 125, 109, 0.19);
+}
+
+.career-locked-list {
+  margin-top: 12px;
+  overflow: hidden;
+  border: 1px dashed rgba(90, 82, 61, 0.2);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.27);
+}
+
+.career-locked-list > summary {
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  color: var(--muted);
+  cursor: pointer;
+  list-style: none;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.career-locked-list > summary::after {
+  content: "展开";
+  color: var(--accent);
+}
+
+.career-locked-list[open] > summary::after {
+  content: "收起";
+}
+
+.career-locked-list .career-list {
+  padding: 0 10px 10px;
+}
+
+.tabs button {
+  min-height: 44px;
+  height: auto;
+}
+
+.create-panel {
+  overflow: hidden;
+}
+
+.create-panel::before {
+  content: "";
+  display: block;
+  height: 170px;
+  margin: -28px -28px 24px;
+  background:
+    linear-gradient(180deg, rgba(23, 39, 37, 0.05), rgba(23, 39, 37, 0.58)),
+    url("assets/event-life.webp") center 54% / cover;
+}
+
+@media (max-width: 760px) {
+  .topbar {
+    min-height: 0;
+    align-items: stretch;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .identity {
+    width: 100%;
+  }
+
+  .identity h1 {
+    font-size: 23px;
+  }
+
+  .identity p {
+    margin-top: 3px;
+    font-size: 12px;
+  }
+
+  .avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+  }
+
+  .top-actions {
+    width: 100%;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    gap: 7px;
+    overflow-x: auto;
+    padding-bottom: 3px;
+    scroll-snap-type: x proximity;
+    scrollbar-width: thin;
+  }
+
+  .top-actions button,
+  .shortcut-btn {
+    flex: 0 0 62px;
+    width: 62px;
+    min-width: 62px;
+    min-height: 54px;
+    padding: 5px;
+    scroll-snap-align: start;
+  }
+
+  .shortcut-btn img {
+    width: 25px;
+    height: 25px;
+  }
+
+  .status-strip {
+    flex-wrap: nowrap;
+    gap: 6px;
+    overflow-x: auto;
+    padding: 8px;
+    scrollbar-width: thin;
+  }
+
+  .resource-pill {
+    flex: 0 0 auto;
+    min-height: 30px;
+    padding: 4px 8px;
+  }
+
+  .game-layout {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .center-panel {
+    order: 1;
+    width: 100%;
+  }
+
+  .detail-panel {
+    order: 2;
+    width: 100%;
+  }
+
+  .stats-panel {
+    order: 3;
+    width: 100%;
+  }
+
+  .game-shell.focus-page .center-panel {
+    padding: 14px;
+  }
+
+  .activity-group > header {
+    align-items: start;
+  }
+
+  .career-filters {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .create-panel::before {
+    height: 126px;
+    margin: -18px -18px 20px;
+  }
+}

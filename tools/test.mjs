@@ -22,7 +22,11 @@ try {
   page.on("console", (message) => {
     if (message.type() === "error") errors.push(`console: ${message.text()}`);
   });
-  page.on("requestfailed", (request) => failedRequests.push(`${request.method()} ${request.url()}`));
+  page.on("requestfailed", (request) => {
+    const reason = request.failure()?.errorText || "";
+    // 高频流年压力测试会在 render() 替换图片节点时主动取消旧请求；这不是资源缺失。
+    if (!reason.includes("ERR_ABORTED")) failedRequests.push(`${request.method()} ${request.url()} ${reason}`.trim());
+  });
   page.on("response", (response) => {
     if (response.status() >= 400) failedRequests.push(`${response.status()} ${response.url()}`);
   });
@@ -206,7 +210,7 @@ try {
     return { current: saved.currentEvent?.kind, pending: saved.pendingAnnualEvent?.kind };
   });
   assert.ok([introKinds.current, introKinds.pending].includes("familyStory"), "未触发父母疾病家事");
-  assert.equal(introKinds.current, "culturalEvent", "年度文化事件未在原有家事前依序呈现");
+  assert.equal(introKinds.current, "familyStory", "非岁时重点年份仍被文化事件遮住了家事主线");
   await clearBlockingUi();
 
   let storyState = await page.evaluate(() => {
@@ -551,7 +555,16 @@ try {
     const cinematic = eventResultView();
     state.eventResult = null;
     takeCareer(targetIndex);
-    return { blockedCareer, blockedTitle, resigned, history, cinematic, newCareer: state.career?.name };
+    return {
+      blockedCareer,
+      blockedTitle,
+      resigned,
+      history,
+      cinematic,
+      newCareer: state.career?.name,
+      joinTitle: state.eventResult?.title,
+      joinContent: state.eventResult?.text,
+    };
   });
   assert.equal(careerSwitching.blockedCareer, "道士", "未辞职时仍能直接切换职业");
   assert.equal(careerSwitching.blockedTitle, "须先辞职", "转职阻止提示不明确");
@@ -559,6 +572,8 @@ try {
   assert.equal(careerSwitching.history.name, "道士", "辞职没有写入职业履历");
   assert.match(careerSwitching.cinematic, /cinematic-stage/, "活动结果没有渲染过场动画舞台");
   assert.equal(careerSwitching.newCareer, "木匠", "辞职后仍无法选择新职业");
+  assert.equal(careerSwitching.joinTitle, "初入木匠", "入职后没有出现明确的职业起步结果");
+  assert.match(careerSwitching.joinContent, /第一桩差事/, "入职结果没有给出下一步职业行动");
   await clearBlockingUi();
 
   console.log("quality gate: verifying partner portraits and brothel companion flow");
@@ -2083,6 +2098,72 @@ try {
   });
   assert.equal(annualStress.age, 73, "中晚年压力测试未能连续推进 55 个流年");
   assert.deepEqual({ failures: annualStress.failures, runtimeErrors: annualStress.runtimeErrors }, { failures: [], runtimeErrors: [] }, "中晚年流年仍出现异常兜底事件");
+
+  console.log("quality gate: verifying UX priority refresh");
+  const uxRefresh = await page.evaluate(() => {
+    const snapshot = JSON.stringify(state);
+    const previousView = { ...view };
+    state.dead = false;
+    state.age = 25;
+    state.prisonYears = 0;
+    state.currentEvent = null;
+    state.pendingAnnualEvent = null;
+    state.eventResult = null;
+    state.pendingSurprise = null;
+    state.pendingAchievement = null;
+    state.pendingTravel = null;
+    state.pendingCaravan = null;
+    state.career = null;
+    view.page = "main";
+    view.tab = "activities";
+    view.overlay = "";
+    render();
+    const topbar = document.querySelector(".topbar")?.getBoundingClientRect();
+    const status = document.querySelector(".status-strip")?.getBoundingClientRect();
+    const center = document.querySelector(".center-panel")?.getBoundingClientRect();
+    const stats = document.querySelector(".stats-panel")?.getBoundingClientRect();
+    const activity = {
+      groups: document.querySelectorAll("[data-activity-group]").length,
+      places: document.querySelectorAll("[data-activity-group] [data-place]").length,
+      genericNotes: [...document.querySelectorAll("[data-activity-group] .list-btn small")].filter((node) => node.textContent.trim() === "进入地点页面").length,
+    };
+    view.tab = "career";
+    state.gender = "male";
+    view.careerFilter = "female";
+    render();
+    const career = {
+      filters: document.querySelectorAll("[data-career-filter]").length,
+      active: document.querySelector("[data-career-filter].active")?.dataset.careerFilter,
+      lockedFold: Boolean(document.querySelector(".career-locked-list")),
+    };
+    view.page = "travel";
+    render();
+    const shell = document.querySelector(".game-shell");
+    const focusCenter = document.querySelector(".center-panel")?.getBoundingClientRect();
+    const focus = {
+      className: shell?.classList.contains("focus-page"),
+      statsHidden: getComputedStyle(document.querySelector(".stats-panel")).display === "none",
+      detailsHidden: getComputedStyle(document.querySelector(".detail-panel")).display === "none",
+      centerWidth: focusCenter?.width || 0,
+    };
+    state = normalizeState(JSON.parse(snapshot));
+    Object.assign(view, previousView);
+    render();
+    return {
+      mobile: { topbar: topbar?.height || 0, status: status?.height || 0, centerBeforeStats: center.bottom <= stats.top },
+      activity,
+      career,
+      focus,
+      overflow: document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+    };
+  });
+  assert.equal(uxRefresh.mobile.centerBeforeStats, true, "移动端仍先显示属性面板而不是流年事件");
+  assert.ok(uxRefresh.mobile.topbar < 175 && uxRefresh.mobile.status < 65, "移动端顶部导航或资源条仍占用过多首屏空间");
+  assert.deepEqual(uxRefresh.activity, { groups: 5, places: 17, genericNotes: 0 }, "活动页分类、地点数量或有效说明不正确");
+  assert.deepEqual(uxRefresh.career, { filters: 6, active: "female", lockedFold: true }, "职业筛选或未解锁折叠区没有生效");
+  assert.equal(uxRefresh.focus.className && uxRefresh.focus.statsHidden && uxRefresh.focus.detailsHidden, true, "特殊玩法没有进入全宽沉浸布局");
+  assert.ok(uxRefresh.focus.centerWidth >= 350, "移动端特殊玩法的有效宽度过窄");
+  assert.equal(uxRefresh.overflow, true, "体验改造后出现移动端横向溢出");
 
   await page.setViewport({ width: 1440, height: 900, isMobile: false, hasTouch: false, deviceScaleFactor: 1 });
   const shell = await page.$(".game-shell");
