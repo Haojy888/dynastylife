@@ -19,6 +19,16 @@ try {
   await page.goto(`http://127.0.0.1:${port}`, { waitUntil: "domcontentloaded", timeout: 30000 });
   await page.waitForSelector('[data-action="start-life"]', { timeout: 10000 });
   await page.click('[data-action="start-life"]');
+  await page.waitForSelector(".onboarding-avatar", { timeout: 10000 });
+  await page.screenshot({ path: output("onboarding") });
+  console.log("onboarding avatar", await page.$eval(".onboarding-avatar", (image) => ({
+    src: image.getAttribute("src"),
+    complete: image.complete,
+    naturalWidth: image.naturalWidth,
+    naturalHeight: image.naturalHeight,
+    display: getComputedStyle(image).display,
+    opacity: getComputedStyle(image).opacity,
+  })));
   await page.click('[data-action="onboarding-next-year"]');
   await page.evaluate(() => {
     state.dead = false;
@@ -87,7 +97,7 @@ try {
   await new Promise((resolve) => setTimeout(resolve, 300));
   await page.screenshot({ path: output("desktop-travel") });
 
-  console.log(["mobile-main", "mobile-activities", "mobile-careers", "mobile-travel", "desktop-travel"].map(output).join("\n"));
+  console.log(["onboarding", "mobile-main", "mobile-activities", "mobile-careers", "mobile-travel", "desktop-travel"].map(output).join("\n"));
 } finally {
   await browser.close();
   await new Promise((resolve) => server.close(resolve));

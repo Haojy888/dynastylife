@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>古代人生 Web - 古风人生模拟游戏 | 在线免费玩</title>
-    <meta name="description" content="免费在线古风人生模拟游戏。从抓周开始经历完整一生:读书科举、营生百业、姻缘家产、押镖行商、促织雅戏。561+ 人生事件,18 种命格,无需下载,打开即玩。" />
+    <meta name="description" content="免费在线古风人生模拟游戏。从抓周开始经历完整一生:读书科举、营生百业、姻缘家产、押镖行商、促织雅戏。561+ 人生事件,18 种命格,无需下载,支持离线游玩。" />
     <meta name="keywords" content="古代人生,人生模拟,古风游戏,网页游戏,科举,人生重开,在线游戏" />
     <link rel="canonical" href="https://www.dynastylife.online/" />
     <meta name="theme-color" content="#2f7d6d" />
@@ -13,16 +13,19 @@
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="古代人生 Web" />
     <meta property="og:title" content="古代人生 Web - 古风人生模拟游戏" />
-    <meta property="og:description" content="从抓周到终老,体验一段完整的古代人生:科举、营生、姻缘、押镖、促织、雅戏。无需下载,打开即玩。" />
+    <meta property="og:description" content="从抓周到终老,体验一段完整的古代人生:科举、营生、姻缘、押镖、促织、雅戏。无需下载,支持离线游玩。" />
     <meta property="og:url" content="https://www.dynastylife.online/" />
-    <meta property="og:image" content="https://www.dynastylife.online/assets/og-image.png" />
+    <meta property="og:image" content="https://www.dynastylife.online/assets/og-image.jpg" />
+    <meta property="og:image:type" content="image/jpeg" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="古代人生 Web——从抓周到终老的古风人生模拟游戏" />
     <meta property="og:locale" content="zh_CN" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="古代人生 Web - 古风人生模拟游戏" />
-    <meta name="twitter:description" content="从抓周到终老,体验一段完整的古代人生。无需下载,打开即玩。" />
-    <meta name="twitter:image" content="https://www.dynastylife.online/assets/og-image.png" />
+    <meta name="twitter:description" content="从抓周到终老,体验一段完整的古代人生。无需下载,支持离线游玩。" />
+    <meta name="twitter:image" content="https://www.dynastylife.online/assets/og-image.jpg" />
+    <meta name="twitter:image:alt" content="古代人生 Web——从抓周到终老的古风人生模拟游戏" />
 
     <!-- 图标 -->
     <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png" />
@@ -42,8 +45,8 @@
       "@type": "VideoGame",
       "name": "古代人生 Web",
       "url": "https://www.dynastylife.online/",
-      "image": "https://www.dynastylife.online/assets/og-image.png",
-      "description": "免费在线古风人生模拟游戏,从抓周开始经历完整一生:科举、营生、姻缘、押镖、促织、雅戏。",
+      "image": "https://www.dynastylife.online/assets/og-image.jpg",
+      "description": "免费在线古风人生模拟游戏,从抓周开始经历完整一生:科举、营生、姻缘、押镖、促织、雅戏,支持离线游玩。",
       "inLanguage": "zh-CN",
       "genre": ["Simulation", "Life Simulation"],
       "gamePlatform": "Web Browser",
@@ -160,6 +163,16 @@
           }, 500);
         });
       });
+    </script>
+    <script>
+      // 首次联网访问后缓存游戏外壳，之后可离线进入；更新在后台获取并于下次打开生效。
+      if ("serviceWorker" in navigator && (location.protocol === "https:" || ["localhost", "127.0.0.1"].includes(location.hostname))) {
+        window.addEventListener("load", function () {
+          navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(function (error) {
+            console.warn("Service Worker 注册失败：", error);
+          });
+        });
+      }
     </script>
   </body>
 </html>

@@ -2165,6 +2165,72 @@ try {
   assert.ok(uxRefresh.focus.centerWidth >= 350, "移动端特殊玩法的有效宽度过窄");
   assert.equal(uxRefresh.overflow, true, "体验改造后出现移动端横向溢出");
 
+  console.log("quality gate: verifying achievements stay out of inventory");
+  const achievementIsolation = await page.evaluate(() => {
+    const snapshot = JSON.stringify(state);
+    const previousView = { ...view };
+    const achievementTitle = LIFE_GOALS[0].title;
+    state.tags = [...state.tags.filter((item) => item !== achievementTitle && item !== "回归测试记号"), achievementTitle, "回归测试记号"];
+    view.page = "main";
+    view.tab = "inventory";
+    view.overlay = "";
+    render();
+    const inventoryText = document.querySelector(".detail-panel")?.textContent || "";
+    view.page = "backpack";
+    render();
+    const backpackText = document.querySelector(".center-panel")?.textContent || "";
+    state = normalizeState(JSON.parse(snapshot));
+    Object.assign(view, previousView);
+    render();
+    return {
+      achievementHidden: !inventoryText.includes(achievementTitle) && !backpackText.includes(achievementTitle),
+      ordinaryTagVisible: inventoryText.includes("回归测试记号") && backpackText.includes("回归测试记号"),
+    };
+  });
+  assert.deepEqual(achievementIsolation, { achievementHidden: true, ordinaryTagVisible: true }, "成就仍混入行囊，或普通人生记号被误删");
+
+  console.log("quality gate: verifying PWA metadata and offline shell");
+  const pwaAssets = await page.evaluate(async () => {
+    const [manifestResponse, workerResponse, ogResponse] = await Promise.all([
+      fetch("/manifest.webmanifest"),
+      fetch("/sw.js"),
+      fetch("/assets/og-image.jpg"),
+    ]);
+    const manifest = await manifestResponse.json();
+    const ogBuffer = await ogResponse.arrayBuffer();
+    return {
+      manifestStatus: manifestResponse.status,
+      workerStatus: workerResponse.status,
+      ogStatus: ogResponse.status,
+      ogType: ogResponse.headers.get("content-type"),
+      ogBytes: ogBuffer.byteLength,
+      manifest,
+      metadataImage: document.querySelector('meta[property="og:image"]')?.content || "",
+    };
+  });
+  assert.equal(pwaAssets.manifestStatus, 200, "PWA manifest 无法访问");
+  assert.equal(pwaAssets.workerStatus, 200, "Service Worker 无法访问");
+  assert.equal(pwaAssets.ogStatus, 200, "OG 分享图无法访问");
+  assert.equal(pwaAssets.ogType, "image/jpeg", "OG 分享图没有以 JPEG 类型返回");
+  assert.ok(pwaAssets.ogBytes <= 120000, `OG 分享图仍然过大：${pwaAssets.ogBytes} bytes`);
+  assert.equal(pwaAssets.manifest.scope, "/", "PWA manifest 缺少根作用域");
+  assert.ok(pwaAssets.manifest.description.includes("离线"), "PWA manifest 没有说明离线能力");
+  assert.ok(pwaAssets.metadataImage.endsWith("/assets/og-image.jpg"), "页面仍引用旧的 PNG 分享图");
+
+  await page.evaluate(async () => {
+    const registration = await navigator.serviceWorker.ready;
+    if (!navigator.serviceWorker.controller) {
+      await new Promise((resolve) => navigator.serviceWorker.addEventListener("controllerchange", resolve, { once: true }));
+    }
+    await registration.update();
+  });
+  assert.equal(await page.evaluate(() => Boolean(navigator.serviceWorker.controller)), true, "页面没有被 Service Worker 接管");
+  await page.setOfflineMode(true);
+  await page.reload({ waitUntil: "domcontentloaded", timeout: 30000 });
+  await page.waitForSelector(".game-shell", { timeout: 10000 });
+  assert.equal(await page.evaluate(() => Boolean(navigator.serviceWorker.controller)), true, "离线重载后 Service Worker 未接管页面");
+  await page.setOfflineMode(false);
+
   await page.setViewport({ width: 1440, height: 900, isMobile: false, hasTouch: false, deviceScaleFactor: 1 });
   const shell = await page.$(".game-shell");
   assert.ok(shell, "桌面端游戏主界面未渲染");

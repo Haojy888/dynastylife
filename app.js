@@ -6325,7 +6325,6 @@ function unlockLifeGoals() {
     if (!goal?.id || typeof goal.done !== "function") continue;
     if (state.life.goals.includes(goal.id) || !goal.done()) continue;
     state.life.goals.push(goal.id);
-    if (!state.tags.includes(goal.title)) state.tags.push(goal.title);
     unlocked.push(goal);
     addLog("成就解锁", `达成${achievementTierText(goal)}「${goal.title}」：${goal.desc}`, [{ label: ACHIEVEMENT_TIERS[goal.tier]?.name || "成就", value: goal.title }]);
   }
@@ -6341,6 +6340,11 @@ function unlockLifeGoals() {
     };
     SFX.play(best.tier === "gold" ? "win" : "milestone");
   }
+}
+
+function visibleLifeTags() {
+  const achievementTitles = new Set(LIFE_GOALS.map((goal) => goal.title));
+  return (state.tags || []).filter((item) => !achievementTitles.has(item));
 }
 
 function lifePhase() {
@@ -13490,7 +13494,7 @@ function renderGame() {
         ${(Number(state.underworld?.heat || 0) + Number(state.jianghu?.heat || 0)) > 0 ? resourcePill("风声", Math.round(Number(state.underworld?.heat || 0) + Number(state.jianghu?.heat || 0)), "bad") : ""}
         ${state.prisonYears > 0 ? resourcePill("牢狱", `余刑 ${state.prisonYears} 年`, "bad") : ""}
         ${state.diseases.map((item) => resourcePill("病症", item, "bad")).join("")}
-        ${state.tags.slice(0, 4).map((item) => resourcePill("记号", item)).join("")}
+        ${visibleLifeTags().slice(0, 4).map((item) => resourcePill("记号", item)).join("")}
       </section>
 
       <div class="game-layout">
@@ -13605,9 +13609,11 @@ function profileOverlay() {
 
 function profileAvatarHtml(className = "profile-avatar-img") {
   const avatar = avatarOptions(state.gender).includes(state.profileAvatar) ? state.profileAvatar : defaultProfileAvatar(state.gender);
-  if (avatar) return `<img class="${escapeHtml(className)}" src="${escapeHtml(avatar)}" alt="${escapeHtml(state.name)}" loading="eager">`;
-  const fallback = icon(state.gender === "female" ? "Relationship2" : "Relationship1", state.name);
-  return fallback || `<span>${escapeHtml(state.gender === "female" ? "女" : "男")}</span>`;
+  const fallbackText = state.gender === "female" ? "女" : "男";
+  const fallback = `<span class="profile-avatar-fallback" aria-hidden="true">${fallbackText}</span>`;
+  if (avatar) return `${fallback}<img class="${escapeHtml(className)}" src="${escapeHtml(avatar)}" alt="${escapeHtml(state.name)}" loading="eager" decoding="async" onerror="this.hidden=true">`;
+  const iconFallback = icon(state.gender === "female" ? "Relationship2" : "Relationship1", state.name);
+  return iconFallback || fallback;
 }
 
 function profileAvatarPicker() {
@@ -15143,7 +15149,7 @@ function backpackView() {
     ...state.crickets.map((item) => normalizeCricket(item)).filter(Boolean).map((item) => ({ name: item.name || "促织", icon: item.icon || "Cricket", note: `品相 ${Math.round(item.quality || 0)} · ${item.age}/${item.lifespan}年 · 胜 ${item.wins || 0}`, category: "curio" })),
     ...Object.entries(state.femaleSkills || {}).filter(([, level]) => Number(level) > 0).map(([name, level]) => ({ name: `女学：${name}`, icon: "FemaleSkill", note: `${level} 级`, category: "book" })),
     ...state.diseases.map((item) => ({ name: item, icon: "MedicineBag", note: "病症，可去医馆调理", category: "medicine" })),
-    ...state.tags.map((item) => ({ name: item, icon: "MainBook", note: "人生记号", category: "curio" })),
+    ...visibleLifeTags().map((item) => ({ name: item, icon: "MainBook", note: "人生记号", category: "curio" })),
   ];
   const tab = state.inventoryTab || "all";
   const items = [...inventoryItems, ...extraItems].filter((item) => tab === "all" || item.category === tab);
@@ -16752,7 +16758,7 @@ function tabContent() {
       ...state.crickets.map((item) => normalizeCricket(item)).filter(Boolean).map((item) => [`促织：${item.name || "无名"}`, `品相 ${Math.round(item.quality || 0)} · ${item.age}/${item.lifespan}年 · 胜 ${item.wins || 0}`]),
       ...Object.entries(state.femaleSkills || {}).filter(([, level]) => Number(level) > 0).map(([name, level]) => [`女学：${name}`, `${level} 级`]),
       ...state.diseases.map((item) => [`病症：${item}`, "可去医馆调理"]),
-      ...state.tags.map((item) => [`记号：${item}`, "人生经历"]),
+      ...visibleLifeTags().map((item) => [`记号：${item}`, "人生经历"]),
     ];
     return listPanel("行囊", list);
   }
