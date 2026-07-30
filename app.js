@@ -8807,25 +8807,17 @@ function livelihoodCareerSummary(progress = careerProgressFor()) {
   const definition = livelihoodDefinition();
   const livelihood = progress?.livelihood;
   if (!definition || !livelihood) return "";
-  const metricCard = (key) => {
-    const value = Math.round(livelihood[key] || 0);
-    const dangerous = key === "risk" && value >= 65;
-    return `<article class="livelihood-metric ${dangerous ? "danger" : ""}">
-      <span>${escapeHtml(definition.metrics[key])}</span>
-      <strong>${value}</strong>
-      <i><b style="width:${value}%"></b></i>
-    </article>`;
-  };
   const records = livelihood.records;
-  const warning = livelihood.risk >= 75 ? `当前${definition.metrics.risk}过高，高风险行动更易失手；先做准备类事务恢复。`
+  const metrics = ["resource", "readiness", "reputation", "risk"]
+    .map((key) => `${definition.metrics[key]} ${Math.round(livelihood[key] || 0)}`)
+    .join(" · ");
+  const warning = livelihood.risk >= 75 ? `当前${definition.metrics.risk}过高，宜先做准备类事务。`
     : livelihood.resource < 15 ? `当前${definition.metrics.resource}偏少，先补充储备再接大活。`
-      : "经营指标会影响行动成功率、收益和专属剧情结算。";
-  return `<section class="livelihood-summary">
-    <header><strong>${escapeHtml(livelihoodRank())}</strong><small>民生本业经营</small></header>
-    <div class="livelihood-metrics">${["resource", "readiness", "reputation", "risk"].map(metricCard).join("")}</div>
-    <p>${escapeHtml(warning)}</p>
-    <small>已办 ${records.actions} 桩 · 成 ${records.successes} · 失 ${records.failures} · 惠民 ${records.publicGood} · 累计净收 ${moneyText(records.earnings)}</small>
-  </section>`;
+      : "";
+  return `
+      ${infoLine("经营", `${livelihoodRank()} · ${metrics}`)}
+      ${infoLine("履历", `已办 ${records.actions} 桩 · 成 ${records.successes} · 失 ${records.failures} · 惠民 ${records.publicGood} · 净收 ${moneyText(records.earnings)}`)}
+      ${warning ? infoLine("提醒", warning) : ""}`;
 }
 
 function normalizePartner(person, familyName = "李", relation = "配偶", fallbackId = "partner") {
@@ -17345,7 +17337,6 @@ function activityPanel() {
 const CAREER_FILTERS = [
   ["eligible", "适合我"],
   ["official", "官场"],
-  ["livelihood", "民生"],
   ["craft", "匠艺"],
   ["service", "市井"],
   ["female", "女业"],
@@ -17355,7 +17346,7 @@ const CAREER_FILTERS = [
 function careerFilterId(career) {
   const kind = careerKind(career);
   if (kind === "official") return "official";
-  if (["medicine", "merchant", "farmer"].includes(kind)) return "livelihood";
+  if (["medicine", "merchant", "farmer"].includes(kind)) return "service";
   if (["craft", "art"].includes(kind)) return "craft";
   if (["service", "labor", "common"].includes(kind)) return "service";
   if (kind === "female") return "female";
