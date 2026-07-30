@@ -3867,6 +3867,92 @@ p {
   font-weight: 800;
 }
 
+.livelihood-summary {
+  margin: 12px 0;
+  padding: 14px;
+  border: 1px solid rgba(47, 125, 109, 0.24);
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(47, 125, 109, 0.1), rgba(221, 171, 55, 0.08));
+}
+
+.livelihood-summary > header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.livelihood-summary > header strong {
+  color: var(--accent);
+  font-size: 18px;
+}
+
+.livelihood-summary > header small,
+.livelihood-summary > small,
+.livelihood-summary > p {
+  color: var(--muted);
+}
+
+.livelihood-summary > p {
+  margin: 10px 0 7px;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.livelihood-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.livelihood-metric {
+  min-width: 0;
+  padding: 9px;
+  border: 1px solid rgba(47, 125, 109, 0.15);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.livelihood-metric span,
+.livelihood-metric strong,
+.livelihood-metric i {
+  display: block;
+}
+
+.livelihood-metric span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.livelihood-metric strong {
+  margin: 2px 0 6px;
+  color: var(--accent);
+  font-size: 17px;
+}
+
+.livelihood-metric i {
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(47, 125, 109, 0.12);
+}
+
+.livelihood-metric i b {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+}
+
+.livelihood-metric.danger strong {
+  color: var(--danger);
+}
+
+.livelihood-metric.danger i b {
+  background: var(--danger);
+}
+
 .caravan-run-card {
   align-content: start;
 }
@@ -4486,6 +4572,7 @@ p {
   .achievement-tier-summary,
   .official-network,
   .route-summary,
+  .livelihood-metrics,
   .caravan-status,
   .caravan-choice-grid,
   .goal-strip,

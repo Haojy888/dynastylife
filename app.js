@@ -1031,7 +1031,67 @@ const ACTIVITY_GROUPS = [
   { id: "adventure", label: "江湖险途", note: "奇术暗门，收益与风险并存", places: ["jianghu", "temple"] },
 ];
 
+const CIVIL_LIVELIHOOD_DEFS = {
+  医者: {
+    kind: "medicine",
+    icon: "MedicineBag",
+    ranks: [[1, "药铺学徒"], [3, "坐堂郎中"], [5, "一方名医"], [8, "杏林国手"]],
+    metrics: { resource: "药材", readiness: "医案", reputation: "医名", risk: "劳倦" },
+    actions: [
+      ["medicine:prepare", "辨药理方", "整理药柜、炮制药材，积累药材与医案心得。"],
+      ["medicine:clinic", "坐堂问诊", "接诊寻常病患，稳步挣取诊金与医名。"],
+      ["medicine:housecall", "登门急诊", "病势复杂、回报丰厚，也有误诊与伤身风险。"],
+      ["medicine:charity", "施药义诊", "耗费药材救治贫病，能压低地方疫病并积善名。"],
+    ],
+  },
+  商贾: {
+    kind: "merchant",
+    icon: "CashBox",
+    ranks: [[1, "肩挑货郎"], [3, "铺面掌柜"], [5, "行商东主"], [8, "商会会首"]],
+    metrics: { resource: "存货", readiness: "行情", reputation: "商誉", risk: "商险" },
+    actions: [
+      ["merchant:restock", "访市进货", "比较货色与时价，用本钱补充存货、摸清行情。"],
+      ["merchant:retail", "开门营市", "将存货卖给街坊，靠商誉换取稳定进项。"],
+      ["merchant:venture", "押注远货", "追逐紧俏货与远方差价，可能暴利也可能折本。"],
+      ["merchant:fair", "平粜济邻", "以平价放出存货，压低粮价、积累商誉与地方人情。"],
+    ],
+  },
+  农户: {
+    kind: "farmer",
+    icon: "Agriculture",
+    ranks: [[1, "佃田农户"], [3, "自耕农"], [5, "田庄庄头"], [8, "一方田主"]],
+    metrics: { resource: "仓粮", readiness: "地力", reputation: "乡望", risk: "灾损" },
+    actions: [
+      ["farmer:tend", "深耕养地", "翻土沤肥、修整田埂，靠体力积攒地力。"],
+      ["farmer:sow", "依时播种", "看天时下种，为下一轮收成打下根基。"],
+      ["farmer:harvest", "开镰收谷", "地力越足、灾情越轻，入仓的粮食与收入越多。"],
+      ["farmer:irrigate", "修渠护田", "出钱出力疏浚沟渠，降低灾损并惠及乡里。"],
+    ],
+  },
+};
+
 const CUSTOM_CAREERS = [
+  {
+    name: "医者",
+    customKind: "medicine",
+    icon: "MedicineBag",
+    assumeText: "从辨药抄方到坐堂出诊，以药材、医案和医名经营一条杏林之路。",
+    desc: "问诊、急救、义诊与疫病联动，医术高低会真实影响病患与地方。",
+  },
+  {
+    name: "商贾",
+    customKind: "merchant",
+    icon: "CashBox",
+    assumeText: "从货郎到商会会首，在存货、行情、商誉与风险之间经营生意。",
+    desc: "进货、零售、远货投机和平粜济民都会改变收益与地方粮价。",
+  },
+  {
+    name: "农户",
+    customKind: "farmer",
+    icon: "Agriculture",
+    assumeText: "从佃田农户到一方田主，顺农时养地、播种、收谷并抵御灾年。",
+    desc: "仓粮、地力、灾情和时运共同决定收成，也能靠修渠影响地方民生。",
+  },
   {
     name: "镖师行商",
     customKind: "caravan",
@@ -1204,6 +1264,30 @@ const CAREER_STORY_OVERRIDES = {
     routine: ["你以山泉点茶，汤色清亮，客人一饮便问产地。", "雅客争论新茶旧茶，你各泡一盏，让香气自己说话。"],
     masterwork: ["你调出一盏雪沫茶，茶面如云，被文士题诗称赞。", "贵客设茶会，你安排水火器具井然，茶舍名声更盛。"],
   },
+  医者: {
+    summary: "辨证施药、坐堂出诊。治得好是一条人命，错一味也可能是一场祸。",
+    join: "你在城南药铺拜师，从认药、切片、抄方学起。师父说，脉案不能只记病名，还要记病人怎样过日子。",
+    "medicine:prepare": ["你把受潮的药材逐匣翻晒，又按新旧药性重抄一遍柜签。", "采药人送来一筐生药，你辨出其中混着相似却有毒的一味，及时挑了出去。", "你照旧方炮制半夏，火候稍差便全部作废，直到夜深才收好药罐。"],
+    "medicine:clinic": ["一名脚夫久咳不愈，你问清码头湿气与夜宿习惯，换了温肺祛湿的方子。", "老妇说头痛多年，你没有急着下针，先从饮食睡眠问出症结。", "孩童高热哭闹，你一边安抚家人，一边逐项辨别痘疹与时疫。"],
+    "medicine:housecall": ["深夜有人拍门求诊，你背着药箱穿过雨巷，赶到时病人气息已十分微弱。", "富户催你开一剂立刻见效的猛药，你却坚持先辨脉象与旧疾。", "产房里灯影摇晃，你让闲人退出，只留稳婆与热水，按步骤救治。"],
+    "medicine:charity": ["你在城隍庙外支起药棚，先给流民登记病症，再分发汤药，避免人群挤乱。", "穷户拿不出诊金，你只收下一把晒干的艾草，还教他们如何煎服。", "疫气渐起，你把预防方写在木牌上，请识字的人念给街坊听。"],
+  },
+  商贾: {
+    summary: "看货、识价、通路、守信。赚一时差价容易，经营十年招牌最难。",
+    join: "你从一副货担起家，早市前进货、闭市后盘账。第一天便懂得，账上每一文钱都连着货、人情和风险。",
+    "merchant:restock": ["你一早走遍三处行栈，同样的布匹摸过经纬、问过产地才肯落价。", "外乡船晚到半日，同行都在抢货，你没有跟着抬价，而是查过货契才下单。", "你发现粮行报出的升斗有异，借来公斗一量，果然少了半成。"],
+    "merchant:retail": ["老主顾赊买一匹布，你既留了账据，也给他宽了十日归期。", "市集忽逢大雨，你把摊子挪到檐下，与隔壁商户合用油布，保住了货。", "客人拿旧货冒充你家所售来退，你没有当街争吵，而是从印记和针脚逐一说明。"],
+    "merchant:venture": ["北地来客高价收茶，你把本钱押在一船新茶上，却听说前路刚涨了关税。", "有人放出香料即将断货的消息，你先去码头查船期，才决定是否追价。", "旧商号请你合股走一趟远货，契书上的分损条款比利润更值得细看。"],
+    "merchant:fair": ["米价飞涨，你在铺前挂出限户平价牌，既防囤积，也让穷户买得到粮。", "灾民拿铜器换口粮，你按寻常价收下，约定来年可原价赎回。", "你召集同行共开义市，各家拿出一成存货，官差也不敢趁乱加派。"],
+  },
+  农户: {
+    summary: "看天、看水、看土，也看一家老小的口粮。春种一粒，秋收才知答案。",
+    join: "你接下一片薄田，先补田埂、通水沟，再向老农问清土性。锄头落下时，这份营生才算真正开始。",
+    "farmer:tend": ["你把冬日积下的草木灰拌进田泥，翻出的土色渐渐松润。", "田埂被田鼠掏空一段，你带着家人逐处夯实，免得灌水时溃开。", "你没有照旧年一味下肥，而是分田试种，比较不同地块的长势。"],
+    "farmer:sow": ["惊蛰后第一场雨落下，你连夜检种，把浮在水面的瘪谷全部捞去。", "邻里争着抢早，你仍按土温分三日下种，不把一季收成押在同一天。", "秧苗刚出青，倒春寒忽至，你用草帘护住最弱的一片苗床。"],
+    "farmer:harvest": ["稻穗压弯了腰，你先留足明年种粮，再把余谷运去市集。", "收谷时天边积云，你召集邻里换工抢收，赶在大雨前把谷垛封好。", "粮贩进村压价，你与几户农家合仓议价，不让一季辛劳被轻易拿走。"],
+    "farmer:irrigate": ["旧渠淤了半人深，你按各户受益田亩分派工日，终于把活水引回田间。", "上游私筑小坝截水，你没有先动锄头争斗，而是请乡老按旧水契重新排次。", "暴雨冲坏塘堰，你带人先堵最险缺口，又给低处人家留出泄洪道。"],
+  },
 };
 
 const CAREER_ADVANCED_CASE_DEFS = {
@@ -1228,6 +1312,96 @@ const CAREER_ADVANCED_CASE_DEFS = {
   摸金校尉: { title: "双门疑冢", prompt: "墓道尽头出现生死双门，一门有金气，一门却留着前人撤退的暗记。", choices: [["循记退探", "先读懂暗记与风向，保命为上。", "你逐个核对暗记，沿前人留下的安全线缓慢探查。"], ["破金门", "直取金气最盛之门，财险皆高。", "你定准金门机括，趁石锁回弹的一瞬钻入。"], ["封冢离开", "判断此墓凶险过甚，留下新记提醒后来人。", "你补全撤退暗记，封住盗洞并带同伴离开。"]] },
   弈师: { title: "赌局残局", prompt: "豪商设下重金残局，要求你让三子应战，输者还要背上作弊之名。", choices: [["细算收官", "避开诱杀，以稳健官子拖入细棋。", "你不理会开局挑衅，一点点追回目数。"], ["弃子屠龙", "主动弃子换先手，胜负立见。", "你连弃数子诱敌深入，忽然反手围住大龙。"], ["揭明局套", "指出残局暗藏的手脚，维护在场棋客。", "你请人重摆棋子，当众指出一枚被移过位置。"]] },
   茶师: { title: "贡茶受潮", prompt: "茶会前贡茶受潮生杂味，主人仍要你按原名奉客，免得失了体面。", choices: [["焙火醒茶", "分次低火复焙，尽量救回香气。", "你以文火反复醒茶，慢慢逼出湿气。"], ["调水斗茶", "用水温与器具掩去杂味，临席见真章。", "你改用山泉与厚盏，将涩杂压进回甘。"], ["换茶明说", "据实换用本地新茶，以诚意保住茶会。", "你向主人说明缘由，改奉一款清鲜本地茶。"]] },
+};
+
+const CIVIL_LIVELIHOOD_CASES = {
+  医者: [
+    {
+      title: "疫巷封门",
+      prompt: "城南一巷接连发热，坊正想直接封门，住户却怕断粮。你既要辨清疫病，也要决定如何安置人群。",
+      choices: [
+        ["分区立册", "逐户记录病程，按轻重分区诊治。", "你把病户、密接与健康人家分开造册，每日复诊，不让恐慌替代医理。", { success: { world: { "local.epidemic": [-6, -4], "local.sentiment": [2, 5] }, livelihood: { readiness: [8, 14], reputation: [5, 9], risk: [2, 5] } }, failure: { world: { "local.epidemic": [1, 3] }, livelihood: { risk: [7, 12], reputation: [-4, -1] } } }],
+        ["入巷验脉", "亲自逐户查验，最快找出病源，但染病风险最高。", "你背着药箱入巷，从水井、粪沟到每一户脉案逐项追查。", { success: { world: { "local.epidemic": [-8, -5] }, stats: { favorability: [3, 7] }, livelihood: { reputation: [8, 13], risk: [7, 12] } }, failure: { stats: { physique: [-8, -4], mood: [-5, -2] }, livelihood: { risk: [12, 20] } } }],
+        ["设棚施药", "在巷口设汤药棚，也为封门人家筹粮。", "你请药铺、粮行和寺院各出一份力，药棚与粥棚一同支了起来。", { success: { stats: { money: [-100, -55], virtue: [4, 8] }, world: { "local.epidemic": [-5, -3], "local.sentiment": [4, 7] }, livelihood: { resource: [-18, -10], reputation: [7, 12] } }, failure: { stats: { money: [-80, -40] }, livelihood: { resource: [-14, -8], risk: [4, 9] } } }],
+      ],
+    },
+    {
+      title: "产房两命",
+      prompt: "富户产妇难产已久，家主只求保住男婴，稳婆却说产妇气力将竭。屋内外每个人都在催你立刻定夺。",
+      choices: [
+        ["先稳母脉", "补气止血，先把产妇从危境拉回来。", "你稳住产妇脉息，再与稳婆一步步调整胎位。", { success: { stats: { virtue: [2, 5] }, livelihood: { readiness: [8, 13], reputation: [6, 10] } }, failure: { livelihood: { risk: [8, 14], reputation: [-5, -2] } } }],
+        ["行险救产", "用最激进的手段争取母子俱全。", "你把能用的针法与药力都压在这一刻，半步也退不得。", { success: { stats: { favorability: [5, 10] }, livelihood: { reputation: [10, 16], risk: [7, 12] } }, failure: { stats: { mood: [-10, -5] }, livelihood: { reputation: [-10, -5], risk: [12, 20] } } }],
+        ["请稳婆共议", "明说风险，由产妇家人与稳婆共同见证。", "你把每一种后果都讲清楚，让产妇自己点头，再与稳婆合力施救。", { success: { stats: { eq: [2, 5], relationship: [3, 7] }, livelihood: { reputation: [5, 9], readiness: [5, 9] } }, failure: { stats: { mood: [-5, -2] }, livelihood: { risk: [4, 8] } } }],
+      ],
+    },
+    {
+      title: "假药索命",
+      prompt: "市面流行一种廉价神丸，已有病患服后抽搐。卖药商号势大，还拿出盖有同行印章的药单压你噤声。",
+      choices: [
+        ["验药留证", "逐味查验药渣，先做出经得起复核的证据。", "你收齐药渣、脉案与买药凭据，写成一份清楚验药录。", { success: { world: { corruption: [-3, -1], "local.epidemic": [-3, -1] }, livelihood: { readiness: [9, 15], reputation: [5, 9] } }, failure: { livelihood: { reputation: [-4, -1], risk: [5, 10] } } }],
+        ["当街揭药", "立刻阻止更多人服药，也把自己置于商号报复之下。", "你在药市当众剖开神丸，说清每一味禁忌，逼铺面立即下架。", { success: { stats: { favorability: [5, 9] }, world: { "local.sentiment": [3, 6] }, livelihood: { reputation: [9, 14], risk: [8, 14] } }, failure: { stats: { money: [-120, -60], physique: [-5, -2] }, livelihood: { risk: [12, 18] } } }],
+        ["联名呈官", "召集医者共同署名，让此事不再只是私人争端。", "你请几家医馆同验同签，把药样与病案一并送进县衙。", { success: { stats: { relationship: [4, 8], virtue: [2, 5] }, world: { corruption: [-4, -2] }, livelihood: { reputation: [6, 11] } }, failure: { stats: { relationship: [-3, 0] }, livelihood: { risk: [5, 9] } } }],
+      ],
+    },
+  ],
+  商贾: [
+    {
+      title: "荒年粮契",
+      prompt: "灾年将至，一纸低价包收全县秋粮的契约送到案前。签下可能暴利，也可能把饥民最后的口粮握在你手里。",
+      choices: [
+        ["分仓限价", "只收余粮并约定最高售价，稳利也稳民心。", "你把种粮、口粮与余粮分册，只做有余之户的买卖。", { success: { world: { "local.grainPrice": [-6, -3], "local.sentiment": [3, 6] }, livelihood: { reputation: [7, 12], readiness: [6, 10] } }, failure: { stats: { money: [-70, -30] }, livelihood: { reputation: [-2, 1] } } }],
+        ["囤粮待涨", "倾尽本钱吃下粮契，赌一场翻倍行情。", "你连夜调来车船，把能收到的粮食全运进自家仓中。", { success: { stats: { money: [220, 420] }, world: { "local.grainPrice": [5, 10] }, livelihood: { reputation: [-10, -5], risk: [10, 18] } }, failure: { stats: { money: [-260, -140] }, livelihood: { resource: [-24, -14], risk: [12, 20] } } }],
+        ["联商赈粜", "让同行共同出资，按户平价售粮。", "你把几家商号拉到同一张桌前，共订粜粮名册和每日限额。", { success: { stats: { virtue: [4, 8], relationship: [4, 8] }, world: { "local.grainPrice": [-8, -5], "local.sentiment": [5, 8] }, livelihood: { reputation: [9, 14], resource: [-18, -10] } }, failure: { stats: { money: [-90, -45] }, livelihood: { resource: [-12, -7], reputation: [1, 4] } } }],
+      ],
+    },
+    {
+      title: "沉船货契",
+      prompt: "一船货在江口沉没，货主、船东和脚行都拿着不同契书找你作证。若认错一笔，赔银足以拖垮数家铺面。",
+      choices: [
+        ["逐单核货", "对照仓单、封签与装船名册，先厘清货权。", "你把三方票据按时辰排开，从一枚重盖的封印找到关节。", { success: { livelihood: { readiness: [9, 14], reputation: [6, 10] } }, failure: { stats: { money: [-80, -30] }, livelihood: { risk: [6, 11] } } }],
+        ["买下残货", "低价接下沉船货，赌能打捞回大半。", "你雇船趁水位未涨下钩捞货，把本钱全压在江底。", { success: { stats: { money: [180, 360] }, livelihood: { resource: [20, 34], risk: [7, 12] } }, failure: { stats: { money: [-220, -120] }, livelihood: { resource: [-18, -10], risk: [10, 17] } } }],
+        ["三方分损", "依旧例分摊损失，替小商户保住活路。", "你请行老见证，按货值、过失与承运责任重订分损。", { success: { stats: { eq: [3, 6], relationship: [3, 7] }, livelihood: { reputation: [7, 12] } }, failure: { livelihood: { reputation: [-3, 0], risk: [4, 8] } } }],
+      ],
+    },
+    {
+      title: "官府征货",
+      prompt: "县衙要以平日半价征走你的存货，书吏暗示只要另送一份礼，便可把名额转到小商户头上。",
+      choices: [
+        ["照价供货", "留下凭据承担损失，不把压力转嫁给别人。", "你清点应征货物，逐件留档，宁可少赚也不暗害同行。", { success: { stats: { virtue: [2, 5] }, world: { "local.sentiment": [2, 4] }, livelihood: { resource: [-20, -12], reputation: [5, 9] } }, failure: { stats: { money: [-110, -60] }, livelihood: { resource: [-18, -10] } } }],
+        ["送礼免征", "用钱打通书吏，保住自家货仓。", "你把银袋夹进货册，书吏果然把你的名字划了过去。", { success: { stats: { money: [-90, -45], virtue: [-6, -3] }, world: { corruption: [3, 6] }, livelihood: { risk: [8, 14] } }, failure: { stats: { money: [-160, -90], favorability: [-6, -2] }, livelihood: { reputation: [-8, -4], risk: [12, 18] } } }],
+        ["联名议价", "召集同行核算成本，请官府公开征购。", "你带着各行成本账簿进衙陈情，要求按市价折中结算。", { success: { stats: { relationship: [4, 8] }, world: { corruption: [-3, -1], "local.sentiment": [2, 5] }, livelihood: { reputation: [8, 13], readiness: [5, 9] } }, failure: { livelihood: { risk: [5, 10], reputation: [-2, 1] } } }],
+      ],
+    },
+  ],
+  农户: [
+    {
+      title: "河渠争水",
+      prompt: "大旱之年，上游大户连夜筑坝，下游三村秧田将枯。乡民已扛起锄头，只等有人领头。",
+      choices: [
+        ["查旧水契", "按旧约重排放水时辰，先给争端立下凭据。", "你从祠堂旧匣找出水契，又逐段量过渠道和田亩。", { success: { world: { "local.disaster": [-5, -3], "local.sentiment": [3, 6] }, livelihood: { readiness: [8, 13], reputation: [6, 11] } }, failure: { livelihood: { risk: [6, 11], reputation: [-3, 0] } } }],
+        ["破坝引水", "趁夜拆开私坝，先救将死的秧苗。", "你带人掘开坝口，水声一响，两岸人也同时围了上来。", { success: { world: { "local.disaster": [-7, -4] }, livelihood: { reputation: [8, 14], risk: [9, 15] } }, failure: { stats: { physique: [-7, -3], favorability: [-5, -2] }, livelihood: { risk: [13, 20] } } }],
+        ["合修分水闸", "各村出工出料，修一座能公开轮水的闸口。", "你按田亩分派木石与工日，把争水变成共同修渠。", { success: { stats: { relationship: [4, 8], money: [-90, -45] }, world: { "local.disaster": [-6, -3], "local.sentiment": [4, 7] }, livelihood: { reputation: [8, 13], readiness: [6, 10] } }, failure: { stats: { money: [-70, -35] }, livelihood: { risk: [5, 10] } } }],
+      ],
+    },
+    {
+      title: "蝗灾保种",
+      prompt: "蝗群遮天而来，村里既缺人手又缺火草。眼前的青苗、来年的种粮和邻村求援只能先保一处。",
+      choices: [
+        ["先护种田", "集中人手守住种粮田，为来年留下根本。", "你把最好的种田围上烟火沟，昼夜驱蝗，不许任何人擅取种谷。", { success: { world: { "local.disaster": [-4, -2] }, livelihood: { resource: [12, 22], readiness: [7, 12], risk: [3, 7] } }, failure: { livelihood: { resource: [-18, -10], risk: [10, 17] } } }],
+        ["全村扑蝗", "把所有人手铺开，与蝗群硬抢当季收成。", "锣声、火烟与人声响了一整日，你站在最密的蝗群里领着众人扑打。", { success: { stats: { physique: [2, 5] }, world: { "local.disaster": [-7, -4] }, livelihood: { resource: [24, 38], reputation: [7, 12], risk: [7, 12] } }, failure: { stats: { physique: [-8, -4] }, livelihood: { resource: [-24, -14], risk: [14, 22] } } }],
+        ["联村换工", "向邻村借人扑蝗，收后按保住的粮食分成。", "你骑驴逐村求援，约好今日救我田、明日救你村。", { success: { stats: { relationship: [4, 9] }, world: { "local.disaster": [-5, -3], "local.sentiment": [3, 6] }, livelihood: { reputation: [8, 13], resource: [12, 24] } }, failure: { livelihood: { resource: [-12, -7], risk: [6, 11] } } }],
+      ],
+    },
+    {
+      title: "减租风波",
+      prompt: "连雨减产，田庄东家仍按丰年收租。佃户们推你去说情，东家却暗示只免你一家便可封口。",
+      choices: [
+        ["核产议租", "实量各田收成，按减产比例重算租额。", "你带着斗斛逐户核产，把数字一笔笔摆到东家面前。", { success: { world: { "local.sentiment": [3, 6] }, livelihood: { readiness: [7, 12], reputation: [7, 12] } }, failure: { livelihood: { risk: [5, 9], reputation: [-3, 0] } } }],
+        ["领户抗租", "联合佃户拒交过重田租，逼东家让步。", "你在庄门前摊开空瘪稻穗，让每户都站出来说清收成。", { success: { stats: { favorability: [4, 8] }, world: { "local.sentiment": [5, 8] }, livelihood: { reputation: [10, 16], risk: [8, 14] } }, failure: { stats: { money: [-120, -60], physique: [-5, -2] }, livelihood: { risk: [12, 19] } } }],
+        ["开仓共济", "拿出自家仓粮周转，换取东家延租与佃户来年还谷。", "你先开仓借粮，再请乡老作保，把今年欠租分到三年偿还。", { success: { stats: { virtue: [4, 8], relationship: [4, 8] }, world: { "local.sentiment": [4, 7], "local.grainPrice": [-4, -2] }, livelihood: { resource: [-22, -14], reputation: [9, 14] } }, failure: { livelihood: { resource: [-18, -10], risk: [5, 10] } } }],
+      ],
+    },
+  ],
 };
 
 const EXPANDED_DAILY_EVENT_DEFS = [
@@ -1307,6 +1481,9 @@ const CAREER_KIND_SKILLS = {
   labor: ["physique", "eq"],
   mystic: ["virtue", "knowledge"],
   female: ["looks", "eq"],
+  medicine: ["knowledge", "virtue"],
+  merchant: ["eq", "knowledge"],
+  farmer: ["physique", "knowledge"],
   common: ["physique", "eq"],
 };
 
@@ -1315,6 +1492,7 @@ const CAREER_SKILL_OVERRIDES = {
   画师: ["knowledge", "looks"], 琴师: ["knowledge", "eq"], 弈师: ["knowledge", "eq"], 茶师: ["eq", "knowledge"],
   伙夫: ["physique", "knowledge"], 厨娘: ["knowledge", "eq"], 歌姬: ["looks", "eq"], 舞姬: ["physique", "looks"],
   绣娘: ["knowledge", "looks"], 妆娘: ["looks", "eq"], 闺塾师: ["knowledge", "eq"],
+  医者: ["knowledge", "virtue"], 商贾: ["eq", "knowledge"], 农户: ["physique", "knowledge"],
 };
 
 const CAREER_ACTION_OVERRIDES = {
@@ -1345,6 +1523,9 @@ const CAREER_ACTION_OVERRIDES = {
   道士: [["routine", "画符安宅", "写符、看宅、做小斋醮，换些香火钱。"], ["risk", "夜行镇怪", "夜里应召出门，真假鬼神都不好惹。"]],
   守墓人: [["routine", "巡陵护冢", "修碑、巡夜、看守墓园规矩。"], ["risk", "夜守荒坟", "荒坟风声诡异，盗墓贼与阴冷事都可能撞上。"]],
   摸金校尉: [["routine", "辨穴探踪", "听土、辨穴、探旧址，先看明白再动手。"], ["risk", "下墓探幽", "墓道里财险并行，稍错一步便难回头。"]],
+  医者: CIVIL_LIVELIHOOD_DEFS.医者.actions,
+  商贾: CIVIL_LIVELIHOOD_DEFS.商贾.actions,
+  农户: CIVIL_LIVELIHOOD_DEFS.农户.actions,
 };
 
 const CARAVAN_ROUTES = [
@@ -2601,6 +2782,9 @@ const LIFE_GOALS = [
   { id: "official-entry", gender: "male", tier: "silver", title: "初入流品", icon: "Official", desc: "官阶达到正九品或以上。", score: 130, done: () => officialRankIndex() >= 2, advice: "殿试后任官，积累政绩即可升迁。" },
   { id: "career-level", tier: "silver", title: "本业精熟", icon: "Craftsman", desc: "任一营生达到 3 级。", score: 120, done: () => maxCareerLevel() >= 3, advice: "在营生页持续处理本业事务。" },
   { id: "career-master", tier: "silver", title: "一门老手", icon: "Craftsman", desc: "任一营生达到 5 级。", score: 170, done: () => maxCareerLevel() >= 5, advice: "不要频繁换业，深耕一门更容易升级。" },
+  { id: "medicine-master", tier: "silver", title: "悬壶济世", icon: "MedicineBag", desc: "医者医名达到 55，且完成两次惠民义举。", score: 175, done: () => Number(state.careerProgress?.医者?.livelihood?.reputation || 0) >= 55 && Number(state.careerProgress?.医者?.livelihood?.records?.publicGood || 0) >= 2, advice: "以医者身份坐堂积累医名，并多做施药义诊。" },
+  { id: "merchant-master", tier: "silver", title: "货殖有道", icon: "CashBox", desc: "商贾商誉达到 55，累计本业净收一千文。", score: 175, done: () => Number(state.careerProgress?.商贾?.livelihood?.reputation || 0) >= 55 && Number(state.careerProgress?.商贾?.livelihood?.records?.earnings || 0) >= 1000, advice: "稳做零售、谨慎走远货，也可平粜积攒商誉。" },
+  { id: "farmer-master", tier: "silver", title: "五谷丰登", icon: "Agriculture", desc: "农户仓粮达到 70，并完成两次修渠惠民。", score: 175, done: () => Number(state.careerProgress?.农户?.livelihood?.resource || 0) >= 70 && Number(state.careerProgress?.农户?.livelihood?.records?.publicGood || 0) >= 2, advice: "养地播种后开镰收谷，也要修渠降低灾损。" },
   { id: "network", tier: "silver", title: "亲友满座", icon: "Relationship1", desc: "亲友记录达到 8 人。", score: 90, done: () => relationCount() >= 8, advice: "多去会友、酒楼、探亲，扩展人脉。" },
   { id: "clan-hall", tier: "silver", title: "宗祠初成", icon: "Courtyard", desc: "修建第一阶宗祠。", score: 135, done: () => Number(state.clan?.hallLevel || 0) >= 1, advice: "在宗族家谱中捐资公中，再修建宗祠。" },
   { id: "clan-branches", tier: "silver", title: "开枝散叶", icon: "FamilyIcon", desc: "宗族形成三房以上。", score: 150, done: () => (state.clan?.branches || []).length >= 3, advice: "兄弟分家、成年子女成婚后都会形成新的支房。" },
@@ -5324,6 +5508,9 @@ function culturalPublicChoice(item) {
   const kind = careerKind();
   if (kind === "official") return { title: "以官身行岁令", note: "把节令化为地方治理与惠民之举", text: `你命吏员依${item.name}时序巡视仓廪、水利与鳏寡之家，又向乡里讲明“${item.customs}”背后的秩序与人情。`, effects: { favorability: 5, virtue: 4, eq: 2 } };
   if (kind === "caravan") return { title: "随商路观风俗", note: "比较各地岁时物候与市集", text: `你随车马经过数处乡镇，发现同是${item.name}，各地在${item.customs}上各有变体，便把见闻记进路簿。`, effects: { knowledge: 4, money: 35, favorability: 2 } };
+  if (kind === "medicine") return { title: "依时调护百姓", note: "把节气物候写进诊法与养生告示", text: `你依${item.name}的物候调整药柜与脉案，又把“${item.care}”写成浅白告示贴在药铺外。`, effects: { knowledge: 4, virtue: 4, favorability: 3 } };
+  if (kind === "merchant") return { title: "开一场节令义市", note: "按节俗备货，也给穷户留一份平价", text: `你依${item.name}所需备下${item.food}等应时货物，既照顾“${item.customs}”的节俗，也为穷户留出平价份额。`, effects: { eq: 4, money: 30, favorability: 3 } };
+  if (kind === "farmer") return { title: "循节气理农事", note: "把物候变化落实到田里的每一步", text: `你观察${item.phenology}，照${item.name}时序安排${item.customs}，也把今年与旧年的差异记进农簿。`, effects: { knowledge: 4, physique: 3, virtue: 2 } };
   if (["craft", "art", "female"].includes(kind)) return { title: "以本业应节", note: "用手艺参与乡里的节令生活", text: `你依本业制成应${item.name}之物，既取“${item.customs}”的意趣，也让街坊看见传统并非故纸，而在每日器用之间。`, effects: { knowledge: 3, favorability: 4, money: 24 } };
   if (kind === "mystic") return { title: "为乡人讲时序", note: "辨物候、说养藏，不作怪力乱神", text: `你借${item.name}向来客解释天时、农事与起居之理，提醒众人敬畏自然，却不把祸福都推给鬼神。`, effects: { knowledge: 5, virtue: 3, favorability: 3 } };
   return { title: "与乡里共此日", note: "参与公共礼俗，体会一方人情", text: `社鼓与市声渐起，你同乡人一起${item.customs}。礼俗不只热闹，也把陌生人重新连成一处共同生活的乡里。`, effects: { relationship: 4, favorability: 3, mood: 3 } };
@@ -5501,12 +5688,27 @@ function applyWorldAnnualImpact(deltas = []) {
   } else if (role === "merchant") {
     const trade = Math.round((world.prosperity + world.local.security - world.borderThreat) / 18) - 4;
     if (trade) changeStat("money", trade, deltas);
+    if (livelihoodDefinition()?.kind === "merchant") {
+      const progress = careerProgressFor();
+      changeLivelihoodMetric(progress, "readiness", trade >= 0 ? randInt(2, 6) : -randInt(2, 6), deltas);
+      if (trade < 0) changeLivelihoodMetric(progress, "risk", randInt(2, 6), deltas);
+    }
   } else if (role === "healer" && world.local.epidemic >= 35) {
     changeStat("money", Math.round(world.local.epidemic / 6), deltas);
     if (Math.random() < world.local.epidemic / 250) changeStat("physique", -randInt(2, 6), deltas);
+    if (livelihoodDefinition()?.kind === "medicine") {
+      const progress = careerProgressFor();
+      changeLivelihoodMetric(progress, "reputation", randInt(2, 5), deltas);
+      changeLivelihoodMetric(progress, "risk", randInt(3, 8), deltas);
+    }
   } else if (role === "farmer") {
     const harvest = Math.round((world.prosperity - world.local.disaster) / 12);
     if (harvest) changeStat("money", harvest, deltas);
+    if (livelihoodDefinition()?.kind === "farmer") {
+      const progress = careerProgressFor();
+      changeLivelihoodMetric(progress, "resource", harvest >= 0 ? Math.max(2, harvest) : harvest, deltas);
+      changeLivelihoodMetric(progress, "risk", harvest >= 0 ? -randInt(1, 5) : randInt(3, 8), deltas);
+    }
   }
 }
 
@@ -5843,10 +6045,10 @@ function regionalFaction(regionId, factionId) {
 function regionalCareerFits(faction) {
   const kind = state.career ? careerKind(state.career) : "";
   if (["官府", "军府"].includes(faction?.type)) return kind === "official";
-  if (["行会", "商户"].includes(faction?.type)) return ["craft", "service", "labor", "caravan"].includes(kind);
+  if (["行会", "商户"].includes(faction?.type)) return ["craft", "service", "labor", "caravan", "merchant", "medicine"].includes(kind);
   if (faction?.type === "寺院") return ["mystic", "healer"].includes(worldCareerRole()) || Number(state.stats.virtue || 0) >= 70;
   if (faction?.type === "士林") return Number(state.stats.knowledge || 0) >= 70 || state.exam.rank >= 0;
-  if (faction?.type === "乡绅") return Number(state.clan?.prestige || 0) >= 45 || Number(state.stats.virtue || 0) >= 65;
+  if (faction?.type === "乡绅") return kind === "farmer" || Number(state.clan?.prestige || 0) >= 45 || Number(state.stats.virtue || 0) >= 65;
   return false;
 }
 
@@ -7631,7 +7833,12 @@ function takeCareer(index) {
   }
   const deltas = [{ label: "营生", value: career.name }];
   const firstAction = careerActions()[0];
-  const careerGuide = careerKind(career) === "official" ? "上官" : careerKind(career) === "mystic" ? "师门" : "东家";
+  const careerGuide = careerKind(career) === "official" ? "上官"
+    : careerKind(career) === "mystic" ? "师门"
+      : careerKind(career) === "medicine" ? "师父"
+        : careerKind(career) === "merchant" ? "行会"
+          : careerKind(career) === "farmer" ? "庄头"
+            : "东家";
   const firstStep = firstAction ? `${careerGuide}交代的第一桩差事是“${firstAction[1]}”：${firstAction[2]}` : "先熟悉规矩，再凭本事站稳脚跟。";
   unlockLifeGoals();
   view.tab = careerKind(career) === "caravan" ? "career" : "overview";
@@ -7659,8 +7866,18 @@ function careerKind(career = state.career) {
   return "common";
 }
 
+function livelihoodDefinition(career = state.career) {
+  return CIVIL_LIVELIHOOD_DEFS[career?.name || ""] || null;
+}
+
+function livelihoodRank(career = state.career, level = careerProgressFor(career?.name).level) {
+  const definition = livelihoodDefinition(career);
+  if (!definition) return career?.name || "营生";
+  return definition.ranks.reduce((title, [need, nextTitle]) => level >= need ? nextTitle : title, definition.ranks[0][1]);
+}
+
 function careerProgressFor(name = state.career?.name) {
-  if (!name) return { exp: 0, level: 1, records: { cases: 0, successes: 0 } };
+  if (!name) return { exp: 0, level: 1, records: { cases: 0, successes: 0 }, livelihood: null };
   state.careerProgress ||= {};
   const source = state.careerProgress[name] && typeof state.careerProgress[name] === "object" ? state.careerProgress[name] : {};
   source.exp = Math.max(0, Number(source.exp) || 0);
@@ -7669,6 +7886,21 @@ function careerProgressFor(name = state.career?.name) {
     cases: Math.max(0, Math.round(Number(source.records?.cases) || 0)),
     successes: Math.max(0, Math.round(Number(source.records?.successes) || 0)),
   };
+  if (CIVIL_LIVELIHOOD_DEFS[name]) {
+    source.livelihood = {
+      resource: clamp(Number(source.livelihood?.resource ?? 45)),
+      readiness: clamp(Number(source.livelihood?.readiness ?? 25)),
+      reputation: clamp(Number(source.livelihood?.reputation ?? 5)),
+      risk: clamp(Number(source.livelihood?.risk ?? 0)),
+      records: {
+        actions: Math.max(0, Math.round(Number(source.livelihood?.records?.actions) || 0)),
+        successes: Math.max(0, Math.round(Number(source.livelihood?.records?.successes) || 0)),
+        failures: Math.max(0, Math.round(Number(source.livelihood?.records?.failures) || 0)),
+        publicGood: Math.max(0, Math.round(Number(source.livelihood?.records?.publicGood) || 0)),
+        earnings: Math.round(Number(source.livelihood?.records?.earnings) || 0),
+      },
+    };
+  }
   state.careerProgress[name] = source;
   return source;
 }
@@ -7679,6 +7911,11 @@ function careerSkillKeys(career = state.career) {
 }
 
 function careerAdvancedCase(name = state.career?.name) {
+  const series = CIVIL_LIVELIHOOD_CASES[name];
+  if (series?.length) {
+    const completed = careerProgressFor(name).records.cases || 0;
+    return series[completed % series.length];
+  }
   if (CAREER_ADVANCED_CASE_DEFS[name]) return CAREER_ADVANCED_CASE_DEFS[name];
   const career = state.career?.name === name ? state.career : allCareers().find((item) => item.name === name);
   if (!career) return null;
@@ -7738,6 +7975,239 @@ function careerActions() {
   return actions;
 }
 
+function changeLivelihoodMetric(progress, key, amount, deltas = []) {
+  const definition = livelihoodDefinition();
+  if (!definition || !progress?.livelihood) return 0;
+  const before = Number(progress.livelihood[key] || 0);
+  progress.livelihood[key] = clamp(before + Number(amount || 0));
+  const actual = Math.round(progress.livelihood[key] - before);
+  if (actual) deltas.push({
+    label: definition.metrics[key] || key,
+    value: actual,
+    negative: key === "risk" ? actual > 0 : actual < 0,
+  });
+  return actual;
+}
+
+function livelihoodActionChance(progress, difficulty = 58) {
+  const [primary, secondary] = careerSkillKeys();
+  const livelihood = progress.livelihood;
+  const score = Number(state.stats[primary] || 0) * 0.58
+    + Number(state.stats[secondary] || 0) * 0.3
+    + Number(livelihood.readiness || 0) * 0.24
+    + Number(livelihood.reputation || 0) * 0.08
+    + Number(progress.level || 1) * 3
+    - Number(livelihood.risk || 0) * 0.2;
+  return Math.random() * 100 + score >= difficulty;
+}
+
+function performLivelihoodCareerAction(type) {
+  const definition = livelihoodDefinition();
+  if (!definition) return;
+  const progress = careerProgressFor();
+  const livelihood = progress.livelihood;
+  const action = definition.actions.find(([id]) => id === type);
+  if (!action) return;
+  const [, label] = action;
+  const deltas = [];
+  const beforeMoney = Number(state.stats.money || 0);
+  const story = careerStory()?.[type];
+  let text = `${story?.length ? sample(story) : action[2]} `;
+  let success = true;
+  let publicGood = false;
+  let experience = 12;
+  const lack = (metric, need) => {
+    if (Number(livelihood[metric] || 0) >= need) return false;
+    const metricLabel = definition.metrics[metric] || metric;
+    finishAction(`${label}未成`, `${metricLabel}不足 ${need}，眼下无法完成这桩本业行动。先通过其他事务补足准备。`, [{ label: metricLabel, value: `${Math.round(livelihood[metric] || 0)}/${need}`, negative: true }], definition.icon);
+    return true;
+  };
+
+  if (type === "medicine:prepare") {
+    const cost = 24 + Math.max(0, progress.level - 1) * 3;
+    if (state.stats.money < cost) return finishAction("药材难备", `炮制药材至少需要 ${moneyText(cost)}，你手头的钱不够。`, [{ label: "钱财", value: "不足", negative: true }], definition.icon);
+    changeStat("money", -cost, deltas);
+    changeStat("knowledge", randInt(1, 3), deltas);
+    changeLivelihoodMetric(progress, "resource", randInt(20, 29), deltas);
+    changeLivelihoodMetric(progress, "readiness", randInt(7, 12), deltas);
+    changeLivelihoodMetric(progress, "risk", -randInt(3, 7), deltas);
+    text += `你花 ${moneyText(cost)} 补齐药材，也把几张旧方重新校正。`;
+  } else if (type === "medicine:clinic") {
+    if (lack("resource", 8)) return;
+    changeLivelihoodMetric(progress, "resource", -8, deltas);
+    success = livelihoodActionChance(progress, 58);
+    if (success) {
+      const pay = randInt(52, 92) + progress.level * 12;
+      changeStat("money", pay, deltas);
+      changeStat("knowledge", randInt(1, 3), deltas);
+      changeLivelihoodMetric(progress, "reputation", randInt(3, 6), deltas);
+      changeLivelihoodMetric(progress, "readiness", randInt(4, 8), deltas);
+      text += `辨证得当，病家留下诊金 ${moneyText(pay)}，这份脉案也添进你的手录。`;
+    } else {
+      changeStat("mood", -randInt(2, 5), deltas);
+      changeLivelihoodMetric(progress, "risk", randInt(5, 9), deltas);
+      changeLivelihoodMetric(progress, "reputation", -randInt(1, 4), deltas);
+      text += "病势反复，你不敢再强下断语，只得退回诊金并请前辈会诊。";
+    }
+    experience = success ? 20 : 14;
+  } else if (type === "medicine:housecall") {
+    if (lack("resource", 13)) return;
+    changeLivelihoodMetric(progress, "resource", -13, deltas);
+    changeLivelihoodMetric(progress, "risk", randInt(3, 7), deltas);
+    success = livelihoodActionChance(progress, 76);
+    if (success) {
+      const pay = randInt(115, 215) + progress.level * 18;
+      changeStat("money", pay, deltas);
+      changeStat("favorability", randInt(2, 5), deltas);
+      changeLivelihoodMetric(progress, "reputation", randInt(6, 11), deltas);
+      changeLivelihoodMetric(progress, "readiness", randInt(7, 12), deltas);
+      text += `你守到病情转稳才离开，病家酬谢 ${moneyText(pay)}，邻里也记住了你的名字。`;
+    } else {
+      changeStat("physique", -randInt(2, 7), deltas);
+      changeStat("mood", -randInt(4, 8), deltas);
+      changeLivelihoodMetric(progress, "reputation", -randInt(4, 8), deltas);
+      changeLivelihoodMetric(progress, "risk", randInt(8, 14), deltas);
+      text += "急症未能如愿转好，你连夜复盘方药，也要面对病家追问。";
+    }
+    experience = success ? 30 : 20;
+  } else if (type === "medicine:charity") {
+    if (lack("resource", 18)) return;
+    changeLivelihoodMetric(progress, "resource", -18, deltas);
+    changeStat("virtue", randInt(3, 7), deltas);
+    changeStat("favorability", randInt(2, 5), deltas);
+    changeLivelihoodMetric(progress, "reputation", randInt(6, 10), deltas);
+    changeLivelihoodMetric(progress, "risk", randInt(3, 7), deltas);
+    if (state.dynasty) {
+      changeWorldValue("local.epidemic", -randInt(2, 4), deltas);
+      changeWorldValue("local.sentiment", randInt(2, 4), deltas);
+    }
+    text += "药棚一直开到日落，虽无诊金，数十户人家却少了一分病中无助。";
+    publicGood = true;
+    experience = 24;
+  } else if (type === "merchant:restock") {
+    const cost = Math.max(65, Math.round((82 + progress.level * 8) * marketFactor()));
+    if (state.stats.money < cost) return finishAction("本钱不足", `这一轮进货至少需要 ${moneyText(cost)}，须先另筹本钱。`, [{ label: "钱财", value: "不足", negative: true }], definition.icon);
+    changeStat("money", -cost, deltas);
+    changeStat("knowledge", randInt(1, 3), deltas);
+    changeLivelihoodMetric(progress, "resource", randInt(24, 34), deltas);
+    changeLivelihoodMetric(progress, "readiness", randInt(7, 13), deltas);
+    changeLivelihoodMetric(progress, "risk", -randInt(2, 6), deltas);
+    text += `你用 ${moneyText(cost)} 换回一批可周转的货，也记下各行最新报价。`;
+  } else if (type === "merchant:retail") {
+    if (lack("resource", 14)) return;
+    changeLivelihoodMetric(progress, "resource", -14, deltas);
+    success = livelihoodActionChance(progress, 54);
+    const pay = success
+      ? Math.round((82 + progress.level * 15 + livelihood.reputation * 0.6) * marketFactor())
+      : randInt(18, 42);
+    changeStat("money", pay, deltas);
+    changeStat("eq", randInt(1, 3), deltas);
+    changeLivelihoodMetric(progress, "readiness", success ? randInt(2, 6) : -randInt(2, 5), deltas);
+    changeLivelihoodMetric(progress, "reputation", success ? randInt(3, 6) : -randInt(1, 3), deltas);
+    text += success ? `这批货周转顺利，回款 ${moneyText(pay)}。` : `客流与货色没有对上，只收回 ${moneyText(pay)}，好在看清了这一阵行情。`;
+    experience = success ? 19 : 13;
+  } else if (type === "merchant:venture") {
+    if (lack("resource", 22)) return;
+    const stake = 70;
+    if (state.stats.money < stake) return finishAction("本钱不足", `押注远货还需备下 ${moneyText(stake)} 路费与关税。`, [{ label: "钱财", value: "不足", negative: true }], definition.icon);
+    changeStat("money", -stake, deltas);
+    changeLivelihoodMetric(progress, "resource", -22, deltas);
+    changeLivelihoodMetric(progress, "risk", randInt(6, 12), deltas);
+    success = livelihoodActionChance(progress, 79 + Math.round((marketFactor() - 1) * 35));
+    if (success) {
+      const pay = randInt(230, 390) + progress.level * 25;
+      changeStat("money", pay, deltas);
+      changeStat("favorability", randInt(1, 4), deltas);
+      changeLivelihoodMetric(progress, "reputation", randInt(5, 10), deltas);
+      changeLivelihoodMetric(progress, "readiness", randInt(8, 14), deltas);
+      text += `远货恰逢缺市，除去路费仍回款 ${moneyText(pay)}。`;
+    } else {
+      changeStat("mood", -randInt(3, 8), deltas);
+      changeLivelihoodMetric(progress, "reputation", -randInt(2, 6), deltas);
+      changeLivelihoodMetric(progress, "risk", randInt(7, 13), deltas);
+      text += "货到时行情已变，关税与仓费又接连上涨，这趟买卖折了本。";
+    }
+    experience = success ? 31 : 21;
+  } else if (type === "merchant:fair") {
+    if (lack("resource", 18)) return;
+    changeLivelihoodMetric(progress, "resource", -18, deltas);
+    changeStat("money", randInt(24, 50), deltas);
+    changeStat("virtue", randInt(3, 6), deltas);
+    changeStat("relationship", randInt(2, 5), deltas);
+    changeLivelihoodMetric(progress, "reputation", randInt(7, 12), deltas);
+    if (state.dynasty) {
+      changeWorldValue("local.grainPrice", -randInt(2, 5), deltas);
+      changeWorldValue("local.sentiment", randInt(2, 5), deltas);
+    }
+    text += "你只留薄利，铺前却排起安静长队；这块招牌也从“会赚钱”变成了“可信”。";
+    publicGood = true;
+    experience = 24;
+  } else if (type === "farmer:tend") {
+    changeStat("physique", randInt(2, 5), deltas);
+    changeLivelihoodMetric(progress, "readiness", randInt(15, 23), deltas);
+    changeLivelihoodMetric(progress, "risk", -randInt(4, 9), deltas);
+    text += "泥土翻松、田埂补实，接下来的播种与收谷都有了底气。";
+  } else if (type === "farmer:sow") {
+    if (lack("resource", 12)) return;
+    changeLivelihoodMetric(progress, "resource", -12, deltas);
+    changeStat("knowledge", randInt(1, 3), deltas);
+    const disaster = Number(state.dynasty ? worldValue("local.disaster") : 25);
+    success = livelihoodActionChance(progress, 58 + Math.round(disaster * 0.12));
+    changeLivelihoodMetric(progress, "readiness", success ? randInt(18, 28) : randInt(7, 14), deltas);
+    changeLivelihoodMetric(progress, "risk", success ? -randInt(1, 5) : randInt(5, 10), deltas);
+    text += success ? "种粒落在合适的墒情里，出苗齐整，田里很快铺上一层新绿。" : "天时与墒情没有完全算准，出苗参差，只能尽快补种。";
+    experience = success ? 20 : 14;
+  } else if (type === "farmer:harvest") {
+    if (lack("readiness", 35)) return;
+    const disaster = Number(state.dynasty ? worldValue("local.disaster") : 25);
+    success = livelihoodActionChance(progress, 64 + Math.round(disaster * 0.22));
+    changeLivelihoodMetric(progress, "readiness", -randInt(28, 38), deltas);
+    if (success) {
+      const grain = randInt(26, 42) + Math.min(16, progress.level * 2);
+      const pay = randInt(68, 125) + progress.level * 14;
+      changeLivelihoodMetric(progress, "resource", grain, deltas);
+      changeLivelihoodMetric(progress, "reputation", randInt(3, 7), deltas);
+      changeLivelihoodMetric(progress, "risk", -randInt(2, 6), deltas);
+      changeStat("money", pay, deltas);
+      text += `谷粒饱满，除留下仓粮外还卖得 ${moneyText(pay)}，这一季总算没有辜负。`;
+    } else {
+      changeLivelihoodMetric(progress, "resource", randInt(5, 13), deltas);
+      changeLivelihoodMetric(progress, "risk", randInt(8, 15), deltas);
+      changeStat("mood", -randInt(3, 7), deltas);
+      text += "风雨与虫害吃掉大半收成，你只抢回少量瘪谷，也记住了这片田的脾气。";
+    }
+    experience = success ? 28 : 19;
+  } else if (type === "farmer:irrigate") {
+    const cost = 58;
+    if (state.stats.money < cost) return finishAction("修渠无资", `购置木石、请人换工至少要 ${moneyText(cost)}。`, [{ label: "钱财", value: "不足", negative: true }], definition.icon);
+    changeStat("money", -cost, deltas);
+    changeStat("relationship", randInt(2, 6), deltas);
+    changeLivelihoodMetric(progress, "readiness", randInt(10, 17), deltas);
+    changeLivelihoodMetric(progress, "reputation", randInt(5, 9), deltas);
+    changeLivelihoodMetric(progress, "risk", -randInt(7, 13), deltas);
+    if (state.dynasty) {
+      changeWorldValue("local.disaster", -randInt(2, 5), deltas);
+      changeWorldValue("local.sentiment", randInt(1, 4), deltas);
+    }
+    text += "新疏的渠水依次流过各户田头，下一场旱涝来时，村里会多几分准备。";
+    publicGood = true;
+    experience = 23;
+  } else return;
+
+  livelihood.records.actions += 1;
+  if (success) livelihood.records.successes += 1;
+  else livelihood.records.failures += 1;
+  if (publicGood) livelihood.records.publicGood += 1;
+  const netMoney = Math.round(Number(state.stats.money || 0) - beforeMoney);
+  livelihood.records.earnings += netMoney;
+  const levelText = addCareerExperience(progress, experience + randInt(0, 5), deltas);
+  if (levelText) text += levelText;
+  text += ` 当前${definition.metrics.resource} ${Math.round(livelihood.resource)}、${definition.metrics.readiness} ${Math.round(livelihood.readiness)}、${definition.metrics.reputation} ${Math.round(livelihood.reputation)}、${definition.metrics.risk} ${Math.round(livelihood.risk)}。`;
+  addLedger(`${state.career.name} · ${label}`, netMoney, text);
+  unlockLifeGoals();
+  finishAction(`${livelihoodRank()} · ${label}`, text, deltas, definition.icon);
+}
+
 function performCareerAction(type) {
   if (!state.career || state.dead || state.currentEvent || state.eventResult || state.pendingCaravan || state.prisonYears > 0 || state.age < 15) return;
   if (type === "resign") return resignCareer();
@@ -7745,6 +8215,7 @@ function performCareerAction(type) {
   if (String(type || "").startsWith("story:")) return startCareerCase();
   if (kind === "caravan") return performCaravanRoute(String(type || "").replace("route:", "") || "county");
   if (kind === "official") return performOfficialAction(type);
+  if (livelihoodDefinition()) return performLivelihoodCareerAction(type);
   const deltas = [];
   const progress = careerProgressFor();
   let title = state.career.name;
@@ -7907,10 +8378,11 @@ function careerCaseToEvent(item, careerName = state.career?.name) {
     title: `${careerName} · ${item.title}`,
     content: item.prompt,
     icon: careerIcon(careerKind()),
-    children: item.choices.map(([label, note, text], index) => ({
+    children: item.choices.map(([label, note, text, consequence], index) => ({
       title: label,
       note: `${note} · 主看${STAT_LABELS[profiles[index].stat] || profiles[index].stat}`,
       text,
+      consequence: consequence || null,
       ...profiles[index],
       children: [],
       conditions: [],
@@ -7959,6 +8431,12 @@ function resolveCareerCase(event, choice) {
   if (profile === "humane") {
     changeStat("relationship", success ? randInt(3, 8) : randInt(0, 3), deltas);
     changeStat("virtue", success ? randInt(1, 5) : 0, deltas);
+  }
+  const consequence = choice.consequence?.[success ? "success" : "failure"];
+  for (const [stat, value] of Object.entries(consequence?.stats || {})) changeStat(stat, rangeValue(value), deltas);
+  if (consequence?.world && state.dynasty) applyWorldChanges(consequence.world, deltas);
+  if (consequence?.livelihood && progress.livelihood) {
+    for (const [key, value] of Object.entries(consequence.livelihood)) changeLivelihoodMetric(progress, key, rangeValue(value), deltas);
   }
   const levelText = addCareerExperience(progress, rangeValue(experienceRanges[profile] || experienceRanges.steady), deltas);
   progress.records.cases += 1;
@@ -8309,11 +8787,11 @@ function caravanRouteSummary() {
 }
 
 function careerIcon(kind) {
-  return { official: "Official", craft: "Craftsman", art: "BambooFlute", service: "Restaurant", labor: "RepairCarriage", caravan: "RepairCarriage", mystic: "Temple", female: "FemaleSkill" }[kind] || "CashBox";
+  return { official: "Official", craft: "Craftsman", art: "BambooFlute", service: "Restaurant", labor: "RepairCarriage", caravan: "RepairCarriage", mystic: "Temple", female: "FemaleSkill", medicine: "MedicineBag", merchant: "CashBox", farmer: "Agriculture" }[kind] || "CashBox";
 }
 
 function careerKindLabel(kind) {
-  return { official: "官府", craft: "匠作", art: "艺业", service: "店铺", labor: "脚力", caravan: "押镖行商", mystic: "玄门", female: "女业", common: "杂工" }[kind] || "杂工";
+  return { official: "官府", craft: "匠作", art: "艺业", service: "店铺", labor: "脚力", caravan: "押镖行商", mystic: "玄门", female: "女业", medicine: "杏林", merchant: "商贸", farmer: "农桑", common: "杂工" }[kind] || "杂工";
 }
 
 function careerPracticeSummary(progress = careerProgressFor()) {
@@ -8323,6 +8801,31 @@ function careerPracticeSummary(progress = careerProgressFor()) {
   return `
       ${infoLine("专长", `${STAT_LABELS[primary]} ${Math.round(state.stats[primary] || 0)} · ${STAT_LABELS[secondary]} ${Math.round(state.stats[secondary] || 0)}`)}
       ${infoLine("专案", `${records.cases || 0} 件 · 办妥 ${records.successes || 0} 件`)}`;
+}
+
+function livelihoodCareerSummary(progress = careerProgressFor()) {
+  const definition = livelihoodDefinition();
+  const livelihood = progress?.livelihood;
+  if (!definition || !livelihood) return "";
+  const metricCard = (key) => {
+    const value = Math.round(livelihood[key] || 0);
+    const dangerous = key === "risk" && value >= 65;
+    return `<article class="livelihood-metric ${dangerous ? "danger" : ""}">
+      <span>${escapeHtml(definition.metrics[key])}</span>
+      <strong>${value}</strong>
+      <i><b style="width:${value}%"></b></i>
+    </article>`;
+  };
+  const records = livelihood.records;
+  const warning = livelihood.risk >= 75 ? `当前${definition.metrics.risk}过高，高风险行动更易失手；先做准备类事务恢复。`
+    : livelihood.resource < 15 ? `当前${definition.metrics.resource}偏少，先补充储备再接大活。`
+      : "经营指标会影响行动成功率、收益和专属剧情结算。";
+  return `<section class="livelihood-summary">
+    <header><strong>${escapeHtml(livelihoodRank())}</strong><small>民生本业经营</small></header>
+    <div class="livelihood-metrics">${["resource", "readiness", "reputation", "risk"].map(metricCard).join("")}</div>
+    <p>${escapeHtml(warning)}</p>
+    <small>已办 ${records.actions} 桩 · 成 ${records.successes} · 失 ${records.failures} · 惠民 ${records.publicGood} · 累计净收 ${moneyText(records.earnings)}</small>
+  </section>`;
 }
 
 function normalizePartner(person, familyName = "李", relation = "配偶", fallbackId = "partner") {
@@ -8339,7 +8842,9 @@ function normalizePartner(person, familyName = "李", relation = "配偶", fallb
 
 function currentCareerName() {
   if (!state.career) return "";
-  return careerKind(state.career) === "official" ? officialTitle() : state.career.name;
+  if (careerKind(state.career) === "official") return officialTitle();
+  if (livelihoodDefinition()) return livelihoodRank();
+  return state.career.name;
 }
 
 function officialCareerSummary() {
@@ -16061,7 +16566,7 @@ function endingCareerTitle() {
   if (!name) return "未定营生";
   const progress = state.careerProgress?.[name] || {};
   const level = Math.max(1, Math.round(Number(progress.level) || 1));
-  return `${name} · ${level}级`;
+  return `${livelihoodDefinition() ? livelihoodRank() : name} · ${level}级`;
 }
 
 function endingTagList(score = lifeScore()) {
@@ -16840,6 +17345,7 @@ function activityPanel() {
 const CAREER_FILTERS = [
   ["eligible", "适合我"],
   ["official", "官场"],
+  ["livelihood", "民生"],
   ["craft", "匠艺"],
   ["service", "市井"],
   ["female", "女业"],
@@ -16849,6 +17355,7 @@ const CAREER_FILTERS = [
 function careerFilterId(career) {
   const kind = careerKind(career);
   if (kind === "official") return "official";
+  if (["medicine", "merchant", "farmer"].includes(kind)) return "livelihood";
   if (["craft", "art"].includes(kind)) return "craft";
   if (["service", "labor", "common"].includes(kind)) return "service";
   if (kind === "female") return "female";
@@ -16860,7 +17367,7 @@ function careerPanel() {
   const blocked = state.dead || !!state.pendingCaravan || state.prisonYears > 0 || state.age < 15;
   const kind = state.career ? careerKind(state.career) : "";
   const officialCareer = kind === "official";
-  const progress = state.career ? (state.careerProgress[state.career.name] || { exp: 0, level: 1 }) : null;
+  const progress = state.career ? careerProgressFor(state.career.name) : null;
   const selectedFilter = CAREER_FILTERS.some(([id]) => id === view.careerFilter) ? view.careerFilter : "eligible";
   const entries = careers.map((career, index) => ({ career, index, lockReason: careerLockedReason(career), group: careerFilterId(career) }));
   const filteredEntries = selectedFilter === "eligible"
@@ -16881,6 +17388,7 @@ function careerPanel() {
       ${(state.careerHistory || []).length ? infoLine("履历", `历任 ${(state.careerHistory || []).slice(-3).map((item) => item.displayName || item.name).join("、")}`) : ""}
       ${officialCareer ? officialCareerSummary() : ""}
       ${kind === "caravan" ? caravanRouteSummary() : ""}
+      ${state.career && livelihoodDefinition() ? livelihoodCareerSummary(progress) : ""}
       ${state.career && !officialCareer ? careerPracticeSummary(progress) : ""}
       ${state.age < 15 ? `<p class="empty-note">未满 15 岁，暂不能外出营生。</p>` : ""}
       ${state.prisonYears > 0 ? `<p class="empty-note">刑期未满，暂不能谋职。</p>` : ""}

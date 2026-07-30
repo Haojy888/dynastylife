@@ -468,6 +468,80 @@ try {
   assert.equal(completeCareerCoverage.covered, completeCareerCoverage.count, "仍有职业缺少三选一专属剧情");
   assert.equal(completeCareerCoverage.generated.every(Boolean), true, "通用职业专案生成失败");
 
+  console.log("quality gate: verifying civilian livelihood career loops");
+  const livelihoodCoverage = await page.evaluate(() => {
+    const expectedActions = {
+      医者: ["medicine:prepare", "medicine:clinic", "medicine:housecall", "medicine:charity", "story:advanced", "resign"],
+      商贾: ["merchant:restock", "merchant:retail", "merchant:venture", "merchant:fair", "story:advanced", "resign"],
+      农户: ["farmer:tend", "farmer:sow", "farmer:harvest", "farmer:irrigate", "story:advanced", "resign"],
+    };
+    const runs = [];
+    state.age = 30;
+    state.dead = false;
+    state.prisonYears = 0;
+    state.pendingCaravan = null;
+    state.currentEvent = null;
+    state.eventResult = null;
+    state.stats = { ...state.stats, money: 8000, knowledge: 96, virtue: 96, eq: 96, physique: 96, mood: 80, relationship: 70, favorability: 45 };
+    state.dynasty.local.epidemic = 65;
+    state.dynasty.local.grainPrice = 145;
+    state.dynasty.local.disaster = 65;
+    for (const name of Object.keys(expectedActions)) {
+      const career = allCareers().find((item) => item.name === name);
+      state.career = career;
+      state.careerProgress[name] = { exp: 0, level: 1 };
+      const actions = careerActions().map(([type]) => type);
+      const firstCase = careerAdvancedCase().title;
+      const worldBefore = { epidemic: state.dynasty.local.epidemic, grainPrice: state.dynasty.local.grainPrice, disaster: state.dynasty.local.disaster };
+      const sequence = name === "医者"
+        ? ["medicine:prepare", "medicine:clinic", "medicine:charity"]
+        : name === "商贾"
+          ? ["merchant:restock", "merchant:retail", "merchant:fair"]
+          : ["farmer:tend", "farmer:sow", "farmer:harvest", "farmer:irrigate"];
+      for (const type of sequence) {
+        state.eventResult = null;
+        performCareerAction(type);
+      }
+      state.eventResult = null;
+      startCareerCase();
+      const event = state.currentEvent;
+      resolveCareerCase(event, event.children[0]);
+      const progress = careerProgressFor(name);
+      runs.push({
+        name,
+        filter: careerFilterId(career),
+        actions,
+        expected: expectedActions[name],
+        rank: livelihoodRank(career, 1),
+        firstCase,
+        nextCase: careerAdvancedCase().title,
+        records: { ...progress.livelihood.records },
+        metrics: { resource: progress.livelihood.resource, readiness: progress.livelihood.readiness, reputation: progress.livelihood.reputation, risk: progress.livelihood.risk },
+        summary: livelihoodCareerSummary(progress),
+        worldBefore,
+        worldAfter: { epidemic: state.dynasty.local.epidemic, grainPrice: state.dynasty.local.grainPrice, disaster: state.dynasty.local.disaster },
+        ledger: state.ledger.some((item) => item.title.startsWith(`${name} ·`)),
+      });
+      state.currentEvent = null;
+      state.eventResult = null;
+    }
+    state.career = null;
+    return runs;
+  });
+  assert.equal(livelihoodCoverage.length, 3, "民生职业没有完整加入职业库");
+  for (const run of livelihoodCoverage) {
+    assert.equal(run.filter, "livelihood", `${run.name}没有归入民生职业筛选`);
+    assert.deepEqual(run.actions, run.expected, `${run.name}专属行动不完整`);
+    assert.ok(run.records.actions >= 3, `${run.name}经营行动没有累计记录`);
+    assert.ok(run.records.publicGood >= 1, `${run.name}惠民行动没有累计记录`);
+    assert.ok(run.firstCase !== run.nextCase, `${run.name}专属剧情没有形成连续案件轮换`);
+    assert.match(run.summary, /民生本业经营/, `${run.name}职业面板没有经营仪表`);
+    assert.equal(run.ledger, true, `${run.name}经营收支没有写入账本`);
+  }
+  assert.ok(livelihoodCoverage.find((item) => item.name === "医者").worldAfter.epidemic < livelihoodCoverage.find((item) => item.name === "医者").worldBefore.epidemic, "医者义诊没有降低地方疫病");
+  assert.ok(livelihoodCoverage.find((item) => item.name === "商贾").worldAfter.grainPrice < livelihoodCoverage.find((item) => item.name === "商贾").worldBefore.grainPrice, "商贾平粜没有降低地方粮价");
+  assert.ok(livelihoodCoverage.find((item) => item.name === "农户").worldAfter.disaster < livelihoodCoverage.find((item) => item.name === "农户").worldBefore.disaster, "农户修渠没有降低地方灾情");
+
   const carpenterSetup = await page.evaluate(() => {
     state.currentEvent = null;
     state.eventResult = null;
@@ -2160,7 +2234,7 @@ try {
   assert.equal(uxRefresh.mobile.centerBeforeStats, true, "移动端仍先显示属性面板而不是流年事件");
   assert.ok(uxRefresh.mobile.topbar < 175 && uxRefresh.mobile.status < 65, "移动端顶部导航或资源条仍占用过多首屏空间");
   assert.deepEqual(uxRefresh.activity, { groups: 5, places: 17, genericNotes: 0 }, "活动页分类、地点数量或有效说明不正确");
-  assert.deepEqual(uxRefresh.career, { filters: 6, active: "female", lockedFold: true }, "职业筛选或未解锁折叠区没有生效");
+  assert.deepEqual(uxRefresh.career, { filters: 7, active: "female", lockedFold: true }, "职业筛选或未解锁折叠区没有生效");
   assert.equal(uxRefresh.focus.className && uxRefresh.focus.statsHidden && uxRefresh.focus.detailsHidden, true, "特殊玩法没有进入全宽沉浸布局");
   assert.ok(uxRefresh.focus.centerWidth >= 350, "移动端特殊玩法的有效宽度过窄");
   assert.equal(uxRefresh.overflow, true, "体验改造后出现移动端横向溢出");
