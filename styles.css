@@ -705,6 +705,22 @@ p {
   animation: event-scene-drift 11s ease-out both;
 }
 
+[data-dynasty-scene] > .dynasty-scene-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .55s ease;
+}
+
+[data-dynasty-scene].scene-engine-ready > .dynasty-scene-canvas { opacity: 1; }
+[data-dynasty-scene] > img { transition: opacity .35s ease; }
+[data-dynasty-scene].scene-engine-ready > img { opacity: 0; animation: none; }
+
 .event-scene figcaption {
   position: absolute;
   left: 20px;

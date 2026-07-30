@@ -1,4 +1,4 @@
-const CACHE_VERSION = "2026-07-30-2";
+const CACHE_VERSION = "2026-07-30-3";
 const CACHE_PREFIX = "dynastylife-";
 const SHELL_CACHE = `${CACHE_PREFIX}shell-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}runtime-${CACHE_VERSION}`;
@@ -8,8 +8,11 @@ const APP_SHELL = [
   "/",
   "/index.html",
   "/styles.css",
+  "/scene-engine.js",
   "/game-data.js",
   "/app.js",
+  "/assets/vendor/pixi-8.19.0.min.js",
+  "/assets/vendor/PIXI-LICENSE.txt",
   "/manifest.webmanifest",
   "/assets/favicon-32.png",
   "/assets/favicon-192.png",

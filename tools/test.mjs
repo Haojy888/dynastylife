@@ -86,12 +86,20 @@ try {
       assetCount: Object.keys(EVENT_SCENE_ART).length,
       responses,
       rendered: !!scene && !!image && image.getAttribute("src") === "assets/event-life.webp",
+      engineVersion: window.DynastySceneEngine?.version || "",
+      pixiVersion: window.PIXI?.VERSION || "",
+      engineAnnotated: scene?.dataset.dynastyScene === "event"
+        && scene?.dataset.sceneSrc === "assets/event-life.webp"
+        && ["loading", "ready", "fallback"].includes(scene?.dataset.sceneEngineState),
       overflow: document.documentElement.scrollWidth <= document.documentElement.clientWidth,
     };
   });
   assert.deepEqual(eventIllustrations.mapped, eventIllustrations.routes, "事件类型没有路由到对应插画");
   assert.equal(eventIllustrations.assetCount, 11, "流年事件插画数量不完整");
   assert.equal(eventIllustrations.rendered, true, "流年事件卡没有渲染插画");
+  assert.equal(eventIllustrations.engineVersion, "pixi-8.19.0", "PixiJS 动态画卷引擎没有初始化");
+  assert.equal(eventIllustrations.pixiVersion, "8.19.0", "PixiJS 运行时版本不正确");
+  assert.equal(eventIllustrations.engineAnnotated, true, "流年事件插画没有接入动态画卷层或静态降级");
   assert.equal(eventIllustrations.overflow, true, "流年事件插画导致移动端横向溢出");
   assert.ok(eventIllustrations.responses.every((item) => item.status === 200 && item.type === "image/webp"), "存在无法加载的 WebP 事件插画");
 
@@ -2265,12 +2273,15 @@ try {
 
   console.log("quality gate: verifying PWA metadata and offline shell");
   const pwaAssets = await page.evaluate(async () => {
-    const [manifestResponse, workerResponse, ogResponse] = await Promise.all([
+    const [manifestResponse, workerResponse, ogResponse, engineResponse, pixiResponse] = await Promise.all([
       fetch("/manifest.webmanifest"),
       fetch("/sw.js"),
       fetch("/assets/og-image.jpg"),
+      fetch("/scene-engine.js"),
+      fetch("/assets/vendor/pixi-8.19.0.min.js"),
     ]);
     const manifest = await manifestResponse.json();
+    const workerText = await workerResponse.text();
     const ogBuffer = await ogResponse.arrayBuffer();
     return {
       manifestStatus: manifestResponse.status,
@@ -2278,6 +2289,9 @@ try {
       ogStatus: ogResponse.status,
       ogType: ogResponse.headers.get("content-type"),
       ogBytes: ogBuffer.byteLength,
+      engineStatus: engineResponse.status,
+      pixiStatus: pixiResponse.status,
+      workerCachesEngine: workerText.includes("/scene-engine.js") && workerText.includes("/assets/vendor/pixi-8.19.0.min.js"),
       manifest,
       metadataImage: document.querySelector('meta[property="og:image"]')?.content || "",
     };
@@ -2285,6 +2299,9 @@ try {
   assert.equal(pwaAssets.manifestStatus, 200, "PWA manifest 无法访问");
   assert.equal(pwaAssets.workerStatus, 200, "Service Worker 无法访问");
   assert.equal(pwaAssets.ogStatus, 200, "OG 分享图无法访问");
+  assert.equal(pwaAssets.engineStatus, 200, "动态画卷引擎无法访问");
+  assert.equal(pwaAssets.pixiStatus, 200, "PixiJS 本地运行时无法访问");
+  assert.equal(pwaAssets.workerCachesEngine, true, "Service Worker 没有缓存动态画卷引擎");
   assert.equal(pwaAssets.ogType, "image/jpeg", "OG 分享图没有以 JPEG 类型返回");
   assert.ok(pwaAssets.ogBytes <= 120000, `OG 分享图仍然过大：${pwaAssets.ogBytes} bytes`);
   assert.equal(pwaAssets.manifest.scope, "/", "PWA manifest 缺少根作用域");

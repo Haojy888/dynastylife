@@ -13460,9 +13460,11 @@ const BORDER_GLOW_TARGETS = [
 ];
 
 function render() {
+  window.DynastySceneEngine?.beforeRender?.();
   app.innerHTML = view.screen === "game" && state ? renderGame() : renderCreate();
   initBorderGlow();
   initProfileCards();
+  window.DynastySceneEngine?.sync?.(app);
 }
 
 function initBorderGlow() {
@@ -15549,7 +15551,7 @@ function travelView() {
           }).join("")}
         </div>
         <div class="selected-route-card">
-          <div class="selected-route-scene" style="--region-focus:${regionSceneArt(selected.id).focus}"><img src="${regionSceneArt(selected.id).hero}" alt="${escapeHtml(regionSceneArt(selected.id).alt)}" width="1400" height="933" decoding="async" /><span><b>${escapeHtml(selected.name)} · ${escapeHtml(selected.landmark)}</b><small>${escapeHtml(selected.story)}</small></span></div>
+          <div class="selected-route-scene" data-dynasty-scene="travel" data-scene-key="${escapeHtml(selected.id)}" data-scene-src="${escapeHtml(regionSceneArt(selected.id).hero)}" data-scene-focus="${escapeHtml(regionSceneArt(selected.id).focus)}" style="--region-focus:${regionSceneArt(selected.id).focus}"><img src="${regionSceneArt(selected.id).hero}" alt="${escapeHtml(regionSceneArt(selected.id).alt)}" width="1400" height="933" decoding="async" /><span><b>${escapeHtml(selected.name)} · ${escapeHtml(selected.landmark)}</b><small>${escapeHtml(selected.story)}</small></span></div>
           <p>${escapeHtml(selected.note)} · 基础路资 ${moneyText(selected.cost)} · 预计 ${selected.days} 日</p>
         </div>
       </section>
@@ -15593,7 +15595,7 @@ function travelRunView() {
     const canSettle = state.age >= 15 && localRegion.reputation >= 35 && state.stats.money >= profile.settleCost && state.regional.residenceId !== destination.id;
     return `
       <article class="play-card travel-run-card travel-arrival">
-        <div class="travel-arrival-scene" style="--region-focus:${regionSceneArt(destination.id).focus}"><img src="${regionSceneArt(destination.id).hero}" alt="${escapeHtml(regionSceneArt(destination.id).alt)}" width="1400" height="933" decoding="async" fetchpriority="high" /><span><small>山河抵达</small><b>${escapeHtml(destination.name)} · ${escapeHtml(destination.landmark)}</b></span></div>
+        <div class="travel-arrival-scene" data-dynasty-scene="travel" data-scene-key="${escapeHtml(destination.id)}" data-scene-src="${escapeHtml(regionSceneArt(destination.id).hero)}" data-scene-focus="${escapeHtml(regionSceneArt(destination.id).focus)}" style="--region-focus:${regionSceneArt(destination.id).focus}"><img src="${regionSceneArt(destination.id).hero}" alt="${escapeHtml(regionSceneArt(destination.id).alt)}" width="1400" height="933" decoding="async" fetchpriority="high" /><span><small>山河抵达</small><b>${escapeHtml(destination.name)} · ${escapeHtml(destination.landmark)}</b></span></div>
         <p class="eyebrow">抵达 · ${escapeHtml(destination.name)}</p>
         <h2>${escapeHtml(destination.landmark)}在望</h2>
         <p>${escapeHtml(destination.story)}一路行程评定：${travelQualityLabel(run.quality)}（${Math.round(run.quality)}）。你还可以选择一项当地游历。</p>
@@ -17170,7 +17172,7 @@ function eventView(event) {
   const eyebrow = worldEvent ? `${state.dynasty.eraName}${state.dynasty.reignYear}年 · 天下主线` : regionalEvent ? `${travelDestinationByStaticId(event.regionId).name} · 地方纪事` : clanEvent ? `${state.clan.familyName}氏 · 合族议事` : femaleSchoolEvent ? "女学 · 闺塾见闻" : prisonEvent ? `牢狱流年 · 余刑 ${state.prisonYears} 年` : culturalEvent ? `${CULTURAL_SEASONS[event.season]?.name || "四时"}时 · ${event.culturalType === "festival" ? "传统节日" : "二十四节气"}` : event.kind === "secretIntroduction" ? "奇闻暗线开启" : event.kind === "examinerBribe" ? "贡院暗局" : event.kind === "underworldConsequence" ? "旧账追门" : event.kind === "jianghuProphecy" ? "江湖命数" : official ? "官场考验" : familyStory ? "家事流年" : careerCase ? "本业专案" : fortuneEvent ? "签运应验" : "事件";
   return `
     <article class="play-card event-card ${prisonEvent ? "prison-event" : ""} ${culturalEvent ? `culture-event season-${event.season}` : ""} ${worldEvent ? "world-event" : ""} ${clanEvent ? "clan-event" : ""} ${regionalEvent ? "regional-event" : ""}">
-      <figure class="event-scene event-scene-${sceneArt.key}" style="--event-focus:${sceneArt.focus}">
+      <figure class="event-scene event-scene-${sceneArt.key}" data-dynasty-scene="event" data-scene-key="${escapeHtml(sceneArt.key)}" data-scene-src="${escapeHtml(sceneArt.src)}" data-scene-focus="${escapeHtml(sceneArt.focus)}" data-scene-season="${escapeHtml(event.season || "")}" style="--event-focus:${sceneArt.focus}">
         <img src="${sceneArt.src}" alt="${escapeHtml(sceneArt.label)}场景插画" width="1600" height="900" decoding="async" fetchpriority="high" />
         <figcaption><span>流年画卷</span><b>${escapeHtml(sceneArt.label)}</b></figcaption>
       </figure>
