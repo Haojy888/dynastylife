@@ -5904,3 +5904,481 @@ p {
     margin: -18px -18px 20px;
   }
 }
+
+/* 紧凑桌面布局：为 125% 浏览器缩放与矮屏保留完整的主要操作区。 */
+@media (min-width: 761px) {
+  .app-shell {
+    width: min(1260px, 100%);
+    padding: 12px;
+  }
+
+  .game-shell {
+    gap: 8px;
+    font-size: 14px;
+  }
+
+  .topbar {
+    min-height: 58px;
+    padding: 6px 10px;
+    border-radius: 14px;
+  }
+
+  .identity {
+    gap: 10px;
+  }
+
+  .identity h1 {
+    font-size: 23px;
+  }
+
+  .identity p {
+    margin-top: 2px;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  .avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 13px;
+  }
+
+  .top-actions {
+    gap: 7px;
+  }
+
+  .shortcut-btn {
+    width: 56px;
+    min-height: 44px;
+    gap: 2px;
+    padding: 4px;
+    font-size: 11px;
+  }
+
+  .shortcut-btn img {
+    width: 21px;
+    height: 21px;
+  }
+
+  .status-strip {
+    gap: 6px;
+    padding: 5px 8px;
+    border-radius: 13px;
+  }
+
+  .resource-pill,
+  .delta {
+    min-height: 26px;
+    gap: 5px;
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+
+  .game-layout {
+    grid-template-columns: 240px minmax(380px, 1fr) 286px;
+    gap: 10px;
+  }
+
+  .side-panel,
+  .center-panel {
+    border-radius: 14px;
+  }
+
+  .side-panel {
+    padding: 11px;
+  }
+
+  .center-panel {
+    min-height: 460px;
+    padding: 12px;
+  }
+
+  .stat-list {
+    gap: 9px;
+  }
+
+  .stat-row {
+    gap: 4px;
+  }
+
+  .stat-head img {
+    width: 20px;
+    height: 20px;
+  }
+
+  .meter {
+    height: 8px;
+  }
+
+  .tabs button {
+    min-height: 38px;
+    padding: 7px 9px;
+  }
+
+  .play-card {
+    min-height: 290px;
+    border-radius: 14px;
+    padding: clamp(15px, 1.8vw, 24px);
+  }
+
+  .play-card h2 {
+    margin-bottom: 8px;
+    font-size: clamp(24px, 2.7vw, 35px);
+  }
+
+  .play-card p {
+    margin-bottom: 12px;
+    font-size: 15px;
+    line-height: 1.58;
+  }
+
+  .choice-list {
+    margin-top: 14px;
+  }
+
+  .choice-btn,
+  .primary-btn,
+  .secondary-btn,
+  .ghost-btn {
+    min-height: 40px;
+    padding-inline: 14px;
+  }
+
+  .door-btn,
+  .place-btn {
+    min-height: 86px;
+    padding: 9px;
+  }
+
+  .door-btn img,
+  .place-btn img,
+  .item-card img {
+    width: 34px;
+    height: 34px;
+  }
+
+  .game-shell.focus-page .game-layout {
+    grid-template-columns: minmax(0, 980px);
+  }
+
+  .game-shell.focus-page .center-panel {
+    padding: 12px;
+  }
+
+  .event-scene {
+    height: clamp(170px, 27vh, 235px);
+    min-height: 0;
+    aspect-ratio: auto;
+    margin-bottom: 16px;
+    border-radius: 12px;
+  }
+
+  .regional-detail-scene,
+  .travel-arrival-scene,
+  .selected-route-scene {
+    max-height: 260px;
+  }
+
+  .game-overlay {
+    padding: 14px;
+  }
+
+  .profile-modal {
+    width: min(840px, 100%);
+    max-height: calc(100dvh - 28px);
+    padding: 18px;
+  }
+
+  .onboarding-modal {
+    width: min(760px, 100%);
+  }
+
+  .onboarding-hero {
+    grid-template-columns: 82px minmax(0, 1fr);
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+
+  .onboarding-seal {
+    width: 82px;
+  }
+
+  .onboarding-grid {
+    gap: 8px;
+    margin: 12px 0;
+  }
+
+  .onboarding-card {
+    min-height: 118px;
+    padding: 12px;
+  }
+
+  .onboarding-card strong {
+    margin-bottom: 5px;
+    font-size: 16px;
+  }
+
+  .onboarding-card p {
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .onboarding-steps {
+    gap: 6px;
+    margin-top: 12px;
+  }
+
+  .onboarding-steps li {
+    grid-template-columns: 82px minmax(0, 1fr);
+    gap: 8px;
+    padding: 8px 10px;
+  }
+
+  .onboarding-actions {
+    margin-top: 14px;
+  }
+
+  .create-panel {
+    width: min(820px, 100%);
+    padding: 22px;
+  }
+
+  .create-panel::before {
+    height: 120px;
+    margin: -22px -22px 18px;
+  }
+
+  .form-grid,
+  .talent-area {
+    margin-top: 18px;
+  }
+
+  .talent-card {
+    min-height: 132px;
+    padding: 12px;
+  }
+
+  /* 博坊三种赌局共享紧凑舞台，桌面端把主要操作尽量收进一屏。 */
+  .gamble-mode-tabs {
+    gap: 7px;
+    padding: 6px 10px;
+  }
+
+  .gamble-mode-tabs button {
+    min-height: 32px;
+  }
+
+  .gamble-season-note {
+    gap: 8px;
+    padding: 4px 10px;
+    font-size: 11px;
+  }
+
+  .gamble-stage,
+  .big-small-stage,
+  .pai-gow-stage {
+    min-height: 0;
+    grid-template-rows: auto auto auto auto;
+  }
+
+  .gamble-opponent {
+    gap: 10px;
+    padding: 6px 14px 3px;
+  }
+
+  .gambler-card {
+    min-width: 220px;
+    gap: 9px;
+  }
+
+  .avatar-token {
+    width: 44px;
+    height: 44px;
+    border-width: 3px;
+    font-size: 19px;
+  }
+
+  .gambler-card strong,
+  .player-bet strong {
+    font-size: 15px;
+  }
+
+  .gambler-card span,
+  .player-bet span,
+  .player-dice-wrap span,
+  .bid-display span,
+  .gambler-card small,
+  .player-bet small {
+    font-size: 11px;
+  }
+
+  .hidden-dice-row {
+    gap: 5px;
+    padding: 5px;
+  }
+
+  .gamble-callout {
+    width: min(500px, calc(100% - 24px));
+    min-height: 40px;
+    margin: 1px auto 2px;
+    padding: 6px 14px;
+    border-width: 3px;
+    border-radius: 26px;
+    font-size: clamp(17px, 1.8vw, 21px);
+  }
+
+  .cup-row {
+    gap: clamp(18px, 6vw, 72px);
+    padding: 3px clamp(24px, 7vw, 82px) 7px;
+  }
+
+  .dice-cup {
+    height: 80px;
+  }
+
+  .dice-cup::after {
+    height: 20px;
+  }
+
+  .dice-cup span {
+    bottom: 4px;
+    font-size: 11px;
+  }
+
+  .gamble-console {
+    grid-template-columns: .72fr .9fr 1.3fr;
+    gap: 9px;
+    padding: 8px 12px 9px;
+  }
+
+  .player-bet,
+  .player-dice-wrap,
+  .bid-console {
+    padding: 7px;
+  }
+
+  .bid-console {
+    gap: 7px;
+  }
+
+  .stake-row,
+  .player-dice-row {
+    gap: 5px;
+    margin-top: 7px;
+  }
+
+  .stake-chip {
+    min-width: 46px;
+    height: 30px;
+    font-size: 11px;
+  }
+
+  .turn-strip {
+    min-height: 28px;
+    font-size: 11px;
+  }
+
+  .bid-stepper {
+    grid-template-columns: 38px 1fr 38px;
+    gap: 7px;
+  }
+
+  .round-btn {
+    width: 38px;
+    height: 38px;
+    font-size: 22px;
+  }
+
+  .bid-display {
+    min-height: 40px;
+  }
+
+  .bid-display strong {
+    font-size: 17px;
+  }
+
+  .mini-die {
+    width: 32px;
+    height: 32px;
+    padding: 5px;
+  }
+
+  .face-grid {
+    gap: 4px;
+  }
+
+  .gamble-actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .gamble-actions .ghost-btn,
+  .gamble-actions .opponent-action {
+    grid-column: auto;
+  }
+
+  .gamble-card .main-actions {
+    padding: 7px 12px 9px;
+  }
+
+  .big-small-console,
+  .guess-console,
+  .pai-gow-console {
+    grid-template-columns: .85fr 1.15fr;
+  }
+
+  .big-small-choice {
+    min-height: 64px;
+    gap: 3px;
+    padding: 8px;
+  }
+
+  .big-small-choice strong {
+    font-size: 17px;
+  }
+
+  .big-small-choice span {
+    font-size: 11px;
+  }
+
+  .pai-gow-table {
+    gap: 8px;
+    padding: 7px 14px 10px;
+  }
+
+  .pai-gow-side,
+  .pai-gow-pool,
+  .pai-gow-drop,
+  .pai-gow-showdown {
+    gap: 6px;
+    padding: 8px;
+  }
+
+  .pai-gow-drop {
+    min-height: 120px;
+  }
+
+  .pai-gow-pool-tiles,
+  .pai-gow-drop-tiles {
+    min-height: 70px;
+  }
+
+  .pai-gow-tile {
+    width: 48px;
+    min-height: 76px;
+  }
+}
+
+@media (min-width: 761px) and (max-width: 1120px) {
+  .game-layout {
+    grid-template-columns: 220px minmax(0, 1fr);
+  }
+
+  .detail-panel {
+    grid-column: 1 / -1;
+  }
+
+  .game-shell.focus-page .game-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -2322,6 +2322,16 @@ try {
   assert.equal(await page.evaluate(() => Boolean(navigator.serviceWorker.controller)), true, "离线重载后 Service Worker 未接管页面");
   await page.setOfflineMode(false);
 
+  await page.setViewport({ width: 1520, height: 720, isMobile: false, hasTouch: false, deviceScaleFactor: 1 });
+  const compactDesktop = await page.evaluate(() => ({
+    shellWidth: Math.round(document.querySelector(".app-shell")?.getBoundingClientRect().width || 0),
+    topbarHeight: Math.round(document.querySelector(".topbar")?.getBoundingClientRect().height || 0),
+    overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  }));
+  assert.ok(compactDesktop.shellWidth <= 1260, "紧凑桌面版主容器仍然过宽");
+  assert.ok(compactDesktop.topbarHeight <= 70, "紧凑桌面版顶栏仍然过高");
+  assert.ok(compactDesktop.overflow <= 1, "紧凑桌面版出现横向溢出");
+
   await page.setViewport({ width: 1440, height: 900, isMobile: false, hasTouch: false, deviceScaleFactor: 1 });
   const shell = await page.$(".game-shell");
   assert.ok(shell, "桌面端游戏主界面未渲染");

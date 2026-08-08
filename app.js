@@ -13459,12 +13459,23 @@ const BORDER_GLOW_TARGETS = [
   },
 ];
 
+let lastRenderedRoute = "";
+
 function render() {
+  const route = `${view.screen}:${view.page}`;
+  const routeChanged = !!lastRenderedRoute && lastRenderedRoute !== route;
+  lastRenderedRoute = route;
   window.DynastySceneEngine?.beforeRender?.();
   app.innerHTML = view.screen === "game" && state ? renderGame() : renderCreate();
   initBorderGlow();
   initProfileCards();
   window.DynastySceneEngine?.sync?.(app);
+  if (routeChanged && !window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+    app.querySelector(".center-panel > *")?.animate(
+      [{ opacity: 0.35, transform: "translateY(5px)" }, { opacity: 1, transform: "translateY(0)" }],
+      { duration: 180, easing: "ease-out" },
+    );
+  }
 }
 
 function initBorderGlow() {
