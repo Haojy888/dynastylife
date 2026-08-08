@@ -5625,10 +5625,12 @@ function resolvePrisonYear(event, choice) {
 }
 
 function culturalCompanionText() {
-  const spouse = state.family?.spouse?.alive !== false ? state.family?.spouse : null;
+  const spouseName = state.family?.spouse && state.family?.spouseMeta?.alive !== false
+    ? String(state.family.spouse)
+    : "";
   const child = livingChildren()[0];
-  if (spouse && child) return `你与${spouse.name}带着${child.name}`;
-  if (spouse) return `你与${spouse.name}`;
+  if (spouseName && child) return `你与${spouseName}带着${child.name}`;
+  if (spouseName) return `你与${spouseName}`;
   if (child) return `你带着${child.name}`;
   if (state.age < 15) return "你随家中长辈";
   return "你与邻里亲友";
@@ -17929,7 +17931,7 @@ function apprenticePanel() {
   return `
     <section class="apprentice-panel">
       <div class="section-title"><h2>师门传业</h2><span>${learning.length} 人在学 · ${apprentices.filter((item) => item.status === "graduated").length} 人出师</span></div>
-      ${apprentices.length ? `<div class="apprentice-list">${apprentices.map((item) => `<article class="apprentice-item"><span>${icon(item.gender === "female" ? "Relationship2" : "Relationship1", item.name)}<b>${escapeHtml(item.name)}</b><small>${escapeHtml(item.careerName)} · 技艺 ${Math.round(item.skill)} · 忠诚 ${Math.round(item.loyalty)} · ${item.status === "learning" ? "随师学艺" : item.status === "graduated" ? "出师立业" : "离门"}</small></span>${item.status === "learning" ? `<button class="text-btn" data-apprentice-teach="${escapeHtml(item.id)}" ${item.taughtYear === state.year || state.stats.money < 40 || state.prisonYears > 0 ? "disabled" : ""}>亲授 · ${moneyText(40)}</button>` : ""}</article>`).join("")}</div>` : `<p class="empty-note">${currentName}还没有收徒传艺。</p>`}
+      ${apprentices.length ? `<div class="apprentice-list">${apprentices.map((item) => `<article class="apprentice-item"><span class="apprentice-person">${icon(item.gender === "female" ? "FamilySisterAvatar" : "FamilyBrotherAvatar", item.name)}<span class="apprentice-copy"><b>${escapeHtml(item.name)}</b><small>${escapeHtml(item.careerName)} · 技艺 ${Math.round(item.skill)} · 忠诚 ${Math.round(item.loyalty)} · ${item.status === "learning" ? "随师学艺" : item.status === "graduated" ? "出师立业" : "离门"}</small></span></span>${item.status === "learning" ? `<button class="text-btn" data-apprentice-teach="${escapeHtml(item.id)}" ${item.taughtYear === state.year || state.stats.money < 40 || state.prisonYears > 0 ? "disabled" : ""}>亲授 · ${moneyText(40)}</button>` : ""}</article>`).join("")}</div>` : `<p class="empty-note">${currentName}还没有收徒传艺。</p>`}
       ${state.career ? `<div class="main-actions"><button class="secondary-btn" data-action="take-apprentice" ${canTakeApprentice() ? "" : "disabled"}>开门收徒</button><small>${canTakeApprentice() ? `可收一名弟子，传下${escapeHtml(currentName)}门艺。` : "需年满24岁、本业达到3级；同年不可反复收徒。"}</small></div>` : ""}
     </section>`;
 }

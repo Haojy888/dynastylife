@@ -1897,7 +1897,7 @@ p {
 .ambition-panel > header,
 .ambition-choice,
 .apprentice-item,
-.apprentice-item > span {
+.apprentice-person {
   display: flex;
   align-items: center;
 }
@@ -3783,6 +3783,7 @@ p {
   box-shadow: inset -5px -6px 0 rgba(0, 0, 0, 0.14), inset 2px 2px 0 rgba(255, 255, 255, 0.9), 0 5px 10px rgba(0, 0, 0, 0.22);
   font-size: 24px;
   font-weight: 900;
+  overflow: hidden;
 }
 
 .mini-die.hidden {
@@ -3795,8 +3796,9 @@ p {
 
 .pip {
   display: block;
-  width: 9px;
-  height: 9px;
+  width: min(9px, 72%);
+  height: auto;
+  aspect-ratio: 1;
   place-self: center;
   border-radius: 50%;
   background: transparent;
@@ -3919,6 +3921,7 @@ p {
 }
 
 .apprentice-item {
+  flex-wrap: wrap;
   justify-content: space-between;
   gap: 10px;
   padding: 9px 10px;
@@ -3927,22 +3930,44 @@ p {
   background: rgba(255, 255, 255, 0.62);
 }
 
-.apprentice-item > span {
+.apprentice-person {
   min-width: 0;
-  flex: 1;
+  flex: 1 1 240px;
   gap: 8px;
 }
 
 .apprentice-item img,
+.thread-item img {
+  flex: 0 0 auto;
+}
+
+.apprentice-item img {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
 .thread-item img {
   width: 28px;
   height: 28px;
   object-fit: contain;
 }
 
-.apprentice-item b,
-.apprentice-item small {
-  display: block;
+.apprentice-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.apprentice-copy small {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.apprentice-item > .text-btn {
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .history-feature {
@@ -6438,7 +6463,7 @@ p {
   }
 
   .gamble-console {
-    grid-template-columns: .72fr .9fr 1.3fr;
+    grid-template-columns: minmax(0, .72fr) minmax(0, .9fr) minmax(0, 1.3fr);
     gap: 9px;
     padding: 8px 12px 9px;
   }
@@ -6446,6 +6471,7 @@ p {
   .player-bet,
   .player-dice-wrap,
   .bid-console {
+    min-width: 0;
     padding: 7px;
   }
 
@@ -6572,5 +6598,13 @@ p {
 
   .game-shell.focus-page .game-layout {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .gamble-stage:not(.big-small-stage):not(.pai-gow-stage) .gamble-console {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .gamble-stage:not(.big-small-stage):not(.pai-gow-stage) .bid-console {
+    grid-column: 1 / -1;
   }
 }

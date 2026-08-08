@@ -2376,6 +2376,150 @@ try {
   });
   assert.deepEqual(achievementIsolation, { achievementHidden: true, ordinaryTagVisible: true }, "成就仍混入行囊，或普通人生记号被误删");
 
+  console.log("quality gate: auditing narrative placeholders and route renderers");
+  const contentAudit = await page.evaluate(() => {
+    const snapshot = JSON.stringify(state);
+    const previousView = { ...view };
+    state.dead = false;
+    state.age = 32;
+    state.year = 88;
+    state.prisonYears = 0;
+    state.currentEvent = null;
+    state.pendingAnnualEvent = null;
+    state.eventResult = null;
+    state.pendingSurprise = null;
+    state.pendingAchievement = null;
+    state.pendingTravel = null;
+    state.pendingCaravan = null;
+    state.poetryRound = null;
+    state.stats.money = 3000;
+    state.family.spouse = "沈清和";
+    state.family.spouseMeta = { ...(state.family.spouseMeta || {}), alive: true };
+    state.family.children = [normalizeChild({
+      id: "audit-child",
+      name: "安宁",
+      relation: "女儿",
+      gender: "female",
+      age: 8,
+      alive: true,
+      physique: 76,
+      affection: 72,
+      study: 45,
+    }, state.lineage.familyName)];
+    state.apprentices = normalizeApprentices([
+      { id: "audit-female", name: "颜莹", gender: "female", careerName: "歌姬", age: 18, skill: 34, loyalty: 65, status: "learning" },
+      { id: "audit-male", name: "顾砚", gender: "male", careerName: "木匠", age: 19, skill: 42, loyalty: 70, status: "learning" },
+    ]);
+    state.gamble = createGambleRound(50);
+
+    const companion = culturalCompanionText();
+    const apprenticeHtml = apprenticePanel();
+    const pages = ["main", "home", "assets", "relations", "travel", "backpack", "ledger", "menu", "matchmaker", "codex", "culture", "world", "clan", "regions", "gamble", "miniGames", "activity", "exam", "examUnderworld", "jianghu", "secrets"];
+    const failures = [];
+    for (const route of pages) {
+      try {
+        view.page = route;
+        const html = centerContent();
+        const match = html.match(/\b(?:undefined|NaN)\b|\[object Object\]/);
+        if (match) failures.push(`${route}:${match[0]}`);
+      } catch (error) {
+        failures.push(`${route}:throw:${error?.message || error}`);
+      }
+    }
+
+    state = normalizeState(JSON.parse(snapshot));
+    Object.assign(view, previousView);
+    render();
+    return {
+      companion,
+      companionClean: !/undefined|NaN/.test(companion),
+      apprenticeClean: !/undefined|NaN/.test(apprenticeHtml),
+      femalePortrait: apprenticeHtml.includes("family-sister-avatar.webp"),
+      malePortrait: apprenticeHtml.includes("family-brother-avatar.webp"),
+      failures,
+    };
+  });
+  assert.equal(contentAudit.companion, "你与沈清和带着安宁", "岁时同行文字没有正确读取配偶姓名与子女");
+  assert.equal(contentAudit.companionClean && contentAudit.apprenticeClean, true, "叙事或师徒面板仍出现 undefined/NaN");
+  assert.equal(contentAudit.femalePortrait && contentAudit.malePortrait, true, "师徒系统没有按性别使用人物头像");
+  assert.deepEqual(contentAudit.failures, [], `页面矩阵出现占位符或渲染异常：${contentAudit.failures.join("、")}`);
+
+  console.log("quality gate: verifying apprentice card and gambling layout bounds");
+  await page.setViewport({ width: 1280, height: 720, isMobile: false, hasTouch: false, deviceScaleFactor: 1 });
+  const focusedLayout = await page.evaluate(() => {
+    const snapshot = JSON.stringify(state);
+    const previousView = { ...view };
+    state.dead = false;
+    state.age = 34;
+    state.year = 90;
+    state.prisonYears = 0;
+    state.currentEvent = null;
+    state.eventResult = null;
+    state.pendingAchievement = null;
+    state.pendingSurprise = null;
+    state.pendingTravel = null;
+    state.pendingCaravan = null;
+    state.poetryRound = null;
+    state.stats.money = 3000;
+    state.apprentices = normalizeApprentices([
+      { id: "layout-apprentice", name: "颜莹", gender: "female", careerName: "歌姬", age: 18, skill: 34, loyalty: 65, status: "learning" },
+    ]);
+    state.gamble = createGambleRound(50);
+    state.gamble.playerDice = [1, 2, 3, 4, 6];
+    state.gamble.opponentDice = [6, 5, 4, 3, 2];
+    view.page = "gamble";
+    view.overlay = "";
+    render();
+
+    const within = (inner, outer, tolerance = 1) => inner.left >= outer.left - tolerance
+      && inner.top >= outer.top - tolerance
+      && inner.right <= outer.right + tolerance
+      && inner.bottom <= outer.bottom + tolerance;
+    const dice = [...document.querySelectorAll(".mini-die")];
+    const diceContentFits = dice.every((die) => {
+      const dieRect = die.getBoundingClientRect();
+      return [...die.querySelectorAll(".pip.on")].every((pip) => within(pip.getBoundingClientRect(), dieRect));
+    });
+    const diceRowsFit = [...document.querySelectorAll(".hidden-dice-row, .player-dice-row")].every((row) => {
+      const rowRect = row.getBoundingClientRect();
+      return [...row.querySelectorAll(".mini-die")].every((die) => within(die.getBoundingClientRect(), rowRect));
+    });
+    const stage = document.querySelector(".gamble-stage")?.getBoundingClientRect();
+    const consoleRect = document.querySelector(".gamble-console")?.getBoundingClientRect();
+    const gambleFits = !!stage && !!consoleRect && within(consoleRect, stage);
+    const gambleOverflow = document.documentElement.scrollWidth <= document.documentElement.clientWidth;
+
+    const probe = document.createElement("div");
+    probe.style.cssText = "position:fixed;left:0;top:0;width:330px;visibility:hidden;z-index:-1";
+    probe.innerHTML = apprenticePanel();
+    document.body.appendChild(probe);
+    const apprenticeItem = probe.querySelector(".apprentice-item")?.getBoundingClientRect();
+    const apprenticePanelRect = probe.querySelector(".apprentice-panel")?.getBoundingClientRect();
+    const apprenticeAvatar = probe.querySelector(".apprentice-item img")?.getAttribute("src") || "";
+    const apprenticeFits = !!apprenticeItem && !!apprenticePanelRect && within(apprenticeItem, apprenticePanelRect);
+    const apprenticeText = probe.textContent || "";
+    probe.remove();
+
+    state = normalizeState(JSON.parse(snapshot));
+    Object.assign(view, previousView);
+    render();
+    return {
+      diceCount: dice.length,
+      diceContentFits,
+      diceRowsFit,
+      gambleFits,
+      gambleOverflow,
+      apprenticeAvatar,
+      apprenticeFits,
+      apprenticeClean: !/undefined|NaN/.test(apprenticeText),
+    };
+  });
+  assert.equal(focusedLayout.diceCount >= 16, true, "博坊叫骰界面没有完整渲染双方骰子与叫点骰面");
+  assert.equal(focusedLayout.diceContentFits && focusedLayout.diceRowsFit, true, "博坊骰点或骰子仍越出各自容器");
+  assert.equal(focusedLayout.gambleFits && focusedLayout.gambleOverflow, true, "博坊操作台越界或引发横向滚动");
+  assert.equal(focusedLayout.apprenticeAvatar.endsWith("/family-sister-avatar.webp"), true, "女性徒弟头像仍不是人物头像");
+  assert.equal(focusedLayout.apprenticeFits && focusedLayout.apprenticeClean, true, "窄栏师徒卡片仍溢出或出现无效文字");
+
   console.log("quality gate: verifying PWA metadata and offline shell");
   const pwaAssets = await page.evaluate(async () => {
     const [manifestResponse, workerResponse, ogResponse, engineResponse, pixiResponse] = await Promise.all([
