@@ -2590,6 +2590,65 @@ const NPC_AMBITIONS = ["求安稳", "置办家业", "读书进身", "经商致�
 const NPC_DISPOSITIONS = ["重情", "谨慎", "进取", "刚直", "圆融", "节俭", "豪爽"];
 const NPC_OCCUPATIONS = ["务农", "经营小铺", "书塾助教", "药铺帮工", "衙门书手", "工坊学徒", "往来行商"];
 
+const LIFE_AMBITIONS = [
+  {
+    id: "statesman", title: "治世能臣", icon: "Official", motto: "从一纸功名走到一方政声。",
+    stages: [
+      { title: "入局", note: "取得功名或正式入仕", done: () => state.exam.rank >= 1 || careerKind(state.career) === "official" },
+      { title: "有政声", note: "政绩 600、德行 65", done: () => Number(state.official?.merit || 0) >= 600 && state.stats.virtue >= 65 },
+      { title: "名留青史", note: "官阶至少正三品、政绩 3000、清名 20", done: () => officialRankIndex() >= 12 && Number(state.official?.merit || 0) >= 3000 && Number(state.official?.clean || 0) >= 20 },
+    ],
+  },
+  {
+    id: "tycoon", title: "富甲一方", icon: "CashBox", motto: "让一间小铺长成跨州家业。",
+    stages: [
+      { title: "立下产业", note: "钱财 800、家产 2 处", done: () => state.stats.money >= 800 && state.assets.length >= 2 },
+      { title: "商路成网", note: "钱财 2500、家产 4 处、发现 3 地", done: () => state.stats.money >= 2500 && state.assets.length >= 4 && (state.travelSystem?.stamps || []).length >= 3 },
+      { title: "富甲一方", note: "钱财 6000、家产 6 处、地方盟友 2 个", done: () => state.stats.money >= 6000 && state.assets.length >= 6 && (state.regional?.alliances || []).length >= 2 },
+    ],
+  },
+  {
+    id: "healer", title: "悬壶济世", icon: "MedicineBag", motto: "医术不只养家，也要救人。",
+    stages: [
+      { title: "识药辨脉", note: "医者本业 3 级，或岐黄 4 级", done: () => (careerKind(state.career) === "medicine" && maxCareerLevel() >= 3) || Number(state.femaleSkills?.岐黄 || 0) >= 4 },
+      { title: "活人有名", note: "学识 70、德行 70，命册有 6 次行医记录", done: () => state.stats.knowledge >= 70 && state.stats.virtue >= 70 && logCount(/医|诊|药|救治/) >= 6 },
+      { title: "杏林留名", note: "本业 8 级、德行 85，命册有 14 次行医记录", done: () => maxCareerLevel() >= 8 && state.stats.virtue >= 85 && logCount(/医|诊|药|救治/) >= 14 },
+    ],
+  },
+  {
+    id: "clan", title: "名门望族", icon: "FamilyIcon", motto: "不只求一人显达，更求三代家声。",
+    stages: [
+      { title: "成家立室", note: "有配偶，并有 2 名子女", done: () => !!state.family.spouse && livingChildren().length >= 2 },
+      { title: "宗族兴旺", note: "宗族 3 房、家声 50、宗祠 1 阶", done: () => (state.clan?.branches || []).length >= 3 && Number(state.clan?.prestige || 0) >= 50 && Number(state.clan?.hallLevel || 0) >= 1 },
+      { title: "三世家声", note: "孙辈 4 人、家声 85、宗祠 2 阶", done: () => livingGrandchildren().length >= 4 && Number(state.clan?.prestige || 0) >= 85 && Number(state.clan?.hallLevel || 0) >= 2 },
+    ],
+  },
+  {
+    id: "jianghu", title: "江湖传奇", icon: "Game", motto: "奇术、旧债与一身名号都留在江湖。",
+    stages: [
+      { title: "拜入江湖", note: "拜师并学会 2 门奇术", done: () => !!state.jianghu?.mentor && (state.jianghu?.skills || []).length >= 2 },
+      { title: "声动四方", note: "学会 4 门奇术、游历 4 地", done: () => (state.jianghu?.skills || []).length >= 4 && (state.travelSystem?.stamps || []).length >= 4 },
+      { title: "一代奇人", note: "五术齐备、3 次奇术经历、声望 75", done: () => (state.jianghu?.skills || []).length >= 5 && Number(state.jianghu?.records?.cons || 0) + Number(state.jianghu?.records?.trueProphecies || 0) >= 3 && state.stats.favorability >= 75 },
+    ],
+  },
+  {
+    id: "hermit", title: "归隐山林", icon: "BambooHouse", motto: "见过繁华后，仍有余力选择清静。",
+    stages: [
+      { title: "看遍山河", note: "游历 4 地、心情 70", done: () => (state.travelSystem?.stamps || []).length >= 4 && state.stats.mood >= 70 },
+      { title: "置下退路", note: "家产 3 处、钱财 1500、德行 70", done: () => state.assets.length >= 3 && state.stats.money >= 1500 && state.stats.virtue >= 70 },
+      { title: "功成身退", note: "年满 55、无在任营生、心情 85、体魄 65", done: () => state.age >= 55 && !state.career && state.stats.mood >= 85 && state.stats.physique >= 65 },
+    ],
+  },
+];
+
+const THREAD_KINDS = {
+  debt: { label: "人情旧账", icon: "CashBox" },
+  favor: { label: "一段善缘", icon: "FamilyIcon" },
+  family: { label: "家门心结", icon: "FamilyIcon" },
+  shadow: { label: "暗局余波", icon: "BlackMarket" },
+  promise: { label: "未践之诺", icon: "Letter" },
+};
+
 const RELATION_ACTIONS = {
   visit: { label: "探望", cost: 0, relationship: [1, 4], affection: [3, 8], mood: [1, 4], icon: "FamilyIcon" },
   gift: { label: "送礼", cost: 120, relationship: [2, 6], affection: [8, 16], mood: [0, 3], icon: "Jade" },
@@ -3168,6 +3227,11 @@ function startLife() {
     lineage: { generation: 1, familyName: draft.family, ancestors: [] },
     clan: createClanState(draft.family),
     life: { milestones: [], goals: [] },
+    ambition: null,
+    threads: [],
+    apprentices: [],
+    apprenticeLastYear: -1,
+    legacy: { funeral: null, dispute: null, inheritanceRate: 0.78 },
     study: { prep: 0, lastYear: -1 },
     gamble: createGambleRound(50),
     miniGames: createMiniGamesState(),
@@ -3263,6 +3327,11 @@ function normalizeState(raw) {
   next.official = normalizeOfficial(next.official);
   next.lineage = normalizeLineage(next.lineage, next.name.slice(0, 1));
   next.life = normalizeLife(next.life, next.age);
+  next.ambition = normalizeAmbition(next.ambition);
+  next.threads = normalizeThreads(next.threads);
+  next.apprentices = normalizeApprentices(next.apprentices);
+  next.apprenticeLastYear = Number.isFinite(Number(next.apprenticeLastYear)) ? Number(next.apprenticeLastYear) : -1;
+  next.legacy = normalizeLegacy(next.legacy);
   next.study = normalizeStudy(next.study);
   next.gamble = normalizeGamble(next.gamble);
   next.miniGames = normalizeMiniGames(next.miniGames);
@@ -3736,6 +3805,61 @@ function normalizeOnboarding(onboarding) {
   };
 }
 
+function normalizeAmbition(source) {
+  if (!source || typeof source !== "object" || !LIFE_AMBITIONS.some((item) => item.id === source.id)) return null;
+  return {
+    id: source.id,
+    stage: clampNumber(source.stage, 0, 3, 0),
+    chosenYear: Math.max(0, Math.round(Number(source.chosenYear) || 0)),
+    completed: !!source.completed || Number(source.stage) >= 3,
+  };
+}
+
+function normalizeThreads(source) {
+  if (!Array.isArray(source)) return [];
+  return source.filter((item) => item && typeof item === "object" && THREAD_KINDS[item.kind]).map((item, index) => ({
+    id: String(item.id || `thread-${index}-${item.createdYear || 0}`),
+    key: String(item.key || `${item.kind}:${item.title || "旧事"}`),
+    kind: item.kind,
+    title: String(item.title || THREAD_KINDS[item.kind].label),
+    summary: String(item.summary || "旧事尚未收尾。"),
+    target: String(item.target || ""),
+    stakes: Math.max(20, Math.round(Number(item.stakes) || 80)),
+    createdYear: Math.max(0, Math.round(Number(item.createdYear) || 0)),
+    dueYear: Math.max(0, Math.round(Number(item.dueYear) || 0)),
+    status: ["active", "resolved", "broken"].includes(item.status) ? item.status : "active",
+    inherited: !!item.inherited,
+    outcome: String(item.outcome || ""),
+  })).slice(0, 16);
+}
+
+function normalizeApprentices(source) {
+  if (!Array.isArray(source)) return [];
+  return source.filter((item) => item && typeof item === "object").map((item, index) => ({
+    id: String(item.id || `apprentice-${index}`),
+    name: String(item.name || makePersonName(item.gender === "female" ? "female" : "male")),
+    gender: item.gender === "female" ? "female" : "male",
+    age: Math.max(12, Math.round(Number(item.age) || 16)),
+    careerName: String(item.careerName || "旧日手艺"),
+    skill: clamp(Number(item.skill || 0)),
+    loyalty: clamp(Number(item.loyalty ?? 55)),
+    status: ["learning", "graduated", "estranged"].includes(item.status) ? item.status : "learning",
+    taughtYear: Number.isFinite(Number(item.taughtYear)) ? Number(item.taughtYear) : -1,
+    lastYear: Number.isFinite(Number(item.lastYear)) ? Number(item.lastYear) : -1,
+    outcome: String(item.outcome || ""),
+  })).slice(0, 6);
+}
+
+function normalizeLegacy(source) {
+  const item = source && typeof source === "object" ? source : {};
+  const inheritanceRate = Number.isFinite(Number(item.inheritanceRate)) ? Number(item.inheritanceRate) : 0.78;
+  return {
+    funeral: ["simple", "rites", "grand"].includes(item.funeral) ? item.funeral : null,
+    dispute: ["none", "equal", "clan", "sole"].includes(item.dispute) ? item.dispute : null,
+    inheritanceRate: clamp(inheritanceRate, 0.6, 0.9),
+  };
+}
+
 function normalizeFamilyStories(stories) {
   const source = stories && typeof stories === "object" ? stories : {};
   const active = source.active && typeof source.active === "object" ? source.active : null;
@@ -3957,6 +4081,9 @@ function makeChild(familyName = state?.name?.slice(0, 1) || "李", age = 0) {
     study: randInt(0, 20),
     virtue: randInt(30, 80),
     trait: sample(CHILD_TRAITS) || "聪慧",
+    lineageStatus: "嫡出",
+    careerStage: 0,
+    lastFamilyEventYear: -1,
     spouse: null,
     grandchildren: [],
   };
@@ -3987,6 +4114,9 @@ function normalizeChild(child, familyName) {
     educationPath: ["academy", "craft", "home"].includes(base.educationPath) ? base.educationPath : "",
     educationOutcome: String(base.educationOutcome || ""),
     otherParent: String(base.otherParent || ""),
+    lineageStatus: base.lineageStatus === "庶出" ? "庶出" : "嫡出",
+    careerStage: Math.max(0, Math.round(Number(base.careerStage) || 0)),
+    lastFamilyEventYear: Number.isFinite(Number(base.lastFamilyEventYear)) ? Number(base.lastFamilyEventYear) : -1,
     spouse,
     marriageYear: Number.isFinite(Number(base.marriageYear)) ? Number(base.marriageYear) : -1,
     grandchildren: grandchildren.map((item) => normalizeGrandchild(item, familyName, childId)),
@@ -5806,6 +5936,261 @@ function advanceNpcAgencyYear(deltas = []) {
   }
 }
 
+function ambitionDefinition(id = state.ambition?.id) {
+  return LIFE_AMBITIONS.find((item) => item.id === id) || null;
+}
+
+function chooseLifeAmbition(id) {
+  const ambition = LIFE_AMBITIONS.find((item) => item.id === id);
+  if (!ambition || state.age < 15 || state.ambition) return;
+  state.ambition = { id, stage: 0, chosenYear: state.year, completed: false };
+  addLog("立下人生志向", `你将“${ambition.title}”写在命册首页：${ambition.motto}`, [{ label: "志向", value: ambition.title }]);
+  updateAmbitionProgress();
+  save();
+  render();
+}
+
+function updateAmbitionProgress() {
+  const ambition = normalizeAmbition(state.ambition);
+  const definition = ambitionDefinition(ambition?.id);
+  if (!ambition || !definition || ambition.completed) return;
+  state.ambition = ambition;
+  const stage = definition.stages[ambition.stage];
+  if (!stage?.done()) return;
+  ambition.stage += 1;
+  ambition.completed = ambition.stage >= definition.stages.length;
+  const deltas = state.lastDeltas ||= [];
+  changeStat("mood", ambition.completed ? 8 : 3, deltas);
+  changeStat(ambition.completed ? "favorability" : "virtue", ambition.completed ? 6 : 2, deltas);
+  addLog(ambition.completed ? `志向达成 · ${definition.title}` : `志向进阶 · ${definition.title}`, ambition.completed ? `三重志业皆成。${definition.motto}这一生自此多了一条真正走完的路。` : `你完成“${stage.title}”，志向进入下一阶段。`, [{ label: "志向", value: ambition.completed ? "功成" : `${ambition.stage}/3` }]);
+}
+
+function openThread(kind, title, summary, options = {}) {
+  if (!THREAD_KINDS[kind]) return null;
+  state.threads = normalizeThreads(state.threads);
+  const key = String(options.key || `${kind}:${title}`);
+  const existing = state.threads.find((item) => item.status === "active" && (item.key === key || item.kind === kind));
+  if (existing) return existing;
+  const thread = {
+    id: `thread-${state.year}-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    key,
+    kind,
+    title: title || THREAD_KINDS[kind].label,
+    summary: summary || "这件事还没有真正收尾。",
+    target: String(options.target || ""),
+    stakes: Math.max(20, Math.round(Number(options.stakes) || randInt(60, 160))),
+    createdYear: state.year,
+    dueYear: state.year + Math.max(1, Math.round(Number(options.delay) || randInt(1, 3))),
+    status: "active",
+    inherited: false,
+    outcome: "",
+  };
+  state.threads.unshift(thread);
+  state.threads = state.threads.slice(0, 16);
+  return thread;
+}
+
+function maybeOpenThreadFromLog(title = "", text = "") {
+  if (!state || state.dead || state.age < 12 || /未了之事|旧账来时|善缘回响|暗局余波|旧诺来问/.test(title)) return;
+  const source = `${title}${text}`;
+  if (/借钱|借款|欠下|赊欠|担保/.test(source)) return openThread("debt", "账上还有一笔人情", text, { stakes: randInt(80, 220) });
+  if (/分家|争产|不睦|生隙|挽留同住/.test(source)) return openThread("family", "家门里没有说完的话", text, { stakes: 90 });
+  if (/黑市|舞弊|买题|卖题|冒名|出千|赎身/.test(source)) return openThread("shadow", "有人记住了这桩暗事", text, { stakes: randInt(140, 320) });
+  if (/答应|约定|承诺|托付/.test(source)) return openThread("promise", "旧日一句承诺", text, { stakes: 100 });
+  if (/周济|救治|救命|赈济|解围|相助/.test(source)) return openThread("favor", "一段善缘尚有后话", text, { stakes: 70 });
+}
+
+function annualThreadEvent() {
+  const thread = normalizeThreads(state.threads).filter((item) => item.status === "active" && item.dueYear <= state.year).sort((a, b) => a.dueYear - b.dueYear)[0];
+  if (!thread) return null;
+  const honorCost = ["debt", "shadow"].includes(thread.kind) ? thread.stakes : Math.min(120, thread.stakes);
+  const configs = {
+    debt: ["如数了结", `拿出 ${moneyText(thread.stakes)}，把银钱与人情一并结清。`, "暂且拖延", "眼下不愿出钱，只求再宽限一年。"],
+    favor: ["伸手相助", `拿出 ${moneyText(Math.min(100, thread.stakes))}，回应当年的善缘。`, "婉言推辞", "情分虽在，你却不愿再卷入。"],
+    family: ["摆席说开", `花 ${moneyText(Math.min(120, thread.stakes))}请齐家人，把旧话当面说清。`, "交由族老", "不再亲自纠缠，请族中按规矩收尾。"],
+    shadow: ["花钱封口", `拿出 ${moneyText(thread.stakes)}买回旧凭据，尽量压下风声。`, "反查来人", "不肯受制，转而追查是谁在背后翻旧账。"],
+    promise: ["践行旧诺", `花费 ${moneyText(Math.min(100, thread.stakes))}和一整段心力，把当年的话做到底。`, "承认失约", "你坦言时移事易，愿承担失信的代价。"],
+  };
+  const [goodTitle, goodNote, hardTitle, hardNote] = configs[thread.kind];
+  return {
+    kind: "fateThread", threadId: thread.id, title: `${THREAD_KINDS[thread.kind].label} · ${thread.title}`,
+    content: `${thread.summary}\n\n数年过去，这桩旧事终于又找上门来。`, icon: THREAD_KINDS[thread.kind].icon,
+    children: [
+      { title: goodTitle, note: goodNote, threadChoice: "honor", disabled: state.stats.money < honorCost },
+      { title: hardTitle, note: hardNote, threadChoice: "refuse" },
+    ],
+  };
+}
+
+function resolveFateThread(event, choice) {
+  const thread = state.threads.find((item) => item.id === event.threadId);
+  if (!thread || choice.disabled) return;
+  const deltas = [];
+  const honor = choice.threadChoice === "honor";
+  const cost = thread.kind === "debt" || thread.kind === "shadow" ? thread.stakes : Math.min(120, thread.stakes);
+  if (honor && cost) {
+    if (state.stats.money < cost) return;
+    changeStat("money", -cost, deltas);
+    addLedger("了结旧事", -cost, thread.title);
+  }
+  if (honor) {
+    changeStat("virtue", thread.kind === "shadow" ? -1 : 4, deltas);
+    changeStat("relationship", 4, deltas);
+    thread.status = "resolved";
+    thread.outcome = "守信收尾";
+  } else {
+    const clever = thread.kind === "shadow" && state.stats.eq + state.stats.knowledge >= 135;
+    changeStat(clever ? "knowledge" : "virtue", clever ? 4 : -5, deltas);
+    changeStat("relationship", clever ? 1 : -5, deltas);
+    if (!clever && ["debt", "shadow"].includes(thread.kind)) changeStat("favorability", -4, deltas);
+    thread.status = clever ? "resolved" : "broken";
+    thread.outcome = clever ? "反查得解" : "留下裂痕";
+  }
+  state.currentEvent = null;
+  state.lastDeltas = deltas;
+  const text = honor ? `你选择“${choice.title}”，终于把${thread.title}妥善收束。` : `你选择“${choice.title}”。此事虽暂时过去，却在命册里留下了“${thread.outcome}”的结果。`;
+  addLog(`未了之事 · ${thread.title}`, text, deltas);
+  state.eventResult = { title: choice.title, text, deltas, icon: THREAD_KINDS[thread.kind].icon, scene: thread.kind === "shadow" ? "ember" : "ink" };
+  updateAmbitionProgress();
+  save();
+  render();
+}
+
+function childCareerPath(child) {
+  if (child.educationPath === "academy" || /读书|光耀/.test(child.ambition)) return child.gender === "male" ? "书院生员" : "女塾教习";
+  if (child.educationPath === "craft") return sample(["工坊匠徒", "药铺学徒", "车马行帮工"]);
+  if (/经商|置办/.test(child.ambition)) return "往来行商";
+  if (/行医/.test(child.ambition)) return "药铺帮工";
+  if (/远游/.test(child.ambition)) return "随商队远行";
+  return sample(NPC_OCCUPATIONS) || "料理家业";
+}
+
+function annualChildLifeEvent() {
+  const child = sample(livingChildren().filter((item) => item.age >= 15 && Number(item.lastFamilyEventYear || -1) < state.year - 1));
+  if (!child || Math.random() > 0.38) return null;
+  let story = "opportunity";
+  if (!child.occupation || child.occupation === "尚未谋业") story = "career";
+  else if (Number(state.dynasty?.borderThreat || 0) >= 55 && child.age <= 38 && ["进取", "刚直", "豪爽"].includes(child.disposition)) story = "army";
+  else if (/远游|商队|行商/.test(`${child.ambition}${child.occupation}`)) story = "travel";
+  else if (child.gender === "male" && /书院|书塾|生员/.test(child.occupation)) story = "exam";
+  else if (child.wealth <= 25 || /挫折/.test(child.lastAction)) story = "setback";
+  const stories = {
+    career: ["初次立业", `${child.name}已经成丁，却仍未定下营生。他想自己闯一闯，也怕错过你能给的门路。`],
+    army: ["边关来书", `${child.name}听闻边患日急，有意投身军中。家里有人赞他有胆气，也有人怕这一去生死难料。`],
+    travel: ["远行请命", `${child.name}想随商队去外州见世面。路远有险，却也可能真正走出自己的前程。`],
+    exam: ["子辈应试", `${child.name}多年读书，想独自赴试。若再添一笔束脩，能多几分把握；若不中，也要自己担下。`],
+    setback: ["本业受挫", `${child.name}今年在${child.occupation}上折了本钱，来问是该咬牙重来，还是换一条路。`],
+    opportunity: ["子女前程", `${child.name}在${child.occupation}上遇到一桩机会，但要先拿出本钱、求人作保。`],
+  };
+  const [title, content] = stories[story];
+  return {
+    kind: "childLife", childId: child.id, story, title: `${child.name} · ${title}`, content, icon: "FamilyIcon",
+    children: [
+      { title: "出资扶持", note: `花 ${moneyText(140)}，提高成事把握与亲情`, childChoice: "support", disabled: state.stats.money < 140 },
+      { title: "指点门路", note: "以你的学识与阅历给出建议", childChoice: "advise" },
+      { title: "让其自决", note: "子女会按自己的性情承担结果", childChoice: "release" },
+    ],
+  };
+}
+
+function resolveChildLifeEvent(event, choice) {
+  const child = livingChildren().find((item) => item.id === event.childId);
+  if (!child || choice.disabled) return;
+  const deltas = [];
+  let success = false;
+  if (choice.childChoice === "support") {
+    if (state.stats.money < 140) return;
+    changeStat("money", -140, deltas);
+    addLedger("扶持子女", -140, `资助${child.name}${event.title}。`);
+    child.wealth = clamp(Number(child.wealth || 0) + 18);
+    child.affection = clamp(Number(child.affection || 0) + 7);
+    success = true;
+  } else if (choice.childChoice === "advise") {
+    changeStat("eq", 2, deltas);
+    child.study = clamp(Number(child.study || 0) + 5);
+    child.influence = clamp(Number(child.influence || 0) + 5);
+    child.affection = clamp(Number(child.affection || 0) + 3);
+    success = state.stats.knowledge + state.stats.eq + randInt(-30, 30) >= 115;
+  } else {
+    child.affection = clamp(Number(child.affection || 0) + (child.disposition === "进取" ? 2 : -1));
+    success = Number(child.aptitude || 50) + Number(child.wealth || 30) + randInt(-35, 35) >= 80;
+  }
+  if (!child.occupation || child.occupation === "尚未谋业") child.occupation = childCareerPath(child);
+  child.careerStage = Math.max(0, Number(child.careerStage || 0) + (success ? 1 : 0));
+  child.wealth = clamp(Number(child.wealth || 0) + (success ? randInt(8, 18) : -randInt(5, 12)));
+  child.influence = clamp(Number(child.influence || 0) + (success ? randInt(4, 10) : -randInt(0, 4)));
+  child.lastFamilyEventYear = state.year;
+  child.lastActionYear = state.year;
+  child.lastAction = success ? `${event.title.replace(`${child.name} · `, "")}顺利` : `${event.title.replace(`${child.name} · `, "")}受挫`;
+  rememberNpcMoment(child, "前程", `${choice.title}：${child.lastAction}`, success ? 2 : -1);
+  if (!success && choice.childChoice === "release") openThread("family", `${child.name}的前程心结`, `${child.name}觉得家中没有在最难时伸手，这份失落尚未说开。`, { target: child.name, delay: 2 });
+  const text = success ? `${choice.title}之后，${child.name}终于在${child.occupation}上迈过一道坎，也更愿把自己的打算告诉你。` : `${choice.title}之后，${child.name}的打算没有如愿。此事让他重新审视自己的志向，也改变了你们之间的亲疏。`;
+  state.currentEvent = null;
+  state.lastDeltas = deltas;
+  addLog(`子女自立 · ${event.title}`, text, deltas);
+  state.eventResult = { title: success ? "前程有进" : "此路受挫", text, deltas, icon: "FamilyIcon", scene: event.story === "army" ? "ember" : event.story === "travel" ? "travel" : "ink" };
+  updateAmbitionProgress();
+  save();
+  render();
+}
+
+function canTakeApprentice() {
+  const progress = state.career ? careerProgressFor(state.career.name) : null;
+  return state.age >= 24 && state.career && Number(progress?.level || 0) >= 3 && state.prisonYears <= 0 && (state.apprentices || []).filter((item) => item.status === "learning").length < 2 && Number(state.apprenticeLastYear || -1) !== Number(state.year);
+}
+
+function takeApprentice() {
+  if (!canTakeApprentice()) return;
+  const gender = Math.random() > 0.35 ? "male" : "female";
+  const apprentice = normalizeApprentices([{
+    id: `apprentice-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    name: makePersonName(gender), gender, age: randInt(14, 22), careerName: currentCareerName(), skill: randInt(8, 22), loyalty: randInt(48, 70), status: "learning", taughtYear: -1, lastYear: state.year,
+  }])[0];
+  state.apprentices.push(apprentice);
+  state.apprenticeLastYear = state.year;
+  finishAction("开门收徒", `${apprentice.name}在门前行过拜师礼，自此跟随你学习${currentCareerName()}的本领。教得好，他会把你的名号与手艺带到下一代。`, [{ label: "弟子", value: apprentice.name }], careerIcon(careerKind(state.career)));
+}
+
+function teachApprentice(id) {
+  const apprentice = state.apprentices.find((item) => item.id === id && item.status === "learning");
+  if (!apprentice || apprentice.taughtYear === state.year || state.stats.money < 40 || state.dead || state.prisonYears > 0) return;
+  const deltas = [];
+  changeStat("money", -40, deltas);
+  changeStat("virtue", 2, deltas);
+  apprentice.skill = clamp(Number(apprentice.skill || 0) + randInt(12, 22) + Math.floor(maxCareerLevel() / 2));
+  apprentice.loyalty = clamp(Number(apprentice.loyalty || 0) + randInt(4, 9));
+  apprentice.taughtYear = state.year;
+  addLedger("授徒用度", -40, `为${apprentice.name}置办材料、书册与工具。`);
+  graduateApprentice(apprentice, deltas);
+  finishAction("亲授门艺", `你没有只让${apprentice.name}打杂，而是把本业中的关窍逐条讲透。如今技艺 ${Math.round(apprentice.skill)}，忠诚 ${Math.round(apprentice.loyalty)}。`, deltas, careerIcon(careerKind(state.career)));
+}
+
+function graduateApprentice(apprentice, deltas = []) {
+  if (apprentice.status !== "learning" || apprentice.skill < 100) return false;
+  apprentice.status = apprentice.loyalty >= 45 ? "graduated" : "estranged";
+  apprentice.outcome = apprentice.status === "graduated" ? "出师立业" : "携艺另投他门";
+  if (apprentice.status === "graduated") {
+    changeStat("favorability", 5, deltas);
+    addLog("弟子出师", `${apprentice.name}行礼辞师，带着你的${apprentice.careerName}本领另立门户。往后有人问起师承，他仍会郑重报上你的名字。`, [{ label: "传业", value: apprentice.name }]);
+  } else {
+    changeStat("mood", -5, deltas);
+    openThread("family", `${apprentice.name}携艺离门`, `${apprentice.name}与师门不欢而散，还带走了几分本业门路。`, { target: apprentice.name, delay: 2 });
+    addLog("师徒反目", `${apprentice.name}未行出师礼便另投他门。手艺教出去了，情分却断在门槛之外。`, [{ label: "师徒", value: "反目", negative: true }]);
+  }
+  return true;
+}
+
+function advanceApprenticesYear(deltas = []) {
+  for (const apprentice of state.apprentices || []) {
+    if (apprentice.status !== "learning" || apprentice.lastYear === state.year) continue;
+    apprentice.age += 1;
+    apprentice.skill = clamp(Number(apprentice.skill || 0) + randInt(4, 10));
+    apprentice.loyalty = clamp(Number(apprentice.loyalty || 0) + randInt(-2, 2));
+    apprentice.lastYear = state.year;
+    graduateApprentice(apprentice, deltas);
+  }
+}
+
 function addClanChronicle(title, text) {
   if (!state.clan || typeof state.clan !== "object") state.clan = createClanState(state.lineage?.familyName || state.name.slice(0, 1));
   if (!Array.isArray(state.clan.chronicle)) state.clan.chronicle = [];
@@ -6390,6 +6775,7 @@ function nextYear() {
       changeStat("mood", -randInt(1, 4), state.lastDeltas);
       changeStat("physique", randInt(-4, -1), state.lastDeltas);
       advanceFamilyYear(state.lastDeltas);
+      advanceApprenticesYear(state.lastDeltas);
       advanceClanYear(state.lastDeltas);
       advanceNpcAgencyYear(state.lastDeltas);
       advanceCricketYear(state.lastDeltas);
@@ -6419,6 +6805,7 @@ function nextYear() {
     applyWorldAnnualImpact(state.lastDeltas);
     if (state.diseases.length) changeStat("physique", -state.diseases.length, state.lastDeltas);
     advanceFamilyYear(state.lastDeltas);
+    advanceApprenticesYear(state.lastDeltas);
     advanceClanYear(state.lastDeltas);
     advanceRegionalYear(state.lastDeltas);
     if (typeof applySpouseProfileYear === "function") applySpouseProfileYear(state.lastDeltas);
@@ -6436,11 +6823,13 @@ function nextYear() {
     }
 
     const annualEvent =
+      annualFamilyStoryEvent() ||
       annualWorldArcEvent() ||
+      annualThreadEvent() ||
+      annualChildLifeEvent() ||
       annualUnderworldEvent() ||
       annualJianghuEvent() ||
       annualFortuneEvent() ||
-      annualFamilyStoryEvent() ||
       annualOfficialCaseEvent() ||
       annualSecretIntroductionEvent() ||
       annualRegionalEvent() ||
@@ -6487,6 +6876,7 @@ function finishYear(runAftermath = true) {
 
 function runAnnualAftermath(deltas = state.lastDeltas) {
   advanceFamilyYear(deltas);
+  advanceApprenticesYear(deltas);
   advanceClanYear(deltas);
   advanceRegionalYear(deltas);
   advanceCricketYear(deltas);
@@ -6522,6 +6912,7 @@ function milestoneTextForPlayer(milestone) {
 
 function unlockLifeGoals() {
   state.life ||= normalizeLife();
+  updateAmbitionProgress();
   const unlocked = [];
   for (const goal of availableLifeGoals()) {
     if (!goal?.id || typeof goal.done !== "function") continue;
@@ -6640,6 +7031,10 @@ function allStatsAt(value) {
 
 function logHas(pattern) {
   return (state.log || []).some((item) => pattern.test(`${item.title || ""}${item.text || ""}`));
+}
+
+function logCount(pattern) {
+  return (state.log || []).filter((item) => pattern.test(`${item.title || ""}${item.text || ""}`)).length;
 }
 
 function lifeScore() {
@@ -7025,6 +7420,12 @@ function advanceFamilyYear(deltas) {
       };
       addLog("子女成长", notes[child.age], [{ label: "子女", value: `${child.name}${child.age}岁` }]);
     }
+    if (child.age >= 15 && (!child.occupation || child.occupation === "尚未谋业")) {
+      child.occupation = childCareerPath(child);
+      child.lastAction = `开始从事${child.occupation}`;
+      child.lastActionYear = state.year;
+      addLog("子女立业", `${child.name}没有一直留在你身后，而是按自己的性情与所学，开始从事${child.occupation}。`, [{ label: "营生", value: child.occupation }]);
+    }
     if (child.spouse) advanceRelationYear(child.spouse, deltas, "spouse");
     for (const grandchild of child.grandchildren || []) advanceGrandchildYear(grandchild, deltas);
     if (child.spouse && child.spouse.alive !== false && child.age >= CHILD_MARRIAGE_AGE && child.age <= 50 && child.spouse.age >= CHILD_MARRIAGE_AGE && child.spouse.age <= 50 && (child.grandchildren || []).filter((item) => item.alive !== false).length < 4 && Math.random() < 0.2) {
@@ -7045,6 +7446,7 @@ function advanceFamilyYear(deltas) {
   if (childParent) {
     const child = makeChild(state.name.slice(0, 1), 0);
     child.otherParent = childParent.name;
+    child.lineageStatus = childParent.primary ? "嫡出" : "庶出";
     state.family.children.push(child);
     changeStat("mood", randInt(4, 12), deltas);
     changeStat("relationship", randInt(3, 8), deltas);
@@ -7431,6 +7833,8 @@ function chooseOption(index) {
     if (event.kind === "femaleSchool") return resolveFemaleSchoolEvent(event, choice);
     if (event.kind === "clanCouncil") return resolveClanCouncil(event, choice);
     if (event.kind === "regionalEvent") return resolveRegionalEvent(event, choice);
+    if (event.kind === "fateThread") return resolveFateThread(event, choice);
+    if (event.kind === "childLife") return resolveChildLifeEvent(event, choice);
 
     const deltas = applyResults(choice.results || []);
     state.lastDeltas = mergeDeltas(state.pendingActivity?.deltas, deltas);
@@ -7644,8 +8048,54 @@ function die(reason) {
   state.currentEvent = null;
   state.pendingAnnualEvent = null;
   state.pendingCaravan = null;
+  state.legacy = { funeral: null, dispute: null, inheritanceRate: 0.78 };
   addLog("身后事", `${state.name}于${state.age}岁${reason}。`);
   unlockLifeGoals();
+}
+
+function settleFuneral(type) {
+  if (!state.dead || state.legacy?.funeral) return;
+  const simpleCost = Math.min(30, Math.max(0, Math.round(Number(state.stats.money || 0))));
+  const options = {
+    simple: { label: "薄葬从俭", cost: simpleCost, rate: 0.8, text: "家人遵照你生前俭约，只设素幡薄棺，把余财留给活人。" },
+    rites: { label: "依礼治丧", cost: 160, rate: 0.78, text: "宗亲按礼设奠、报丧、守灵，宾客与晚辈都来送最后一程。" },
+    grand: { label: "厚葬显门", cost: 480, rate: 0.72, text: "家中大办丧仪，仪仗、祭席与墓地皆极体面，也耗去不少现钱。" },
+  };
+  const option = options[type];
+  if (!option || state.stats.money < option.cost) return;
+  state.stats.money -= option.cost;
+  state.legacy = normalizeLegacy({ ...state.legacy, funeral: type, inheritanceRate: option.rate });
+  state.clan = normalizeClanState(state.clan, state.lineage?.familyName || state.name.slice(0, 1));
+  state.clan.prestige = clamp(Number(state.clan.prestige || 0) + (type === "grand" ? 8 : type === "rites" ? 4 : 1));
+  state.clan.cohesion = clamp(Number(state.clan.cohesion || 0) + (type === "rites" ? 5 : 2));
+  addLedger("治丧", -option.cost, option.label);
+  addLog(`治丧 · ${option.label}`, option.text, [{ label: "丧仪", value: moneyText(-option.cost, { signed: true }), negative: true }]);
+  if (eligibleHeirs().length < 2) state.legacy.dispute = "none";
+  save();
+  render();
+}
+
+function settleEstateDispute(type) {
+  if (!state.dead || !state.legacy?.funeral || state.legacy?.dispute || eligibleHeirs().length < 2) return;
+  const options = {
+    equal: { label: "立据均分", cost: 80, rate: Math.min(state.legacy.inheritanceRate, 0.7), text: "家人请中人写下分产文书，田宅钱财按房均分，日后承继者所得少些，亲族却少了一场恶斗。" },
+    clan: { label: "请族老裁定", cost: 30, rate: Math.min(state.legacy.inheritanceRate, 0.77), text: "族老在祠堂核对长幼、照料与各房生计，最终定下主脉和分例。虽非人人满意，总算有规矩可依。" },
+    sole: { label: "强定一人承继", cost: 0, rate: Math.min(0.88, state.legacy.inheritanceRate + 0.08), text: "家中把大半产业压在一位继承人身上。门户得以集中，其他人却把不甘一并记进了家谱夹页。" },
+  };
+  const option = options[type];
+  if (!option || state.stats.money < option.cost) return;
+  state.stats.money -= option.cost;
+  state.legacy.dispute = type;
+  state.legacy.inheritanceRate = option.rate;
+  if (option.cost) addLedger("分产文书", -option.cost, option.label);
+  if (type === "sole") openThread("family", "先人身后的争产旧怨", "上一代强定主脉承继，旁支所得寥寥。这笔不平会跟着家产一起交到新主人手上。", { delay: 1, stakes: 180 });
+  addLog(`遗产处置 · ${option.label}`, option.text, [{ label: "可承遗产", value: `${Math.round(option.rate * 100)}%` }]);
+  save();
+  render();
+}
+
+function carryThreadsAcrossInheritance(source, startYear, oldName) {
+  return normalizeThreads(source).filter((item) => item.status === "active").map((item) => ({ ...item, inherited: true, dueYear: Math.max(Number(startYear) + 1, Number(item.dueYear || 0)), summary: `${oldName}留下的旧事：${item.summary}` })).slice(0, 8);
 }
 
 function getActivity(id) {
@@ -8028,7 +8478,8 @@ function performLivelihoodCareerAction(type) {
     if (state.stats.money < cost) return finishAction("药材难备", `炮制药材至少需要 ${moneyText(cost)}，你手头的钱不够。`, [{ label: "钱财", value: "不足", negative: true }], definition.icon);
     changeStat("money", -cost, deltas);
     changeStat("knowledge", randInt(1, 3), deltas);
-    changeLivelihoodMetric(progress, "resource", randInt(20, 29), deltas);
+    // 一次完整备药应足以支撑“坐堂 + 义诊”这一组基础经营循环。
+    changeLivelihoodMetric(progress, "resource", randInt(27, 34), deltas);
     changeLivelihoodMetric(progress, "readiness", randInt(7, 12), deltas);
     changeLivelihoodMetric(progress, "risk", -randInt(3, 7), deltas);
     text += `你花 ${moneyText(cost)} 补齐药材，也把几张旧方重新校正。`;
@@ -8078,7 +8529,7 @@ function performLivelihoodCareerAction(type) {
     changeLivelihoodMetric(progress, "reputation", randInt(6, 10), deltas);
     changeLivelihoodMetric(progress, "risk", randInt(3, 7), deltas);
     if (state.dynasty) {
-      changeWorldValue("local.epidemic", -randInt(2, 4), deltas);
+      changeWorldValue("local.epidemic", -randInt(6, 9), deltas);
       changeWorldValue("local.sentiment", randInt(2, 4), deltas);
     }
     text += "药棚一直开到日落，虽无诊金，数十户人家却少了一分病中无助。";
@@ -11968,7 +12419,8 @@ function inheritFromChild(id) {
   const generation = Math.max(1, Number(state.lineage?.generation) || 1);
   const generationStep = heir.heirKind === "grandchild" ? 2 : 1;
   const heirParent = heir.heirKind === "grandchild" ? livingChildren().find((child) => child.id === heir.parentId) : null;
-  const inheritedMoney = Math.max(20, Math.round(Math.max(0, state.stats.money || 0) * 0.78));
+  const inheritedMoney = Math.max(20, Math.round(Math.max(0, state.stats.money || 0) * normalizeLegacy(state.legacy).inheritanceRate));
+  const inheritedThreads = carryThreadsAcrossInheritance(state.threads, Math.max(0, Math.round(Number(heir.age) || 0)), oldName);
   const inheritedAssets = (state.assets || []).map((asset) => ({ ...asset, inherited: true, owner: heir.name }));
   const inheritedInventory = [...new Set([...(state.inventory || []), "家书"])]
     .filter((item) => typeof item === "string")
@@ -12036,6 +12488,11 @@ function inheritFromChild(id) {
     talents: pickMany(DATA.database?.talents || [], 3),
     coreTalent: sample(DATA.database?.coreTalents || []),
     career: null,
+    ambition: null,
+    threads: inheritedThreads,
+    apprentices: [],
+    apprenticeLastYear: -1,
+    legacy: { funeral: null, dispute: null, inheritanceRate: 0.78 },
     friends: [],
     tags: ["承继家业"],
     diseases: [],
@@ -12111,7 +12568,7 @@ function inheritFromSpouse(heir) {
   const oldScore = lifeScore();
   const oldGrade = lifeGrade(oldScore);
   const generation = Math.max(1, Number(old.lineage?.generation) || 1);
-  const inheritedMoney = Math.max(20, Math.round(Math.max(0, old.stats.money || 0) * 0.88));
+  const inheritedMoney = Math.max(20, Math.round(Math.max(0, old.stats.money || 0) * Math.min(0.9, normalizeLegacy(old.legacy).inheritanceRate + 0.1)));
   const inheritedAssets = (old.assets || []).map((asset) => ({ ...asset, inherited: true, owner: heir.name }));
   const familyName = heir.name.slice(0, 1) || old.name.slice(0, 1);
   const heirAge = Math.max(16, Math.round(Number(heir.age) || Math.max(18, old.age - 3)));
@@ -12153,6 +12610,11 @@ function inheritFromSpouse(heir) {
     career: null,
     careerProgress: {},
     careerHistory: [],
+    ambition: null,
+    threads: carryThreadsAcrossInheritance(old.threads, heirAge, oldName),
+    apprentices: [],
+    apprenticeLastYear: -1,
+    legacy: { funeral: null, dispute: null, inheritanceRate: 0.78 },
     friends: [],
     tags: ["未亡人承业", "承继家业"],
     diseases: [],
@@ -13215,6 +13677,7 @@ function submitExam() {
 function addLog(title, text, deltas = []) {
   state.log.unshift({ age: state.age, title, text, deltas });
   state.log = state.log.slice(0, 160);
+  maybeOpenThreadFromLog(title, text);
 }
 
 function fillPlaceholders(text, mutate = true) {
@@ -14720,6 +15183,7 @@ function overviewView() {
         <button class="secondary-btn" data-page="place" data-place="activities">安排活动</button>
       </div>
     </article>
+    ${ambitionPanel()}
     <details class="overview-secondary" ${state.dynasty?.activeArc || secretLineNoticeCount() ? "open" : ""}>
       <summary><span><b>天下与家门</b><small>朝局、宗族、地域与奇闻暗线</small></span><em>${state.dynasty?.activeArc || secretLineNoticeCount() ? "有新动静" : "按需展开"}</em></summary>
       <div class="overview-secondary-body">
@@ -14748,6 +15212,29 @@ function overviewView() {
         </button>`).join("")}
     </section>
     ${recentLog()}`;
+}
+
+function ambitionPanel() {
+  if (state.age < 15) return "";
+  const ambition = normalizeAmbition(state.ambition);
+  const definition = ambitionDefinition(ambition?.id);
+  if (!ambition || !definition) {
+    return `
+      <section class="ambition-panel">
+        <header><span><b>立下人生志向</b><small>成年后选定一条长线目标；每条志向分三重进境，并会随你的真实经历推进。</small></span><em>一生一次</em></header>
+        <div class="ambition-grid">
+          ${LIFE_AMBITIONS.map((item) => `<button class="ambition-choice" data-ambition-id="${item.id}">${icon(item.icon, item.title)}<span><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.motto)}</small></span></button>`).join("")}
+        </div>
+      </section>`;
+  }
+  const stageIndex = Math.min(ambition.stage, definition.stages.length - 1);
+  return `
+    <section class="ambition-panel active">
+      <header>${icon(definition.icon, definition.title)}<span><b>${escapeHtml(definition.title)}</b><small>${escapeHtml(ambition.completed ? definition.motto : `当前志业：${definition.stages[stageIndex].title}`)}</small></span><em>${ambition.completed ? "志业已成" : `${ambition.stage}/3`}</em></header>
+      <div class="ambition-steps">
+        ${definition.stages.map((stage, index) => `<span class="${index < ambition.stage ? "done" : index === ambition.stage ? "current" : ""}"><b>${index + 1}</b>${escapeHtml(stage.title)}</span>`).join("")}
+      </div>
+    </section>`;
 }
 
 function latestYearText() {
@@ -15418,7 +15905,7 @@ function childCard(child) {
       <div>
         <strong><span>${escapeHtml(child.relation || "子女")} · ${child.age}岁</span>${escapeHtml(child.name || "无名")}</strong>
         <div class="meter"><i style="width:${affection}%"></i></div>
-        <small>${escapeHtml(child.trait || "聪慧")} · 体魄 ${physique} · 学业 ${Math.round(child.study || 0)} · 德行 ${Math.round(child.virtue || 0)}${child.age >= 15 ? ` · ${escapeHtml(child.occupation || "尚未谋业")} · 志向“${escapeHtml(child.ambition || "求安稳")}”` : ""}${child.otherParent ? ` · 生母/父 ${escapeHtml(child.otherParent)}` : ""}${child.spouse ? ` · 已与${escapeHtml(child.spouse.name)}成婚` : child.marriedTo ? ` · 已与${escapeHtml(child.marriedTo)}成婚` : ""}${(child.grandchildren || []).length ? ` · 子女 ${(child.grandchildren || []).filter((item) => item.alive !== false).length} 人` : ""}${childEducationLabel(child) ? ` · ${escapeHtml(childEducationLabel(child))}` : ""}${familyStoryStatus(child)}</small>
+        <small>${escapeHtml(child.lineageStatus || "嫡出")} · ${escapeHtml(child.trait || "聪慧")} · 体魄 ${physique} · 学业 ${Math.round(child.study || 0)} · 德行 ${Math.round(child.virtue || 0)}${child.age >= 15 ? ` · ${escapeHtml(child.occupation || "尚未谋业")}（进境 ${Math.round(child.careerStage || 0)}） · 志向“${escapeHtml(child.ambition || "求安稳")}”` : ""}${child.otherParent ? ` · 生母/父 ${escapeHtml(child.otherParent)}` : ""}${child.spouse ? ` · 已与${escapeHtml(child.spouse.name)}成婚` : child.marriedTo ? ` · 已与${escapeHtml(child.marriedTo)}成婚` : ""}${(child.grandchildren || []).length ? ` · 子女 ${(child.grandchildren || []).filter((item) => item.alive !== false).length} 人` : ""}${childEducationLabel(child) ? ` · ${escapeHtml(childEducationLabel(child))}` : ""}${familyStoryStatus(child)}</small>
         ${child.lastAction ? `<small class="npc-memory">近年动向：${escapeHtml(child.lastAction)}${child.memories?.[0]?.text ? ` · 记得“${escapeHtml(child.memories[0].text)}”` : ""}</small>` : ""}
         <span class="mini-actions">
           ${child.age < 15 ? `<button class="text-btn inline-action" data-teach-child="${escapeHtml(child.id)}" ${state.stats.money < CHILD_EDU_COST ? "disabled" : ""}>延师教养</button>` : `<small>已成丁，可承继家业。</small>`}
@@ -17178,9 +17665,11 @@ function eventView(event) {
   const femaleSchoolEvent = event.kind === "femaleSchool";
   const clanEvent = event.kind === "clanCouncil";
   const regionalEvent = event.kind === "regionalEvent";
+  const fateThread = event.kind === "fateThread";
+  const childLifeEvent = event.kind === "childLife";
   const darkEvent = ["examinerBribe", "underworldConsequence", "jianghuProphecy", "secretIntroduction"].includes(event.kind);
   const sceneArt = eventSceneArt(event);
-  const eyebrow = worldEvent ? `${state.dynasty.eraName}${state.dynasty.reignYear}年 · 天下主线` : regionalEvent ? `${travelDestinationByStaticId(event.regionId).name} · 地方纪事` : clanEvent ? `${state.clan.familyName}氏 · 合族议事` : femaleSchoolEvent ? "女学 · 闺塾见闻" : prisonEvent ? `牢狱流年 · 余刑 ${state.prisonYears} 年` : culturalEvent ? `${CULTURAL_SEASONS[event.season]?.name || "四时"}时 · ${event.culturalType === "festival" ? "传统节日" : "二十四节气"}` : event.kind === "secretIntroduction" ? "奇闻暗线开启" : event.kind === "examinerBribe" ? "贡院暗局" : event.kind === "underworldConsequence" ? "旧账追门" : event.kind === "jianghuProphecy" ? "江湖命数" : official ? "官场考验" : familyStory ? "家事流年" : careerCase ? "本业专案" : fortuneEvent ? "签运应验" : "事件";
+  const eyebrow = fateThread ? "命册伏笔 · 旧事重来" : childLifeEvent ? "家门流年 · 子女自立" : worldEvent ? `${state.dynasty.eraName}${state.dynasty.reignYear}年 · 天下主线` : regionalEvent ? `${travelDestinationByStaticId(event.regionId).name} · 地方纪事` : clanEvent ? `${state.clan.familyName}氏 · 合族议事` : femaleSchoolEvent ? "女学 · 闺塾见闻" : prisonEvent ? `牢狱流年 · 余刑 ${state.prisonYears} 年` : culturalEvent ? `${CULTURAL_SEASONS[event.season]?.name || "四时"}时 · ${event.culturalType === "festival" ? "传统节日" : "二十四节气"}` : event.kind === "secretIntroduction" ? "奇闻暗线开启" : event.kind === "examinerBribe" ? "贡院暗局" : event.kind === "underworldConsequence" ? "旧账追门" : event.kind === "jianghuProphecy" ? "江湖命数" : official ? "官场考验" : familyStory ? "家事流年" : careerCase ? "本业专案" : fortuneEvent ? "签运应验" : "事件";
   return `
     <article class="play-card event-card ${prisonEvent ? "prison-event" : ""} ${culturalEvent ? `culture-event season-${event.season}` : ""} ${worldEvent ? "world-event" : ""} ${clanEvent ? "clan-event" : ""} ${regionalEvent ? "regional-event" : ""}">
       <figure class="event-scene event-scene-${sceneArt.key}" data-dynasty-scene="event" data-scene-key="${escapeHtml(sceneArt.key)}" data-scene-src="${escapeHtml(sceneArt.src)}" data-scene-focus="${escapeHtml(sceneArt.focus)}" data-scene-season="${escapeHtml(event.season || "")}" style="--event-focus:${sceneArt.focus}">
@@ -17195,7 +17684,7 @@ function eventView(event) {
           options.length
             ? options.map(({ child, index }) => `<button class="choice-btn ${official || careerCase ? "official-choice" : ""}" data-choice="${index}" ${child.disabled ? "disabled" : ""}>
               <span>${escapeHtml(child.title || "继续")}</span>
-              ${(official || familyStory || careerCase || fortuneEvent || darkEvent || prisonEvent || culturalEvent || worldEvent || femaleSchoolEvent || clanEvent || regionalEvent) && child.note ? `<small>${escapeHtml(child.note)}</small>` : ""}
+              ${(official || familyStory || careerCase || fortuneEvent || darkEvent || prisonEvent || culturalEvent || worldEvent || femaleSchoolEvent || clanEvent || regionalEvent || fateThread || childLifeEvent) && child.note ? `<small>${escapeHtml(child.note)}</small>` : ""}
             </button>`).join("")
             : `<button class="primary-btn" data-action="finish-event">继续</button>`
         }
@@ -17206,9 +17695,15 @@ function eventView(event) {
 function deathView() {
   const heirs = eligibleHeirs();
   const score = lifeScore();
-  const inheritedMoney = Math.max(20, Math.round(Math.max(0, state.stats.money || 0) * 0.78));
+  const legacy = normalizeLegacy(state.legacy);
+  const inheritedMoney = Math.max(20, Math.round(Math.max(0, state.stats.money || 0) * legacy.inheritanceRate));
+  const spouseMoney = Math.max(20, Math.round(Math.max(0, state.stats.money || 0) * Math.min(0.9, legacy.inheritanceRate + 0.1)));
   const generation = Math.max(1, Number(state.lineage?.generation) || 1);
   const share = endingShareData(score, inheritedMoney, generation);
+  const disputeRequired = heirs.length >= 2;
+  const inheritanceReady = !!legacy.funeral && (!disputeRequired || !!legacy.dispute);
+  const funeralLabels = { simple: "薄葬从俭", rites: "依礼治丧", grand: "厚葬显门" };
+  const disputeLabels = { none: "独脉承继", equal: "立据均分", clan: "族老裁定", sole: "强定主脉" };
   return `
     <article class="play-card death-card">
       <p class="eyebrow">身后事</p>
@@ -17223,14 +17718,19 @@ function deathView() {
         ${scoreTile("可继钱财", moneyText(inheritedMoney))}
       </section>
       ${endingSharePanel(share)}
-      <section class="inherit-section">
-        <div class="section-title"><h2>选择妻子或子孙承继</h2></div>
-        ${heirs.length ? `<div class="button-list">${heirs.map((child) => `
-          <button class="list-btn inherit-btn" data-inherit-child="${escapeHtml(child.id)}">
-            ${icon(child.gender === "female" ? "Relationship2" : "Relationship1", child.name)}
-            <span>${escapeHtml(child.name)}承继家业<small>${escapeHtml(child.relation || (child.gender === "female" ? "女儿" : "儿子"))} · ${child.age}岁 · 学业 ${Math.round(child.study || 0)} · 德行 ${Math.round(child.virtue || 0)} · 继承 ${moneyText(child.heirKind === "spouse" ? Math.max(20, Math.round(Math.max(0, state.stats.money || 0) * 0.88)) : inheritedMoney)}与 ${state.assets.length} 处家产</small></span>
-          </button>`).join("")}</div>` : `<p class="empty-note">没有活着的妻子或子孙可承继家业，只能另开新档。</p>`}
-      </section>
+      ${!legacy.funeral ? `<section class="inherit-section legacy-step"><div class="section-title"><h2>第一步 · 治丧</h2><span>丧仪会消耗现钱，也会改变最后可承财产</span></div><div class="button-list">
+        <button class="list-btn" data-funeral="simple">${icon("Home", "薄葬从俭")}<span>薄葬从俭<small>花费至多 ${moneyText(30)} · 可保留约80%余财 · 家声小增</small></span></button>
+        <button class="list-btn" data-funeral="rites" ${state.stats.money < 160 ? "disabled" : ""}>${icon("FamilyIcon", "依礼治丧")}<span>依礼治丧<small>花费 ${moneyText(160)} · 宗亲齐聚 · 家声与凝聚提升</small></span></button>
+        <button class="list-btn" data-funeral="grand" ${state.stats.money < 480 ? "disabled" : ""}>${icon("House", "厚葬显门")}<span>厚葬显门<small>花费 ${moneyText(480)} · 门第显赫 · 留给后人的现钱更少</small></span></button>
+      </div></section>` : ""}
+      ${legacy.funeral && disputeRequired && !legacy.dispute ? `<section class="inherit-section legacy-step"><div class="section-title"><h2>第二步 · 分产</h2><span>多位继承人之间，必须先定规矩</span></div><div class="button-list">
+        <button class="list-btn" data-estate-dispute="equal" ${state.stats.money < 80 ? "disabled" : ""}>${icon("CashBox", "立据均分")}<span>立据均分<small>花费 ${moneyText(80)} · 承继人所得较少，但各房不易结怨</small></span></button>
+        <button class="list-btn" data-estate-dispute="clan" ${state.stats.money < 30 ? "disabled" : ""}>${icon("FamilyIcon", "请族老裁定")}<span>请族老裁定<small>花费 ${moneyText(30)} · 按族规确定主脉与各房分例</small></span></button>
+        <button class="list-btn" data-estate-dispute="sole">${icon("Official", "强定主脉")}<span>强定一人承继<small>集中更多家产，但旁支怨气会成为下一代的未了之事</small></span></button>
+      </div></section>` : ""}
+      ${inheritanceReady ? `<section class="inherit-section legacy-step"><div class="section-title"><h2>第三步 · 选择承继人</h2><span>${escapeHtml(funeralLabels[legacy.funeral] || "治丧已毕")} · ${escapeHtml(disputeLabels[legacy.dispute] || "分产已定")} · 可承遗产 ${Math.round(legacy.inheritanceRate * 100)}%</span></div>
+        ${heirs.length ? `<div class="button-list">${heirs.map((child) => `<button class="list-btn inherit-btn" data-inherit-child="${escapeHtml(child.id)}">${icon(child.gender === "female" ? "Relationship2" : "Relationship1", child.name)}<span>${escapeHtml(child.name)}承继家业<small>${escapeHtml(child.relation || (child.gender === "female" ? "女儿" : "儿子"))} · ${child.age}岁 · 学业 ${Math.round(child.study || 0)} · 德行 ${Math.round(child.virtue || 0)} · 继承 ${moneyText(child.heirKind === "spouse" ? spouseMoney : inheritedMoney)}与 ${state.assets.length} 处家产 · 接过未了旧事</small></span></button>`).join("")}</div>` : `<p class="empty-note">没有活着的妻子或子孙可承继家业，只能另开新档。</p>`}
+      </section>` : ""}
       <div class="main-actions">
         <button class="${heirs.length ? "ghost-btn danger" : "primary-btn"}" data-action="new-life">另开新档</button>
         <button class="secondary-btn" data-tab="history">查看命册</button>
@@ -17277,13 +17777,18 @@ function tabContent() {
 }
 
 function historyPanel() {
+  const ambition = normalizeAmbition(state.ambition);
+  const ambitionDef = ambitionDefinition(ambition?.id);
+  const activeThreads = normalizeThreads(state.threads).filter((item) => item.status === "active");
   return `
     <section class="panel-content">
       <h2>命册</h2>
       <div class="life-summary">
         <strong>${escapeHtml(lifeGrade())} · ${lifeScore()} 分</strong>
-          <small>${completedGoals().length}/${availableLifeGoals().length} 个成就 · ${state.log.length} 件经历</small>
+          <small>${completedGoals().length}/${availableLifeGoals().length} 个成就 · ${state.log.length} 件经历 · ${activeThreads.length} 桩未了之事</small>
       </div>
+      ${ambitionDef ? `<section class="history-feature"><strong>人生志向 · ${escapeHtml(ambitionDef.title)}</strong><small>${ambition.completed ? "三重志业皆成" : `已完成 ${ambition.stage}/3 · 当前“${escapeHtml(ambitionDef.stages[ambition.stage]?.title || "收束余生")}”`}</small></section>` : ""}
+      ${activeThreads.length ? `<section class="thread-preview"><div class="section-title"><h2>未了之事</h2><span>会在往后流年找上门，也可能由继承人接过</span></div>${activeThreads.map((item) => `<article class="record-item thread-item"><strong>${icon(THREAD_KINDS[item.kind].icon, item.title)}${escapeHtml(item.title)}</strong><p>${escapeHtml(item.summary)} · ${item.dueYear <= state.year ? "因果已到" : `${item.dueYear - state.year}年后或有回响`}${item.inherited ? " · 先人遗事" : ""}</p></article>`).join("")}</section>` : ""}
       <div class="record-list">${state.log.map(logItem).join("") || `<p class="empty-note">暂无记录</p>`}</div>
     </section>`;
 }
@@ -17298,6 +17803,7 @@ function overviewPanel() {
       ${infoLine("阶段", `${phase.name} · ${phase.focus}`)}
       ${infoLine("评分", `${lifeScore()} · ${lifeGrade()}`)}
       ${infoLine("命格", state.coreTalent?.name || "无")}
+      ${infoLine("志向", ambitionDefinition()?.title ? `${ambitionDefinition().title} · ${state.ambition?.completed ? "功成" : `${state.ambition?.stage || 0}/3`}` : state.age >= 15 ? "尚未立志" : "成年后可选")}
       ${infoLine("天赋", state.talents.map((item) => item.name).join("、") || "无")}
       ${infoLine("功名", state.exam.rank >= 0 ? EXAM_TITLES[state.exam.rank] : "白身")}
       ${infoLine("姻缘", state.family.spouse ? `已婚：${state.family.spouse}${state.family.concubines?.length ? ` · 侧室 ${state.family.concubines.length} 人` : ""}` : state.family.lover ? `相看：${state.family.lover}` : "未定")}
@@ -17308,6 +17814,7 @@ function overviewPanel() {
       ${infoLine("宗族", `${state.clan?.familyName || state.name.slice(0, 1)}氏 · ${state.clan?.branches?.length || 1}房 · 家声 ${Math.round(state.clan?.prestige || 0)}`)}
       ${infoLine("地域", `家门 ${travelDestinationByStaticId(state.regional?.residenceId || "qingping").name} · 地方盟友 ${state.regional?.alliances?.length || 0}`)}
       ${infoLine("经历", `${state.log.length} 件事`)}
+      ${infoLine("未了", `${normalizeThreads(state.threads).filter((item) => item.status === "active").length} 桩旧事`)}
       <div class="goal-mini">
           <strong>已成成就 ${done.length}/${availableLifeGoals().length}</strong>
         ${done.slice(0, 4).map((goal) => `<span>${escapeHtml(goal.title)}</span>`).join("") || `<small>尚未达成成就</small>`}
@@ -17394,6 +17901,7 @@ function careerPanel() {
       ${kind === "caravan" ? caravanRouteSummary() : ""}
       ${state.career && livelihoodDefinition() ? livelihoodCareerSummary(progress) : ""}
       ${state.career && !officialCareer ? careerPracticeSummary(progress) : ""}
+      ${apprenticePanel()}
       ${state.age < 15 ? `<p class="empty-note">未满 15 岁，暂不能外出营生。</p>` : ""}
       ${state.prisonYears > 0 ? `<p class="empty-note">刑期未满，暂不能谋职。</p>` : ""}
       ${state.career ? `<div class="button-list career-actions">
@@ -17410,6 +17918,19 @@ function careerPanel() {
         ${availableEntries.map(careerCard).join("") || `<p class="empty-note">${state.career ? "当前已有营生，辞职后可重新择业。" : "这一类暂时没有符合身份与年龄的营生。"}</p>`}
       </div>
       ${lockedEntries.length ? `<details class="career-locked-list"><summary>尚未解锁 · ${lockedEntries.length}项</summary><div class="career-list">${lockedEntries.map(careerCard).join("")}</div></details>` : ""}
+    </section>`;
+}
+
+function apprenticePanel() {
+  const apprentices = normalizeApprentices(state.apprentices);
+  if (!state.career && !apprentices.length) return "";
+  const learning = apprentices.filter((item) => item.status === "learning");
+  const currentName = state.career ? currentCareerName() : "旧业";
+  return `
+    <section class="apprentice-panel">
+      <div class="section-title"><h2>师门传业</h2><span>${learning.length} 人在学 · ${apprentices.filter((item) => item.status === "graduated").length} 人出师</span></div>
+      ${apprentices.length ? `<div class="apprentice-list">${apprentices.map((item) => `<article class="apprentice-item"><span>${icon(item.gender === "female" ? "Relationship2" : "Relationship1", item.name)}<b>${escapeHtml(item.name)}</b><small>${escapeHtml(item.careerName)} · 技艺 ${Math.round(item.skill)} · 忠诚 ${Math.round(item.loyalty)} · ${item.status === "learning" ? "随师学艺" : item.status === "graduated" ? "出师立业" : "离门"}</small></span>${item.status === "learning" ? `<button class="text-btn" data-apprentice-teach="${escapeHtml(item.id)}" ${item.taughtYear === state.year || state.stats.money < 40 || state.prisonYears > 0 ? "disabled" : ""}>亲授 · ${moneyText(40)}</button>` : ""}</article>`).join("")}</div>` : `<p class="empty-note">${currentName}还没有收徒传艺。</p>`}
+      ${state.career ? `<div class="main-actions"><button class="secondary-btn" data-action="take-apprentice" ${canTakeApprentice() ? "" : "disabled"}>开门收徒</button><small>${canTakeApprentice() ? `可收一名弟子，传下${escapeHtml(currentName)}门艺。` : "需年满24岁、本业达到3级；同年不可反复收徒。"}</small></div>` : ""}
     </section>`;
 }
 
@@ -17855,6 +18376,11 @@ app.addEventListener("click", (event) => {
   if (button.dataset.sellItem) return sellInventoryItem(button.dataset.sellItem);
   if (button.dataset.teachChild) return teachChild(button.dataset.teachChild);
   if (button.dataset.marryChild) return marryChild(button.dataset.marryChild);
+  if (button.dataset.ambitionId) return chooseLifeAmbition(button.dataset.ambitionId);
+  if (button.dataset.apprenticeTeach) return teachApprentice(button.dataset.apprenticeTeach);
+  if (button.dataset.action === "take-apprentice") return takeApprentice();
+  if (button.dataset.funeral) return settleFuneral(button.dataset.funeral);
+  if (button.dataset.estateDispute) return settleEstateDispute(button.dataset.estateDispute);
   if (button.dataset.inheritChild) return inheritFromChild(button.dataset.inheritChild);
   if (button.dataset.relationAction) return interactRelation(button.dataset.relationTarget, button.dataset.relationAction);
   if (button.dataset.action === "send-letter") return sendLetter();

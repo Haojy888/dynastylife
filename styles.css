@@ -1884,6 +1884,125 @@ p {
   margin-top: 16px;
 }
 
+.ambition-panel {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid rgba(185, 134, 32, 0.32);
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(255, 247, 211, 0.78), rgba(255, 255, 255, 0.62));
+}
+
+.ambition-panel > header,
+.ambition-choice,
+.apprentice-item,
+.apprentice-item > span {
+  display: flex;
+  align-items: center;
+}
+
+.ambition-panel > header {
+  gap: 10px;
+}
+
+.ambition-panel > header > img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+}
+
+.ambition-panel > header > span {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+  flex: 1;
+}
+
+.ambition-panel header small,
+.ambition-choice small,
+.apprentice-item small,
+.history-feature small {
+  color: var(--muted);
+}
+
+.ambition-panel header em {
+  color: var(--accent);
+  font-size: 12px;
+  font-style: normal;
+  white-space: nowrap;
+}
+
+.ambition-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.ambition-choice {
+  gap: 8px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.66);
+  text-align: left;
+}
+
+.ambition-choice img {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+}
+
+.ambition-choice span {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.ambition-choice small {
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.ambition-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.ambition-steps span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.ambition-steps b {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(47, 125, 109, 0.12);
+}
+
+.ambition-steps .done,
+.ambition-steps .current {
+  border-color: rgba(47, 125, 109, 0.34);
+  color: var(--ink);
+}
+
+.ambition-steps .done b,
+.ambition-steps .current b {
+  color: white;
+  background: var(--accent);
+}
+
 .goal-card,
 .codex-item,
 .timeline-item {
@@ -3784,6 +3903,70 @@ p {
   margin: 14px 0;
 }
 
+.apprentice-panel {
+  display: grid;
+  gap: 9px;
+  margin: 14px 0;
+  padding: 12px;
+  border: 1px solid rgba(47, 125, 109, 0.24);
+  border-radius: 12px;
+  background: rgba(47, 125, 109, 0.055);
+}
+
+.apprentice-list {
+  display: grid;
+  gap: 7px;
+}
+
+.apprentice-item {
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.apprentice-item > span {
+  min-width: 0;
+  flex: 1;
+  gap: 8px;
+}
+
+.apprentice-item img,
+.thread-item img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.apprentice-item b,
+.apprentice-item small {
+  display: block;
+}
+
+.history-feature {
+  display: grid;
+  gap: 3px;
+  margin: 10px 0;
+  padding: 10px 12px;
+  border-left: 4px solid var(--accent);
+  border-radius: 8px;
+  background: rgba(47, 125, 109, 0.07);
+}
+
+.thread-preview {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 16px;
+}
+
+.thread-item strong {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .official-network {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -4505,6 +4688,8 @@ p {
   .caravan-status,
   .caravan-choice-grid,
   .goal-strip,
+  .ambition-grid,
+  .ambition-steps,
   .codex-grid,
   .score-grid {
     grid-template-columns: 1fr;
@@ -5903,6 +6088,13 @@ p {
     height: 126px;
     margin: -18px -18px 20px;
   }
+}
+
+.legacy-step {
+  padding: 14px;
+  border: 1px solid rgba(185, 134, 32, 0.25);
+  border-radius: 14px;
+  background: rgba(255, 250, 232, 0.48);
 }
 
 /* 紧凑桌面布局：为 125% 浏览器缩放与矮屏保留完整的主要操作区。 */

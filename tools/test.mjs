@@ -138,7 +138,14 @@ try {
       }
       if (!clicked) return;
     }
-    throw new Error("事件流程超过 40 个步骤，可能已卡死");
+    const blocking = await page.evaluate(() => ({
+      event: state?.currentEvent && { kind: state.currentEvent.kind, title: state.currentEvent.title, threadId: state.currentEvent.threadId, children: state.currentEvent.children?.map((item) => ({ title: item.title, threadChoice: item.threadChoice, disabled: item.disabled })) },
+      threads: state?.threads?.map((item) => ({ id: item.id, status: item.status, kind: item.kind })),
+      result: state?.eventResult?.title || "",
+      pending: state?.pendingAnnualEvent && { kind: state.pendingAnnualEvent.kind, title: state.pendingAnnualEvent.title },
+      visible: [...document.querySelectorAll("button")].filter((item) => !item.disabled && item.offsetParent).map((item) => item.dataset.action || item.dataset.choice || item.textContent.trim()).slice(0, 12),
+    }));
+    throw new Error(`事件流程超过 40 个步骤，可能已卡死：${JSON.stringify(blocking)}`);
   }
 
   await clearBlockingUi();
@@ -2137,6 +2144,104 @@ try {
   assert.deepEqual(regionalSystems.eventResult, { kind: "regionalEvent", recorded: true, reputationRaised: true }, "地方年度事件没有开启、结算或改变声望");
   assert.deepEqual(regionalSystems.ui, { map: 8, landscapes: 8, detailLandscape: "assets/region-yunzhou.webp", factions: 2, summary: 4, overflow: true }, "九州声望页面缺少八地风景、势力卡片、总览或发生移动端溢出");
   assert.deepEqual(regionalSystems.inheritance, { residence: "yunzhou", regions: 8, alliances: 1, resetYear: 17, chronicle: "地方人脉承继" }, "地域声望、盟友、定居地与纪事没有跨代继承");
+
+  console.log("quality gate: verifying ambitions, fate threads, apprentices, autonomous children and legacy settlement");
+  const deepLifeSystems = await page.evaluate(() => {
+    const snapshot = JSON.stringify(state);
+    const previousView = { ...view };
+    const legacySave = JSON.parse(snapshot);
+    delete legacySave.ambition;
+    delete legacySave.threads;
+    delete legacySave.apprentices;
+    delete legacySave.apprenticeLastYear;
+    delete legacySave.legacy;
+    const normalized = normalizeState(legacySave);
+    const oldSave = {
+      ambition: normalized.ambition,
+      threads: normalized.threads.length,
+      apprentices: normalized.apprentices.length,
+      inheritanceRate: normalized.legacy.inheritanceRate,
+    };
+
+    state = normalizeState(JSON.parse(snapshot));
+    state.age = 32;
+    state.year = 32;
+    state.dead = false;
+    state.stats.money = 3000;
+    state.stats.knowledge = 100;
+    state.stats.eq = 100;
+    state.career = { name: "木匠", customKind: "craft", careerType: 1 };
+    state.careerProgress.木匠 = { exp: 800, level: 3 };
+    state.ambition = null;
+    state.threads = [];
+    state.apprentices = [];
+    state.apprenticeLastYear = -1;
+    view.page = "main";
+    view.tab = "overview";
+    view.overlay = "";
+    render();
+    const ambitionChoices = document.querySelectorAll("[data-ambition-id]").length;
+    chooseLifeAmbition("tycoon");
+    const ambition = { id: state.ambition?.id, stages: document.querySelectorAll(".ambition-steps span").length };
+
+    const thread = openThread("promise", "旧日托付", "你曾答应故人照看一名晚辈。", { delay: 1 });
+    thread.dueYear = state.year;
+    const threadEvent = annualThreadEvent();
+    state.currentEvent = threadEvent;
+    resolveFateThread(threadEvent, threadEvent.children[0]);
+    const threadResult = { status: thread.status, visible: historyPanel().includes("旧日托付") };
+
+    state.eventResult = null;
+    state.family.children = [
+      normalizeChild({ id: "child-autonomy", name: `${state.lineage.familyName}承林`, relation: "儿子", gender: "male", age: 19, alive: true, affection: 70, physique: 70, study: 65, virtue: 60, aptitude: 70, ambition: "读书进身", occupation: "尚未谋业", lastFamilyEventYear: -1 }, state.lineage.familyName),
+      normalizeChild({ id: "child-estate", name: `${state.lineage.familyName}承芳`, relation: "女儿", gender: "female", age: 17, alive: true, affection: 72, physique: 65, study: 55, virtue: 70, aptitude: 64, occupation: "绣坊学徒", lastFamilyEventYear: state.year }, state.lineage.familyName),
+    ];
+    const oldRandom = Math.random;
+    Math.random = () => 0;
+    const childEvent = annualChildLifeEvent();
+    Math.random = oldRandom;
+    state.currentEvent = childEvent;
+    resolveChildLifeEvent(childEvent, childEvent.children[1]);
+    const child = state.family.children[0];
+    const childResult = { occupation: child.occupation, careerStage: child.careerStage, hasChoice: childEvent.children.length === 3 };
+
+    state.eventResult = null;
+    state.currentEvent = null;
+    state.apprenticeLastYear = -1;
+    view.tab = "career";
+    render();
+    const apprenticeEntry = Boolean(document.querySelector('[data-action="take-apprentice"]'));
+    takeApprentice();
+    const apprentice = state.apprentices[0];
+    state.eventResult = null;
+    teachApprentice(apprentice.id);
+    const apprenticeResult = { entry: apprenticeEntry, count: state.apprentices.length, skillRaised: apprentice.skill > 8 };
+
+    state.eventResult = null;
+    state.dead = true;
+    state.deathReason = "寿终正寝";
+    state.stats.money = 1000;
+    state.legacy = { funeral: null, dispute: null, inheritanceRate: 0.78 };
+    const funeralVisible = deathView().includes('data-funeral="simple"');
+    settleFuneral("rites");
+    const disputeVisible = deathView().includes('data-estate-dispute="sole"');
+    settleEstateDispute("sole");
+    const inheritanceVisible = deathView().includes("第三步 · 选择承继人");
+    const inheritedThreads = carryThreadsAcrossInheritance(state.threads, 18, state.name);
+    const legacyResult = { funeral: state.legacy.funeral, dispute: state.legacy.dispute, funeralVisible, disputeVisible, inheritanceVisible, inheritedThread: inheritedThreads.some((item) => item.inherited) };
+
+    state = normalizeState(JSON.parse(snapshot));
+    Object.assign(view, previousView);
+    save();
+    render();
+    return { oldSave, ambitionChoices, ambition, threadResult, childResult, apprenticeResult, legacyResult };
+  });
+  assert.deepEqual(deepLifeSystems.oldSave, { ambition: null, threads: 0, apprentices: 0, inheritanceRate: 0.78 }, "旧存档没有补齐五项深度玩法的默认状态");
+  assert.deepEqual({ choices: deepLifeSystems.ambitionChoices, ...deepLifeSystems.ambition }, { choices: 6, id: "tycoon", stages: 3 }, "人生志向没有显示六条路线或三重进境");
+  assert.deepEqual(deepLifeSystems.threadResult, { status: "resolved", visible: true }, "未了之事没有按年回响、结算或写入命册");
+  assert.ok(deepLifeSystems.childResult.occupation !== "尚未谋业" && deepLifeSystems.childResult.careerStage >= 1 && deepLifeSystems.childResult.hasChoice, "成年子女没有自主择业或三种家长回应");
+  assert.ok(deepLifeSystems.apprenticeResult.entry && deepLifeSystems.apprenticeResult.count === 1 && deepLifeSystems.apprenticeResult.skillRaised, "营生页无法收徒或亲授技艺");
+  assert.deepEqual(deepLifeSystems.legacyResult, { funeral: "rites", dispute: "sole", funeralVisible: true, disputeVisible: true, inheritanceVisible: true, inheritedThread: true }, "治丧、分产、继承或跨代旧事流程不完整");
 
   console.log("quality gate: stress-testing annual flow through late life");
   const annualStress = await page.evaluate(() => {
