@@ -2444,6 +2444,81 @@ try {
   assert.equal(contentAudit.femalePortrait && contentAudit.malePortrait, true, "师徒系统没有按性别使用人物头像");
   assert.deepEqual(contentAudit.failures, [], `页面矩阵出现占位符或渲染异常：${contentAudit.failures.join("、")}`);
 
+  console.log("quality gate: verifying connected choices, NPC requests, and scene interactions");
+  const connectedInteraction = await page.evaluate(() => {
+    const snapshot = JSON.stringify(state);
+    const previousView = { ...view };
+    state.dead = false;
+    state.age = 30;
+    state.year = 30;
+    state.prisonYears = 0;
+    state.currentEvent = null;
+    state.eventResult = null;
+    state.pendingTravel = null;
+    state.pendingCaravan = null;
+    state.pendingSurprise = null;
+    state.pendingAchievement = null;
+    state.poetryRound = null;
+    state.stats.money = 2000;
+    state.npcRequests = [];
+    const person = significantNpcRefs()[0];
+    person.affection = 70;
+    person.physique = 36;
+    person.memories = [];
+    const request = maybeCreateNpcRequest(true);
+    const radar = storyRadarPanel();
+    openNpcRequest(request?.id);
+    const requestEventKind = state.currentEvent?.kind;
+    const requestEvent = state.currentEvent;
+    resolveNpcRequest(requestEvent, requestEvent.children[0]);
+    const accepted = state.npcRequests.find((item) => item.id === request?.id);
+    const resultHtml = eventResultView();
+    const acceptedMemory = npcById(request?.npcId)?.memories?.some((item) => item.type === "受助");
+
+    state.eventResult = null;
+    state.npcRequests = normalizeNpcRequests([{ ...request, id: "expire-probe", status: "pending", dueYear: 27 }]);
+    const expirationDeltas = [];
+    expireNpcRequests(expirationDeltas);
+    const expired = state.npcRequests[0];
+
+    const cultural = createCulturalEvent(CULTURAL_CALENDAR_ITEMS[0]);
+    const culturalHtml = eventView(cultural);
+    const templeScene = placeSceneHeader({ id: "temple", label: "寺庙" });
+    const officialDesk = officialDeskPanel();
+    const matchHtml = matchmakerView();
+    const tabsHtml = tabBar();
+    const oldSave = JSON.parse(snapshot);
+    delete oldSave.npcRequests;
+    const oldSaveRequestCount = normalizeState(oldSave).npcRequests.length;
+
+    state = normalizeState(JSON.parse(snapshot));
+    Object.assign(view, previousView);
+    render();
+    return {
+      requestCreated: !!request,
+      requestEventKind,
+      acceptedStatus: accepted?.status,
+      acceptedMemory,
+      radarVisible: radar.includes("眼前要事") && radar.includes("data-npc-request"),
+      resultExplained: resultHtml.includes("为何如此") && resultHtml.includes("后续影响"),
+      expiredStatus: expired?.status,
+      expirationChangedRelationship: expirationDeltas.some((item) => item.label === "人际" || item.label === "关系" || item.negative),
+      culturalSceneChoices: culturalHtml.includes("interactive-scene-event") && culturalHtml.includes("scene-choice-grid"),
+      templeScene: templeScene.includes("place-scene-fortune"),
+      officialScene: officialDesk.includes("official-desk-actions") && officialDesk.includes("升堂理事"),
+      matchProcess: matchHtml.includes("match-process") && matchHtml.includes("托媒问话"),
+      tabHierarchy: tabsHtml.includes("tab-primary") && tabsHtml.includes("tab-archive"),
+      oldSaveRequestCount,
+    };
+  });
+  assert.equal(connectedInteraction.requestCreated && connectedInteraction.requestEventKind === "npcRequest", true, "亲友没有主动生成可处理的限时请求");
+  assert.equal(connectedInteraction.acceptedStatus === "accepted" && connectedInteraction.acceptedMemory, true, "接受请求后没有写入人物记忆与请求结果");
+  assert.equal(connectedInteraction.radarVisible && connectedInteraction.resultExplained, true, "首页剧情雷达或结果解释层没有显示");
+  assert.equal(connectedInteraction.expiredStatus === "expired" && connectedInteraction.expirationChangedRelationship, true, "限时请求逾期后没有产生关系后果");
+  assert.equal(connectedInteraction.culturalSceneChoices && connectedInteraction.templeScene && connectedInteraction.officialScene, true, "节庆、寺庙或官府没有升级为场景交互");
+  assert.equal(connectedInteraction.matchProcess && connectedInteraction.tabHierarchy, true, "媒人流程或主导航层级没有更新");
+  assert.equal(connectedInteraction.oldSaveRequestCount, 0, "旧存档无法兼容新增的亲友请求状态");
+
   console.log("quality gate: verifying apprentice card and gambling layout bounds");
   await page.setViewport({ width: 1280, height: 720, isMobile: false, hasTouch: false, deviceScaleFactor: 1 });
   const focusedLayout = await page.evaluate(() => {

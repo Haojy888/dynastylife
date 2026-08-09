@@ -2649,6 +2649,13 @@ const THREAD_KINDS = {
   promise: { label: "未践之诺", icon: "Letter" },
 };
 
+const NPC_REQUEST_TYPES = {
+  medicine: { label: "急病求助", icon: "MedicineBag", cost: 70 },
+  aid: { label: "周转求援", icon: "CashBox", cost: 100 },
+  endorse: { label: "托你引荐", icon: "Letter", cost: 60 },
+  family: { label: "家事相请", icon: "FamilyIcon", cost: 45 },
+};
+
 const RELATION_ACTIONS = {
   visit: { label: "探望", cost: 0, relationship: [1, 4], affection: [3, 8], mood: [1, 4], icon: "FamilyIcon" },
   gift: { label: "送礼", cost: 120, relationship: [2, 6], affection: [8, 16], mood: [0, 3], icon: "Jade" },
@@ -3229,6 +3236,7 @@ function startLife() {
     life: { milestones: [], goals: [] },
     ambition: null,
     threads: [],
+    npcRequests: [],
     apprentices: [],
     apprenticeLastYear: -1,
     legacy: { funeral: null, dispute: null, inheritanceRate: 0.78 },
@@ -3329,6 +3337,7 @@ function normalizeState(raw) {
   next.life = normalizeLife(next.life, next.age);
   next.ambition = normalizeAmbition(next.ambition);
   next.threads = normalizeThreads(next.threads);
+  next.npcRequests = normalizeNpcRequests(next.npcRequests);
   next.apprentices = normalizeApprentices(next.apprentices);
   next.apprenticeLastYear = Number.isFinite(Number(next.apprenticeLastYear)) ? Number(next.apprenticeLastYear) : -1;
   next.legacy = normalizeLegacy(next.legacy);
@@ -3831,6 +3840,23 @@ function normalizeThreads(source) {
     inherited: !!item.inherited,
     outcome: String(item.outcome || ""),
   })).slice(0, 16);
+}
+
+function normalizeNpcRequests(source) {
+  if (!Array.isArray(source)) return [];
+  return source.filter((item) => item && typeof item === "object" && NPC_REQUEST_TYPES[item.type]).map((item, index) => ({
+    id: String(item.id || `npc-request-${index}-${item.createdYear || 0}`),
+    npcId: String(item.npcId || ""),
+    npcName: String(item.npcName || "亲友"),
+    relation: String(item.relation || "亲友"),
+    type: item.type,
+    title: String(item.title || NPC_REQUEST_TYPES[item.type].label),
+    text: String(item.text || "一位亲友托人捎来口信，希望你能出面相助。"),
+    createdYear: Math.max(0, Math.round(Number(item.createdYear) || 0)),
+    dueYear: Math.max(0, Math.round(Number(item.dueYear) || 0)),
+    status: ["pending", "accepted", "declined", "expired"].includes(item.status) ? item.status : "pending",
+    outcome: String(item.outcome || ""),
+  })).slice(0, 12);
 }
 
 function normalizeApprentices(source) {
@@ -5717,7 +5743,15 @@ function resolveCulturalEvent(event, choice) {
   state.currentEvent = null;
   const text = choice.text || choice.content || choice.title;
   addLog(`岁时 · ${item.name}`, text, deltas);
-  state.eventResult = { title: `${item.name} · ${choice.title}`, text, deltas, icon: item.type === "festival" ? "Temple" : "MainBook", scene: item.season === "winter" ? "ember" : item.season === "autumn" ? "ink" : item.season === "summer" ? "lantern" : "petal" };
+  state.eventResult = {
+    title: `${item.name} · ${choice.title}`,
+    text,
+    deltas,
+    icon: item.type === "festival" ? "Temple" : "MainBook",
+    scene: item.season === "winter" ? "ember" : item.season === "autumn" ? "ink" : item.season === "summer" ? "lantern" : "petal",
+    reason: choice.choiceType === "family" ? "你把节俗落实在家人共同参与上，因此主要改变亲情、心境与家门记忆。" : choice.choiceType === "public" ? "你走进乡里公共生活，节俗由私人体验变成了名望与人情。" : "你选择追问礼俗与物候的来源，因此收获集中在学识与德行。",
+    followup: `${item.name}已收入岁时图鉴；未来再次遇到同一节令时，会保留你这一世采用过的过节方式。`,
+  };
   unlockLifeGoals();
   save();
   render();
@@ -5936,6 +5970,145 @@ function advanceNpcAgencyYear(deltas = []) {
     addLog(title, text, [{ label: person.relation || "亲友", value: person.name }]);
     deltas.push({ label: "亲友动向", value: person.name });
   }
+}
+
+function npcById(id) {
+  return significantNpcRefs().find((person) => String(person.id || person.name) === String(id || "")) || null;
+}
+
+function npcRequestType(person) {
+  if (Number(person.physique || 0) < 48) return "medicine";
+  if (Number(person.wealth || 0) < 36) return "aid";
+  if (/读书进身|光耀门楣|经商置办|行医济世/.test(person.ambition || "")) return "endorse";
+  return "family";
+}
+
+function npcRequestCopy(person, type) {
+  const name = person.name || "亲友";
+  const copies = {
+    medicine: [`${name}卧病求医`, `${person.relation || "亲友"}${name}托人连夜送信，说病势反复，眼下缺一副对症药和一个肯陪着问诊的人。`],
+    aid: [`${name}急需周转`, `${person.relation || "亲友"}${name}的${person.occupation || "营生"}忽然折了本钱，若这几日凑不出周转银，往后多年的积累便要散掉。`],
+    endorse: [`${name}求一封引荐`, `${person.relation || "亲友"}${name}寻到一条靠近“${person.ambition || "安身立业"}”的门路，盼你备一份礼、写一封引荐信替其叩门。`],
+    family: [`${name}请你到场`, `${person.relation || "亲友"}${name}家中要议一件牵动亲族的事。对方不只想要银钱，更希望你亲自到场表明态度。`],
+  };
+  return copies[type] || copies.family;
+}
+
+function maybeCreateNpcRequest(force = false) {
+  state.npcRequests = normalizeNpcRequests(state.npcRequests);
+  if (state.dead || state.prisonYears > 0 || state.age < 12 || (!force && Math.random() > 0.34)) return null;
+  const pending = state.npcRequests.filter((item) => item.status === "pending");
+  if (pending.length >= 3) return null;
+  const recentIds = new Set(state.npcRequests.filter((item) => state.year - item.createdYear < 3).map((item) => item.npcId));
+  const candidates = significantNpcRefs().filter((person) => Number(person.age || 0) >= 12 && Number(person.affection ?? 60) >= 28 && !recentIds.has(String(person.id || person.name)));
+  const person = sample(candidates);
+  if (!person) return null;
+  ensureNpcAgency(person);
+  const type = npcRequestType(person);
+  const [title, text] = npcRequestCopy(person, type);
+  const request = {
+    id: `npc-request-${state.year}-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    npcId: String(person.id || person.name),
+    npcName: person.name,
+    relation: person.relation || "亲友",
+    type,
+    title,
+    text,
+    createdYear: state.year,
+    dueYear: state.year + 1,
+    status: "pending",
+    outcome: "",
+  };
+  state.npcRequests.unshift(request);
+  state.npcRequests = state.npcRequests.slice(0, 12);
+  rememberNpcMoment(person, "托付", `请你处理“${title}”`, 0);
+  addLog("亲友来信", `${text} 对方盼你在明年结束前给个答复。`, [{ label: "限时请求", value: person.name }]);
+  return request;
+}
+
+function expireNpcRequests(deltas = []) {
+  state.npcRequests = normalizeNpcRequests(state.npcRequests);
+  for (const request of state.npcRequests.filter((item) => item.status === "pending" && item.dueYear < state.year)) {
+    request.status = "expired";
+    request.outcome = "逾期未答";
+    const person = npcById(request.npcId);
+    if (person) rememberNpcMoment(person, "失望", `你没有回应“${request.title}”`, -7);
+    changeStat("relationship", -2, deltas);
+    deltas.push({ label: request.relation, value: `${request.npcName}失望`, negative: true });
+    addLog("亲友失望", `${request.npcName}等过了约定的日子，最终没有再来催问。此后见面时，这件事仍横在你们之间。`, [{ label: "关系", value: -2, negative: true }]);
+  }
+}
+
+function npcRequestToEvent(request) {
+  const meta = NPC_REQUEST_TYPES[request.type] || NPC_REQUEST_TYPES.family;
+  return {
+    kind: "npcRequest",
+    requestId: request.id,
+    title: `${request.relation}来信 · ${request.title}`,
+    content: `${request.text}\n\n答复期限：${request.dueYear}年结束前。你若不处理，关系不会停在原地。`,
+    icon: meta.icon,
+    children: [
+      { title: "亲自相助", note: `承担 ${moneyText(meta.cost)}，对方会记住你的选择`, requestChoice: "accept", disabled: state.stats.money < meta.cost },
+      { title: "如实推辞", note: "保住钱财，但情分与后续来往会改变", requestChoice: "decline" },
+    ],
+  };
+}
+
+function openNpcRequest(id) {
+  const request = normalizeNpcRequests(state.npcRequests).find((item) => item.id === id && item.status === "pending");
+  if (!request) return;
+  state.currentEvent = npcRequestToEvent(request);
+  view.page = "main";
+  save();
+  render();
+}
+
+function resolveNpcRequest(event, choice) {
+  state.npcRequests = normalizeNpcRequests(state.npcRequests);
+  const request = state.npcRequests.find((item) => item.id === event.requestId && item.status === "pending");
+  if (!request || choice.disabled) return;
+  const meta = NPC_REQUEST_TYPES[request.type] || NPC_REQUEST_TYPES.family;
+  const person = npcById(request.npcId);
+  const accepted = choice.requestChoice === "accept";
+  const deltas = [];
+  if (accepted) {
+    if (state.stats.money < meta.cost) return;
+    changeStat("money", -meta.cost, deltas);
+    changeStat("relationship", request.type === "family" ? 6 : 4, deltas);
+    changeStat("virtue", request.type === "endorse" ? 1 : 3, deltas);
+    if (person) {
+      if (request.type === "medicine") person.physique = clamp(Number(person.physique || 0) + 12);
+      if (request.type === "aid") person.wealth = clamp(Number(person.wealth || 0) + 16);
+      if (request.type === "endorse") person.influence = clamp(Number(person.influence || 0) + 10);
+      rememberNpcMoment(person, "受助", `你答应了“${request.title}”`, 9);
+    }
+    addLedger("帮助亲友", -meta.cost, request.title);
+    request.status = "accepted";
+    request.outcome = "亲自相助";
+  } else {
+    changeStat("relationship", -3, deltas);
+    if (person) rememberNpcMoment(person, "被拒", `你推辞了“${request.title}”`, -8);
+    request.status = "declined";
+    request.outcome = "如实推辞";
+    openThread("family", `与${request.npcName}之间的一次推辞`, `${request.npcName}曾为“${request.title}”向你开口，你选择了推辞。`, { key: `npc-request:${request.id}`, target: request.npcName, delay: 2, stakes: 80 });
+  }
+  const text = accepted
+    ? `你没有只回一封客套信，而是备好 ${moneyText(meta.cost)} 亲自处理了“${request.title}”。${request.npcName}把这份照应记在了心里。`
+    : `你把难处说清，没有答应“${request.title}”。${request.npcName}收下回信，却也明白你们之间的情分有了新的分寸。`;
+  state.currentEvent = null;
+  state.lastDeltas = deltas;
+  addLog(`亲友答复 · ${request.npcName}`, text, deltas);
+  state.eventResult = {
+    title: choice.title,
+    text,
+    deltas,
+    icon: meta.icon,
+    scene: request.type === "family" ? "lantern" : request.type === "medicine" ? "herb" : "ink",
+    reason: accepted ? `你付出了实际资源，并在期限内亲自回应，因此${request.npcName}的记忆与情分同步改变。` : "你保住了眼前资源，但人物会记住这次推辞，关系不再只是一个静态数值。",
+    followup: accepted ? `${request.npcName}今后的营生、健康或人脉会带着这次帮助继续发展。` : `这次推辞已成为一桩未了之事，往后可能再次找上门。`,
+  };
+  save();
+  render();
 }
 
 function ambitionDefinition(id = state.ambition?.id) {
@@ -6758,6 +6931,7 @@ function nextYear() {
     state.age += 1;
     state.year += 1;
     state.lastDeltas = [];
+    expireNpcRequests(state.lastDeltas);
 
     if (state.age === 1 && !state.tags.includes("抓周")) {
       state.tags.push("抓周");
@@ -6816,6 +6990,7 @@ function nextYear() {
     annualRelationEvent(state.lastDeltas);
     annualPartnerEvent(state.lastDeltas);
     advanceNpcAgencyYear(state.lastDeltas);
+    maybeCreateNpcRequest();
 
     if (shouldDie()) {
       die(state.age >= 100 ? "寿终正寝" : "体魄耗尽");
@@ -7837,6 +8012,7 @@ function chooseOption(index) {
     if (event.kind === "regionalEvent") return resolveRegionalEvent(event, choice);
     if (event.kind === "fateThread") return resolveFateThread(event, choice);
     if (event.kind === "childLife") return resolveChildLifeEvent(event, choice);
+    if (event.kind === "npcRequest") return resolveNpcRequest(event, choice);
 
     const deltas = applyResults(choice.results || []);
     state.lastDeltas = mergeDeltas(state.pendingActivity?.deltas, deltas);
@@ -9313,6 +9489,21 @@ function officialCareerSummary() {
           </span>`).join("")}
       </div>
       <p class="official-note">${escapeHtml(tendency.note)}</p>`;
+}
+
+function officialDeskPanel() {
+  const office = officialOffice();
+  const activeCase = activeMysteryCase();
+  const retired = !!state.official?.retired;
+  return `
+    <section class="official-desk-panel">
+      <header><span><small>今日坐衙</small><b>${escapeHtml(office.office)}</b></span><em>${escapeHtml(office.duty)}</em></header>
+      <div class="official-desk-actions">
+        <button data-career-action="case:post" ${retired ? "disabled" : ""}>${icon("Official", "升堂理事")}<span><b>升堂理事</b><small>进入只属于当前官职的高级专案</small></span></button>
+        <button data-career-action="affair:archives" ${retired ? "disabled" : ""}>${icon("MainBook", "翻阅卷宗")}<span><b>翻阅卷宗</b><small>处理日常案牍，积累政绩与官场评价</small></span></button>
+        <button data-career-action="case:mystery" ${retired ? "disabled" : ""}>${icon("PrisonHeader", "追查奇案")}<span><b>${activeCase ? "续查奇案" : "追查奇案"}</b><small>${activeCase ? `${activeCase.title}仍有线索待核` : "验尸、问证、搜查，再亲自指认真凶"}</small></span></button>
+      </div>
+    </section>`;
 }
 
 function annualAssetIncome() {
@@ -11728,6 +11919,26 @@ function performPlaceAction(id) {
     title = "祈福";
     text = "你焚香祈福，心绪稍定，也愿行事更谨慎。";
     iconName = "Temple";
+  } else if (id === "templeAlms") {
+    const cost = 80;
+    if (state.stats.money < cost) return finishAction("香资不足", `添香布施需 ${moneyText(cost)}，寺中也劝你先安顿好自家生活。`, [{ label: "钱财", value: "不足", negative: true }], "Temple");
+    changeStat("money", -cost, deltas);
+    changeStat("virtue", randInt(5, 9), deltas);
+    changeStat("favorability", randInt(2, 5), deltas);
+    addLedger("寺中布施", -cost, "托寺中施粥义诊。 ");
+    title = "添香布施";
+    text = "你没有只在佛前求自己的平安，而是添了香资，托寺中为流民施粥、替贫户义诊。知客僧把你的名字记在功德簿，也有受助之人记住了这份周济。";
+    iconName = "Temple";
+  } else if (id === "templeCounsel") {
+    const activeThread = normalizeThreads(state.threads).find((item) => item.status === "active");
+    changeStat("knowledge", randInt(1, 4), deltas);
+    changeStat("eq", randInt(2, 5), deltas);
+    changeStat("mood", randInt(2, 6), deltas);
+    title = "后山问僧";
+    text = activeThread
+      ? `你向老僧说起“${activeThread.title}”。他没有替你断吉凶，只道：事若未了，躲得越久，心里替它留的位置便越大。你下山时，已经想清下一次该如何面对。`
+      : "你与老僧在松下饮了一盏淡茶。对方不谈神通，只问你近来最放不下的是什么。几番答问后，困局没有凭空消失，你却看清了自己的执念。";
+    iconName = "BambooHouse";
   } else {
     return;
   }
@@ -12492,6 +12703,7 @@ function inheritFromChild(id) {
     career: null,
     ambition: null,
     threads: inheritedThreads,
+    npcRequests: [],
     apprentices: [],
     apprenticeLastYear: -1,
     legacy: { funeral: null, dispute: null, inheritanceRate: 0.78 },
@@ -12614,6 +12826,7 @@ function inheritFromSpouse(heir) {
     careerHistory: [],
     ambition: null,
     threads: carryThreadsAcrossInheritance(old.threads, heirAge, oldName),
+    npcRequests: [],
     apprentices: [],
     apprenticeLastYear: -1,
     legacy: { funeral: null, dispute: null, inheritanceRate: 0.78 },
@@ -12907,7 +13120,14 @@ function resolveOfficialCase(event, choice) {
   if (choice.impeachment && Math.random() < choice.impeachment) text += triggerOfficialCensure(deltas, "此案风声未平，御史闻讯递来弹章。");
   text += applyOfficialPromotion(deltas);
   state.currentEvent = null;
-  state.eventResult = { title: choice.title || event.title || "官场要案", text, deltas, icon: "Official" };
+  state.eventResult = {
+    title: choice.title || event.title || "官场要案",
+    text,
+    deltas,
+    icon: "Official",
+    reason: `此案同时读取你的${officialOffice().office}职权、当前官阶、清浊路线与官场人脉；政绩不是唯一判定。`,
+    followup: state.mystery?.active ? "离奇案件仍保留已取得的线索，可回官府继续追查。" : `本次处置已进入官评；政绩达到门槛后还会接受考课、座主与政敌的共同检验。`,
+  };
   state.lastDeltas = deltas;
   addLog(event.title || "官场要案", text, deltas);
   unlockLifeGoals();
@@ -15160,6 +15380,67 @@ function worldView() {
     </section>`;
 }
 
+function storyRadarItems() {
+  const items = [];
+  for (const request of normalizeNpcRequests(state.npcRequests).filter((item) => item.status === "pending")) {
+    const remaining = request.dueYear - state.year;
+    items.push({
+      priority: remaining <= 0 ? 0 : 1,
+      tone: remaining <= 0 ? "urgent" : "relation",
+      icon: NPC_REQUEST_TYPES[request.type]?.icon || "Letter",
+      eyebrow: `${request.relation}主动来信`,
+      title: request.title,
+      note: `${request.npcName}正在等你的答复 · ${remaining <= 0 ? "今年内须处理" : `还可等 ${remaining} 年`}`,
+      action: "request",
+      id: request.id,
+      label: "现在答复",
+    });
+  }
+  for (const thread of normalizeThreads(state.threads).filter((item) => item.status === "active")) {
+    const remaining = thread.dueYear - state.year;
+    items.push({
+      priority: remaining <= 0 ? 2 : 5 + remaining,
+      tone: remaining <= 0 ? "urgent" : "thread",
+      icon: THREAD_KINDS[thread.kind]?.icon || "MainBook",
+      eyebrow: thread.inherited ? "先人遗事" : "命册伏笔",
+      title: thread.title,
+      note: remaining <= 0 ? "因果已到，近期流年会再次找上门" : `${remaining} 年后或有回响 · ${thread.summary}`,
+      action: "history",
+      label: "查看来龙去脉",
+    });
+  }
+  if (state.mystery?.active) {
+    items.push({ priority: 1, tone: "urgent", icon: "Official", eyebrow: "手头奇案", title: activeMysteryCase()?.title || "旧案待查", note: `已得 ${state.mystery.active.clues?.length || 0}/4 条线索，随时可继续勘查与指认`, action: "mystery", label: "继续办案" });
+  }
+  if (state.dynasty?.activeArc) {
+    const arc = WORLD_ARCS[state.dynasty.activeArc.id];
+    const stage = arc?.stages?.[state.dynasty.activeArc.stage];
+    items.push({ priority: 4, tone: "world", icon: arc?.icon || "Official", eyebrow: "天下主线", title: arc?.name || "朝局有变", note: stage ? `当前阶段：${stage.title}` : "局势正在演变", action: "world", label: "查看天下" });
+  }
+  if (state.templeFortune?.active) {
+    const lot = TEMPLE_FORTUNES.find((item) => item.id === state.templeFortune.active.id);
+    items.push({ priority: 4, tone: "fortune", icon: "Temple", eyebrow: "签运待应", title: lot?.title || "旧签在手", note: `${lot?.grade || "签运"} · ${state.templeFortune.active.dueYear <= state.year ? "应验之年已到" : `${state.templeFortune.active.dueYear - state.year} 年后应验`}`, action: "temple", label: "回寺问签" });
+  }
+  return items.sort((a, b) => a.priority - b.priority).slice(0, 4);
+}
+
+function storyRadarAction(item) {
+  if (item.action === "request") return `<button class="story-radar-action" data-npc-request="${escapeHtml(item.id)}">${escapeHtml(item.label)}</button>`;
+  if (item.action === "history") return `<button class="story-radar-action" data-tab="history">${escapeHtml(item.label)}</button>`;
+  if (item.action === "mystery") return `<button class="story-radar-action" data-action="resume-mystery">${escapeHtml(item.label)}</button>`;
+  if (item.action === "world") return `<button class="story-radar-action" data-page="world">${escapeHtml(item.label)}</button>`;
+  return `<button class="story-radar-action" data-place="temple">${escapeHtml(item.label)}</button>`;
+}
+
+function storyRadarPanel() {
+  const items = storyRadarItems();
+  return `
+    <section class="story-radar ${items.length ? "has-stories" : "is-quiet"}">
+      <header><span><b>眼前要事</b><small>人物会主动来找你，旧选择也会在这里留下回声</small></span><em>${items.length ? `${items.length} 件有后续` : "岁月暂静"}</em></header>
+      ${items.length ? `<div class="story-radar-grid">${items.map((item) => `<article class="story-radar-item ${item.tone}">${icon(item.icon, item.title)}<div><small>${escapeHtml(item.eyebrow)}</small><strong>${escapeHtml(item.title)}</strong><p>${escapeHtml(item.note)}</p></div>${storyRadarAction(item)}</article>`).join("")}</div>` : `<p>这一年没有人催你作答，也没有旧账临门。你仍可照常安排活动或推进流年。</p>`}
+    </section>`;
+}
+
 function overviewView() {
   if (state.prisonYears > 0) return prisonOverviewView();
   const phase = lifePhase();
@@ -15185,6 +15466,7 @@ function overviewView() {
         <button class="secondary-btn" data-page="place" data-place="activities">安排活动</button>
       </div>
     </article>
+    ${storyRadarPanel()}
     ${ambitionPanel()}
     <details class="overview-secondary" ${state.dynasty?.activeArc || secretLineNoticeCount() ? "open" : ""}>
       <summary><span><b>天下与家门</b><small>朝局、宗族、地域与奇闻暗线</small></span><em>${state.dynasty?.activeArc || secretLineNoticeCount() ? "有新动静" : "按需展开"}</em></summary>
@@ -15433,6 +15715,31 @@ function brothelCompanionCard(candidate) {
     </article>`;
 }
 
+function resultReasonText(result = {}) {
+  if (result.reason) return String(result.reason);
+  const deltas = Array.isArray(result.deltas) && result.deltas.length ? result.deltas : state.lastDeltas || [];
+  const numeric = deltas.filter((item) => typeof item.value === "number");
+  const gains = numeric.filter((item) => item.value > 0).sort((a, b) => b.value - a.value);
+  const losses = numeric.filter((item) => item.value < 0).sort((a, b) => a.value - b.value);
+  if (gains.length && losses.length) return `这不是单纯的成败：你以${losses[0].label}为代价，换来了${gains[0].label}的变化。人物关系、身份和当时的处境共同决定了结果。`;
+  if (gains.length) return `你的选择让${gains.slice(0, 2).map((item) => item.label).join("与")}得到正向变化；此前积累的属性、身份与人情也参与了这次结算。`;
+  if (losses.length) return `这次选择触发了${losses.slice(0, 2).map((item) => item.label).join("与")}方面的代价。它不是孤立扣点，而会继续影响后续人物与事件。`;
+  if (/成功|得当|如愿|化解|救/.test(result.text || "")) return "你的当前身份、能力与选择方向彼此吻合，因此事情得以顺利推进。";
+  if (/失败|未果|失手|受阻|拒绝/.test(result.text || "")) return "当前能力、资源或人物立场没有完全支撑这次选择，因此结果留下了代价。";
+  return "这次结果主要记录你的态度与人物记忆；即使没有立即增减数值，后续关系仍可能因此改变。";
+}
+
+function resultFollowupText(result = {}) {
+  if (result.followup) return String(result.followup);
+  const freshThread = normalizeThreads(state.threads).find((item) => item.status === "active" && item.createdYear === state.year);
+  if (freshThread) return `命册新增伏笔“${freshThread.title}”。它预计在 ${Math.max(0, freshThread.dueYear - state.year)} 年后，或在相关人物再次出现时回响。`;
+  const request = normalizeNpcRequests(state.npcRequests).find((item) => item.status === "pending");
+  if (request) return `${request.relation}${request.npcName}仍在等待“${request.title}”的答复，期限会继续向前推进。`;
+  const dueThread = normalizeThreads(state.threads).find((item) => item.status === "active" && item.dueYear <= state.year + 1);
+  if (dueThread) return `旧事“${dueThread.title}”已经临近，接下来的流年可能直接接续这条因果。`;
+  return "这次选择已写入命册。后续随机事件、人物关系与生涯评价会读取这段经历。";
+}
+
 function eventResultView() {
   const result = state.eventResult || {};
   const scene = result.scene || activitySceneFor(result.icon, result.title, result.text);
@@ -15448,6 +15755,10 @@ function eventResultView() {
       <p>${formatText(result.text || "事情有了结果。")}</p>
       ${result.caravan ? caravanResultHtml(result.caravan) : ""}
       <div class="delta-list result-deltas">${deltaHtml()}</div>
+      <section class="result-explainer">
+        <article><small>为何如此</small><p>${escapeHtml(resultReasonText(result))}</p></article>
+        <article><small>后续影响</small><p>${escapeHtml(resultFollowupText(result))}</p></article>
+      </section>
       <button class="primary-btn" data-action="finish-result">点击继续</button>
     </article>`;
 }
@@ -15572,13 +15883,21 @@ function homeActionButton(action, label, note, iconName, disabled) {
     </button>`;
 }
 
+function placeSceneHeader(place) {
+  const key = { official: "official", temple: "fortune", academy: "study", theater: "culture" }[place?.id];
+  const art = key ? EVENT_SCENE_ART[key] : null;
+  if (!art) return "";
+  return `<figure class="place-scene place-scene-${key}" data-dynasty-scene="place" data-scene-key="${key}"><img src="${escapeHtml(art.src)}" alt="${escapeHtml(place.label)}场景" width="1600" height="900" decoding="async"><figcaption><small>可交互场景</small><b>${escapeHtml(place.label)}</b><span>从场景行动中选择你要做的事</span></figcaption></figure>`;
+}
+
 function placeView() {
   const place = ACTIVITY_PLACES.find((item) => item.id === view.placeId);
   if (!place) return activityPlacesView();
   const lockReason = placeLockReason(place);
   const locked = !!lockReason;
   return `
-    <article class="play-card place-card">
+    <article class="play-card place-card ${["official", "temple", "academy", "theater"].includes(place.id) ? "interactive-place" : ""}">
+      ${placeSceneHeader(place)}
       <p class="eyebrow">活动</p>
       <h2>${escapeHtml(place.label)}</h2>
       <p>${escapeHtml(placeDescription(place))}</p>
@@ -15632,6 +15951,8 @@ function placeActionButtons(place, locked) {
     temple: [
       ["templePray", "焚香祈福", "添德行、安心绪", "Temple"],
       ["templeDrawLot", "求签问运", "抽取签运，下一流年将出现对应的应验剧情", "Temple"],
+      ["templeAlms", "添香布施", "捐给施粥与义诊，善缘可能在往后回响", "CashBox"],
+      ["templeCounsel", "后山问僧", "谈眼前困局，从人物旧事中得到一句点拨", "BambooHouse"],
     ],
     academy: [
       ["prepareExam", "备考温课", "消耗一年在书院温题，提升备考进度", "Book"],
@@ -16101,10 +16422,10 @@ function travelRunView() {
         <p>${escapeHtml(destination.story)}一路行程评定：${travelQualityLabel(run.quality)}（${Math.round(run.quality)}）。你还可以选择一项当地游历。</p>
         ${travelJourneyProgress(run, 100)}
         <div class="arrival-activity-grid">
-          <button class="arrival-activity" data-travel-local="landmark">${icon(destination.icon, destination.landmark)}<span><b>游览名胜</b><small>细看${escapeHtml(destination.landmark)}，增长${escapeHtml(STAT_LABELS[destination.stat] || destination.stat)}与心情</small></span></button>
-          <button class="arrival-activity" data-travel-local="souvenir" ${state.stats.money < 30 ? "disabled" : ""}>${icon("BookStore", destination.souvenir)}<span><b>采买风物 · ${moneyText(30)}</b><small>收藏${escapeHtml(destination.souvenir)}，带回一件旅途纪念</small></span></button>
-          <button class="arrival-activity" data-travel-local="locals">${icon("FamilyFriendAvatar", "当地人")}<span><b>拜访当地人</b><small>听风土消息、结交人物，也许认识新友</small></span></button>
-          <button class="arrival-activity" data-travel-local="faction">${icon("Official", "地方势力")}<span><b>投帖地方势力</b><small>认识${escapeHtml(profile.factions[0].name)}或${escapeHtml(profile.factions[1].name)}，积累长期门路</small></span></button>
+          <button class="arrival-activity scene-hotspot" data-travel-local="landmark">${icon(destination.icon, destination.landmark)}<span><b>游览名胜</b><small>细看${escapeHtml(destination.landmark)}，增长${escapeHtml(STAT_LABELS[destination.stat] || destination.stat)}与心情</small></span></button>
+          <button class="arrival-activity scene-hotspot" data-travel-local="souvenir" ${state.stats.money < 30 ? "disabled" : ""}>${icon("BookStore", destination.souvenir)}<span><b>采买风物 · ${moneyText(30)}</b><small>收藏${escapeHtml(destination.souvenir)}，带回一件旅途纪念</small></span></button>
+          <button class="arrival-activity scene-hotspot" data-travel-local="locals">${icon("FamilyFriendAvatar", "当地人")}<span><b>拜访当地人</b><small>听风土消息、结交人物，也许认识新友</small></span></button>
+          <button class="arrival-activity scene-hotspot" data-travel-local="faction">${icon("Official", "地方势力")}<span><b>投帖地方势力</b><small>认识${escapeHtml(profile.factions[0].name)}或${escapeHtml(profile.factions[1].name)}，积累长期门路</small></span></button>
           <button class="arrival-activity settle-activity" data-travel-local="settle" ${canSettle ? "" : "disabled"}>${icon("House", "择城定居")}<span><b>${state.regional.residenceId === destination.id ? "此地已是家门" : `举家迁居 · ${moneyText(profile.settleCost)}`}</b><small>${state.age < 15 ? "15 岁后可迁居" : localRegion.reputation < 35 ? `当地声望需 35，当前 ${localRegion.reputation}` : state.stats.money < profile.settleCost ? "迁居费用不足" : "安置户籍、宅舍与家眷，从此以此地为归处"}</small></span></button>
         </div>
         ${travelHistoryHtml(run.history)}
@@ -16118,7 +16439,7 @@ function travelRunView() {
       <p>${escapeHtml(event.prompt)}</p>
       ${travelJourneyProgress(run, progress)}
       <div class="travel-run-stats"><span>旅伴 <b>${escapeHtml(run.companionName)}</b></span><span>旅途体验 <b>${Math.round(run.quality)}</b></span><span>车况 <b>${Math.round(state.travelSystem.condition)}</b></span></div>
-      <div class="travel-choice-grid">${event.choices.map((choice, index) => `<button class="travel-choice" data-travel-choice="${index}"><b>${escapeHtml(choice[0])}</b><span>${escapeHtml(STAT_LABELS[choice[1]] || choice[1])}检定</span><small>${escapeHtml(choice[3])}</small></button>`).join("")}</div>
+      <div class="travel-choice-grid scene-hotspot-grid">${event.choices.map((choice, index) => `<button class="travel-choice scene-hotspot" data-travel-choice="${index}"><b>${escapeHtml(choice[0])}</b><span>${escapeHtml(STAT_LABELS[choice[1]] || choice[1])}检定</span><small>${escapeHtml(choice[3])}</small></button>`).join("")}</div>
       ${travelHistoryHtml(run.history)}
     </article>`;
 }
@@ -16338,6 +16659,12 @@ function matchmakerView() {
       <p class="eyebrow">联姻策略局</p>
       <h2>细看人家</h2>
       <p>媒人摊开庚帖：家世、婚仪门槛、性情、生育预期与亲族势力一应写明。选定需付媒资 ${moneyText(30)}，之后可在亲友页成婚；婚仪筹备不足则暂不能成礼。</p>
+      <ol class="match-process" aria-label="相亲流程">
+        <li class="done"><b>1</b><span>查看庚帖<small>先看家世与婚仪门槛</small></span></li>
+        <li><b>2</b><span>托媒问话<small>揭开性情、所求与合帖程度</small></span></li>
+        <li><b>3</b><span>选定相看<small>只保留一位认真来往</small></span></li>
+        <li><b>4</b><span>亲友成礼<small>回亲友页筹备婚仪并成婚</small></span></li>
+      </ol>
       ${femaleMarriageScandalLevel() ? `<p class="match-scandal-warning">坊间仍在议论你女扮男装出入瓦舍之事。高门庚帖已经避开，现有相看对象的初始情分也会降低；往后可凭善行与本业慢慢重建名望。</p>` : ""}
       ${hasLover ? `<p class="empty-note">当前相看：${escapeHtml(state.family.lover)}（${escapeHtml(matchSummary(state.family.loverProfile))}）。再选会更换对象。</p>` : ""}
       <div class="match-grid">
@@ -16365,8 +16692,8 @@ function matchmakerView() {
                   <div class="match-compatibility"><span>媒人合帖：${escapeHtml(matchCompatibilityLabel(item.compatibility))}</span><b>${item.compatibility}</b></div>
                 </section>` : `<p class="match-inquiry-hint">先托媒问一句，才能知道庚帖之外的心性与所求。</p>`}
               <div class="match-card-actions">
-                <button class="secondary-btn" data-match-inquire="${escapeHtml(item.id)}" ${item.inquired ? "disabled" : ""}>${item.inquired ? "已问过话" : "托媒问话"}</button>
-                <button class="primary-btn" data-match-candidate="${escapeHtml(item.id)}" ${livingSpouse || state.stats.money < 30 ? "disabled" : ""}>选定相看</button>
+                <button class="secondary-btn match-scene-action" data-match-inquire="${escapeHtml(item.id)}" ${item.inquired ? "disabled" : ""}>${item.inquired ? "已问过话" : "托媒问话"}</button>
+                <button class="primary-btn match-scene-action" data-match-candidate="${escapeHtml(item.id)}" ${livingSpouse || state.stats.money < 30 ? "disabled" : ""}>选定相看</button>
               </div>
             </div>
           </article>`).join("")}
@@ -17669,11 +17996,13 @@ function eventView(event) {
   const regionalEvent = event.kind === "regionalEvent";
   const fateThread = event.kind === "fateThread";
   const childLifeEvent = event.kind === "childLife";
+  const npcRequest = event.kind === "npcRequest";
   const darkEvent = ["examinerBribe", "underworldConsequence", "jianghuProphecy", "secretIntroduction"].includes(event.kind);
+  const sceneInteraction = official || culturalEvent || fortuneEvent || npcRequest || regionalEvent || familyStory;
   const sceneArt = eventSceneArt(event);
-  const eyebrow = fateThread ? "命册伏笔 · 旧事重来" : childLifeEvent ? "家门流年 · 子女自立" : worldEvent ? `${state.dynasty.eraName}${state.dynasty.reignYear}年 · 天下主线` : regionalEvent ? `${travelDestinationByStaticId(event.regionId).name} · 地方纪事` : clanEvent ? `${state.clan.familyName}氏 · 合族议事` : femaleSchoolEvent ? "女学 · 闺塾见闻" : prisonEvent ? `牢狱流年 · 余刑 ${state.prisonYears} 年` : culturalEvent ? `${CULTURAL_SEASONS[event.season]?.name || "四时"}时 · ${event.culturalType === "festival" ? "传统节日" : "二十四节气"}` : event.kind === "secretIntroduction" ? "奇闻暗线开启" : event.kind === "examinerBribe" ? "贡院暗局" : event.kind === "underworldConsequence" ? "旧账追门" : event.kind === "jianghuProphecy" ? "江湖命数" : official ? "官场考验" : familyStory ? "家事流年" : careerCase ? "本业专案" : fortuneEvent ? "签运应验" : "事件";
+  const eyebrow = npcRequest ? "亲友主动请求 · 有期限的答复" : fateThread ? "命册伏笔 · 旧事重来" : childLifeEvent ? "家门流年 · 子女自立" : worldEvent ? `${state.dynasty.eraName}${state.dynasty.reignYear}年 · 天下主线` : regionalEvent ? `${travelDestinationByStaticId(event.regionId).name} · 地方纪事` : clanEvent ? `${state.clan.familyName}氏 · 合族议事` : femaleSchoolEvent ? "女学 · 闺塾见闻" : prisonEvent ? `牢狱流年 · 余刑 ${state.prisonYears} 年` : culturalEvent ? `${CULTURAL_SEASONS[event.season]?.name || "四时"}时 · ${event.culturalType === "festival" ? "传统节日" : "二十四节气"}` : event.kind === "secretIntroduction" ? "奇闻暗线开启" : event.kind === "examinerBribe" ? "贡院暗局" : event.kind === "underworldConsequence" ? "旧账追门" : event.kind === "jianghuProphecy" ? "江湖命数" : official ? "官场考验" : familyStory ? "家事流年" : careerCase ? "本业专案" : fortuneEvent ? "签运应验" : "事件";
   return `
-    <article class="play-card event-card ${prisonEvent ? "prison-event" : ""} ${culturalEvent ? `culture-event season-${event.season}` : ""} ${worldEvent ? "world-event" : ""} ${clanEvent ? "clan-event" : ""} ${regionalEvent ? "regional-event" : ""}">
+    <article class="play-card event-card ${sceneInteraction ? "interactive-scene-event" : ""} ${prisonEvent ? "prison-event" : ""} ${culturalEvent ? `culture-event season-${event.season}` : ""} ${worldEvent ? "world-event" : ""} ${clanEvent ? "clan-event" : ""} ${regionalEvent ? "regional-event" : ""}">
       <figure class="event-scene event-scene-${sceneArt.key}" data-dynasty-scene="event" data-scene-key="${escapeHtml(sceneArt.key)}" data-scene-src="${escapeHtml(sceneArt.src)}" data-scene-focus="${escapeHtml(sceneArt.focus)}" data-scene-season="${escapeHtml(event.season || "")}" style="--event-focus:${sceneArt.focus}">
         <img src="${sceneArt.src}" alt="${escapeHtml(sceneArt.label)}场景插画" width="1600" height="900" decoding="async" fetchpriority="high" />
         <figcaption><span>流年画卷</span><b>${escapeHtml(sceneArt.label)}</b></figcaption>
@@ -17681,12 +18010,12 @@ function eventView(event) {
       <p class="eyebrow">${eyebrow}</p>
       <h2>${escapeHtml(event.title || "事件")}</h2>
       <p>${formatText(fillPlaceholders(event.content || event.history || "", false))}</p>
-      <div class="choice-list">
+      <div class="choice-list ${sceneInteraction ? "scene-choice-grid" : ""}">
         ${
           options.length
-            ? options.map(({ child, index }) => `<button class="choice-btn ${official || careerCase ? "official-choice" : ""}" data-choice="${index}" ${child.disabled ? "disabled" : ""}>
+            ? options.map(({ child, index }) => `<button class="choice-btn ${sceneInteraction ? "scene-choice" : ""} ${official || careerCase ? "official-choice" : ""}" data-choice="${index}" ${child.disabled ? "disabled" : ""}>
               <span>${escapeHtml(child.title || "继续")}</span>
-              ${(official || familyStory || careerCase || fortuneEvent || darkEvent || prisonEvent || culturalEvent || worldEvent || femaleSchoolEvent || clanEvent || regionalEvent || fateThread || childLifeEvent) && child.note ? `<small>${escapeHtml(child.note)}</small>` : ""}
+              ${(official || familyStory || careerCase || fortuneEvent || darkEvent || prisonEvent || culturalEvent || worldEvent || femaleSchoolEvent || clanEvent || regionalEvent || fateThread || childLifeEvent || npcRequest) && child.note ? `<small>${escapeHtml(child.note)}</small>` : ""}
             </button>`).join("")
             : `<button class="primary-btn" data-action="finish-event">继续</button>`
         }
@@ -17750,14 +18079,14 @@ function recentLog() {
 
 function tabBar() {
   const tabs = [
-    ["overview", "概览"],
-    ["activities", "活动"],
-    ["career", "营生"],
-    ["relations", "亲友"],
-    ["inventory", "行囊"],
-    ["history", "命册"],
+    ["overview", "概览", "primary"],
+    ["activities", "活动", "primary"],
+    ["career", "营生", "primary"],
+    ["relations", "亲友", "primary"],
+    ["inventory", "行囊", "archive"],
+    ["history", "命册", "archive"],
   ];
-  return `<nav class="tabs">${tabs.map(([id, label]) => `<button class="${view.tab === id ? "active" : ""}" data-tab="${id}">${label}</button>`).join("")}</nav>`;
+  return `<nav class="tabs">${tabs.map(([id, label, kind]) => `<button class="tab-${kind} ${view.tab === id ? "active" : ""}" data-tab="${id}">${label}</button>`).join("")}</nav>`;
 }
 
 function tabContent() {
@@ -17881,6 +18210,10 @@ function careerPanel() {
   const kind = state.career ? careerKind(state.career) : "";
   const officialCareer = kind === "official";
   const progress = state.career ? careerProgressFor(state.career.name) : null;
+  const careerActionEntries = state.career ? careerActions() : [];
+  const visibleCareerActions = officialCareer
+    ? careerActionEntries.filter(([type]) => !["case:post", "case:mystery", "affair:archives"].includes(type))
+    : careerActionEntries;
   const selectedFilter = CAREER_FILTERS.some(([id]) => id === view.careerFilter) ? view.careerFilter : "eligible";
   const entries = careers.map((career, index) => ({ career, index, lockReason: careerLockedReason(career), group: careerFilterId(career) }));
   const filteredEntries = selectedFilter === "eligible"
@@ -17903,11 +18236,12 @@ function careerPanel() {
       ${kind === "caravan" ? caravanRouteSummary() : ""}
       ${state.career && livelihoodDefinition() ? livelihoodCareerSummary(progress) : ""}
       ${state.career && !officialCareer ? careerPracticeSummary(progress) : ""}
+      ${officialCareer ? officialDeskPanel() : ""}
       ${apprenticePanel()}
       ${state.age < 15 ? `<p class="empty-note">未满 15 岁，暂不能外出营生。</p>` : ""}
       ${state.prisonYears > 0 ? `<p class="empty-note">刑期未满，暂不能谋职。</p>` : ""}
       ${state.career ? `<div class="button-list career-actions">
-        ${careerActions().map(([type, label, note]) => `
+        ${visibleCareerActions.map(([type, label, note]) => `
           <button class="list-btn" data-career-action="${escapeHtml(type)}" ${blocked ? "disabled" : ""}>
             ${icon(careerIcon(kind), label)}
             <span>${escapeHtml(label)}<small>${escapeHtml(note)}</small></span>
@@ -18109,6 +18443,7 @@ app.addEventListener("click", (event) => {
   if (button.dataset.poetryOption !== undefined) return answerPoetry(button.dataset.poetryOption);
   if (button.dataset.matchInquire) return inquireMatchCandidate(button.dataset.matchInquire);
   if (button.dataset.matchCandidate) return selectMatchCandidate(button.dataset.matchCandidate);
+  if (button.dataset.npcRequest) return openNpcRequest(button.dataset.npcRequest);
   if (button.dataset.action === "refresh-match") {
     refreshMatchPool(true);
     save();
