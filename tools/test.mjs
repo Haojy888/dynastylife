@@ -2806,6 +2806,57 @@ try {
   assert.equal(connectedVisuals.sceneChoiceCount, 2, "家事场景选项没有完整渲染");
   assert.equal(connectedVisuals.sceneChoiceTextVisible, true, "浅色场景按钮仍使用白字或禁用态不可读");
 
+  console.log("quality gate: verifying tablet story links reveal their target panel");
+  const tabletStoryNavigation = await page.evaluate(async () => {
+    const snapshot = JSON.stringify(state);
+    const previousView = { ...view };
+    state.dead = false;
+    state.age = 30;
+    state.year = 30;
+    state.prisonYears = 0;
+    state.currentEvent = null;
+    state.eventResult = null;
+    state.pendingTravel = null;
+    state.pendingCaravan = null;
+    state.pendingSurprise = null;
+    state.pendingAchievement = null;
+    state.poetryRound = null;
+    state.npcRequests = [];
+    state.threads = normalizeThreads([{
+      id: "tablet-thread",
+      kind: "family",
+      title: "一段善缘尚有后话",
+      summary: "旧事仍待回响",
+      createdYear: 28,
+      dueYear: 30,
+      status: "active",
+    }]);
+    view.page = "main";
+    view.tab = "overview";
+    view.mobileSection = "life";
+    view.overlay = "";
+    render();
+    window.scrollTo(0, 0);
+    const button = document.querySelector('.story-radar-action[data-tab="history"]');
+    button?.click();
+    await new Promise((resolve) => window.requestAnimationFrame(() => window.requestAnimationFrame(resolve)));
+    const detailTop = document.querySelector(".detail-panel")?.getBoundingClientRect().top ?? 9999;
+    const result = {
+      button: Boolean(button),
+      tab: view.tab,
+      scrollY: Math.round(window.scrollY),
+      detailVisible: detailTop < window.innerHeight,
+      history: document.querySelector(".detail-panel h2")?.textContent.trim(),
+    };
+    state = normalizeState(JSON.parse(snapshot));
+    Object.assign(view, previousView);
+    render();
+    return result;
+  });
+  assert.equal(tabletStoryNavigation.button, true, "眼前要事缺少查看来龙去脉按钮");
+  assert.deepEqual({ tab: tabletStoryNavigation.tab, detailVisible: tabletStoryNavigation.detailVisible, history: tabletStoryNavigation.history }, { tab: "history", detailVisible: true, history: "命册" }, "窄屏点击查看来龙去脉后没有显示命册面板");
+  assert.ok(tabletStoryNavigation.scrollY > 100, "窄屏点击查看来龙去脉后页面没有滚动到目标面板");
+
   console.log("quality gate: verifying apprentice card and gambling layout bounds");
   await page.setViewport({ width: 1280, height: 720, isMobile: false, hasTouch: false, deviceScaleFactor: 1 });
   const focusedLayout = await page.evaluate(() => {

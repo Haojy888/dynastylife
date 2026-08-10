@@ -18508,10 +18508,11 @@ function mobileTabBar() {
     </nav>`;
 }
 
-function focusMobileSection(selector) {
-  if (!window.matchMedia?.("(max-width: 760px)").matches) return;
+function focusResponsivePanel(selector) {
+  if (!window.matchMedia?.("(max-width: 1120px)").matches) return;
   window.requestAnimationFrame(() => {
-    document.querySelector(selector)?.scrollIntoView({ block: "start" });
+    const target = window.matchMedia("(max-width: 760px)").matches ? selector : ".detail-panel";
+    document.querySelector(target)?.scrollIntoView({ block: "start" });
   });
 }
 
@@ -18980,7 +18981,7 @@ app.addEventListener("click", (event) => {
     view.placeId = "";
     view.mobileSection = "life";
     render();
-    focusMobileSection(".mobile-primary-tabs");
+    focusResponsivePanel(".mobile-primary-tabs");
     return;
   }
   if (button.dataset.action === "open-travel") return openRegionalTravel();
@@ -19039,7 +19040,7 @@ app.addEventListener("click", (event) => {
     view.placeId = "";
     view.mobileSection = "panel";
     render();
-    focusMobileSection(".mobile-primary-tabs");
+    focusResponsivePanel(".mobile-primary-tabs");
     return;
   }
   if (button.dataset.overlay) {
