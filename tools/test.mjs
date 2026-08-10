@@ -103,6 +103,79 @@ try {
   assert.equal(eventIllustrations.overflow, true, "流年事件插画导致移动端横向溢出");
   assert.ok(eventIllustrations.responses.every((item) => item.status === 200 && item.type === "image/webp"), "存在无法加载的 WebP 事件插画");
 
+  console.log("quality gate: stress-testing dynamic scene lifecycle during rapid navigation");
+  const sceneLifecycle = await page.evaluate(async () => {
+    const snapshot = JSON.stringify(state);
+    const previousView = { ...view };
+    state.currentEvent = null;
+    state.eventResult = null;
+    state.pendingAchievement = null;
+    state.pendingSurprise = null;
+    state.prisonYears = 0;
+    state.dead = false;
+    state.age = 28;
+    const routes = [
+      ["place", "official"],
+      ["place", "temple"],
+      ["place", "academy"],
+      ["place", "theater"],
+      ["world", ""],
+      ["regions", ""],
+      ["travel", ""],
+      ["main", ""],
+    ];
+    for (let pass = 0; pass < 3; pass += 1) {
+      routes.forEach(([pageName, placeId]) => {
+        view.page = pageName;
+        view.placeId = placeId;
+        render();
+      });
+    }
+    await new Promise((resolve) => setTimeout(resolve, 120));
+    const status = window.DynastySceneEngine?.status?.() || {};
+    const orphanCanvases = document.querySelectorAll(".dynasty-scene-canvas").length;
+    state = normalizeState(JSON.parse(snapshot));
+    Object.assign(view, previousView);
+    render();
+    return { status, orphanCanvases };
+  });
+  assert.equal(sceneLifecycle.status.mounted, 0, "快速切页后动态场景实例没有完全释放");
+  assert.equal(sceneLifecycle.orphanCanvases, 0, "快速切页后遗留了 Pixi 画布");
+
+  console.log("quality gate: verifying mobile exam actions remain reachable");
+  const mobileExamActions = await page.evaluate(() => {
+    const snapshot = JSON.stringify(state);
+    const previousView = { ...view };
+    state.currentEvent = null;
+    state.eventResult = null;
+    state.pendingAchievement = null;
+    state.pendingSurprise = null;
+    state.prisonYears = 0;
+    state.dead = false;
+    state.age = 24;
+    view.page = "exam";
+    view.placeId = "";
+    render();
+    const actions = [...document.querySelectorAll(".exam-card > .main-actions button")];
+    const result = {
+      count: actions.length,
+      withinViewport: actions.every((button) => {
+        const rect = button.getBoundingClientRect();
+        return rect.left >= -1 && rect.right <= document.documentElement.clientWidth + 1;
+      }),
+      wrappedRows: new Set(actions.map((button) => Math.round(button.getBoundingClientRect().top))).size,
+      overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    };
+    state = normalizeState(JSON.parse(snapshot));
+    Object.assign(view, previousView);
+    render();
+    return result;
+  });
+  assert.ok(mobileExamActions.count >= 8, "科举页缺少考试或返回操作");
+  assert.equal(mobileExamActions.withinViewport, true, "手机端科举操作仍被裁出视口");
+  assert.ok(mobileExamActions.wrappedRows >= 2, "手机端科举操作没有自动换行");
+  assert.ok(mobileExamActions.overflow <= 1, "手机端科举页出现横向溢出");
+
   async function savedAge() {
     return page.evaluate(() => {
       const meta = JSON.parse(localStorage.getItem("dynasty-life-save-meta") || "[]");

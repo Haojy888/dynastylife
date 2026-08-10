@@ -164,17 +164,27 @@
   }
 
   function destroyInstance(instance) {
-    if (!instance || instance.destroyed) return;
+    if (!instance) return;
     instance.destroyed = true;
     instance.resizeObserver?.disconnect();
     instance.intersectionObserver?.disconnect();
     instance.node?.removeEventListener("pointermove", instance.onPointerMove);
     instance.node?.removeEventListener("pointerleave", instance.onPointerLeave);
     instance.node?.classList.remove("scene-engine-ready");
+    // Pixi exposes canvas through a renderer-backed getter. During a fast page
+    // switch app.init() can still be pending, while after destroy() the getter
+    // may throw because renderer has already been cleared. Capture it only
+    // while it is readable and never query the getter from the fallback path.
+    let canvas = null;
+    try {
+      canvas = instance.app?.canvas || null;
+    } catch {
+      canvas = null;
+    }
     try {
       instance.app?.destroy({ removeView: true }, { children: true, texture: false, textureSource: false });
     } catch {
-      instance.app?.canvas?.remove();
+      canvas?.remove();
     }
     instances.delete(instance);
   }

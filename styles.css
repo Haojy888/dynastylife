@@ -2372,6 +2372,14 @@ p {
   line-height: 1.45;
 }
 
+.exam-card > .main-actions {
+  flex-wrap: wrap;
+}
+
+.exam-card > .main-actions button {
+  flex: 1 1 112px;
+}
+
 .mini-game-card {
   padding: 0;
   overflow: hidden;
