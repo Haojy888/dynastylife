@@ -6830,7 +6830,110 @@ p {
 .tabs .tab-archive { color: var(--muted); background: rgba(255, 255, 255, .55); }
 .tabs .tab-archive.active { color: var(--primary-dark); background: rgba(42, 132, 111, .12); }
 
+.mobile-primary-tabs { display: none; }
+
 @media (max-width: 760px) {
+  .mobile-primary-tabs {
+    position: sticky;
+    top: 8px;
+    z-index: 35;
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 5px;
+    overflow-x: auto;
+    padding: 6px;
+    border: 1px solid rgba(47, 125, 109, .17);
+    border-radius: 14px;
+    background: rgba(251, 249, 242, .94);
+    box-shadow: 0 9px 24px rgba(31, 62, 54, .12);
+    scrollbar-width: none;
+    backdrop-filter: blur(14px);
+  }
+  .mobile-primary-tabs::-webkit-scrollbar { display: none; }
+  .mobile-primary-tabs button {
+    min-height: 36px;
+    padding: 7px 8px;
+    border-radius: 9px;
+    color: var(--muted);
+    background: rgba(255, 255, 255, .58);
+    font-size: 12px;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+  .mobile-primary-tabs button.active {
+    color: #fff;
+    background: var(--accent);
+    box-shadow: 0 5px 13px rgba(47, 125, 109, .2);
+  }
+
+  /* 手机端把“流年主舞台”和“资料页签”拆成两个清晰层级，避免整页重复堆叠。 */
+  .detail-panel > .tabs { display: none; }
+  .game-shell.mobile-life-mode .detail-panel,
+  .game-shell.mobile-life-mode .stats-panel { display: none; }
+  .game-shell.mobile-panel-mode .center-panel,
+  .game-shell.mobile-panel-mode .stats-panel { display: none; }
+  .game-shell.mobile-panel-mode .detail-panel {
+    display: block;
+    order: 1;
+    width: 100%;
+    min-height: 420px;
+  }
+  .game-layout,
+  .center-panel,
+  .detail-panel,
+  .play-card {
+    width: 100%;
+    min-width: 0;
+  }
+  .game-layout { align-items: stretch; }
+
+  .door-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .door-btn {
+    min-height: 76px;
+    gap: 4px;
+    padding: 8px;
+  }
+  .door-btn img { width: 31px; height: 31px; }
+  .door-grid .featured-door {
+    grid-column: 1 / -1;
+    min-height: 70px;
+    padding-inline: 14px;
+  }
+
+  .goal-strip {
+    display: flex;
+    gap: 9px;
+    overflow-x: auto;
+    padding: 1px 1px 6px;
+    scroll-snap-type: x proximity;
+    scrollbar-width: thin;
+  }
+  .goal-card,
+  .goal-card.complete {
+    flex: 0 0 min(76vw, 250px);
+    min-height: 108px;
+    padding: 12px;
+    scroll-snap-align: start;
+  }
+
+  .overview-secondary-body {
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(255px, 88%);
+    overflow-x: auto;
+    gap: 9px;
+    padding-bottom: 10px;
+    scroll-snap-type: x proximity;
+    scrollbar-width: thin;
+  }
+  .overview-secondary-body > * {
+    min-width: 0;
+    margin-top: 0;
+    scroll-snap-align: start;
+  }
+
   .story-radar-grid,
   .result-explainer,
   .interactive-place .button-list,

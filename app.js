@@ -15032,8 +15032,16 @@ function talentCard(item, type) {
 }
 
 function renderGame() {
+  const mobilePanelAvailable = view.page === "main"
+    && !state.dead
+    && !state.currentEvent
+    && !state.eventResult
+    && !state.pendingTravel
+    && !state.pendingCaravan
+    && !state.poetryRound;
+  const mobilePanelMode = mobilePanelAvailable && view.mobileSection === "panel";
   return `
-    <main class="app-shell game-shell ${view.page !== "main" ? "focus-page" : ""}">
+    <main class="app-shell game-shell ${view.page !== "main" ? "focus-page" : ""} ${mobilePanelMode ? "mobile-panel-mode" : "mobile-life-mode"}">
       <header class="topbar">
         <div class="identity">
           <button class="avatar profile-trigger" data-overlay="profile" title="资料">${profileAvatarHtml("top-avatar-img")}</button>
@@ -15068,6 +15076,8 @@ function renderGame() {
         ${state.diseases.map((item) => resourcePill("病症", item, "bad")).join("")}
         ${visibleLifeTags().slice(0, 4).map((item) => resourcePill("记号", item)).join("")}
       </section>
+
+      ${mobilePanelAvailable ? mobileTabBar() : ""}
 
       <div class="game-layout">
         <aside class="side-panel stats-panel">
@@ -15136,9 +15146,9 @@ function onboardingOverlay() {
         </div>
 
         <ol class="onboarding-steps">
-          <li><b>看状态</b><span>左侧是心情、体魄、学识等核心属性，体魄太低会有生命风险。</span></li>
+          <li><b>看状态</b><span>桌面端左侧、手机端头像资料里可查看心情、体魄、学识等核心属性；体魄太低会有生命风险。</span></li>
           <li><b>点中间事件</b><span>人生事件会给你选择，不同选项会改属性、钱财和关系。</span></li>
-          <li><b>用右侧页签</b><span>右侧能查看命册、亲友、背包、账本和资料，后面会越来越重要。</span></li>
+          <li><b>切换页签</b><span>桌面端使用右侧页签，手机端使用顶部吸附导航，可快速查看营生、亲友、行囊和命册。</span></li>
           <li><b>长大后解锁</b><span>${state.gender === "female" ? "8 岁开放女学，15 岁后开放营生和女医考校；科举仅向男子开放。" : "15 岁后开放营生和童试，18 岁后会开放更多成人活动。"}</span></li>
         </ol>
 
@@ -18483,6 +18493,28 @@ function tabBar() {
   return `<nav class="tabs">${tabs.map(([id, label, kind]) => `<button class="tab-${kind} ${view.tab === id ? "active" : ""}" data-tab="${id}">${label}</button>`).join("")}</nav>`;
 }
 
+function mobileTabBar() {
+  const tabs = [
+    ["activities", "活动"],
+    ["career", "营生"],
+    ["relations", "亲友"],
+    ["inventory", "行囊"],
+    ["history", "命册"],
+  ];
+  return `
+    <nav class="mobile-primary-tabs" aria-label="手机端主要页面">
+      <button class="${view.mobileSection !== "panel" ? "active" : ""}" data-action="mobile-life">流年</button>
+      ${tabs.map(([id, label]) => `<button class="${view.mobileSection === "panel" && view.tab === id ? "active" : ""}" data-tab="${id}">${label}</button>`).join("")}
+    </nav>`;
+}
+
+function focusMobileSection(selector) {
+  if (!window.matchMedia?.("(max-width: 760px)").matches) return;
+  window.requestAnimationFrame(() => {
+    document.querySelector(selector)?.scrollIntoView({ block: "start" });
+  });
+}
+
 function tabContent() {
   if (view.tab === "activities") return activityPanel();
   if (view.tab === "career") return careerPanel();
@@ -18939,7 +18971,16 @@ app.addEventListener("click", (event) => {
   if (button.dataset.action === "back-main") {
     view.page = "main";
     view.placeId = "";
+    view.mobileSection = "life";
     render();
+    return;
+  }
+  if (button.dataset.action === "mobile-life") {
+    view.page = "main";
+    view.placeId = "";
+    view.mobileSection = "life";
+    render();
+    focusMobileSection(".mobile-primary-tabs");
     return;
   }
   if (button.dataset.action === "open-travel") return openRegionalTravel();
@@ -18994,7 +19035,11 @@ app.addEventListener("click", (event) => {
   }
   if (button.dataset.tab) {
     view.tab = button.dataset.tab;
+    view.page = "main";
+    view.placeId = "";
+    view.mobileSection = "panel";
     render();
+    focusMobileSection(".mobile-primary-tabs");
     return;
   }
   if (button.dataset.overlay) {

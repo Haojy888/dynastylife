@@ -67,6 +67,7 @@ try {
     }]);
     view.page = "main";
     view.tab = "overview";
+    view.mobileSection = "life";
     view.overlay = "";
     render();
     const items = [...document.querySelectorAll(".story-radar-item")];
@@ -149,6 +150,7 @@ try {
   await page.evaluate(() => {
     state.currentEvent = null;
     view.tab = "activities";
+    view.mobileSection = "panel";
     render();
   });
   await page.$eval(".detail-panel", (element) => element.scrollIntoView({ block: "start" }));
@@ -158,6 +160,7 @@ try {
     state.gender = "male";
     state.career = null;
     view.tab = "career";
+    view.mobileSection = "panel";
     view.careerFilter = "female";
     render();
   });

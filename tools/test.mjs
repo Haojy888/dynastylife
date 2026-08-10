@@ -2458,19 +2458,36 @@ try {
     state.pendingCaravan = null;
     state.career = null;
     view.page = "main";
-    view.tab = "activities";
+    view.tab = "overview";
+    view.mobileSection = "life";
     view.overlay = "";
     render();
     const topbar = document.querySelector(".topbar")?.getBoundingClientRect();
     const status = document.querySelector(".status-strip")?.getBoundingClientRect();
     const center = document.querySelector(".center-panel")?.getBoundingClientRect();
-    const stats = document.querySelector(".stats-panel")?.getBoundingClientRect();
+    const mobileNav = document.querySelector(".mobile-primary-tabs")?.getBoundingClientRect();
+    const lifeMode = {
+      navButtons: document.querySelectorAll(".mobile-primary-tabs button").length,
+      navVisible: getComputedStyle(document.querySelector(".mobile-primary-tabs")).display !== "none",
+      centerVisible: getComputedStyle(document.querySelector(".center-panel")).display !== "none",
+      detailHidden: getComputedStyle(document.querySelector(".detail-panel")).display === "none",
+      statsHidden: getComputedStyle(document.querySelector(".stats-panel")).display === "none",
+      fits: document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+    };
+    document.querySelector('.mobile-primary-tabs [data-tab="activities"]')?.click();
     const activity = {
       groups: document.querySelectorAll("[data-activity-group]").length,
       places: document.querySelectorAll("[data-activity-group] [data-place]").length,
       genericNotes: [...document.querySelectorAll("[data-activity-group] .list-btn small")].filter((node) => node.textContent.trim() === "进入地点页面").length,
     };
+    const panelMode = {
+      active: document.querySelector(".mobile-primary-tabs button.active")?.textContent.trim(),
+      centerHidden: getComputedStyle(document.querySelector(".center-panel")).display === "none",
+      detailVisible: getComputedStyle(document.querySelector(".detail-panel")).display !== "none",
+      fits: document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+    };
     view.tab = "career";
+    view.mobileSection = "panel";
     state.gender = "male";
     view.careerFilter = "female";
     render();
@@ -2493,15 +2510,19 @@ try {
     Object.assign(view, previousView);
     render();
     return {
-      mobile: { topbar: topbar?.height || 0, status: status?.height || 0, centerBeforeStats: center.bottom <= stats.top },
+      mobile: { topbar: topbar?.height || 0, status: status?.height || 0, nav: mobileNav?.height || 0, centerWidth: center?.width || 0 },
+      lifeMode,
+      panelMode,
       activity,
       career,
       focus,
       overflow: document.documentElement.scrollWidth <= document.documentElement.clientWidth,
     };
   });
-  assert.equal(uxRefresh.mobile.centerBeforeStats, true, "移动端仍先显示属性面板而不是流年事件");
-  assert.ok(uxRefresh.mobile.topbar < 175 && uxRefresh.mobile.status < 65, "移动端顶部导航或资源条仍占用过多首屏空间");
+  assert.ok(uxRefresh.mobile.topbar < 175 && uxRefresh.mobile.status < 65 && uxRefresh.mobile.nav < 56, "移动端顶部导航或资源条仍占用过多首屏空间");
+  assert.ok(uxRefresh.mobile.centerWidth >= 350, "移动端流年主舞台有效宽度过窄");
+  assert.deepEqual(uxRefresh.lifeMode, { navButtons: 6, navVisible: true, centerVisible: true, detailHidden: true, statsHidden: true, fits: true }, "移动端流年模式仍重复堆叠侧栏或导航不完整");
+  assert.deepEqual(uxRefresh.panelMode, { active: "活动", centerHidden: true, detailVisible: true, fits: true }, "移动端页签没有切换为紧凑资料模式");
   assert.deepEqual(uxRefresh.activity, { groups: 5, places: 17, genericNotes: 0 }, "活动页分类、地点数量或有效说明不正确");
   assert.deepEqual(uxRefresh.career, { filters: 6, active: "female", lockedFold: true }, "职业筛选或未解锁折叠区没有生效");
   assert.equal(uxRefresh.focus.className && uxRefresh.focus.statsHidden && uxRefresh.focus.detailsHidden, true, "特殊玩法没有进入全宽沉浸布局");
