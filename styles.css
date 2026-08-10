@@ -6672,7 +6672,13 @@ p {
 .story-radar-item.world { border-color: rgba(100, 77, 142, .3); }
 .story-radar-item.fortune { border-color: rgba(183, 143, 45, .36); }
 .story-radar-item > .icon-wrap,
-.story-radar-item > svg { width: 40px; height: 40px; }
+.story-radar-item > svg,
+.story-radar-item > img {
+  width: 40px;
+  height: 40px;
+  max-width: 100%;
+  object-fit: contain;
+}
 .story-radar-item > div { min-width: 0; display: grid; gap: 2px; }
 .story-radar-item small { color: var(--primary-dark); font-size: 11px; }
 .story-radar-item strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -6740,10 +6746,17 @@ p {
 .interactive-scene-event .scene-choice {
   min-height: 76px;
   border-color: rgba(42, 132, 111, .25);
+  color: var(--ink);
   background: linear-gradient(145deg, rgba(255, 255, 255, .95), rgba(237, 245, 238, .86));
 }
 
-.interactive-scene-event .scene-choice span { font-size: 15px; }
+.interactive-scene-event .scene-choice span { color: var(--ink); font-size: 15px; }
+.interactive-scene-event .scene-choice small { color: var(--muted); line-height: 1.4; }
+.interactive-scene-event .scene-choice:disabled {
+  color: var(--muted);
+  opacity: .7;
+  background: rgba(244, 245, 238, .84);
+}
 .scene-hotspot { position: relative; overflow: hidden; transition: transform .18s ease, box-shadow .18s ease; }
 .scene-hotspot:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 10px 22px rgba(31, 62, 54, .13); }
 .scene-hotspot::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(110deg, transparent 34%, rgba(255,255,255,.24) 50%, transparent 66%); transform: translateX(-120%); transition: transform .4s ease; }
@@ -6774,6 +6787,12 @@ p {
   border-radius: 12px;
   background: rgba(255, 253, 247, .88);
   text-align: left;
+}
+.official-desk-actions button > img {
+  width: 38px;
+  height: 38px;
+  max-width: 100%;
+  object-fit: contain;
 }
 .official-desk-actions button span { display: grid; gap: 2px; }
 .official-desk-actions button small { color: var(--muted); line-height: 1.35; }

@@ -2602,6 +2602,116 @@ try {
   assert.equal(connectedInteraction.matchProcess && connectedInteraction.tabHierarchy, true, "媒人流程或主导航层级没有更新");
   assert.equal(connectedInteraction.oldSaveRequestCount, 0, "旧存档无法兼容新增的亲友请求状态");
 
+  console.log("quality gate: verifying connected narrative card layout and scene choice contrast");
+  await page.setViewport({ width: 850, height: 760, isMobile: false, hasTouch: false, deviceScaleFactor: 1 });
+  const connectedVisuals = await page.evaluate(() => {
+    const snapshot = JSON.stringify(state);
+    const previousView = { ...view };
+    state.dead = false;
+    state.age = 31;
+    state.prisonYears = 0;
+    state.currentEvent = null;
+    state.eventResult = null;
+    state.pendingAchievement = null;
+    state.pendingSurprise = null;
+    state.pendingTravel = null;
+    state.npcRequests = normalizeNpcRequests([{
+      id: "visual-request",
+      npcId: "visual-relative",
+      npcName: "符清怡",
+      relation: "姐姐",
+      type: "medicine",
+      title: "符清怡卧病求医",
+      createdYear: state.year,
+      dueYear: state.year + 1,
+      status: "pending",
+    }]);
+    state.threads = normalizeThreads([{
+      id: "visual-thread",
+      kind: "family",
+      title: "家门里没有说完的话",
+      summary: "三年前的一封家书仍待回响",
+      createdYear: state.year - 3,
+      dueYear: state.year + 2,
+      status: "active",
+    }]);
+    view.page = "main";
+    view.tab = "overview";
+    view.overlay = "";
+    render();
+
+    const within = (inner, outer, tolerance = 1) => inner.left >= outer.left - tolerance
+      && inner.top >= outer.top - tolerance
+      && inner.right <= outer.right + tolerance
+      && inner.bottom <= outer.bottom + tolerance;
+    const radarItems = [...document.querySelectorAll(".story-radar-item")];
+    const radarImages = radarItems.map((item) => {
+      const image = item.querySelector(":scope > img");
+      const rect = image?.getBoundingClientRect();
+      const itemRect = item.getBoundingClientRect();
+      return {
+        width: Math.round(rect?.width || 0),
+        height: Math.round(rect?.height || 0),
+        fits: !!rect && within(rect, itemRect),
+      };
+    });
+    const radarButtonsFit = radarItems.every((item) => {
+      const button = item.querySelector(".story-radar-action");
+      return !button || within(button.getBoundingClientRect(), item.getBoundingClientRect());
+    });
+    const radarOverflow = document.documentElement.scrollWidth <= document.documentElement.clientWidth;
+
+    const officialProbe = document.createElement("div");
+    officialProbe.style.cssText = "position:fixed;left:0;top:0;width:560px;visibility:hidden;z-index:-1";
+    officialProbe.innerHTML = officialDeskPanel();
+    document.body.appendChild(officialProbe);
+    const officialImages = [...officialProbe.querySelectorAll(".official-desk-actions button > img")].map((image) => {
+      const imageRect = image.getBoundingClientRect();
+      const buttonRect = image.closest("button").getBoundingClientRect();
+      return { width: Math.round(imageRect.width), height: Math.round(imageRect.height), fits: within(imageRect, buttonRect) };
+    });
+    officialProbe.remove();
+
+    state.currentEvent = {
+      kind: "familyStory",
+      title: "为孩子择一条路",
+      content: "孩子已到开蒙立志的年纪，需要你来决定。",
+      children: [
+        { title: "送入书院", note: "花费 160 铜钱，重学识与科举", familyEffect: "academy", disabled: true },
+        { title: "留家教养", note: "亲自教导，重德行与亲情", familyEffect: "home" },
+      ],
+    };
+    render();
+    const sceneChoices = [...document.querySelectorAll(".interactive-scene-event .scene-choice")];
+    const sceneChoiceColors = sceneChoices.map((button) => ({
+      button: getComputedStyle(button).color,
+      title: getComputedStyle(button.querySelector("span")).color,
+      note: getComputedStyle(button.querySelector("small")).color,
+      opacity: Number(getComputedStyle(button).opacity),
+    }));
+    const sceneChoiceTextVisible = sceneChoiceColors.every((colors) => colors.button !== "rgb(255, 255, 255)"
+      && colors.title !== "rgb(255, 255, 255)" && colors.note !== "rgb(255, 255, 255)" && colors.opacity >= 0.65);
+
+    state = normalizeState(JSON.parse(snapshot));
+    Object.assign(view, previousView);
+    render();
+    return {
+      radarCount: radarItems.length,
+      radarImages,
+      radarButtonsFit,
+      radarOverflow,
+      officialImages,
+      sceneChoiceCount: sceneChoices.length,
+      sceneChoiceTextVisible,
+    };
+  });
+  assert.equal(connectedVisuals.radarCount, 2, "眼前要事没有渲染两条测试后续");
+  assert.equal(connectedVisuals.radarImages.every((item) => item.width === 40 && item.height === 40 && item.fits), true, "眼前要事图标尺寸失控或越出卡片");
+  assert.equal(connectedVisuals.radarButtonsFit && connectedVisuals.radarOverflow, true, "眼前要事操作按钮越界或造成横向滚动");
+  assert.equal(connectedVisuals.officialImages.length === 4 && connectedVisuals.officialImages.every((item) => item.width === 38 && item.height === 38 && item.fits), true, "官府案桌图标尺寸失控或越出按钮");
+  assert.equal(connectedVisuals.sceneChoiceCount, 2, "家事场景选项没有完整渲染");
+  assert.equal(connectedVisuals.sceneChoiceTextVisible, true, "浅色场景按钮仍使用白字或禁用态不可读");
+
   console.log("quality gate: verifying apprentice card and gambling layout bounds");
   await page.setViewport({ width: 1280, height: 720, isMobile: false, hasTouch: false, deviceScaleFactor: 1 });
   const focusedLayout = await page.evaluate(() => {
