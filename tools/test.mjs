@@ -356,6 +356,89 @@ try {
   assert.equal(await page.evaluate(() => state.currentEvent?.id), "post-case-18", "未触发大学士对应的专属剧情");
   await clearBlockingUi();
 
+  console.log("quality gate: verifying evidence-backed official household chapter");
+  const chapterCoverage = await page.evaluate(() => {
+    state.age = 40;
+    state.year = 40;
+    state.career = { name: "县衙户房", customKind: "official", careerType: 5 };
+    state.official = normalizeOfficial({ ...state.official, unlocked: true, retired: false, rank: 6, merit: 0, clean: 0, corruption: 0 });
+    state.stats.money = 5000;
+    state.stats.knowledge = 82;
+    state.family.spouse = "沈素音";
+    state.family.spouseMeta = normalizePartner({ name: "沈素音", relation: "妻子", gender: "female", age: 36, alive: true, affection: 70, physique: 70 }, state.name.slice(0, 1), "妻子", "chapter-spouse");
+    state.careerChapters = normalizeCareerChapters(undefined);
+    state.currentEvent = null;
+    state.eventResult = null;
+    state.pendingAchievement = null;
+    state.threads = [];
+    view.page = "main";
+    view.tab = "career";
+    render();
+    const discoverable = Boolean(document.querySelector('[data-career-action="case:chapter"]')) && /跨年长案|仓契疑云/.test(document.querySelector(".official-desk-panel")?.textContent || "");
+
+    const playRoute = (route) => {
+      state.age = 40;
+      state.year = 40;
+      state.career = { name: "县衙户房", customKind: "official", careerType: 5 };
+      state.official = normalizeOfficial({ unlocked: true, retired: false, rank: 6, merit: 0, clean: 0, corruption: 0 });
+      state.stats.money = 5000;
+      state.stats.knowledge = 82;
+      state.family.spouse = "沈素音";
+      state.family.spouseMeta = normalizePartner({ name: "沈素音", relation: "妻子", gender: "female", age: 36, alive: true, affection: 70, physique: 70 }, state.name.slice(0, 1), "妻子", "chapter-spouse");
+      state.careerChapters = normalizeCareerChapters({ active: createCareerChapter("granary-ledger"), completed: [], lastTriggerYear: 40 });
+      state.careerChapters.active.familyKey = "spouse";
+      state.threads = [];
+      state.pendingAchievement = null;
+      let lastReason = "";
+      for (let index = 0; index < CAREER_STORY_PACKS["granary-ledger"].stages.length; index += 1) {
+        const event = buildCareerChapterEvent(state.careerChapters.active);
+        const choice = event.children.find((item) => item.route === route && !item.disabled);
+        if (!choice) return { error: `第 ${index + 1} 幕没有可用的 ${route} 选项` };
+        state.currentEvent = event;
+        resolveCareerChapter(event, choice);
+        lastReason = state.eventResult?.reason || "";
+        state.currentEvent = null;
+        state.eventResult = null;
+        state.pendingAchievement = null;
+        if (state.careerChapters.active) state.year = state.careerChapters.active.dueYear;
+      }
+      const completed = state.careerChapters.completed[0];
+      return {
+        outcome: completed?.outcome || "",
+        choices: completed?.history?.map((item) => item.choiceId) || [],
+        routes: completed?.routes || {},
+        shadow: state.threads.some((item) => item.key === "career:granary-ledger" && item.status === "active"),
+        reasoned: /职权|前几幕证据|清浊路线/.test(lastReason),
+      };
+    };
+
+    return {
+      errors: validateStoryContent(),
+      oldSaveDefault: normalizeCareerChapters(undefined),
+      discoverable,
+      law: playRoute("law"),
+      family: playRoute("family"),
+      power: playRoute("power"),
+    };
+  });
+  assert.deepEqual(chapterCoverage.errors, [], "职业剧情包未通过内容合同校验");
+  assert.deepEqual(chapterCoverage.oldSaveDefault, { active: null, completed: [], lastTriggerYear: -1 }, "旧存档未补全职业长线状态");
+  assert.equal(chapterCoverage.discoverable, true, "官府主场景没有显著展示跨年长案入口");
+  assert.equal(chapterCoverage.law.outcome, "清议立身", "清名路线没有得到独立结局");
+  assert.equal(chapterCoverage.family.outcome, "公私两全", "家宅证词路线没有得到独立结局");
+  assert.equal(chapterCoverage.power.outcome, "权门遮案", "权谋路线没有得到独立结局");
+  assert.equal(chapterCoverage.power.shadow, true, "权谋结局没有留下巡按副账的延迟后果");
+  assert.ok([chapterCoverage.law, chapterCoverage.family, chapterCoverage.power].every((route) => route.choices.length === 4 && route.reasoned), "职业长线没有保留四幕选择或玩家可见因果说明");
+  assert.deepEqual([chapterCoverage.law.routes.law, chapterCoverage.family.routes.family, chapterCoverage.power.routes.power], [4, 4, 4], "三条路线的选择记忆没有写入完成履历");
+  await page.evaluate(() => {
+    state.currentEvent = null;
+    state.eventResult = null;
+    state.pendingAchievement = null;
+    state.threads = [];
+    save();
+    render();
+  });
+
   console.log("quality gate: verifying spouse and concubine interactions");
   const romanceSetup = await page.evaluate(() => {
     state.gender = "male";

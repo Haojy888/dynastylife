@@ -1,4 +1,4 @@
-const CACHE_VERSION = "2026-08-09-2";
+const CACHE_VERSION = "2026-08-10-1";
 const CACHE_PREFIX = "dynastylife-";
 const SHELL_CACHE = `${CACHE_PREFIX}shell-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}runtime-${CACHE_VERSION}`;

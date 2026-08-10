@@ -2586,6 +2586,86 @@ const WORLD_ARCS = {
     ],
   },
 };
+
+/**
+ * 职业长线先用一条可完整验证的垂直切片定标准：每幕都写入路线、人物记忆与下一幕条件。
+ * 后续职业扩写沿用同一合同，不再堆彼此无关的单次事件。
+ */
+const CAREER_STORY_PACKS = Object.freeze({
+  "granary-ledger": {
+    id: "granary-ledger",
+    careerKind: "official",
+    title: "仓契疑云",
+    icon: "Official",
+    summary: "仓粮亏空牵出书吏、豪族与家中人情；四年内，你必须决定公义、亲情和官途如何取舍。",
+    stages: [
+      {
+        id: "missing-grain",
+        title: "仓门少了三成粮",
+        content: "你以{office}身份核验秋粮，封条完好，仓中却少了三成。书吏说是鼠耗，仓夫却指认夜里有人换过车契。",
+        choices: [
+          { id: "seal-ledgers", title: "封仓验三账", note: "清查仓册、车契与税票；得罪经手人", route: "law", score: 2, skill: "knowledge", effects: { knowledge: 2, virtue: 2 }, official: { merit: 28, clean: 4 }, flags: ["sealed-ledgers"], text: "你封住仓门，把仓册、车契与税票分开校验，三处被刮改的数目渐渐对上。" },
+          { id: "family-grain", title: "请家中筹粮", note: "花费 120 铜钱先稳粮价，也让家人卷入此案", route: "family", score: 1, cost: 120, effects: { relationship: 2 }, official: { merit: 20, clean: 1 }, familyAffection: 6, flags: ["family-advanced-grain"], text: "{family}替你从亲友庄上调来粮米。仓外的队伍散了，家里也从此成了此案的经手人。" },
+          { id: "detain-clerk", title: "先拿书吏", note: "以职权逼出口供；办得快，但证据未必干净", route: "power", score: 1, effects: { eq: 2 }, official: { merit: 18, clean: -1, corruption: 3 }, flags: ["clerk-coerced"], text: "你先把书吏扣在值房，连夜追问。口供很快有了，谁教他这样说却仍藏在暗处。" },
+        ],
+      },
+      {
+        id: "family-letter",
+        title: "家中来了一封名帖",
+        content: "第二年，案中粮商托人把名帖送到{family}手里。他自称只是替官仓垫过粮，请你莫把一家老小逼上绝路。",
+        choices: [
+          { id: "refuse-letter", title: "原帖封回", note: "公私分明；家中人会承受外界冷眼", route: "law", score: 2, effects: { virtue: 3 }, official: { merit: 26, clean: 6 }, familyAffection: -10, flags: ["public-refusal"], text: "你让{family}当面看过名帖，再原封不动送回。案卷干净了，家门外的闲话却多起来。" },
+          { id: "trade-for-witness", title: "留帖换证", note: "不许脱罪，但给其一次交出真账的机会", route: "family", score: 2, effects: { eq: 3, relationship: 2 }, official: { merit: 16, clean: 2 }, familyAffection: 8, flags: ["family-witness"], text: "你让{family}回话：不改罪名，只认真账。粮商当夜送来一张藏在夹墙里的转运单。" },
+          { id: "rewrite-register", title: "收银改卷", note: "得 260 铜钱；污点会在巡按到来时被读取", route: "power", score: -1, gain: 260, effects: { virtue: -6 }, official: { merit: 8, clean: -8, corruption: 16 }, familyAffection: 2, flags: ["altered-register"], text: "银封进了家门，案卷里的粮数也少了一行。{family}没有追问，只把那只匣子收得很深。" },
+        ],
+      },
+      {
+        id: "conflicting-proof",
+        title: "两本账互相咬住",
+        content: "第三年，旧仓册与新得转运单指向不同的人。座主催你尽快结案，{family}也问：当初卷进此事，到底值不值得。",
+        choices: [
+          { id: "trace-seals", title: "追查三枚印", note: "以学识核验用印次序，最费时间", route: "law", score: 2, skill: "knowledge", effects: { knowledge: 4, mood: -2 }, official: { merit: 34, clean: 4 }, flags: ["true-chain"], text: "你从纸张、印泥和交割时辰逐项倒查，终于拼出粮食离仓后的完整去向。" },
+          { id: "use-family-proof", title: "请家人作证", note: "需要家中曾经筹粮或换得证据", route: "family", score: 2, requiresAny: ["family-advanced-grain", "family-witness"], effects: { relationship: 3 }, official: { merit: 24, clean: 2 }, familyAffection: 7, flags: ["family-testimony"], text: "{family}带着当年往来凭据到堂作证。家事被摆到公堂上，却也补上了案卷最缺的一环。" },
+          { id: "make-scapegoat", title: "让书吏顶罪", note: "需要此前逼供或改卷；保住上层关系", route: "power", score: 0, requiresAny: ["clerk-coerced", "altered-register"], effects: { favorability: 3, virtue: -4 }, official: { merit: 18, clean: -4, corruption: 7 }, flags: ["scapegoat"], text: "你把所有亏空压到书吏一人身上。上司很快批了结案，狱中的喊冤声却没有停。" },
+        ],
+      },
+      {
+        id: "inspection",
+        title: "巡按到了县界",
+        content: "第四年，御史巡按带着旧案目录来到县界。你手里已有证据，也背着家中人情与官场旧账；今日所呈，将成为此案最后一页。",
+        choices: [
+          { id: "submit-truth", title: "呈上全部真相", note: "清名路线收益最高；自身污点也不会被遮住", route: "law", score: 2, effects: { virtue: 4 }, official: { merit: 35, clean: 7 }, text: "你把真账、假账与自己经手的每一步一并呈上，不替上司、家人或自己删去一行。" },
+          { id: "share-responsibility", title: "与家人共担", note: "保住证人和家门，也会让官评留下保留", route: "family", score: 2, effects: { relationship: 4 }, official: { merit: 22, clean: 2 }, familyAffection: 8, text: "你先护住出面作证的{family}，再把能核实的账目交给巡按。案子没有最漂亮的结语，却没有再添一个替罪者。" },
+          { id: "buy-inspector", title: "托权门压案", note: "花费 220 铜钱；暂保官位，留下更重后患", route: "power", score: -1, cost: 220, effects: { favorability: 4, virtue: -5 }, official: { merit: 12, clean: -6, corruption: 12 }, text: "银钱和名帖赶在巡按之前进了驿馆。案卷被压回箱底，你的名字也写进另一册不能见光的账。" },
+        ],
+      },
+    ],
+  },
+});
+
+function validateStoryContent(packs = CAREER_STORY_PACKS) {
+  const errors = [];
+  const ids = new Set();
+  for (const [key, pack] of Object.entries(packs || {})) {
+    if (!pack?.id || pack.id !== key) errors.push(`${key}: 剧情包 id 不一致`);
+    if (!pack?.title || !Array.isArray(pack.stages) || pack.stages.length < 2) errors.push(`${key}: 缺少标题或跨幕结构`);
+    for (const [stageIndex, stage] of (pack?.stages || []).entries()) {
+      const stageKey = `${key}:${stage.id || stageIndex}`;
+      if (!stage.id || ids.has(stageKey)) errors.push(`${stageKey}: 幕 id 重复或为空`);
+      ids.add(stageKey);
+      if (!stage.title || !stage.content || !Array.isArray(stage.choices) || stage.choices.length < 2) errors.push(`${stageKey}: 幕内容或选择不完整`);
+      const choiceIds = new Set();
+      for (const choice of stage.choices || []) {
+        if (!choice.id || choiceIds.has(choice.id) || !choice.title || !choice.text || !choice.route) errors.push(`${stageKey}: 选择合同不完整或 id 重复`);
+        choiceIds.add(choice.id);
+      }
+    }
+  }
+  return errors;
+}
+
+const STORY_CONTENT_ERRORS = validateStoryContent();
+if (STORY_CONTENT_ERRORS.length) console.error("剧情合同校验失败", STORY_CONTENT_ERRORS);
 const NPC_AMBITIONS = ["求安稳", "置办家业", "读书进身", "经商致富", "行医济人", "远游见世", "光耀门楣"];
 const NPC_DISPOSITIONS = ["重情", "谨慎", "进取", "刚直", "圆融", "节俭", "豪爽"];
 const NPC_OCCUPATIONS = ["务农", "经营小铺", "书塾助教", "药铺帮工", "衙门书手", "工坊学徒", "往来行商"];
@@ -3254,6 +3334,7 @@ function startLife() {
     pendingCaravan: null,
     family: createFamily(draft.family),
     familyStories: { active: null, completed: [], lastTriggerYear: -1 },
+    careerChapters: { active: null, completed: [], lastTriggerYear: -1 },
     templeFortune: { active: null, history: [], lastDrawYear: -1 },
     underworld: createUnderworldState(),
     mystery: { active: null, completed: [] },
@@ -3382,6 +3463,7 @@ function normalizeState(raw) {
   next.clan = normalizeClanState(next.clan, next.lineage?.familyName || next.name.slice(0, 1));
   syncClanBranches(next);
   next.familyStories = normalizeFamilyStories(next.familyStories);
+  next.careerChapters = normalizeCareerChapters(next.careerChapters);
   next.templeFortune = normalizeTempleFortune(next.templeFortune);
   next.underworld = normalizeUnderworld(next.underworld);
   next.mystery = normalizeMysteryState(next.mystery);
@@ -3903,6 +3985,37 @@ function normalizeFamilyStories(stories) {
       : null,
     completed: Array.isArray(source.completed) ? [...new Set(source.completed.map(String).filter(Boolean))].slice(-30) : [],
     lastTriggerYear: Number.isFinite(Number(source.lastTriggerYear)) ? Number(source.lastTriggerYear) : -1,
+  };
+}
+
+function normalizeCareerChapters(source) {
+  const item = source && typeof source === "object" ? source : {};
+  const active = item.active && CAREER_STORY_PACKS[item.active.id] ? item.active : null;
+  return {
+    active: active ? {
+      id: String(active.id),
+      stage: clampNumber(active.stage, 0, CAREER_STORY_PACKS[active.id].stages.length - 1, 0),
+      dueYear: Math.max(0, Math.round(Number(active.dueYear) || 0)),
+      score: Number.isFinite(Number(active.score)) ? Number(active.score) : 0,
+      routes: Object.fromEntries(["law", "family", "power"].map((key) => [key, Math.max(0, Math.round(Number(active.routes?.[key]) || 0))])),
+      flags: [...new Set(Array.isArray(active.flags) ? active.flags.map(String).filter(Boolean) : [])].slice(0, 20),
+      familyKey: String(active.familyKey || ""),
+      history: Array.isArray(active.history) ? active.history.filter((entry) => entry && typeof entry === "object").map((entry) => ({
+        stageId: String(entry.stageId || ""),
+        choiceId: String(entry.choiceId || ""),
+        title: String(entry.title || ""),
+        year: Math.max(0, Math.round(Number(entry.year) || 0)),
+      })).slice(-12) : [],
+      startedYear: Math.max(0, Math.round(Number(active.startedYear) || 0)),
+    } : null,
+    completed: Array.isArray(item.completed) ? item.completed.filter((entry) => entry && CAREER_STORY_PACKS[entry.id]).map((entry) => ({
+      id: String(entry.id),
+      outcome: String(entry.outcome || "案卷留痕"),
+      year: Math.max(0, Math.round(Number(entry.year) || 0)),
+      routes: Object.fromEntries(["law", "family", "power"].map((key) => [key, Math.max(0, Math.round(Number(entry.routes?.[key]) || 0))])),
+      history: Array.isArray(entry.history) ? entry.history.filter((item) => item && typeof item === "object").map((item) => ({ stageId: String(item.stageId || ""), choiceId: String(item.choiceId || ""), title: String(item.title || ""), year: Math.max(0, Math.round(Number(item.year) || 0)) })).slice(-12) : [],
+    })).slice(-12) : [],
+    lastTriggerYear: Number.isFinite(Number(item.lastTriggerYear)) ? Number(item.lastTriggerYear) : -1,
   };
 }
 
@@ -7000,6 +7113,7 @@ function nextYear() {
     }
 
     const annualEvent =
+      annualCareerChapterEvent() ||
       annualFamilyStoryEvent() ||
       annualWorldArcEvent() ||
       annualThreadEvent() ||
@@ -7996,6 +8110,7 @@ function chooseOption(index) {
 
   try {
     if (event.kind === "officialCase") return resolveOfficialCase(event, choice);
+    if (event.kind === "careerChapter") return resolveCareerChapter(event, choice);
     if (event.kind === "familyStory") return resolveFamilyStory(event, choice);
     if (event.kind === "careerCase") return resolveCareerCase(event, choice);
     if (event.kind === "fortuneEvent") return resolveFortuneEvent(event, choice);
@@ -8891,9 +9006,11 @@ function resignCareer() {
   const deltas = [];
   changeStat("mood", kind === "official" ? -3 : 1, deltas);
   if (kind === "official") {
+    const interruptedChapter = abandonCareerChapter();
     state.official.retired = true;
     recordOfficialPost("辞官");
     changeStat("favorability", -2, deltas);
+    if (interruptedChapter) deltas.push({ label: "长案", value: `${interruptedChapter}中断`, type: "text", negative: true });
   }
   state.careerHistory ||= [];
   state.careerHistory.push({ name: career.name, displayName: name, kind, year: state.year, level: progress.level, reason: kind === "official" ? "辞官" : "辞职" });
@@ -9495,11 +9612,15 @@ function officialDeskPanel() {
   const office = officialOffice();
   const activeCase = activeMysteryCase();
   const retired = !!state.official?.retired;
+  const activeChapter = state.careerChapters?.active;
+  const chapterPack = activeChapter && CAREER_STORY_PACKS[activeChapter.id];
+  const chapterStage = chapterPack?.stages?.[activeChapter.stage];
   return `
     <section class="official-desk-panel">
       <header><span><small>今日坐衙</small><b>${escapeHtml(office.office)}</b></span><em>${escapeHtml(office.duty)}</em></header>
       <div class="official-desk-actions">
         <button data-career-action="case:post" ${retired ? "disabled" : ""}>${icon("Official", "升堂理事")}<span><b>升堂理事</b><small>进入只属于当前官职的高级专案</small></span></button>
+        <button data-career-action="case:chapter" ${retired ? "disabled" : ""}>${icon("MainBook", "跨年长案")}<span><b>${chapterPack ? `${escapeHtml(chapterPack.title)} ${activeChapter.stage + 1}/${chapterPack.stages.length}` : "开启跨年长案"}</b><small>${chapterStage ? (activeChapter.dueYear <= state.year ? `继续：${escapeHtml(chapterStage.title)}` : `${activeChapter.dueYear - state.year} 年后：${escapeHtml(chapterStage.title)}`) : "官场、家宅与旧选择连续四年互相牵动"}</small></span></button>
         <button data-career-action="affair:archives" ${retired ? "disabled" : ""}>${icon("MainBook", "翻阅卷宗")}<span><b>翻阅卷宗</b><small>处理日常案牍，积累政绩与官场评价</small></span></button>
         <button data-career-action="case:mystery" ${retired ? "disabled" : ""}>${icon("PrisonHeader", "追查奇案")}<span><b>${activeCase ? "续查奇案" : "追查奇案"}</b><small>${activeCase ? `${activeCase.title}仍有线索待核` : "验尸、问证、搜查，再亲自指认真凶"}</small></span></button>
       </div>
@@ -12865,6 +12986,7 @@ function inheritFromSpouse(heir) {
       children,
     },
     familyStories: { active: null, completed: [], lastTriggerYear: -1 },
+    careerChapters: { active: null, completed: [], lastTriggerYear: -1 },
     templeFortune: { active: null, history: [], lastDrawYear: -1 },
     exam: { rank: -1, attempts: 0, history: [], current: null, lastYear: -1 },
     pendingActivity: null,
@@ -12974,6 +13096,15 @@ function officialCareerActions() {
   const actions = OFFICIAL_AFFAIRS
     .filter((affair) => rank >= affair.minRank)
     .map((affair) => [`affair:${affair.id}`, affair.label, affair.note]);
+  state.careerChapters = normalizeCareerChapters(state.careerChapters);
+  const chapter = state.careerChapters.active;
+  const chapterPack = chapter && CAREER_STORY_PACKS[chapter.id];
+  if (chapterPack) {
+    const stage = chapterPack.stages[chapter.stage];
+    actions.push(["case:chapter", `${chapterPack.title} · ${chapter.stage + 1}/${chapterPack.stages.length}`, chapter.dueYear <= state.year ? `继续“${stage.title}”，此前人物和证据会改变本幕选项。` : `${chapter.dueYear - state.year} 年后进入“${stage.title}”。`]);
+  } else if (!state.careerChapters.completed.some((entry) => entry.id === "granary-ledger")) {
+    actions.push(["case:chapter", "跨年长案 · 仓契疑云", "开启四幕官场—家宅剧情；选择会在来年被人物和案卷重新提起。"]);
+  }
   actions.push(["case:post", `${office.office}专案`, `处理只属于${office.office}这一官职的高级剧情。`]);
   const cases = officialCasePool();
   actions.push(["case:random", "官场要案", cases.length ? "进入带选择的官场剧情，处理得当可涨政绩，也可能招祸。" : "官阶尚低，暂以日常案牍为主。"]);
@@ -13025,6 +13156,7 @@ function performOfficialAction(type = "affair:archives") {
   if (state.official.retired) return finishAction("乡居", "你已致仕归乡，不再点卯办差。可在家中修谱、教导子孙，把官场旧事写入命册。", [], "Official");
   const action = String(type || "");
   if (action === "retire") return retireOfficial();
+  if (action === "case:chapter") return startOrResumeCareerChapter();
   if (action === "case:mystery") return startMysteryCase();
   if (action === "exam:bribe") return startExaminerBribe();
   if (action === "case:post") return startOfficialCase("post");
@@ -13089,6 +13221,251 @@ function officialCaseToEvent(item) {
       results: [],
     })),
   };
+}
+
+function careerChapterActorEntries() {
+  const entries = [];
+  const add = (key, person) => {
+    if (person && person.alive !== false) entries.push({ key, person });
+  };
+  add("spouse", state.family?.spouseMeta);
+  add("mother", state.family?.mother);
+  add("father", state.family?.father);
+  for (const sibling of state.family?.siblings || []) add(`sibling:${sibling.id || sibling.name}`, sibling);
+  return entries;
+}
+
+function careerChapterActor(active = state.careerChapters?.active) {
+  const entries = careerChapterActorEntries();
+  const entry = entries.find((item) => item.key === active?.familyKey) || entries[0] || null;
+  if (entry && active && active.familyKey !== entry.key) active.familyKey = entry.key;
+  return entry?.person || null;
+}
+
+function careerChapterText(text, actor = careerChapterActor()) {
+  return String(text || "")
+    .replace(/\{family\}/g, actor?.name || "族中故旧")
+    .replace(/\{office\}/g, officialOffice().office);
+}
+
+function createCareerChapter(id = "granary-ledger") {
+  const pack = CAREER_STORY_PACKS[id];
+  if (!pack) return null;
+  const actor = careerChapterActorEntries()[0];
+  return {
+    id,
+    stage: 0,
+    dueYear: state.year,
+    score: 0,
+    routes: { law: 0, family: 0, power: 0 },
+    flags: [],
+    familyKey: actor?.key || "",
+    history: [],
+    startedYear: state.year,
+  };
+}
+
+function careerChapterChoiceAvailable(active, choice) {
+  if (choice.cost && state.stats.money < choice.cost) return false;
+  if (choice.requiresAny?.length && !choice.requiresAny.some((flag) => active.flags.includes(flag))) return false;
+  return true;
+}
+
+function buildCareerChapterEvent(active = state.careerChapters?.active) {
+  const pack = active && CAREER_STORY_PACKS[active.id];
+  const stage = pack?.stages?.[active.stage];
+  if (!pack || !stage) return null;
+  const actor = careerChapterActor(active);
+  return {
+    kind: "careerChapter",
+    id: `${pack.id}:${stage.id}`,
+    chapterId: pack.id,
+    stageIndex: active.stage,
+    title: `${pack.title} · ${stage.title}`,
+    content: careerChapterText(stage.content, actor),
+    icon: pack.icon,
+    children: stage.choices.map((choice) => {
+      const available = careerChapterChoiceAvailable(active, choice);
+      const need = choice.requiresAny?.length && !choice.requiresAny.some((flag) => active.flags.includes(flag))
+        ? "此前选择没有留下可用的人证或凭据"
+        : choice.cost && state.stats.money < choice.cost
+          ? `需 ${moneyText(choice.cost)}（当前不足）`
+          : choice.note;
+      return {
+        ...choice,
+        title: choice.title,
+        content: careerChapterText(choice.text, actor),
+        note: careerChapterText(need, actor),
+        disabled: !available,
+        conditions: [],
+        results: [],
+        children: [],
+      };
+    }),
+  };
+}
+
+function startOrResumeCareerChapter(id = "granary-ledger") {
+  if (!state.career || careerKind(state.career) !== "official" || state.official?.retired) return;
+  state.careerChapters = normalizeCareerChapters(state.careerChapters);
+  const pack = CAREER_STORY_PACKS[id];
+  if (!pack) return;
+  if (!state.careerChapters.active) {
+    if (state.careerChapters.completed.some((entry) => entry.id === id)) {
+      return finishAction(`${pack.title} · 旧案已结`, "这桩案已收入你的官场履历。命册仍保留当年的选择与最终结局。", [], pack.icon);
+    }
+    state.careerChapters.active = createCareerChapter(id);
+    state.careerChapters.lastTriggerYear = state.year;
+  }
+  const active = state.careerChapters.active;
+  if (active.dueYear > state.year) {
+    const next = pack.stages[active.stage];
+    return finishAction(`${pack.title} · 案情待续`, `卷宗暂时封存。${active.dueYear - state.year} 年后将进入“${next.title}”；此前留下的人证、污点和家中态度都会保留。`, [], pack.icon);
+  }
+  state.currentEvent = buildCareerChapterEvent(active);
+  save();
+  render();
+}
+
+function abandonCareerChapter(outcome = "辞官中断") {
+  state.careerChapters = normalizeCareerChapters(state.careerChapters);
+  const active = state.careerChapters.active;
+  if (!active) return "";
+  const pack = CAREER_STORY_PACKS[active.id];
+  state.careerChapters.completed.push({ id: active.id, outcome, year: state.year, routes: { ...active.routes }, history: [...active.history] });
+  state.careerChapters.completed = state.careerChapters.completed.slice(-12);
+  state.careerChapters.active = null;
+  return pack?.title || "未结长案";
+}
+
+function annualCareerChapterEvent() {
+  state.careerChapters = normalizeCareerChapters(state.careerChapters);
+  const chapters = state.careerChapters;
+  const isOfficial = state.career && careerKind(state.career) === "official" && !state.official?.retired;
+  if (chapters.active && !isOfficial) {
+    const title = abandonCareerChapter();
+    if (title) addLog(`${title} · 辞官中断`, "印信已经交回，尚未查清的卷宗转交后来官员。你留下的证词与人情不会再由本官身收束。", []);
+    return null;
+  }
+  if (!isOfficial || state.dead || state.prisonYears > 0) return null;
+  if (chapters.active) return chapters.active.dueYear <= state.year ? buildCareerChapterEvent(chapters.active) : null;
+  const id = "granary-ledger";
+  if (chapters.completed.some((entry) => entry.id === id) || state.year - chapters.lastTriggerYear < 3 || Math.random() > 0.18) return null;
+  chapters.active = createCareerChapter(id);
+  chapters.lastTriggerYear = state.year;
+  return buildCareerChapterEvent(chapters.active);
+}
+
+function completeCareerChapter(active, deltas) {
+  const pack = CAREER_STORY_PACKS[active.id];
+  const actor = careerChapterActor(active);
+  const routes = active.routes || {};
+  const corrupt = routes.power >= 2 || (active.flags.includes("altered-register") && state.official.corruption >= 25);
+  const clean = !corrupt && routes.law >= 3 && active.score >= 6;
+  const family = !corrupt && !clean && routes.family >= 2;
+  let title = "案卷留痕";
+  let text = "巡按带走了卷宗，却没有把此案列作你的功，也没有立刻追责。它成了官评里一行难说清的批语。";
+  const officialDelta = (key, amount, label) => {
+    if (!amount) return;
+    const min = key === "corruption" ? 0 : key === "merit" ? 0 : -100;
+    state.official[key] = clamp(Number(state.official[key] || 0) + amount, min, key === "merit" ? 100000 : 100);
+    deltas.push({ label, value: amount, stat: key === "merit" ? "officialMerit" : key });
+  };
+  if (clean) {
+    title = "清议立身";
+    text = "巡按按你查出的证据追回亏空，撤换仓吏，并把“不避亲故、不匿己过”写进考语。家中吃过冷眼，你的官声却从此有了根。";
+    officialDelta("merit", 110, "政绩");
+    officialDelta("clean", 10, "清名");
+    changeStat("favorability", 5, deltas);
+  } else if (family) {
+    title = "公私两全";
+    text = `${actor?.name || "家中人"}留下的凭据保住了证人，亏空也追回大半。考语不算凌厉，家门与公堂却都没有留下冤魂。`;
+    officialDelta("merit", 75, "政绩");
+    officialDelta("clean", 3, "清名");
+    if (actor) actor.affection = clamp(Number(actor.affection || 0) + 10);
+    changeStat("relationship", 5, deltas);
+  } else if (corrupt) {
+    title = "权门遮案";
+    text = "案卷被压下，你借此结识了更大的门路，也分到一笔不能见光的银子。巡按离城前却抄走了一页副账。";
+    officialDelta("merit", 40, "政绩");
+    officialDelta("corruption", 5, "贪墨");
+    changeStat("money", 320, deltas);
+    addLedger("仓契暗账", 320, "权门压案后分来的银钱。副账仍在巡按手里。");
+    openThread("shadow", "巡按手里的仓契副账", "仓粮案虽被压下，巡按离任时仍带走一页副账。", { key: "career:granary-ledger", delay: 2, stakes: 260 });
+  } else {
+    officialDelta("merit", 30, "政绩");
+    changeStat("mood", -3, deltas);
+  }
+  const promotion = applyOfficialPromotion(deltas);
+  state.careerChapters.completed.push({ id: active.id, outcome: title, year: state.year, routes: { ...active.routes }, history: [...active.history] });
+  state.careerChapters.completed = state.careerChapters.completed.slice(-12);
+  state.careerChapters.active = null;
+  return { title, text: `${text}${promotion}`, followup: corrupt ? "巡按副账已成为两年后的命册伏笔；届时可花钱封口或反查持账之人。" : `“${pack.title}”已经完结并写入官场履历，今后的官评与人物态度会保留这一路线。` };
+}
+
+function resolveCareerChapter(event, choice) {
+  state.careerChapters = normalizeCareerChapters(state.careerChapters);
+  const active = state.careerChapters.active;
+  const pack = active && CAREER_STORY_PACKS[active.id];
+  const stage = pack?.stages?.[active.stage];
+  const source = stage?.choices?.find((item) => item.id === choice?.id);
+  if (!active || !pack || !stage || !source || !careerChapterChoiceAvailable(active, source)) return;
+  const actor = careerChapterActor(active);
+  const deltas = [];
+  if (source.cost) {
+    changeStat("money", -source.cost, deltas);
+    addLedger(`${pack.title} · 用度`, -source.cost, careerChapterText(source.text, actor));
+  }
+  if (source.gain) {
+    changeStat("money", source.gain, deltas);
+    addLedger(`${pack.title} · 暗账`, source.gain, careerChapterText(source.text, actor));
+  }
+  for (const [stat, amount] of Object.entries(source.effects || {})) changeStat(stat, amount, deltas);
+  state.official = normalizeOfficial(state.official);
+  for (const [key, amount] of Object.entries(source.official || {})) {
+    if (!amount) continue;
+    const min = key === "corruption" || key === "merit" ? 0 : -100;
+    state.official[key] = clamp(Number(state.official[key] || 0) + amount, min, key === "merit" ? 100000 : 100);
+    deltas.push({ label: key === "merit" ? "政绩" : key === "clean" ? (amount > 0 ? "清名" : "浊名") : "贪墨", value: amount, stat: key === "merit" ? "officialMerit" : key });
+  }
+  if (actor && source.familyAffection) {
+    actor.affection = clamp(Number(actor.affection || 0) + source.familyAffection);
+    deltas.push({ label: actor.name, value: source.familyAffection, stat: "relationship" });
+  }
+  const skillBonus = source.skill && Number(state.stats[source.skill] || 0) >= 65 ? 1 : 0;
+  active.score += Number(source.score || 0) + skillBonus;
+  active.routes[source.route] = Math.max(0, Number(active.routes[source.route] || 0) + 1);
+  active.flags = [...new Set([...active.flags, ...(source.flags || [])])];
+  active.history.push({ stageId: stage.id, choiceId: source.id, title: source.title, year: state.year });
+  active.history = active.history.slice(-12);
+  let title = source.title;
+  let text = `${careerChapterText(source.text, actor)}${skillBonus ? ` 你此前积累的${STAT_LABELS[source.skill] || "本事"}让证据又多了一层分量。` : ""}`;
+  let followup = "";
+  if (active.stage >= pack.stages.length - 1) {
+    const outcome = completeCareerChapter(active, deltas);
+    title = outcome.title;
+    text += `\n\n${outcome.text}`;
+    followup = outcome.followup;
+  } else {
+    active.stage += 1;
+    active.dueYear = state.year + 1;
+    followup = `下一幕“${pack.stages[active.stage].title}”将在来年出现；本次留下的${source.route === "law" ? "证据与清名" : source.route === "family" ? "家中人情与证词" : "权门关系与污点"}会改变可用选项。`;
+  }
+  state.currentEvent = null;
+  state.lastDeltas = deltas;
+  state.eventResult = {
+    title,
+    text,
+    deltas,
+    icon: pack.icon,
+    scene: "ink",
+    reason: `这不是独立随机事件：它读取了你的${officialOffice().office}职权、${actor?.name || "家中人"}的态度、前几幕证据以及清浊路线。`,
+    followup,
+  };
+  addLog(`${pack.title} · ${title}`, text, deltas);
+  unlockLifeGoals();
+  save();
+  render();
 }
 
 function annualOfficialCaseEvent() {
@@ -15412,6 +15789,22 @@ function storyRadarItems() {
   if (state.mystery?.active) {
     items.push({ priority: 1, tone: "urgent", icon: "Official", eyebrow: "手头奇案", title: activeMysteryCase()?.title || "旧案待查", note: `已得 ${state.mystery.active.clues?.length || 0}/4 条线索，随时可继续勘查与指认`, action: "mystery", label: "继续办案" });
   }
+  if (state.careerChapters?.active) {
+    const active = state.careerChapters.active;
+    const pack = CAREER_STORY_PACKS[active.id];
+    const stage = pack?.stages?.[active.stage];
+    const remaining = Math.max(0, active.dueYear - state.year);
+    if (pack && stage) items.push({
+      priority: remaining ? 3 : 1,
+      tone: remaining ? "thread" : "urgent",
+      icon: pack.icon,
+      eyebrow: `职业长线 · 第 ${active.stage + 1}/${pack.stages.length} 幕`,
+      title: pack.title,
+      note: remaining ? `${remaining} 年后进入“${stage.title}”` : `“${stage.title}”已经临门，可去营生页继续`,
+      action: "careerChapter",
+      label: remaining ? "查看案情" : "继续长案",
+    });
+  }
   if (state.dynasty?.activeArc) {
     const arc = WORLD_ARCS[state.dynasty.activeArc.id];
     const stage = arc?.stages?.[state.dynasty.activeArc.stage];
@@ -15428,6 +15821,7 @@ function storyRadarAction(item) {
   if (item.action === "request") return `<button class="story-radar-action" data-npc-request="${escapeHtml(item.id)}">${escapeHtml(item.label)}</button>`;
   if (item.action === "history") return `<button class="story-radar-action" data-tab="history">${escapeHtml(item.label)}</button>`;
   if (item.action === "mystery") return `<button class="story-radar-action" data-action="resume-mystery">${escapeHtml(item.label)}</button>`;
+  if (item.action === "careerChapter") return `<button class="story-radar-action" data-tab="career">${escapeHtml(item.label)}</button>`;
   if (item.action === "world") return `<button class="story-radar-action" data-page="world">${escapeHtml(item.label)}</button>`;
   return `<button class="story-radar-action" data-place="temple">${escapeHtml(item.label)}</button>`;
 }
