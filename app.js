@@ -2,8 +2,13 @@ const DATA = window.DYNASTY_LIFE_DATA || {};
 const SAVE_PREFIX = "dynasty-life-slot-";
 const SAVE_META_KEY = "dynasty-life-save-meta";
 const SAVE_LEGACY_KEY = "dynasty-life-web-modern-v1";
+const SAVE_ACTIVE_KEY = "dynasty-life-active-slot";
 const MAX_SLOTS = 3;
 let currentSlot = -1;
+let saveError = "";
+let failedSaveSlot = -1;
+let saveUiReady = false;
+let pendingSaveImport = null;
 
 const app = document.getElementById("app");
 const COPPER_PER_SILVER = 1000;
@@ -931,6 +936,7 @@ const EVENT_KIND_SCENES = {
   dailyStory: "life",
   familyStory: "life",
   femaleSchool: "study",
+  scholarStory: "study",
   officialCase: "official",
   careerCase: "career",
   culturalEvent: "culture",
@@ -3043,6 +3049,8 @@ let view = {
   overlay: state && !state.onboarding?.seen ? "onboarding" : state?.pendingSurprise ? "surprise" : "",
 };
 
+saveUiReady = true;
+updateSaveNotice();
 setAssetVars();
 
 function setAssetVars() {
@@ -3915,6 +3923,9 @@ function normalizeThreads(source) {
     title: String(item.title || THREAD_KINDS[item.kind].label),
     summary: String(item.summary || "旧事尚未收尾。"),
     target: String(item.target || ""),
+    targetId: String(item.targetId || ""),
+    sourceId: String(item.sourceId || ""),
+    choiceId: String(item.choiceId || ""),
     stakes: Math.max(20, Math.round(Number(item.stakes) || 80)),
     createdYear: Math.max(0, Math.round(Number(item.createdYear) || 0)),
     dueYear: Math.max(0, Math.round(Number(item.dueYear) || 0)),
@@ -5501,15 +5512,28 @@ function normalizeGamble(gamble) {
 function slotKey(index) { return `${SAVE_PREFIX}${index}`; }
 
 function loadSlotMeta() {
-  try { return JSON.parse(localStorage.getItem(SAVE_META_KEY)) || []; } catch { return []; }
+  try {
+    const parsed = JSON.parse(localStorage.getItem(SAVE_META_KEY));
+    const meta = Array.isArray(parsed) ? parsed.slice(0, MAX_SLOTS) : [];
+    for (let slot = 0; slot < MAX_SLOTS; slot += 1) {
+      if (meta[slot]) continue;
+      const raw = localStorage.getItem(slotKey(slot));
+      if (!raw) continue;
+      try {
+        const saved = JSON.parse(raw);
+        if (saved?.name && saved?.stats) meta[slot] = { slot, name: saved.name, age: Number(saved.age) || 0, timestamp: 0, title: saved.dead ? saved.deathReason || "已故" : "进行中" };
+      } catch { /* 损坏的槽位仍保留原文，写入前会备份。 */ }
+    }
+    return meta;
+  } catch { return []; }
 }
 function saveSlotMeta(meta) { localStorage.setItem(SAVE_META_KEY, JSON.stringify(meta)); }
 
 function firstEmptySlot(meta = loadSlotMeta()) {
   for (let i = 0; i < MAX_SLOTS; i += 1) {
-    if (!meta[i]) return i;
+    try { if (!meta[i] && !localStorage.getItem(slotKey(i))) return i; } catch { return -1; }
   }
-  return 0;
+  return -1;
 }
 
 function updateSlotMeta(index, sourceState = state) {
@@ -5538,8 +5562,17 @@ function loadSave(slot) {
 
 function loadCurrentSave() {
   const meta = loadSlotMeta();
-  for (let i = meta.length - 1; i >= 0; i--) {
-    if (meta[i]) { const s = loadSave(i); if (s) { currentSlot = i; s.saveSlot = i; return s; } }
+  let active = -1;
+  try {
+    const value = localStorage.getItem(SAVE_ACTIVE_KEY);
+    if (value !== null) active = Number(value);
+  } catch { /* 存储不可用时继续尝试兼容存档。 */ }
+  const slots = Array.from({ length: MAX_SLOTS }, (_, slot) => slot)
+    .sort((a, b) => Number(meta[b]?.timestamp || 0) - Number(meta[a]?.timestamp || 0));
+  if (Number.isInteger(active) && active >= 0 && active < MAX_SLOTS) slots.unshift(active);
+  for (const slot of new Set(slots)) {
+    const saved = loadSave(slot);
+    if (saved) { currentSlot = slot; saved.saveSlot = slot; rememberActiveSlot(slot); return saved; }
   }
   return migrateOldSave();
 }
@@ -5549,27 +5582,156 @@ function migrateOldSave() {
     const raw = localStorage.getItem(SAVE_LEGACY_KEY);
     if (!raw) return null;
     const s = normalizeState(JSON.parse(raw));
-    s.saveSlot = 0; currentSlot = 0;
-    localStorage.setItem(slotKey(0), JSON.stringify(s));
-    localStorage.removeItem(SAVE_LEGACY_KEY);
-    updateSlotMeta(0, s);
+    currentSlot = firstEmptySlot();
+    s.saveSlot = currentSlot;
+    if (currentSlot >= 0 && writeSaveSlot(currentSlot, s, { activate: true })) localStorage.removeItem(SAVE_LEGACY_KEY);
     return s;
   } catch { return null; }
 }
 
-function save() {
-  if (state && !state.__ephemeral && currentSlot >= 0) {
-    state.saveSlot = currentSlot;
-    localStorage.setItem(slotKey(currentSlot), JSON.stringify(state));
-    updateSlotMeta(currentSlot, state);
+function backupKey(slot) { return `${slotKey(slot)}-backup`; }
+
+function slotBackupRaw(slot) {
+  let raw = localStorage.getItem(backupKey(slot));
+  const current = localStorage.getItem(slotKey(slot));
+  while (raw) {
+    const backup = JSON.parse(raw);
+    // 未提交正文时仍提供原备份；即使存储随后完全不可写，也不会丢掉它。
+    if (!Object.hasOwn(backup, "previousRaw") || backup.raw !== current) return raw;
+    raw = backup.previousRaw;
+  }
+  return null;
+}
+
+function loadSlotBackup(slot) {
+  try {
+    const backup = JSON.parse(slotBackupRaw(slot));
+    return backup?.raw ? { ...backup, state: normalizeState(JSON.parse(backup.raw)) } : null;
+  } catch { return null; }
+}
+
+function backupSaveSlot(slot, preservePrevious = false) {
+  const raw = localStorage.getItem(slotKey(slot));
+  if (!raw) return null;
+  const backup = { timestamp: Date.now(), raw };
+  if (preservePrevious) backup.previousRaw = slotBackupRaw(slot);
+  localStorage.setItem(backupKey(slot), JSON.stringify(backup));
+  return backup;
+}
+
+function writeSaveSlot(slot, sourceState, { backup = false, activate = false } = {}) {
+  if (!Number.isInteger(slot) || slot < 0 || slot >= MAX_SLOTS || !sourceState) return false;
+  let previousMeta;
+  let previousActive;
+  let metaUpdated = false;
+  let activeUpdated = false;
+  try {
+    previousMeta = localStorage.getItem(SAVE_META_KEY);
+    previousActive = localStorage.getItem(SAVE_ACTIVE_KEY);
+    let pendingBackup;
+    try { pendingBackup = JSON.parse(localStorage.getItem(backupKey(slot))); } catch { /* 已损坏的备份不妨碍保存正文。 */ }
+    if (pendingBackup && Object.hasOwn(pendingBackup, "previousRaw")) {
+      // 先收束上次中断的写入，再允许自动保存改变正文，避免误把失败的恢复当作已提交。
+      const retained = JSON.parse(slotBackupRaw(slot));
+      if (retained) localStorage.setItem(backupKey(slot), JSON.stringify({ timestamp: retained.timestamp, raw: retained.raw }));
+      else localStorage.removeItem(backupKey(slot));
+    }
+    const serialized = JSON.stringify({ ...sourceState, saveSlot: slot });
+    // 备份写入失败就停止，原存档不会被新内容覆盖。
+    const stagedBackup = backup && localStorage.getItem(slotKey(slot)) !== serialized ? backupSaveSlot(slot, true) : null;
+    updateSlotMeta(slot, sourceState);
+    metaUpdated = true;
+    if (activate) { localStorage.setItem(SAVE_ACTIVE_KEY, String(slot)); activeUpdated = true; }
+    // 原文最后提交：索引或活动槽位写入失败时，旧进度仍在原处。
+    localStorage.setItem(slotKey(slot), serialized);
+    sourceState.saveSlot = slot;
+    if (stagedBackup) {
+      // 提交后再释放更早的备份；清理失败时，完整记录仍可正常读取。
+      try { localStorage.setItem(backupKey(slot), JSON.stringify({ timestamp: stagedBackup.timestamp, raw: stagedBackup.raw })); } catch { /* 保留完整备份记录。 */ }
+    }
+    if (activate || failedSaveSlot === slot) { saveError = ""; failedSaveSlot = -1; }
+    updateSaveNotice();
+    return true;
+  } catch {
+    try {
+      if (metaUpdated) {
+        if (previousMeta === null) localStorage.removeItem(SAVE_META_KEY);
+        else localStorage.setItem(SAVE_META_KEY, previousMeta);
+      }
+      if (activeUpdated) {
+        if (previousActive === null) localStorage.removeItem(SAVE_ACTIVE_KEY);
+        else localStorage.setItem(SAVE_ACTIVE_KEY, previousActive);
+      }
+    } catch { /* 持久化仍不可用时保留页面进度与已写入的备份，供玩家导出。 */ }
+    saveError = "浏览器未能完成保存，可能是存储空间不足或存储被禁用。请先导出当前进度，暂时不要刷新或关闭页面。";
+    failedSaveSlot = slot;
+    updateSaveNotice();
+    return false;
   }
 }
 
+function rememberActiveSlot(slot) {
+  try { localStorage.setItem(SAVE_ACTIVE_KEY, String(slot)); } catch {
+    saveError = "浏览器无法记住当前存档。请先导出当前进度，暂时不要刷新或关闭页面。";
+    failedSaveSlot = slot;
+  }
+  updateSaveNotice();
+}
+
+function updateSaveNotice() {
+  if (!saveUiReady) return;
+  const message = saveError || (state && !state.__ephemeral && currentSlot < 0 ? "当前人生还没有存档位。请前往存档管理选择保存位置，或先导出当前进度。" : "");
+  let notice = document.getElementById("save-status-notice");
+  const dialog = app.querySelector("dialog[open]");
+  const modal = dialog?.querySelector(".profile-modal");
+  if (!message) {
+    notice?.remove();
+    app.style.paddingBottom = "";
+    if (dialog) dialog.style.paddingBottom = "";
+    modal?.style.removeProperty("max-height");
+    return;
+  }
+  if (!notice) {
+    notice = document.createElement("aside");
+    notice.id = "save-status-notice";
+    notice.className = "save-status-notice";
+    notice.setAttribute("role", "alert");
+  }
+  const host = dialog || document.body;
+  if (notice.parentElement !== host) host.appendChild(notice);
+  notice.innerHTML = `<div><strong>请保护当前进度</strong><p>${escapeHtml(message)}</p></div><div class="save-notice-actions">${state ? `<button type="button" data-action="export">导出当前进度</button><button type="button" data-action="open-save-manager">存档管理</button>${currentSlot >= 0 ? `<button type="button" data-action="retry-save">重试保存</button>` : ""}` : ""}</div>`;
+  const space = notice.offsetHeight + 28;
+  app.style.paddingBottom = dialog ? "" : `${space}px`;
+  if (dialog) dialog.style.paddingBottom = `${space}px`;
+  if (modal) modal.style.maxHeight = `min(820px, calc(100dvh - ${space + 28}px))`;
+}
+
+function save() {
+  if (!state || state.__ephemeral) return true;
+  if (currentSlot < 0) { updateSaveNotice(); return false; }
+  return writeSaveSlot(currentSlot, state, { activate: true });
+}
+
 function clearSave() {
-  if (currentSlot >= 0) {
-    localStorage.removeItem(slotKey(currentSlot));
-    clearSlotMeta(currentSlot);
-    currentSlot = -1;
+  if (currentSlot < 0) return true;
+  return deleteSaveSlot(currentSlot);
+}
+
+function deleteSaveSlot(slot) {
+  try {
+    backupSaveSlot(slot);
+    localStorage.removeItem(slotKey(slot));
+    clearSlotMeta(slot);
+    if (currentSlot === slot) {
+      currentSlot = -1;
+      localStorage.removeItem(SAVE_ACTIVE_KEY);
+    }
+    return true;
+  } catch {
+    saveError = "浏览器未能完成存档操作。请先导出当前进度，原存档或覆盖前备份仍可在存档管理中查看。";
+    failedSaveSlot = slot;
+    updateSaveNotice();
+    return false;
   }
 }
 
@@ -5991,7 +6153,7 @@ function applyWorldAnnualImpact(deltas = []) {
   }
 }
 
-function significantNpcRefs() {
+function significantNpcRefs(includeDead = false) {
   const people = [
     state.family.father,
     state.family.mother,
@@ -6000,7 +6162,7 @@ function significantNpcRefs() {
     ...(state.family.concubines || []),
     ...(state.family.children || []),
     ...(state.friends || []),
-  ].filter((person) => person && person.alive !== false);
+  ].filter((person) => person && (includeDead || person.alive !== false));
   const seen = new Set();
   return people.filter((person) => {
     const key = person.id || person.name;
@@ -6085,8 +6247,131 @@ function advanceNpcAgencyYear(deltas = []) {
   }
 }
 
-function npcById(id) {
-  return significantNpcRefs().find((person) => String(person.id || person.name) === String(id || "")) || null;
+function npcById(id, includeDead = false) {
+  return significantNpcRefs(includeDead).find((person) => String(person.id || person.name) === String(id || "")) || null;
+}
+
+function annualScholarStoryEvent() {
+  if (!state || state.dead || state.prisonYears > 0 || state.age < 12 || state.age > 20 || state.tags.includes("旧书缘起")) return null;
+  const id = `scholar-${state.lineage.generation}-${state.year}`;
+  const person = npcById(id, true) || normalizeFriend({ id, name: makePersonName("male"), gender: "male", relation: "旧书摊相识", age: Math.max(16, state.age + 2), physique: 80, affection: 48, ambition: "读书进身", occupation: "抄书谋生", wealth: 18, disposition: "重情", alive: true });
+  if (!state.friends.some((item) => item.id === person.id)) state.friends.push(person);
+  return {
+    kind: "scholarStory", storyStage: "meeting", npcId: person.id, title: "旧书与新路 · 一饭之交", icon: "Letter",
+    content: `面摊前，书生${person.name}只讨一碗热汤，怀里还抱着舍不得卖的旧书。他想进城求学，却凑不齐束脩。你听完他的打算，决定……`,
+    children: [
+      { title: "资助束脩", scholarChoice: "fund", note: `付出 ${moneyText(40)}，帮${person.name}踏上求学路`, disabled: state.stats.money < 40 },
+      { title: "陪他抄书筹钱", scholarChoice: "copy", note: "用一段闲暇相助，学识 +2、心情 -2；不花钱" },
+      { title: "婉言辞去", scholarChoice: "decline", note: "不作空口承诺；他的路会继续，你们也许还会重逢" },
+    ],
+  };
+}
+
+function scholarReunionEvent(thread) {
+  const person = npcById(thread.targetId, true);
+  const absent = !person || person.alive === false;
+  const helped = ["fund", "copy"].includes(thread.choiceId);
+  const estranged = !!person && person.affection < 30;
+  const origin = thread.inherited ? "你的先人" : "你";
+  const livelihood = person?.occupation === "抄书谋生" ? "在城南书塾谋得一份差事" : `在${person?.occupation || "自己的营生"}上渐渐站稳`;
+  let content;
+  let children;
+  if (absent) {
+    content = `${person?.alive === false ? `${thread.target}已经离世` : `${thread.target}已不知去向`}。一册旧书辗转送到门前，扉页记着${origin}当年${thread.choiceId === "fund" ? "资助束脩" : thread.choiceId === "copy" ? "陪他抄书" : "在面摊与他短暂相逢"}的事。往事有了回音，却再没有本人登门。`;
+    children = [{ title: "收好旧书，记下故人", scholarChoice: "remember", note: "保存这段往事；不会获得故人的银钱或引荐" }];
+  } else if (helped && !estranged) {
+    content = `${person.name}托人送来亲笔信：他已${livelihood}，一直记着${origin}${thread.choiceId === "fund" ? "替他补齐束脩" : "陪他抄书筹钱"}的情分。${thread.inherited ? "得知故人已逝，他愿把这份照应交到后人手里。" : "听闻你近来的打算，他主动问起有没有能帮上的地方。"}`;
+    children = [
+      { title: "接受周转银", scholarChoice: "aid", note: `他从积蓄中拿出 ${moneyText(thread.choiceId === "fund" ? 100 : 60)}；这是回报，没有新增借债` },
+      { title: "请他指点学业", scholarChoice: "study", note: "学识 +8、备考 +6；往年的抄书与求学化作今日门路" },
+      { title: "只叙旧，不求回报", scholarChoice: "reconnect", note: "心情 +5，与他的情分更深" },
+    ];
+  } else {
+    content = `${person.name}如今已${livelihood}。${estranged ? "他没有忘记当年的帮助，但后来的疏远与失约也还横在你们之间。" : `他还记得${origin}当年在面摊听他说完了打算，却没有继续来往。`}这次相见，他客气问候，没有主动许下人情。你愿不愿意重新走近？`;
+    children = [
+      { title: "坐下叙旧，重新来往", scholarChoice: "reconcile", note: "关系从这次谈心重新积累，没有凭空回报" },
+      { title: "互道珍重", scholarChoice: "part", note: "各自前行，命册保留这次重逢" },
+    ];
+  }
+  return { kind: "scholarStory", storyStage: "reunion", threadId: thread.id, npcId: thread.targetId, title: `旧书与新路 · ${absent ? "旧书归来" : helped && !estranged ? "故人来信" : "又逢故人"}`, content: `${thread.summary}\n\n${content}`, icon: "Letter", children };
+}
+
+function resolveScholarStory(event, choice) {
+  if (choice.disabled) return;
+  const person = npcById(event.npcId, true);
+  const deltas = [];
+  let text = "";
+  let reason = "";
+  let followup = "";
+  if (event.storyStage === "meeting") {
+    if (!person || person.alive === false || state.tags.includes("旧书缘起")) return;
+    const decision = choice.scholarChoice;
+    if (!["fund", "copy", "decline"].includes(decision)) return;
+    if (decision === "fund") {
+      if (state.stats.money < 40) return;
+      changeStat("money", -40, deltas);
+      changeStat("virtue", 3, deltas);
+      person.wealth = clamp(person.wealth + 12);
+      addLedger("书生束脩", -40, `资助${person.name}求学，赠与而非借贷。`);
+      text = `你替${person.name}补齐了束脩。他没有许诺富贵，只把你的名字郑重写在旧书扉页。`;
+    } else if (decision === "copy") {
+      changeStat("knowledge", 2, deltas);
+      changeStat("mood", -2, deltas);
+      person.wealth = clamp(person.wealth + 6);
+      text = `你陪${person.name}抄了几晚书，替他挣到第一笔束脩。银钱不多，但他记住了灯下与你并肩赶工的人情。`;
+    } else {
+      text = `你向${person.name}道明难处，没有许下做不到的承诺。他收起旧书，仍决定靠抄书继续求学。`;
+    }
+    state.tags.push("旧书缘起");
+    rememberNpcMoment(person, "旧书之缘", text, decision === "decline" ? 0 : 12);
+    person.lastAction = "筹措束脩，准备入城求学";
+    openThread("favor", `${person.name}的旧书之缘`, `${state.name}与${person.name}在面摊相识，选择了“${choice.title}”。`, { key: `scholar-study:${person.id}`, targetId: person.id, target: person.name, sourceId: "scholar-study", choiceId: decision, delay: 3, stakes: decision === "fund" ? 40 : 20 });
+    reason = `这次选择已记在${person.name}的记忆中，赠与不会被算成欠债。`;
+    followup = "三年后，这位书生的境遇与当年的选择会一起回到你的生活；命册已留下来由。";
+  } else {
+    const thread = state.threads.find((item) => item.id === event.threadId && item.sourceId === "scholar-study" && item.status === "active");
+    if (!thread || thread.dueYear > state.year || !scholarReunionEvent(thread).children.some((item) => item.scholarChoice === choice.scholarChoice)) return;
+    const decision = choice.scholarChoice;
+    if (decision === "aid") {
+      const amount = thread.choiceId === "fund" ? 100 : 60;
+      changeStat("money", amount, deltas);
+      person.wealth = clamp(person.wealth - 10);
+      addLedger("故人援手", amount, `${person.name}记着当年“${thread.choiceId === "fund" ? "资助束脩" : "陪他抄书"}”，主动赠银照应。`);
+      text = `${person.name}送来 ${moneyText(amount)}，叮嘱你不必写借据。${thread.inherited ? "先人的善意，在这一代有了回响。" : "当年递出去的善意，如今成了有人愿意为你分担。"}`;
+    } else if (decision === "study") {
+      changeStat("knowledge", 8, deltas);
+      state.study.prep = Math.min(100, Number(state.study.prep || 0) + 6);
+      deltas.push({ label: "备考", value: 6 });
+      text = `${person.name}带来亲手批注的书册，还逐篇替你讲透。他把当年的帮助，变成今日肯认真相授的学问。`;
+    } else if (decision === "reconnect") {
+      changeStat("mood", 5, deltas);
+      text = `你与${person.name}聊起旧书和灯火，没有提银钱。往来不必每一笔都算回报，这次长谈让彼此更亲近。`;
+    } else if (decision === "reconcile") {
+      changeStat("relationship", 3, deltas);
+      text = `你与${person.name}重新坐到一桌，把旧日的生疏慢慢说开。这次没有天降馈赠，却为往后的交情留了门。`;
+    } else if (decision === "remember") {
+      if (!state.inventory.includes("故人批注的旧书")) state.inventory.push("故人批注的旧书");
+      text = `你收好${thread.target}的旧书，在命册写下这段往事。${person?.alive === false ? "故人已逝，不能再亲自兑现照应。" : "故人去向未明，未把传闻当作本人许诺。"}`;
+    } else {
+      text = `你与${person.name}互道珍重，各自走进人群。这段旧书之缘就此收束。`;
+    }
+    if (person?.alive !== false && person) {
+      if (person.occupation === "抄书谋生") person.occupation = "书塾助教";
+      rememberNpcMoment(person, "旧书回响", `${state.name}选择“${choice.title}”。${text}`, ["reconnect", "reconcile"].includes(decision) ? 8 : decision === "part" ? 0 : 4);
+      person.lastAction = `与你${choice.title}`;
+    }
+    thread.status = "resolved";
+    thread.outcome = choice.title;
+    reason = `当年的选择是“${{ fund: "资助束脩", copy: "陪他抄书筹钱", decline: "婉言辞去" }[thread.choiceId] || "旧日相逢"}”；本次回应也读取了${thread.target}现在的生死与亲疏。`;
+    followup = "前因与结局已收入命册；这段往事也留在人物记忆中。";
+  }
+  state.currentEvent = null;
+  state.lastDeltas = deltas;
+  addLog(event.title, text, deltas);
+  state.eventResult = { title: choice.title, text, deltas, icon: "Letter", scene: "ink", reason, followup };
+  unlockLifeGoals();
+  save();
+  render();
 }
 
 function npcRequestType(person) {
@@ -6203,7 +6488,7 @@ function resolveNpcRequest(event, choice) {
     if (person) rememberNpcMoment(person, "被拒", `你推辞了“${request.title}”`, -8);
     request.status = "declined";
     request.outcome = "如实推辞";
-    openThread("family", `与${request.npcName}之间的一次推辞`, `${request.npcName}曾为“${request.title}”向你开口，你选择了推辞。`, { key: `npc-request:${request.id}`, target: request.npcName, delay: 2, stakes: 80 });
+    openThread("family", `与${request.npcName}之间的一次推辞`, `${request.npcName}曾为“${request.title}”向你开口，你选择了推辞。`, { key: `npc-request:${request.id}`, sourceId: "npc-request", choiceId: "decline", targetId: request.npcId, target: request.npcName, delay: 2, stakes: 80 });
   }
   const text = accepted
     ? `你没有只回一封客套信，而是备好 ${moneyText(meta.cost)} 亲自处理了“${request.title}”。${request.npcName}把这份照应记在了心里。`
@@ -6257,7 +6542,7 @@ function openThread(kind, title, summary, options = {}) {
   if (!THREAD_KINDS[kind]) return null;
   state.threads = normalizeThreads(state.threads);
   const key = String(options.key || `${kind}:${title}`);
-  const existing = state.threads.find((item) => item.status === "active" && (item.key === key || item.kind === kind));
+  const existing = state.threads.find((item) => item.status === "active" && item.key === key);
   if (existing) return existing;
   const thread = {
     id: `thread-${state.year}-${Date.now()}-${Math.random().toString(16).slice(2)}`,
@@ -6266,6 +6551,9 @@ function openThread(kind, title, summary, options = {}) {
     title: title || THREAD_KINDS[kind].label,
     summary: summary || "这件事还没有真正收尾。",
     target: String(options.target || ""),
+    targetId: String(options.targetId || ""),
+    sourceId: String(options.sourceId || ""),
+    choiceId: String(options.choiceId || ""),
     stakes: Math.max(20, Math.round(Number(options.stakes) || randInt(60, 160))),
     createdYear: state.year,
     dueYear: state.year + Math.max(1, Math.round(Number(options.delay) || randInt(1, 3))),
@@ -6278,19 +6566,10 @@ function openThread(kind, title, summary, options = {}) {
   return thread;
 }
 
-function maybeOpenThreadFromLog(title = "", text = "") {
-  if (!state || state.dead || state.age < 12 || /未了之事|旧账来时|善缘回响|暗局余波|旧诺来问/.test(title)) return;
-  const source = `${title}${text}`;
-  if (/借钱|借款|欠下|赊欠|担保/.test(source)) return openThread("debt", "账上还有一笔人情", text, { stakes: randInt(80, 220) });
-  if (/分家|争产|不睦|生隙|挽留同住/.test(source)) return openThread("family", "家门里没有说完的话", text, { stakes: 90 });
-  if (/黑市|舞弊|买题|卖题|冒名|出千|赎身/.test(source)) return openThread("shadow", "有人记住了这桩暗事", text, { stakes: randInt(140, 320) });
-  if (/答应|约定|承诺|托付/.test(source)) return openThread("promise", "旧日一句承诺", text, { stakes: 100 });
-  if (/周济|救治|救命|赈济|解围|相助/.test(source)) return openThread("favor", "一段善缘尚有后话", text, { stakes: 70 });
-}
-
 function annualThreadEvent() {
   const thread = normalizeThreads(state.threads).filter((item) => item.status === "active" && item.dueYear <= state.year).sort((a, b) => a.dueYear - b.dueYear)[0];
   if (!thread) return null;
+  if (thread.sourceId === "scholar-study") return scholarReunionEvent(thread);
   const honorCost = ["debt", "shadow"].includes(thread.kind) ? thread.stakes : Math.min(120, thread.stakes);
   const configs = {
     debt: ["如数了结", `拿出 ${moneyText(thread.stakes)}，把银钱与人情一并结清。`, "暂且拖延", "眼下不愿出钱，只求再宽限一年。"],
@@ -6312,7 +6591,8 @@ function annualThreadEvent() {
 
 function resolveFateThread(event, choice) {
   const thread = state.threads.find((item) => item.id === event.threadId);
-  if (!thread || choice.disabled) return;
+  if (!thread || thread.status !== "active" || choice.disabled) return;
+  const person = thread.targetId ? npcById(thread.targetId) : null;
   const deltas = [];
   const honor = choice.threadChoice === "honor";
   const cost = thread.kind === "debt" || thread.kind === "shadow" ? thread.stakes : Math.min(120, thread.stakes);
@@ -6326,6 +6606,10 @@ function resolveFateThread(event, choice) {
     changeStat("relationship", 4, deltas);
     thread.status = "resolved";
     thread.outcome = "守信收尾";
+  } else if (thread.kind === "debt" && thread.sourceId === "relation-borrow") {
+    changeStat("relationship", -2, deltas);
+    thread.dueYear = state.year + 1;
+    thread.outcome = "暂缓一年";
   } else {
     const clever = thread.kind === "shadow" && state.stats.eq + state.stats.knowledge >= 135;
     changeStat(clever ? "knowledge" : "virtue", clever ? 4 : -5, deltas);
@@ -6334,9 +6618,10 @@ function resolveFateThread(event, choice) {
     thread.status = clever ? "resolved" : "broken";
     thread.outcome = clever ? "反查得解" : "留下裂痕";
   }
+  if (person) rememberNpcMoment(person, honor ? "旧事了结" : "旧事失约", `${state.name}选择“${choice.title}”：${thread.title}`, honor ? 6 : -6);
   state.currentEvent = null;
   state.lastDeltas = deltas;
-  const text = honor ? `你选择“${choice.title}”，终于把${thread.title}妥善收束。` : `你选择“${choice.title}”。此事虽暂时过去，却在命册里留下了“${thread.outcome}”的结果。`;
+  const text = honor ? `你选择“${choice.title}”，终于把${thread.title}妥善收束。` : thread.status === "active" ? `你请${thread.target}再宽限一年。尚欠的 ${moneyText(thread.stakes)}仍记在账上，这次延期也影响了对方对你的信任。` : `你选择“${choice.title}”。此事虽暂时过去，却在命册里留下了“${thread.outcome}”的结果。`;
   addLog(`未了之事 · ${thread.title}`, text, deltas);
   state.eventResult = { title: choice.title, text, deltas, icon: THREAD_KINDS[thread.kind].icon, scene: thread.kind === "shadow" ? "ember" : "ink" };
   updateAmbitionProgress();
@@ -6411,7 +6696,7 @@ function resolveChildLifeEvent(event, choice) {
   child.lastActionYear = state.year;
   child.lastAction = success ? `${event.title.replace(`${child.name} · `, "")}顺利` : `${event.title.replace(`${child.name} · `, "")}受挫`;
   rememberNpcMoment(child, "前程", `${choice.title}：${child.lastAction}`, success ? 2 : -1);
-  if (!success && choice.childChoice === "release") openThread("family", `${child.name}的前程心结`, `${child.name}觉得家中没有在最难时伸手，这份失落尚未说开。`, { target: child.name, delay: 2 });
+  if (!success && choice.childChoice === "release") openThread("family", `${child.name}的前程心结`, `${child.name}觉得家中没有在最难时伸手，这份失落尚未说开。`, { target: child.name, targetId: child.id, sourceId: "child-life", choiceId: "release", delay: 2 });
   const text = success ? `${choice.title}之后，${child.name}终于在${child.occupation}上迈过一道坎，也更愿把自己的打算告诉你。` : `${choice.title}之后，${child.name}的打算没有如愿。此事让他重新审视自己的志向，也改变了你们之间的亲疏。`;
   state.currentEvent = null;
   state.lastDeltas = deltas;
@@ -7117,6 +7402,7 @@ function nextYear() {
       annualFamilyStoryEvent() ||
       annualWorldArcEvent() ||
       annualThreadEvent() ||
+      annualScholarStoryEvent() ||
       annualChildLifeEvent() ||
       annualUnderworldEvent() ||
       annualJianghuEvent() ||
@@ -8098,7 +8384,19 @@ function bucketMatchesAge(bucket, age) {
 }
 
 function cloneEvent(event) {
-  return event ? JSON.parse(JSON.stringify(event)) : null;
+  if (!event) return null;
+  const copy = JSON.parse(JSON.stringify(event));
+  copy.people ||= {};
+  for (const [, index] of JSON.stringify(copy).matchAll(/\{(\d+)\}/g)) {
+    if (copy.people[index]) continue;
+    let person = state.friends[Number(index)];
+    if (!person) {
+      person = normalizeFriend({ name: makePersonName(Math.random() > 0.5 ? "male" : "female"), lastMet: state.age });
+      state.friends.push(person);
+    }
+    copy.people[index] = person.name || person;
+  }
+  return copy;
 }
 
 function chooseOption(index) {
@@ -8128,6 +8426,7 @@ function chooseOption(index) {
     if (event.kind === "fateThread") return resolveFateThread(event, choice);
     if (event.kind === "childLife") return resolveChildLifeEvent(event, choice);
     if (event.kind === "npcRequest") return resolveNpcRequest(event, choice);
+    if (event.kind === "scholarStory") return resolveScholarStory(event, choice);
 
     const deltas = applyResults(choice.results || []);
     state.lastDeltas = mergeDeltas(state.pendingActivity?.deltas, deltas);
@@ -8135,7 +8434,7 @@ function chooseOption(index) {
     addLog(choice.title || event.title || "事件", resultText, deltas);
     // 嵌套子事件：若后续分支条件全部不成立，直接结算，避免卡死
     const nextChildren = viableChildren(choice);
-    const nested = nextChildren.length && !state.dead ? { ...choice, kind: event.kind || choice.kind || "" } : null;
+    const nested = nextChildren.length && !state.dead ? { ...choice, kind: event.kind || choice.kind || "", people: event.people } : null;
     state.currentEvent = nested;
     unlockLifeGoals();
     if (!state.currentEvent) {
@@ -8387,8 +8686,38 @@ function settleEstateDispute(type) {
   render();
 }
 
-function carryThreadsAcrossInheritance(source, startYear, oldName) {
-  return normalizeThreads(source).filter((item) => item.status === "active").map((item) => ({ ...item, inherited: true, dueYear: Math.max(Number(startYear) + 1, Number(item.dueYear || 0)), summary: `${oldName}留下的旧事：${item.summary}` })).slice(0, 8);
+function carryThreadsAcrossInheritance(source, startYear, oldName, oldYear = state.year) {
+  const threads = normalizeThreads(source);
+  const carried = [...threads.filter((item) => item.status === "active"), ...threads.filter((item) => item.status !== "active" && item.sourceId)];
+  return carried.slice(0, 16).map((item) => ({ ...item, inherited: true, createdYear: Math.max(0, Number(startYear) - Math.max(0, oldYear - item.createdYear)), dueYear: Number(startYear) + Math.max(1, item.dueYear - Number(oldYear)), summary: `${oldName}留下的旧事：${item.summary}` }));
+}
+
+function carryStoryContactsAcrossInheritance(threads, startYear, oldYear = state.year) {
+  const ids = new Set(threads.map((item) => item.targetId).filter(Boolean));
+  return (state.friends || []).filter((person) => ids.has(person.id)).map((person) => normalizeFriend({
+    ...person,
+    relation: "先人故交",
+    lastActionYear: -1,
+    lastMet: -1,
+    memories: (person.memories || []).map((memory) => ({ ...memory, year: Math.max(0, startYear - Math.max(0, oldYear - memory.year)) })),
+  }));
+}
+
+function settleInheritedSelfDebt(threads, heirId, heirName, age) {
+  return threads.filter((item) => item.status === "active" && item.kind === "debt" && item.sourceId === "relation-borrow" && item.targetId === heirId).map((item) => {
+    item.status = "resolved";
+    item.outcome = "债权债务抵消";
+    return { age, title: "承继旧账 · 债权债务抵消", text: `${heirName}承继家业后，先人向本人借得的 ${moneyText(item.stakes)}归于同一名下。这笔旧账就此结清，没有再从遗产中扣钱。` };
+  });
+}
+
+function heirVocation(heir, startYear) {
+  // Only exact, non-official occupations transfer; an NPC's progress is not an examination credential.
+  const career = Number(heir.age) >= 15 ? allCareers().find((item) => item.name === heir.occupation && careerKind(item) !== "official" && (Number(item.genderRequire ?? item.GenderRequire) !== 1 || heir.gender === "female")) || null : null;
+  const definition = LIFE_AMBITIONS.find((item) => item.title === heir.ambition);
+  const ambition = definition && Number(heir.age) >= 15 ? { id: definition.id, stage: 0, chosenYear: startYear, completed: false } : null;
+  const text = `${heir.name}此前以${heir.occupation || "料理家业"}度日，心中所求是“${heir.ambition || "求安稳"}”。${career ? "接掌门户后，仍继续自己的本业。" : "这段来历保留在命册；接下来的营生由其自行选择。"}`;
+  return { career, ambition, text };
 }
 
 function getActivity(id) {
@@ -12350,7 +12679,14 @@ function interactRelation(id, actionId) {
   if (action.money) {
     const amount = rangeValue(action.money);
     changeStat("money", amount, deltas);
-    if (target.kind === "friend") target.person.debt = (target.person.debt || 0) + amount;
+    const targetId = String(target.person.id || target.name);
+    const key = `borrow:${targetId}`;
+    const previous = state.threads.find((item) => item.key === key && item.status === "active");
+    const thread = openThread("debt", `借${target.name}的钱`, `你向${target.name}借得 ${moneyText(amount)}，约定两年后归还。`, { key, targetId, target: target.name, sourceId: "relation-borrow", choiceId: "borrow", stakes: amount, delay: 2 });
+    if (previous) {
+      thread.stakes += amount;
+      thread.summary = `你先后向${target.name}借钱，尚欠 ${moneyText(thread.stakes)}；仍按最早约定还款。`;
+    }
     addLedger("亲友周济", amount, `${target.name}借与你一笔钱。`);
   }
   changeStat("relationship", rangeValue(action.relationship || [0, 0]), deltas);
@@ -12755,6 +13091,8 @@ function inheritFromChild(id) {
   const heirParent = heir.heirKind === "grandchild" ? livingChildren().find((child) => child.id === heir.parentId) : null;
   const inheritedMoney = Math.max(20, Math.round(Math.max(0, state.stats.money || 0) * normalizeLegacy(state.legacy).inheritanceRate));
   const inheritedThreads = carryThreadsAcrossInheritance(state.threads, Math.max(0, Math.round(Number(heir.age) || 0)), oldName);
+  const settledSelfDebt = settleInheritedSelfDebt(inheritedThreads, heir.id, heir.name, Math.max(0, Math.round(Number(heir.age) || 0)));
+  const inheritedContacts = carryStoryContactsAcrossInheritance(inheritedThreads, Math.max(0, Math.round(Number(heir.age) || 0)));
   const inheritedAssets = (state.assets || []).map((asset) => ({ ...asset, inherited: true, owner: heir.name }));
   const inheritedInventory = [...new Set([...(state.inventory || []), "家书"])]
     .filter((item) => typeof item === "string")
@@ -12766,13 +13104,14 @@ function inheritFromChild(id) {
     .filter((child) => child.id !== heir.id)
     .map((child) => ({
       ...normalizeNpcAgency(child, child.gender === "female" ? (child.age >= heir.age ? "姐姐" : "妹妹") : child.age >= heir.age ? "哥哥" : "弟弟", child.age),
+      id: child.id,
       name: child.name,
       relation: child.gender === "female" ? (child.age >= heir.age ? "姐姐" : "妹妹") : child.age >= heir.age ? "哥哥" : "弟弟",
       gender: child.gender,
       alive: child.alive,
       affection: child.affection,
       age: child.age,
-      physique: randInt(45, 78),
+      physique: child.physique,
     }));
   const inheritedSpouse = heir.heirKind === "child" && heir.spouse && heir.spouse.alive !== false ? heir.spouse : null;
   const inheritedChildren = heir.heirKind === "child" ? (heir.grandchildren || []).filter((item) => item.alive !== false).map((item) => ({ ...item, relation: item.gender === "female" ? "女儿" : "儿子", parentId: undefined })) : [];
@@ -12798,6 +13137,7 @@ function inheritFromChild(id) {
   const heirStudy = clamp(Number(heir.study || 0));
   const heirVirtue = clamp(Number(heir.virtue || 50));
   const heirAptitude = clamp(Number(heir.aptitude || 55));
+  const vocation = heirVocation(heir, startAge);
   state = normalizeState({
     name: heir.name,
     gender: heir.gender,
@@ -12821,23 +13161,25 @@ function inheritFromChild(id) {
     },
     talents: pickMany(DATA.database?.talents || [], 3),
     coreTalent: sample(DATA.database?.coreTalents || []),
-    career: null,
-    ambition: null,
+    career: vocation.career,
+    ambition: vocation.ambition,
     threads: inheritedThreads,
     npcRequests: [],
     apprentices: [],
     apprenticeLastYear: -1,
     legacy: { funeral: null, dispute: null, inheritanceRate: 0.78 },
-    friends: [],
+    friends: inheritedContacts,
     tags: ["承继家业"],
     diseases: [],
     inventory: inheritedInventory,
     log: [
       { age: startAge, title: "承继家业", text: `${oldName}身后，${heir.name}以${heir.heirKind === "grandchild" ? heir.relation : "子女"}身份承继第 ${generation + generationStep} 代家业。上一代命格总评为${oldGrade}，${oldScore}分；遗下钱财 ${moneyText(inheritedMoney)}、家产 ${inheritedAssets.length} 处。` },
       { age: startAge, title: "家族命册", text: `家中旧事由长辈收束成册，${heir.name}自此接过门户，也接过${oldName}未竟之事。` },
+      { age: startAge, title: "接过自己的人生", text: vocation.text },
+      ...settledSelfDebt,
       ...oldLog.slice(0, 42).map((item) => ({ ...item, inherited: true })),
     ],
-    biography: `${heir.name}承${oldName}遗业而立，是这一门第 ${generation + generationStep} 代主事人。家中旧事皆入命册，钱财田宅亦随之过户。`,
+    biography: `${heir.name}承${oldName}遗业而立，是这一门第 ${generation + generationStep} 代主事人。家中旧事皆入命册，钱财田宅亦随之过户。${vocation.text}`,
     assets: inheritedAssets,
     ledger: [
       { age: startAge, title: "承继家产", amount: inheritedMoney, text: `承继${oldName}遗下的钱财与产业。` },
@@ -12907,6 +13249,10 @@ function inheritFromSpouse(heir) {
   const inheritedAssets = (old.assets || []).map((asset) => ({ ...asset, inherited: true, owner: heir.name }));
   const familyName = heir.name.slice(0, 1) || old.name.slice(0, 1);
   const heirAge = Math.max(16, Math.round(Number(heir.age) || Math.max(18, old.age - 3)));
+  const inheritedThreads = carryThreadsAcrossInheritance(old.threads, heirAge, oldName, old.year);
+  const settledSelfDebt = settleInheritedSelfDebt(inheritedThreads, old.family.spouseMeta?.id || old.family.spouse, heir.name, heirAge);
+  const inheritedContacts = carryStoryContactsAcrossInheritance(inheritedThreads, heirAge, old.year);
+  const vocation = heirVocation(heir, heirAge);
   const children = (old.family.children || []).map((child) => normalizeChild({ ...child, otherParent: child.otherParent || oldName }, child.name?.slice(0, 1) || oldName.slice(0, 1)));
   const ancestors = [{
     name: oldName,
@@ -12942,25 +13288,27 @@ function inheritFromSpouse(heir) {
     },
     talents: pickMany(DATA.database?.talents || [], 3),
     coreTalent: sample(DATA.database?.coreTalents || []),
-    career: null,
+    career: vocation.career,
     careerProgress: {},
     careerHistory: [],
-    ambition: null,
-    threads: carryThreadsAcrossInheritance(old.threads, heirAge, oldName),
+    ambition: vocation.ambition,
+    threads: inheritedThreads,
     npcRequests: [],
     apprentices: [],
     apprenticeLastYear: -1,
     legacy: { funeral: null, dispute: null, inheritanceRate: 0.78 },
-    friends: [],
+    friends: inheritedContacts,
     tags: ["未亡人承业", "承继家业"],
     diseases: [],
     inventory: [...new Set([...(old.inventory || []), "亡夫家书"])].slice(0, 18),
     log: [
       { age: heirAge, title: "妻承夫业", text: `${oldName}身后，妻子${heir.name}没有让门户散去。她接过账册、田契与家中诸事，以未亡人身份继续第 ${generation} 代人生。` },
       { age: heirAge, title: "家族命册", text: `${heir.name}将${oldName}一生旧事收进命册，也决定从此以自己的名字续写后半生。` },
+      { age: heirAge, title: "接过自己的人生", text: vocation.text },
+      ...settledSelfDebt,
       ...oldLog.slice(0, 42).map((item) => ({ ...item, inherited: true })),
     ],
-    biography: `${heir.name}原为${oldName}之妻。夫亡之后，她承接家业、抚育子女，成为这一门第 ${generation} 代新的主事人。`,
+    biography: `${heir.name}原为${oldName}之妻。夫亡之后，她承接家业、抚育子女，成为这一门第 ${generation} 代新的主事人。${vocation.text}`,
     assets: inheritedAssets,
     ledger: [{ age: heirAge, title: "妻承夫业", amount: inheritedMoney, text: `接掌${oldName}遗下的钱财与产业。` }, ...(old.ledger || []).slice(0, 80).map((item) => ({ ...item, inherited: true }))],
     crickets: [],
@@ -14276,17 +14624,15 @@ function submitExam() {
 function addLog(title, text, deltas = []) {
   state.log.unshift({ age: state.age, title, text, deltas });
   state.log = state.log.slice(0, 160);
-  maybeOpenThreadFromLog(title, text);
 }
 
 function fillPlaceholders(text, mutate = true) {
-  let n = 0;
-  return String(text || "").replace(/\{(\d+)\}/g, () => {
-    const existing = state.friends[n++];
-    const friend = existing?.name || existing || makePersonName(state.gender === "male" ? "female" : "male");
-    if (mutate && !state.friends.some((item) => item.name === friend)) {
-      state.friends.push(normalizeFriend({ name: friend, gender: Math.random() > 0.5 ? "male" : "female", affection: randInt(38, 72), lastMet: state.age }));
-    }
+  const names = new Map();
+  return String(text || "").replace(/\{(\d+)\}/g, (_, index) => {
+    if (names.has(index)) return names.get(index);
+    const existing = state.friends[Number(index)];
+    const friend = state.currentEvent?.people?.[index] || existing?.name || existing || "一位故友";
+    names.set(index, friend);
     return friend;
   });
 }
@@ -14522,22 +14868,48 @@ const BORDER_GLOW_TARGETS = [
 ];
 
 let lastRenderedRoute = "";
+let overlayReturnFocus = "";
+
+function controlSelector(element) {
+  if (!element?.attributes) return "";
+  const attributes = [...element.attributes].filter(item => item.name.startsWith("data-"));
+  return attributes.map(item => `[${item.name}="${CSS.escape(item.value)}"]`).join("");
+}
 
 function render() {
+  const previousDialog = app.querySelector("dialog[open]");
+  const focusedControl = controlSelector(document.activeElement);
+  if (!previousDialog && view.overlay) overlayReturnFocus = focusedControl;
   const route = `${view.screen}:${view.page}`;
   const routeChanged = !!lastRenderedRoute && lastRenderedRoute !== route;
   lastRenderedRoute = route;
   window.DynastySceneEngine?.beforeRender?.();
   app.innerHTML = view.screen === "game" && state ? renderGame() : renderCreate();
-  initBorderGlow();
   initProfileCards();
   window.DynastySceneEngine?.sync?.(app);
+  const dialog = app.querySelector("dialog.game-overlay");
+  if (dialog) {
+    dialog.showModal();
+    if (previousDialog && focusedControl) dialog.querySelector(focusedControl)?.focus({ preventScroll: true });
+    dialog.addEventListener("cancel", event => {
+      event.preventDefault();
+      dialog.querySelector('[data-action="finish-onboarding"], [data-action="close-overlay"], [data-action="close-surprise"], [data-action="decline-secret"]')?.click();
+    });
+  } else if (previousDialog) {
+    const target = overlayReturnFocus ? app.querySelector(overlayReturnFocus) : null;
+    const fallback = app.querySelector('.mobile-tools-toggle');
+    (target?.getClientRects().length ? target : fallback?.getClientRects().length ? fallback : app.querySelector('.profile-trigger'))?.focus({ preventScroll: true });
+    overlayReturnFocus = "";
+  } else if (view.screen === "create" && focusedControl) {
+    app.querySelector(focusedControl)?.focus({ preventScroll: true });
+  }
   if (routeChanged && !window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
     app.querySelector(".center-panel > *")?.animate(
       [{ opacity: 0.35, transform: "translateY(5px)" }, { opacity: 1, transform: "translateY(0)" }],
       { duration: 180, easing: "ease-out" },
     );
   }
+  updateSaveNotice();
 }
 
 function initBorderGlow() {
@@ -14630,342 +15002,7 @@ function resetBorderGlowPointer(event) {
   event.currentTarget.style.setProperty("--edge-proximity", "0");
 }
 
-function initLightfallBackground() {
-  const canvas = document.getElementById("lightfall-bg");
-  if (!canvas) return;
 
-  const gl = canvas.getContext("webgl", {
-    alpha: true,
-    antialias: true,
-    depth: false,
-    stencil: false,
-    preserveDrawingBuffer: true,
-  });
-  if (!gl) {
-    canvas.classList.add("lightfall-bg--fallback");
-    return;
-  }
-
-  const vertexShader = `
-    attribute vec2 aPosition;
-    varying vec2 vUv;
-
-    void main() {
-      vUv = aPosition * 0.5 + 0.5;
-      gl_Position = vec4(aPosition, 0.0, 1.0);
-    }
-  `;
-
-  const fragmentShader = `
-    precision highp float;
-
-    uniform vec3 iResolution;
-    uniform vec2 iMouse;
-    uniform float iTime;
-    uniform vec3 uColor0;
-    uniform vec3 uColor1;
-    uniform vec3 uColor2;
-    uniform vec3 uColor3;
-    uniform vec3 uColor4;
-    uniform vec3 uColor5;
-    uniform vec3 uColor6;
-    uniform vec3 uColor7;
-    uniform int uColorCount;
-    uniform vec3 uBgColor;
-    uniform vec3 uMouseColor;
-    uniform float uSpeed;
-    uniform int uStreakCount;
-    uniform float uStreakWidth;
-    uniform float uStreakLength;
-    uniform float uGlow;
-    uniform float uDensity;
-    uniform float uTwinkle;
-    uniform float uZoom;
-    uniform float uBgGlow;
-    uniform float uOpacity;
-    uniform float uMouseEnabled;
-    uniform float uMouseStrength;
-    uniform float uMouseRadius;
-
-    varying vec2 vUv;
-
-    vec3 palette(float h) {
-      int count = uColorCount;
-      if (count < 1) count = 1;
-      int idx = int(floor(clamp(h, 0.0, 0.999999) * float(count)));
-      if (idx <= 0) return uColor0;
-      if (idx == 1) return uColor1;
-      if (idx == 2) return uColor2;
-      if (idx == 3) return uColor3;
-      if (idx == 4) return uColor4;
-      if (idx == 5) return uColor5;
-      if (idx == 6) return uColor6;
-      return uColor7;
-    }
-
-    vec3 tanhv(vec3 x) {
-      vec3 e = exp(-2.0 * x);
-      return (1.0 - e) / (1.0 + e);
-    }
-
-    vec2 sceneC(vec2 frag, vec2 r) {
-      vec2 P = (frag + frag - r) / r.x;
-      float z = 0.0;
-      float d = 1e3;
-      vec4 O = vec4(0.0);
-      for (int k = 0; k < 39; k++) {
-        if (d <= 1e-4) break;
-        O = z * normalize(vec4(P, uZoom, 0.0)) - vec4(0.0, 4.0, 1.0, 0.0) / 4.5;
-        d = 1.0 - sqrt(length(O * O));
-        z += d;
-      }
-      return vec2(O.x, atan(O.z, O.y));
-    }
-
-    void mainImage(out vec4 o, vec2 C) {
-      vec2 r = iResolution.xy;
-      vec2 uv0 = (C + C - r) / r.x;
-      float T = 0.1 * iTime * uSpeed + 9.0;
-      float angRings = max(1.0, floor(6.28318530718 * max(uDensity, 0.05) + 0.5));
-      vec2 Y = vec2(5e-3, 6.28318530718 / angRings);
-
-      vec2 c0 = sceneC(C, r);
-      vec2 cdx = sceneC(C + vec2(1.0, 0.0), r);
-      vec2 cdy = sceneC(C + vec2(0.0, 1.0), r);
-      vec2 dCx = cdx - c0;
-      vec2 dCy = cdy - c0;
-      dCx.y -= 6.28318530718 * floor(dCx.y / 6.28318530718 + 0.5);
-      dCy.y -= 6.28318530718 * floor(dCy.y / 6.28318530718 + 0.5);
-      vec2 fw = abs(dCx) + abs(dCy);
-      C = c0;
-
-      vec2 P = vec2(2.0, 1.0) * uv0 - (r / r.x) * vec2(0.0, 1.0);
-      vec4 O = vec4(uBgColor * 90.0 * uBgGlow / (1e3 * dot(P, P) + 6.0), 0.0);
-
-      float mGlow = 0.0;
-      if (uMouseEnabled > 0.5) {
-        vec2 mN = (iMouse + iMouse - r) / r.x;
-        float md = length(uv0 - mN);
-        mGlow = exp(-md * md / max(uMouseRadius * uMouseRadius, 1e-4)) * uMouseStrength;
-        O.rgb += uMouseColor * mGlow * 0.25;
-      }
-
-      float zr = 5e-4 * uStreakWidth;
-      vec2 rr = vec2(max(length(fw), 1e-5));
-      float tail = 19.0 / max(uStreakLength, 0.05);
-
-      for (int m = 0; m < 16; m++) {
-        if (m >= uStreakCount) break;
-        float jf = float(m) + 1.0;
-        float ic = fract(sin(dot(vec2(jf, floor(C.x / Y.x + 0.5)), vec2(7.0, 11.0)) * 73.0));
-        vec2 Pp = C - (T + T * ic) * vec2(0.0, 1.0);
-        Pp -= floor(Pp / Y + 0.5) * Y;
-        float h = fract(8663.0 * ic);
-        vec3 col = palette(h);
-        float weight = mix(1.5, 1.0 + sin(T + 7.0 * h + 4.0), uTwinkle);
-        weight *= 1.0 + mGlow * 2.0;
-        vec2 inner = vec2(length(max(Pp, vec2(-1.0, 0.0))), length(Pp) - zr) - zr;
-        vec2 sm = vec2(1.0) - smoothstep(-rr, rr, inner);
-        O.rgb += dot(sm, vec2(exp(tail * Pp.y), 3.0)) * col * weight;
-        C.x += Y.x / 8.0;
-      }
-
-      vec3 colr = sqrt(tanhv(max(O.rgb * uGlow - vec3(0.04, 0.08, 0.02), 0.0)));
-      o = vec4(colr, uOpacity);
-    }
-
-    void main() {
-      vec4 color;
-      mainImage(color, vUv * iResolution.xy);
-      gl_FragColor = color;
-    }
-  `;
-
-  const program = createLightfallProgram(gl, vertexShader, fragmentShader);
-  if (!program) {
-    canvas.classList.add("lightfall-bg--fallback");
-    return;
-  }
-
-  const positionBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
-
-  const positionLocation = gl.getAttribLocation(program, "aPosition");
-  const uniformLocations = {
-    resolution: gl.getUniformLocation(program, "iResolution"),
-    mouse: gl.getUniformLocation(program, "iMouse"),
-    time: gl.getUniformLocation(program, "iTime"),
-    colors: Array.from({ length: 8 }, (_, index) => gl.getUniformLocation(program, `uColor${index}`)),
-    colorCount: gl.getUniformLocation(program, "uColorCount"),
-    bgColor: gl.getUniformLocation(program, "uBgColor"),
-    mouseColor: gl.getUniformLocation(program, "uMouseColor"),
-    speed: gl.getUniformLocation(program, "uSpeed"),
-    streakCount: gl.getUniformLocation(program, "uStreakCount"),
-    streakWidth: gl.getUniformLocation(program, "uStreakWidth"),
-    streakLength: gl.getUniformLocation(program, "uStreakLength"),
-    glow: gl.getUniformLocation(program, "uGlow"),
-    density: gl.getUniformLocation(program, "uDensity"),
-    twinkle: gl.getUniformLocation(program, "uTwinkle"),
-    zoom: gl.getUniformLocation(program, "uZoom"),
-    bgGlow: gl.getUniformLocation(program, "uBgGlow"),
-    opacity: gl.getUniformLocation(program, "uOpacity"),
-    mouseEnabled: gl.getUniformLocation(program, "uMouseEnabled"),
-    mouseStrength: gl.getUniformLocation(program, "uMouseStrength"),
-    mouseRadius: gl.getUniformLocation(program, "uMouseRadius"),
-  };
-  const lightfall = {
-    colors: ["#ffe2a8", "#6dd6bf", "#cf8d55", "#9fb6ff"],
-    backgroundColor: "#2f7d6d",
-    speed: 0.68,
-    streakCount: 5,
-    streakWidth: 0.92,
-    streakLength: 1.05,
-    glow: 0.68,
-    density: 0.62,
-    twinkle: 0.58,
-    zoom: 3.05,
-    backgroundGlow: 0.58,
-    opacity: 0.82,
-    mouseInteraction: true,
-    mouseStrength: 0.45,
-    mouseRadius: 0.9,
-    mouseDampening: 0.15,
-  };
-  const colorData = prepLightfallColors(lightfall.colors);
-  const backgroundColor = hexToLightfallRgb(lightfall.backgroundColor);
-  const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-  const mouse = { current: [0, 0], target: [0, 0], hasPointer: false };
-  let dpr = Math.min(window.devicePixelRatio || 1, 1.6);
-  let lastTime = performance.now();
-  let frameId = 0;
-
-  gl.disable(gl.DEPTH_TEST);
-  gl.enable(gl.BLEND);
-  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-  gl.clearColor(0, 0, 0, 0);
-
-  function resize() {
-    dpr = Math.min(window.devicePixelRatio || 1, 1.6);
-    const width = Math.max(1, Math.floor(canvas.clientWidth * dpr));
-    const height = Math.max(1, Math.floor(canvas.clientHeight * dpr));
-    if (canvas.width !== width || canvas.height !== height) {
-      canvas.width = width;
-      canvas.height = height;
-      gl.viewport(0, 0, width, height);
-      if (!mouse.hasPointer) {
-        mouse.current = [width / 2, height / 2];
-        mouse.target = [width / 2, height / 2];
-      }
-    }
-  }
-
-  function updatePointer(event) {
-    const rect = canvas.getBoundingClientRect();
-    mouse.hasPointer = true;
-    mouse.target = [(event.clientX - rect.left) * dpr, (rect.height - (event.clientY - rect.top)) * dpr];
-    if (lightfall.mouseDampening <= 0) mouse.current = [...mouse.target];
-  }
-
-  function draw(now = performance.now()) {
-    resize();
-    const delta = Math.min((now - lastTime) / 1000, 0.05);
-    lastTime = now;
-    if (lightfall.mouseDampening > 0) {
-      const factor = Math.min(1, 1 - Math.exp(-delta / Math.max(lightfall.mouseDampening, 0.0001)));
-      mouse.current[0] += (mouse.target[0] - mouse.current[0]) * factor;
-      mouse.current[1] += (mouse.target[1] - mouse.current[1]) * factor;
-    }
-
-    gl.clear(gl.COLOR_BUFFER_BIT);
-    gl.useProgram(program);
-    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-    gl.enableVertexAttribArray(positionLocation);
-    gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
-    gl.uniform3f(uniformLocations.resolution, canvas.width, canvas.height, 1);
-    gl.uniform2f(uniformLocations.mouse, mouse.current[0], mouse.current[1]);
-    gl.uniform1f(uniformLocations.time, reducedMotion ? 0 : now * 0.001);
-    uniformLocations.colors.forEach((location, index) => gl.uniform3fv(location, colorData.arr[index]));
-    gl.uniform1i(uniformLocations.colorCount, colorData.count);
-    gl.uniform3fv(uniformLocations.bgColor, backgroundColor);
-    gl.uniform3fv(uniformLocations.mouseColor, colorData.avg);
-    gl.uniform1f(uniformLocations.speed, lightfall.speed);
-    gl.uniform1i(uniformLocations.streakCount, Math.max(1, Math.min(16, Math.round(lightfall.streakCount))));
-    gl.uniform1f(uniformLocations.streakWidth, lightfall.streakWidth);
-    gl.uniform1f(uniformLocations.streakLength, lightfall.streakLength);
-    gl.uniform1f(uniformLocations.glow, lightfall.glow);
-    gl.uniform1f(uniformLocations.density, lightfall.density);
-    gl.uniform1f(uniformLocations.twinkle, lightfall.twinkle);
-    gl.uniform1f(uniformLocations.zoom, lightfall.zoom);
-    gl.uniform1f(uniformLocations.bgGlow, lightfall.backgroundGlow);
-    gl.uniform1f(uniformLocations.opacity, lightfall.opacity);
-    gl.uniform1f(uniformLocations.mouseEnabled, lightfall.mouseInteraction ? 1 : 0);
-    gl.uniform1f(uniformLocations.mouseStrength, lightfall.mouseStrength);
-    gl.uniform1f(uniformLocations.mouseRadius, lightfall.mouseRadius);
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-    canvas.dataset.lightfallReady = "1";
-
-    if (!reducedMotion) frameId = window.requestAnimationFrame(draw);
-  }
-
-  window.addEventListener("resize", () => {
-    if (reducedMotion) draw();
-  }, { passive: true });
-  window.addEventListener("pointermove", updatePointer, { passive: true });
-  canvas.addEventListener("webglcontextlost", (event) => {
-    event.preventDefault();
-    if (frameId) window.cancelAnimationFrame(frameId);
-    canvas.classList.add("lightfall-bg--fallback");
-  });
-  draw();
-}
-
-function createLightfallProgram(gl, vertexSource, fragmentSource) {
-  const vertexShader = compileLightfallShader(gl, gl.VERTEX_SHADER, vertexSource);
-  const fragmentShader = compileLightfallShader(gl, gl.FRAGMENT_SHADER, fragmentSource);
-  if (!vertexShader || !fragmentShader) return null;
-
-  const program = gl.createProgram();
-  gl.attachShader(program, vertexShader);
-  gl.attachShader(program, fragmentShader);
-  gl.linkProgram(program);
-  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) return null;
-  return program;
-}
-
-function compileLightfallShader(gl, type, source) {
-  const shader = gl.createShader(type);
-  gl.shaderSource(shader, source);
-  gl.compileShader(shader);
-  return gl.getShaderParameter(shader, gl.COMPILE_STATUS) ? shader : null;
-}
-
-function prepLightfallColors(input) {
-  const base = (input?.length ? input : ["#a6c8ff", "#5227ff", "#ff9ffc"]).slice(0, 8);
-  const arr = [];
-  for (let i = 0; i < 8; i += 1) arr.push(hexToLightfallRgb(base[Math.min(i, base.length - 1)]));
-  const avg = [0, 0, 0];
-  for (let i = 0; i < base.length; i += 1) {
-    avg[0] += arr[i][0];
-    avg[1] += arr[i][1];
-    avg[2] += arr[i][2];
-  }
-  avg[0] /= base.length;
-  avg[1] /= base.length;
-  avg[2] /= base.length;
-  return { arr, count: base.length, avg };
-}
-
-function hexToLightfallRgb(hex) {
-  const value = String(hex || "#000000").replace("#", "").padEnd(6, "0");
-  return [
-    parseInt(value.slice(0, 2), 16) / 255,
-    parseInt(value.slice(2, 4), 16) / 255,
-    parseInt(value.slice(4, 6), 16) / 255,
-  ];
-}
-
-initLightfallBackground();
 render();
 
 function renderCreate() {
@@ -14973,51 +15010,30 @@ function renderCreate() {
   const hasSave = meta.some((slot) => slot !== null);
   return `
     <main class="app-shell create-shell">
-      <section class="create-panel">
-        <div class="brand-row">
-          <div>
-            <p class="eyebrow">古代人生 Web</p>
-            <h1>新的一生</h1>
-          </div>
-          ${hasSave ? `<button class="ghost-btn" data-action="continue-save">继续</button>` : ""}
+      <header class="prologue-brand"><span class="brand-seal" aria-hidden="true">生</span><strong>古代人生</strong><span>一生一卷 · 世代相传</span></header>
+      <section class="prologue-layout">
+        <div class="prologue-landscape">
+          <img src="assets/region-qingping.webp" alt="晨光中的清平县，石桥、水巷与烟火人家" width="1400" height="933" fetchpriority="high" />
+          <div class="prologue-copy"><span class="prologue-chapter">卷一 / 初入人间</span><h1>落笔一生<br>余响百年</h1><p>在烟火人间谋一份生计，<br>与故人结缘，为后辈留下一个家。</p></div>
+          <div class="prologue-caption"><span>清平县 · 人间初照</span><span>你的故事，从这里开始</span></div>
         </div>
-
-        <div class="form-grid">
-          <label class="field">
-            <span>性别</span>
-            <span class="segmented">
-              <button class="${draft.gender === "male" ? "active" : ""}" data-gender="male">男</button>
-              <button class="${draft.gender === "female" ? "active" : ""}" data-gender="female">女</button>
-            </span>
-          </label>
-          <label class="field">
-            <span>姓名</span>
-            <input data-field="name" value="${escapeHtml(draft.family + draft.given)}">
-          </label>
-          <label class="field">
-            <span>出身</span>
-            <select data-field="difficulty">
-              ${["普通", "富贵", "寒门"].map((item) => `<option ${item === draft.difficulty ? "selected" : ""}>${item}</option>`).join("")}
-            </select>
-          </label>
-        </div>
-
-        <section class="talent-area">
-          <div class="section-title">
-            <h2>天赋</h2>
-            <button class="text-btn" data-action="reroll">重抽</button>
+        <section class="create-panel">
+          <div class="brand-row"><div><p class="eyebrow">写下你的第一笔</p><h2>新的一生</h2></div>${hasSave ? `<button class="ghost-btn" data-action="continue-save">续写前缘</button>` : `<span class="chapter-seal" aria-hidden="true">初生</span>`}</div>
+          <p class="create-intro">出身是起点，往后由你选择。</p>
+          <div class="form-grid">
+            <div class="field"><span id="create-gender-label">性别</span><span class="segmented" role="group" aria-labelledby="create-gender-label"><button aria-pressed="${draft.gender === "male"}" class="${draft.gender === "male" ? "active" : ""}" data-gender="male">男</button><button aria-pressed="${draft.gender === "female"}" class="${draft.gender === "female" ? "active" : ""}" data-gender="female">女</button></span></div>
+            <label class="field"><span>出身</span><select data-field="difficulty">${["普通", "富贵", "寒门"].map((item) => `<option ${item === draft.difficulty ? "selected" : ""}>${item}</option>`).join("")}</select></label>
+            <label class="field name-field"><span>姓名</span><span class="name-input"><input data-field="name" maxlength="12" autocomplete="off" value="${escapeHtml(draft.family + draft.given)}"><button class="text-btn" data-action="random-name" aria-label="随机换一个名字">换一个</button></span></label>
           </div>
-          <div class="talent-grid">
-            ${talentCard(draft.coreTalent, "命格")}
-            ${draft.talents.map((talent) => talentCard(talent, "天赋")).join("")}
-          </div>
+          <section class="talent-area">
+            <div class="section-title"><h3>此生命数</h3><button class="text-btn" data-action="reroll">重抽天赋 ↻</button></div>
+            <div class="destiny-preview"><span>命格</span><strong>${escapeHtml(draft.coreTalent?.name || "未定")}</strong><div>${draft.talents.map(talent => `<span>${escapeHtml(talent.name)}</span>`).join("")}</div></div>
+            <details class="destiny-details"><summary>查看命格与天赋影响</summary><div class="talent-grid">${talentCard(draft.coreTalent, "命格")}${draft.talents.map((talent) => talentCard(talent, "天赋")).join("")}</div></details>
+          </section>
+          <div class="create-actions"><button class="primary-btn" data-action="start-life">开启此生 <span aria-hidden="true">→</span></button><small>进度保存在此浏览器 · 可在菜单导出备份</small></div>
         </section>
-
-        <div class="create-actions">
-          <button class="secondary-btn" data-action="random-name">换名字</button>
-          <button class="primary-btn" data-action="start-life">开始人生</button>
-        </div>
       </section>
+      <footer class="prologue-notes"><span><b>01</b> 选择一生的方向</span><span><b>02</b> 留下人与人的故事</span><span><b>03</b> 把家业交给下一代</span></footer>
     </main>`;
 }
 
@@ -15042,7 +15058,7 @@ function renderGame() {
   const mobilePanelMode = mobilePanelAvailable && view.mobileSection === "panel";
   return `
     <main class="app-shell game-shell ${view.page !== "main" ? "focus-page" : ""} ${mobilePanelMode ? "mobile-panel-mode" : "mobile-life-mode"}">
-      <header class="topbar">
+      <header class="topbar ${view.toolsOpen ? "tools-open" : ""}">
         <div class="identity">
           <button class="avatar profile-trigger" data-overlay="profile" title="资料">${profileAvatarHtml("top-avatar-img")}</button>
           <div>
@@ -15050,7 +15066,8 @@ function renderGame() {
             <p>${state.age}岁 · ${escapeHtml(state.location)} · ${escapeHtml(state.difficulty)}</p>
           </div>
         </div>
-        <div class="top-actions">
+        <button class="mobile-tools-toggle" data-action="toggle-tools" aria-expanded="${!!view.toolsOpen}" aria-controls="game-tools">${view.toolsOpen ? "收起 ×" : "更多 ☰"}</button>
+        <div class="top-actions" id="game-tools">
           <button class="shortcut-btn guide-shortcut" data-action="open-onboarding" title="新手引导">
             ${icon("MainBook", "新手引导")}
             <span>引导</span>
@@ -15070,7 +15087,8 @@ function renderGame() {
 
       <section class="status-strip">
         ${resourcePill("钱财", moneyText(state.stats.money, { compact: true }))}
-        ${resourcePill("营生", currentCareerName() || "无")}
+        ${resourcePill("营生", currentCareerName() || (state.age < 15 ? "尚在幼年" : "待择业"))}
+        <span class="mobile-vital ${state.stats.physique < 35 ? "bad" : ""}">体魄 <b>${Math.round(state.stats.physique)}</b></span>
         ${(Number(state.underworld?.heat || 0) + Number(state.jianghu?.heat || 0)) > 0 ? resourcePill("风声", Math.round(Number(state.underworld?.heat || 0) + Number(state.jianghu?.heat || 0)), "bad") : ""}
         ${state.prisonYears > 0 ? resourcePill("牢狱", `余刑 ${state.prisonYears} 年`, "bad") : ""}
         ${state.diseases.map((item) => resourcePill("病症", item, "bad")).join("")}
@@ -15115,55 +15133,31 @@ function onboardingOverlay() {
       ? `先关注体魄、学识和家中关系，等 15 岁后再选营生${state.gender === "male" ? "或科举" : "；女学从 8 岁开放"}。`
       : state.gender === "female" ? "可以先去“女学”修习六艺、参加女医考校，或在“营生”谋一份差事。" : "可以先去“营生”谋一份差事，或去“书院”参加科举。";
   const firstAction = state.age < 1
-    ? `<button class="primary-btn" data-action="onboarding-next-year">开始第一年</button>`
-    : `<button class="primary-btn" data-action="finish-onboarding">知道了</button>`;
+    ? `<button class="primary-btn" data-action="onboarding-next-year" autofocus>开始第一年 →</button>`
+    : `<button class="primary-btn" data-action="finish-onboarding" autofocus>回到这一年</button>`;
   return `
-    <section class="game-overlay onboarding-overlay">
-      <article class="profile-modal onboarding-modal">
-        <button class="profile-close" data-action="finish-onboarding" title="关闭">×</button>
-        <div class="onboarding-hero">
-          <div class="onboarding-seal">${profileAvatarHtml("onboarding-avatar")}</div>
-          <div>
-            <p class="eyebrow">新手引导</p>
-            <h2>你是 ${escapeHtml(state.name)}</h2>
-            <p>你刚来到 ${escapeHtml(state.location)}，出身为${escapeHtml(state.difficulty)}。这不是单线剧情，而是一段会被选择、年龄、亲友和钱财一起推动的人生。</p>
-          </div>
-        </div>
-
-        <div class="onboarding-grid">
-          <section class="onboarding-card">
-            <strong>我是谁</strong>
-            <p>你会从幼年开始长大，经历家事、读书、交友、营生、婚育、仕途和死亡。每一年都会留下记录。</p>
-          </section>
-          <section class="onboarding-card">
-            <strong>能干什么</strong>
-            <p>${state.gender === "female" ? "你可以经营属性、照顾亲友、修习女学六艺、谋生置业、婚育传家；也能读经、行医、行商或投身歌舞本业。科举与青楼寻欢则受时代身份限制。" : "你可以经营属性，照顾亲友，买房置业，参加科举，当官办事，也能去瓦舍、博坊、雅戏和行商押镖。"}</p>
-          </section>
-          <section class="onboarding-card highlight">
-            <strong>第一步做什么</strong>
-            <p>${escapeHtml(firstStep)}</p>
-          </section>
-        </div>
-
-        <ol class="onboarding-steps">
-          <li><b>看状态</b><span>桌面端左侧、手机端头像资料里可查看心情、体魄、学识等核心属性；体魄太低会有生命风险。</span></li>
-          <li><b>点中间事件</b><span>人生事件会给你选择，不同选项会改属性、钱财和关系。</span></li>
-          <li><b>切换页签</b><span>桌面端使用右侧页签，手机端使用顶部吸附导航，可快速查看营生、亲友、行囊和命册。</span></li>
-          <li><b>长大后解锁</b><span>${state.gender === "female" ? "8 岁开放女学，15 岁后开放营生和女医考校；科举仅向男子开放。" : "15 岁后开放营生和童试，18 岁后会开放更多成人活动。"}</span></li>
+    <dialog class="game-overlay onboarding-overlay" aria-labelledby="onboarding-title">
+      <article class="profile-modal onboarding-modal first-letter">
+        <button class="profile-close" data-action="finish-onboarding" aria-label="关闭引导">×</button>
+        <span class="chapter-seal" aria-hidden="true">启程</span>
+        <p class="eyebrow">给初来人间的你</p>
+        <h2 id="onboarding-title">${escapeHtml(state.name)}，故事开始了。</h2>
+        <p class="letter-origin">${escapeHtml(state.location)} · ${escapeHtml(state.difficulty)}人家</p>
+        <ol class="first-steps">
+          <li><b>一</b><span><strong>做一个选择</strong><small>遇见事情，按自己的心意作答。</small></span></li>
+          <li><b>二</b><span><strong>看看留下什么</strong><small>钱财、身体、人情，都可能改变。</small></span></li>
+          <li><b>三</b><span><strong>再走一年</strong><small>长大、结缘，旧事也会有回响。</small></span></li>
         </ol>
-
-        <div class="onboarding-actions">
-          <button class="secondary-btn" data-action="finish-onboarding">以后再看</button>
-          ${firstAction}
-        </div>
+        <p class="first-step-note">${escapeHtml(firstStep)}</p>
+        <div class="onboarding-actions">${firstAction}<button class="text-btn" data-action="finish-onboarding">先自己看看</button></div>
       </article>
-    </section>`;
+    </dialog>`;
 }
 
 function profileOverlay() {
   const born = state.biography.match(/生于([^，。]+)/)?.[1] || state.location;
   return `
-    <section class="game-overlay">
+    <dialog class="game-overlay" aria-label="人物资料">
       <article class="profile-modal">
         <button class="profile-close" data-action="close-overlay" title="关闭">×</button>
         <div class="profile-layout">
@@ -15186,7 +15180,7 @@ function profileOverlay() {
           </div>
         </div>
       </article>
-    </section>`;
+    </dialog>`;
 }
 
 function profileAvatarHtml(className = "profile-avatar-img") {
@@ -15263,7 +15257,7 @@ function profileCard() {
 function surpriseOverlay() {
   const gift = state.pendingSurprise || {};
   return `
-    <section class="game-overlay">
+    <dialog class="game-overlay" aria-label="${escapeHtml(gift.title || "人生奇遇")}">
       <article class="profile-modal surprise-modal">
         <p class="eyebrow">${escapeHtml(gift.category || "惊喜")}</p>
         <h2>${escapeHtml(gift.title || "小事")}</h2>
@@ -15274,7 +15268,7 @@ function surpriseOverlay() {
           ? `<div class="main-actions"><button class="primary-btn" data-action="accept-secret">接下暗事</button><button class="ghost-btn" data-action="decline-secret">婉拒</button></div>`
           : `<button class="primary-btn" data-action="close-surprise">确定</button>`}
       </article>
-    </section>`;
+    </dialog>`;
 }
 
 function achievementToast() {
@@ -15852,11 +15846,11 @@ function overviewView() {
   const generation = Math.max(1, Number(state.lineage?.generation) || 1);
   const blockReason = yearAdvanceBlockReason();
   const yearBlocked = !!blockReason;
+  const scene = regionSceneArt(regionIdFromLocation(state.location));
   return `
     <article class="play-card life-scroll">
-      <p class="eyebrow">流年 · ${escapeHtml(phase.name)} · 第${generation}代</p>
-      <h2>${state.age}岁</h2>
-      <p>${state.age === 0 ? escapeHtml(state.biography) : latestYearText()}</p>
+      <header class="life-landscape"><img src="${escapeHtml(scene.hero)}" alt="${escapeHtml(scene.alt)}" decoding="async"/><div><p>${escapeHtml(state.dynasty?.eraName || "本朝")}${state.dynasty?.reignYear || 1}年 · ${escapeHtml(state.location)}</p><h2>${state.age}<small>岁</small></h2><span>${escapeHtml(phase.name)} · ${escapeHtml(state.lineage?.familyName || state.name.slice(0, 1))}氏第${generation}代</span></div><span class="life-landscape-seal" aria-hidden="true">流年</span></header>
+      <p class="life-passage">${state.age === 0 ? escapeHtml(state.biography) : latestYearText()}</p>
       <div class="life-brief">
         <span><b>今岁重心</b>${escapeHtml(phase.focus)}</span>
         <span><b>家族传承</b>${escapeHtml(state.lineage?.familyName || state.name.slice(0, 1))}氏第${generation}代</span>
@@ -15865,11 +15859,12 @@ function overviewView() {
       <p class="life-tip">${escapeHtml(lifeInsight())}</p>
       ${yearBlocked ? `<p class="empty-note">${escapeHtml(blockReason)}</p>` : ""}
       ${state.mystery?.active ? `<p class="dark-warning">你手头还有未结奇案「${escapeHtml(activeMysteryCase()?.title || "旧案")}」。可继续查，也可先推进流年。</p><div class="main-actions"><button class="secondary-btn" data-action="resume-mystery">继续办案</button></div>` : ""}
-      <div class="main-actions">
+      <div class="main-actions life-year-actions">
         <button class="primary-btn year-btn" data-action="next-year" ${yearBlocked ? "disabled" : ""}>下一年</button>
         <button class="secondary-btn" data-page="place" data-place="activities">安排活动</button>
       </div>
     </article>
+    ${earlyLifeGuide()}
     ${storyRadarPanel()}
     ${ambitionPanel()}
     <details class="overview-secondary" ${state.dynasty?.activeArc || secretLineNoticeCount() ? "open" : ""}>
@@ -15881,7 +15876,7 @@ function overviewView() {
         ${secretPulseView()}
       </div>
     </details>
-    <section class="goal-strip">
+    <section class="goal-strip ${state.age < 15 ? "later-life-goals" : ""}">
       ${goals.map((goal) => `
         <article class="goal-card">
           ${icon(goal.icon, goal.title)}
@@ -15900,6 +15895,16 @@ function overviewView() {
         </button>`).join("")}
     </section>
     ${recentLog()}`;
+}
+
+function earlyLifeGuide() {
+  if (state.age >= 15) return "";
+  const lesson = state.age < 2
+    ? { number: "一", title: "从抓周开始", text: "选一件心仪的物什，再看看这次选择给你留下什么。", action: 'data-tab="history"', label: "翻开命册" }
+    : state.age < 8
+      ? { number: "二", title: "先认得身边的人", text: "到亲友页看看父母与故人。闲谈、陪伴，都能慢慢经营一段关系。", action: 'data-tab="relations"', label: "看看亲友" }
+      : { number: "三", title: "长成自己的模样", text: state.gender === "female" ? "女学已开放，可以修习六艺；十五岁后再择一份营生。" : "去书院温课，或安排一项活动。十五岁后，科举与营生会向你开放。", action: 'data-tab="activities"', label: "安排活动" };
+  return `<section class="early-life-guide"><span class="guide-number">${lesson.number}</span><div><small>初识人间 · 随年龄展开</small><strong>${lesson.title}</strong><p>${lesson.text}</p></div><button class="text-btn" ${lesson.action}>${lesson.label} →</button></section>`;
 }
 
 function ambitionPanel() {
@@ -16125,23 +16130,21 @@ function resultReasonText(result = {}) {
   const numeric = deltas.filter((item) => typeof item.value === "number");
   const gains = numeric.filter((item) => item.value > 0).sort((a, b) => b.value - a.value);
   const losses = numeric.filter((item) => item.value < 0).sort((a, b) => a.value - b.value);
-  if (gains.length && losses.length) return `这不是单纯的成败：你以${losses[0].label}为代价，换来了${gains[0].label}的变化。人物关系、身份和当时的处境共同决定了结果。`;
-  if (gains.length) return `你的选择让${gains.slice(0, 2).map((item) => item.label).join("与")}得到正向变化；此前积累的属性、身份与人情也参与了这次结算。`;
-  if (losses.length) return `这次选择触发了${losses.slice(0, 2).map((item) => item.label).join("与")}方面的代价。它不是孤立扣点，而会继续影响后续人物与事件。`;
-  if (/成功|得当|如愿|化解|救/.test(result.text || "")) return "你的当前身份、能力与选择方向彼此吻合，因此事情得以顺利推进。";
-  if (/失败|未果|失手|受阻|拒绝/.test(result.text || "")) return "当前能力、资源或人物立场没有完全支撑这次选择，因此结果留下了代价。";
-  return "这次结果主要记录你的态度与人物记忆；即使没有立即增减数值，后续关系仍可能因此改变。";
+  if (gains.length && losses.length) return `本次结算中，${losses[0].label}有所下降，${gains[0].label}有所增长。具体经过已记在上方。`;
+  if (gains.length) return `这次经历增加了${gains.slice(0, 2).map((item) => item.label).join("与")}，变化列在上方。`;
+  if (losses.length) return `这次经历带来了${losses.slice(0, 2).map((item) => item.label).join("与")}方面的消耗，变化列在上方。`;
+  return "这次经历已记录；没有结算即时的数值变化。";
 }
 
 function resultFollowupText(result = {}) {
   if (result.followup) return String(result.followup);
   const freshThread = normalizeThreads(state.threads).find((item) => item.status === "active" && item.createdYear === state.year);
-  if (freshThread) return `命册新增伏笔“${freshThread.title}”。它预计在 ${Math.max(0, freshThread.dueYear - state.year)} 年后，或在相关人物再次出现时回响。`;
+  if (freshThread) return `命册中还有待续的旧事“${freshThread.title}”，预计在 ${Math.max(0, freshThread.dueYear - state.year)} 年后回响。可查看命册了解它的前因。`;
   const request = normalizeNpcRequests(state.npcRequests).find((item) => item.status === "pending");
   if (request) return `${request.relation}${request.npcName}仍在等待“${request.title}”的答复，期限会继续向前推进。`;
   const dueThread = normalizeThreads(state.threads).find((item) => item.status === "active" && item.dueYear <= state.year + 1);
   if (dueThread) return `旧事“${dueThread.title}”已经临近，接下来的流年可能直接接续这条因果。`;
-  return "这次选择已写入命册。后续随机事件、人物关系与生涯评价会读取这段经历。";
+  return "这次选择已写入命册，可随时翻阅这段经历。";
 }
 
 function eventResultView() {
@@ -16954,6 +16957,8 @@ function saveManagerView() {
   const slots = [];
   for (let i = 0; i < MAX_SLOTS; i++) {
     const info = meta[i];
+    const backup = loadSlotBackup(i);
+    const backupRow = backup ? `<div class="save-slot-backup"><span>上次备份：${escapeHtml(backup.state.name)} · ${Math.round(backup.state.age)}岁</span><button class="text-btn" data-save-slot="${i}" data-save-action="restore-backup">恢复上次备份</button></div>` : "";
     const isCurrent = currentSlot === i;
     const isDead = state?.dead;
     if (info) {
@@ -16965,7 +16970,7 @@ function saveManagerView() {
         </div>
         <div class="save-slot-body">
           <strong>${escapeHtml(info.name)}</strong>
-          <span class="save-slot-meta">${info.age}岁 · ${info.title} · ${timeStr}</span>
+          <span class="save-slot-meta">${info.age}岁 · ${escapeHtml(info.title)} · ${timeStr}</span>
         </div>
         <div class="save-slot-actions">
           ${state && !isDead ? `<button class="text-btn" data-save-slot="${i}" data-save-action="overwrite">覆盖保存</button>` : ""}
@@ -16973,6 +16978,7 @@ function saveManagerView() {
           <button class="text-btn" data-save-slot="${i}" data-save-action="export-slot">导出</button>
           <button class="text-btn danger" data-save-slot="${i}" data-save-action="delete">删除</button>
         </div>
+        ${backupRow}
       </article>`);
     } else {
       slots.push(`<article class="save-slot empty">
@@ -16987,6 +16993,7 @@ function saveManagerView() {
           ${state && !isDead ? `<button class="text-btn" data-save-slot="${i}" data-save-action="save-here">保存到此处</button>` : ""}
           <button class="text-btn" data-save-slot="${i}" data-save-action="import-slot">导入存档</button>
         </div>
+        ${backupRow}
       </article>`);
     }
   }
@@ -16994,7 +17001,17 @@ function saveManagerView() {
     <article class="play-card save-manager-card">
       <p class="eyebrow">存档管理</p>
       <h2>多槽位存档</h2>
-      <p>3 个存档位，可保存、读取、导入导出各局人生。</p>
+      <p>3 个存档位。覆盖或删除前会保留一份备份，可在对应槽位恢复；也可以导出文件长期留存。</p>
+      ${pendingSaveImport ? `<section class="save-import-review" aria-labelledby="save-import-title">
+        <h3 id="save-import-title">确认导入：${escapeHtml(pendingSaveImport.state.name)}</h3>
+        <p>${Math.round(pendingSaveImport.state.age)}岁 · 请选择保存位置。覆盖已有存档前，还会请你确认。</p>
+        <label for="save-import-target">导入到哪个存档位</label>
+        <select id="save-import-target">
+          <option value="" ${pendingSaveImport.targetSlot < 0 ? "selected" : ""} disabled>请选择目标存档位</option>
+          ${Array.from({ length: MAX_SLOTS }, (_, slot) => `<option value="${slot}" ${pendingSaveImport.targetSlot === slot ? "selected" : ""}>存档位 ${slot + 1} · ${meta[slot] ? escapeHtml(`${meta[slot].name}（${meta[slot].age}岁，将被覆盖）`) : "空"}</option>`).join("")}
+        </select>
+        <div class="save-slot-actions"><button class="primary-btn" data-action="confirm-save-import">确认导入</button><button class="ghost-btn" data-action="cancel-save-import">取消</button></div>
+      </section>` : ""}
       <div class="save-slots">
         ${slots.join("")}
       </div>
@@ -17016,7 +17033,7 @@ function menuView() {
         <button class="list-btn" data-page="codex">${icon("MainBook", "图鉴")}<span>成就图鉴<small>查看铜银金成就、人生阶段与本局评分。</small></span></button>
         <button class="list-btn" data-action="open-save-manager">${icon("MenuButton0", "存档")}<span>存档管理<small>多槽位保存、读取与导入导出。</small></span></button>
         <button class="list-btn" data-action="export">${icon("MenuButton1", "导出")}<span>导出存档<small>下载当前人生 JSON。</small></span></button>
-        <button class="list-btn danger" data-action="new-life">${icon("MenuButton2", "重开")}<span>重新开始<small>清空当前存档并开新档。</small></span></button>
+        <button class="list-btn danger" data-action="new-life">${icon("MenuButton2", "重开")}<span>重新开始<small>备份当前存档后开启新人生。</small></span></button>
       </div>
       <div class="main-actions"><button class="ghost-btn" data-action="back-main">返回</button></div>
     </article>`;
@@ -18419,7 +18436,7 @@ function eventView(event) {
           options.length
             ? options.map(({ child, index }) => `<button class="choice-btn ${sceneInteraction ? "scene-choice" : ""} ${official || careerCase ? "official-choice" : ""}" data-choice="${index}" ${child.disabled ? "disabled" : ""}>
               <span>${escapeHtml(child.title || "继续")}</span>
-              ${(official || familyStory || careerCase || fortuneEvent || darkEvent || prisonEvent || culturalEvent || worldEvent || femaleSchoolEvent || clanEvent || regionalEvent || fateThread || childLifeEvent || npcRequest) && child.note ? `<small>${escapeHtml(child.note)}</small>` : ""}
+              ${(official || familyStory || careerCase || fortuneEvent || darkEvent || prisonEvent || culturalEvent || worldEvent || femaleSchoolEvent || clanEvent || regionalEvent || fateThread || childLifeEvent || npcRequest || event.kind === "scholarStory") && child.note ? `<small>${escapeHtml(child.note)}</small>` : ""}
             </button>`).join("")
             : `<button class="primary-btn" data-action="finish-event">继续</button>`
         }
@@ -18538,6 +18555,7 @@ function historyPanel() {
   const ambition = normalizeAmbition(state.ambition);
   const ambitionDef = ambitionDefinition(ambition?.id);
   const activeThreads = normalizeThreads(state.threads).filter((item) => item.status === "active");
+  const closedThreads = normalizeThreads(state.threads).filter((item) => item.sourceId && item.status !== "active").slice(0, 8);
   return `
     <section class="panel-content">
       <h2>命册</h2>
@@ -18547,6 +18565,7 @@ function historyPanel() {
       </div>
       ${ambitionDef ? `<section class="history-feature"><strong>人生志向 · ${escapeHtml(ambitionDef.title)}</strong><small>${ambition.completed ? "三重志业皆成" : `已完成 ${ambition.stage}/3 · 当前“${escapeHtml(ambitionDef.stages[ambition.stage]?.title || "收束余生")}”`}</small></section>` : ""}
       ${activeThreads.length ? `<section class="thread-preview"><div class="section-title"><h2>未了之事</h2><span>会在往后流年找上门，也可能由继承人接过</span></div>${activeThreads.map((item) => `<article class="record-item thread-item"><strong>${icon(THREAD_KINDS[item.kind].icon, item.title)}${escapeHtml(item.title)}</strong><p>${escapeHtml(item.summary)} · ${item.dueYear <= state.year ? "因果已到" : `${item.dueYear - state.year}年后或有回响`}${item.inherited ? " · 先人遗事" : ""}</p></article>`).join("")}</section>` : ""}
+      ${closedThreads.length ? `<section class="thread-preview"><div class="section-title"><h2>往事回响</h2><span>当年的选择，后来的结局</span></div>${closedThreads.map((item) => `<article class="record-item thread-item"><strong>${escapeHtml(item.title)}</strong><p>${escapeHtml(item.summary)}</p><small>结局：${escapeHtml(item.outcome)}${item.inherited ? " · 由后人接续" : ""}</small></article>`).join("")}</section>` : ""}
       <div class="record-list">${state.log.map(logItem).join("") || `<p class="empty-note">暂无记录</p>`}</div>
     </section>`;
 }
@@ -18816,20 +18835,17 @@ function finishOnboarding({ advance = false } = {}) {
 app.addEventListener("click", (event) => {
   const button = event.target.closest("button");
   if (!button) return;
+  if (button.closest("#save-status-notice")) return;
+  if (button.dataset.action === "toggle-tools") {
+    view.toolsOpen = !view.toolsOpen;
+    render();
+    app.querySelector('[data-action="toggle-tools"]')?.focus({ preventScroll: true });
+    return;
+  }
+  view.toolsOpen = false;
 
   if (button.dataset.action === "continue-save") {
-    if (!state) {
-      const meta = loadSlotMeta();
-      const index = meta
-        .map((info, slot) => (info ? { ...info, slot } : null))
-        .filter(Boolean)
-        .sort((a, b) => Number(b.timestamp || 0) - Number(a.timestamp || 0))[0]?.slot;
-      if (Number.isFinite(index)) {
-        state = loadSave(index);
-        currentSlot = index;
-        if (state) state.saveSlot = index;
-      }
-    }
+    if (!state) state = loadCurrentSave();
     view.screen = "game";
     view.page = "save-manager";
     render();
@@ -18904,27 +18920,72 @@ app.addEventListener("click", (event) => {
     }
     return;
   }
+  if (button.dataset.action === "cancel-save-import") {
+    pendingSaveImport = null;
+    render();
+    return;
+  }
+  if (button.dataset.action === "confirm-save-import") {
+    const selected = document.getElementById("save-import-target")?.value;
+    if (!pendingSaveImport || selected === "" || selected === undefined) {
+      alert("请先选择目标存档位，现有存档尚未更改。");
+      return;
+    }
+    const slot = Number(selected);
+    pendingSaveImport.targetSlot = slot;
+    const existing = loadSlotMeta()[slot];
+    if (existing && !confirm(`将导入存档写入存档位 ${slot + 1}，覆盖「${existing.name}」？覆盖前会保留一份可恢复的备份。`)) return;
+    const imported = pendingSaveImport.state;
+    const isCurrent = currentSlot === slot;
+    if (!writeSaveSlot(slot, imported, { backup: true, activate: isCurrent })) return;
+    if (isCurrent) {
+      state = imported;
+      view.overlay = state.onboarding?.seen ? (state.pendingSurprise ? "surprise" : "") : "onboarding";
+    }
+    pendingSaveImport = null;
+    updateSaveNotice();
+    render();
+    return;
+  }
   if (button.dataset.saveSlot !== undefined && button.dataset.saveAction) {
     const slot = Number(button.dataset.saveSlot);
     const action = button.dataset.saveAction;
     if (action === "overwrite" || action === "save-here") {
+      const existing = loadSlotMeta()[slot];
+      if (existing && !confirm(`将当前人生保存到存档位 ${slot + 1}，覆盖「${existing.name}」？覆盖前会保留一份可恢复的备份。`)) return;
+      if (!writeSaveSlot(slot, state, { backup: true, activate: true })) return;
       currentSlot = slot;
-      if (state) state.saveSlot = slot;
-      save();
+      updateSaveNotice();
       render();
       return;
     }
     if (action === "load") {
+      if ((saveError || currentSlot < 0) && state && !confirm("当前页面可能有未保存的进度。建议先导出；仍要读取另一份存档吗？")) return;
       const loaded = loadSave(slot);
       if (loaded) {
         state = loaded;
         currentSlot = slot;
         state.saveSlot = slot;
+        saveError = "";
+        rememberActiveSlot(slot);
         view.screen = "game";
         view.page = "main";
         view.overlay = state.onboarding?.seen ? (state.pendingSurprise ? "surprise" : "") : "onboarding";
         render();
       }
+      return;
+    }
+    if (action === "restore-backup") {
+      const backup = loadSlotBackup(slot);
+      if (!backup || !confirm(`恢复「${backup.state.name}」${Math.round(backup.state.age)}岁时的备份到存档位 ${slot + 1}？该槽现有存档会成为新的备份。请先导出页面上尚未保存的进度。`)) return;
+      const isCurrent = currentSlot === slot;
+      if (!writeSaveSlot(slot, backup.state, { backup: true, activate: isCurrent })) return;
+      if (isCurrent) {
+        state = backup.state;
+        view.overlay = state.onboarding?.seen ? (state.pendingSurprise ? "surprise" : "") : "onboarding";
+      }
+      updateSaveNotice();
+      render();
       return;
     }
     if (action === "export-slot") {
@@ -18941,9 +19002,9 @@ app.addEventListener("click", (event) => {
       return;
     }
     if (action === "delete") {
-      localStorage.removeItem(slotKey(slot));
-      clearSlotMeta(slot);
-      if (currentSlot === slot) currentSlot = -1;
+      if (!confirm(`删除存档位 ${slot + 1}？会保留一份可恢复的备份。`)) return;
+      if (!deleteSaveSlot(slot)) return;
+      updateSaveNotice();
       render();
       return;
     }
@@ -18959,8 +19020,12 @@ app.addEventListener("click", (event) => {
     return;
   }
   if (button.dataset.action === "new-life") {
-    clearSave();
+    if (!confirm("结束当前人生并重新开始？当前存档会保留一份备份；尚未保存的进度请先导出。")) return;
+    if (!clearSave()) return;
     state = null;
+    saveError = "";
+    pendingSaveImport = null;
+    updateSaveNotice();
     draft = newDraft(draft?.gender);
     view = { screen: "create", page: "main", tab: "overview", activityId: "", placeId: "", overlay: "" };
     render();
@@ -19196,40 +19261,38 @@ app.addEventListener("input", (event) => {
   if (target.dataset.touhuControl) setTouhuControl(target.dataset.touhuControl, target.value);
 });
 
+document.addEventListener("click", (event) => {
+  const button = event.target.closest("#save-status-notice button");
+  if (!button) return;
+  if (button.dataset.action === "export") return exportSave();
+  if (button.dataset.action === "retry-save") return save();
+  if (button.dataset.action === "open-save-manager") {
+    view.screen = "game";
+    view.page = "save-manager";
+    view.overlay = "";
+    render();
+  }
+});
+
 document.addEventListener("change", (event) => {
   const input = event.target;
   if (input.id !== "save-import-input" || !input.files?.length) return;
   const file = input.files[0];
+  const requestedSlot = input.dataset.importTargetSlot;
   const reader = new FileReader();
   reader.onload = (e) => {
     try {
       const imported = JSON.parse(e.target.result);
-      if (!imported.name || !imported.stats) { alert("无效的存档文件"); return; }
+      if (!imported || typeof imported !== "object" || Array.isArray(imported) || typeof imported.name !== "string" || !imported.name || !imported.stats || typeof imported.stats !== "object" || Array.isArray(imported.stats)) { alert("无效的存档文件"); return; }
       const importedState = normalizeState(imported);
-      const targetSlot = input.dataset.importTargetSlot !== "" ? Number(input.dataset.importTargetSlot) : -1;
-      if (targetSlot >= 0 && targetSlot < MAX_SLOTS) {
-        importedState.saveSlot = targetSlot;
-        localStorage.setItem(slotKey(targetSlot), JSON.stringify(importedState));
-        updateSlotMeta(targetSlot, importedState);
-        if (view.page === "save-manager") render();
-        else {
-          state = importedState;
-          currentSlot = targetSlot;
-          view.screen = "game";
-          view.page = "main";
-          view.overlay = state.onboarding?.seen ? (state.pendingSurprise ? "surprise" : "") : "onboarding";
-          render();
-        }
-      } else {
-        const meta = loadSlotMeta();
-        const slot = firstEmptySlot(meta);
-        importedState.saveSlot = slot;
-        localStorage.setItem(slotKey(slot), JSON.stringify(importedState));
-        updateSlotMeta(slot, importedState);
-        if (view.page === "save-manager") render();
-      }
+      const targetSlot = requestedSlot !== "" && requestedSlot !== undefined ? Number(requestedSlot) : firstEmptySlot();
+      pendingSaveImport = { state: importedState, targetSlot: Number.isInteger(targetSlot) && targetSlot >= 0 && targetSlot < MAX_SLOTS ? targetSlot : -1 };
+      view.page = "save-manager";
+      view.overlay = "";
+      render();
     } catch { alert("导入失败：存档文件格式有误"); }
   };
+  reader.onerror = () => alert("无法读取存档文件，请重新选择。");
   reader.readAsText(file);
   input.value = "";
   input.dataset.importTargetSlot = "";
