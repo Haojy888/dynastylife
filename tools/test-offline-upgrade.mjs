@@ -132,6 +132,9 @@ assert.ok(cacheStores.has("unrelated-app-cache"), "Activation removed another ap
 assert.equal(await nextWorker.request("/", { navigate: true }), "B:/index.html");
 for (const path of corePaths) assert.equal(await nextWorker.request(path), `B:${path}`);
 assert.equal(await nextWorker.request("/assets/region-qingping.webp"), "B:/assets/region-qingping.webp");
+for (const path of ["/assets/event-grain-road.webp", "/assets/event-dispensary.webp"]) {
+  assert.equal(await nextWorker.request(path), `B:${path}`, "New career story scenes must load on an offline first visit");
+}
 
 online = true;
 assert.equal(await nextWorker.request("/assets/visited-image.webp"), "B:/assets/visited-image.webp");

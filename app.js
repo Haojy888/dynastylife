@@ -923,6 +923,8 @@ const EVENT_SCENE_ART = {
   study: { src: "assets/event-study.webp", label: "寒窗问学", focus: "65% 50%" },
   official: { src: "assets/event-official.webp", label: "官署公堂", focus: "64% 50%" },
   career: { src: "assets/event-career.webp", label: "市井百业", focus: "61% 50%" },
+  grainRoad: { src: "assets/event-grain-road.webp", label: "一线粮途", focus: "57% 50%" },
+  dispensary: { src: "assets/event-dispensary.webp", label: "药灯未灭", focus: "43% 50%" },
   culture: { src: "assets/event-culture.webp", label: "华夏岁时", focus: "56% 50%" },
   prison: { src: "assets/event-prison.webp", label: "铁窗流年", focus: "68% 50%" },
   jianghu: { src: "assets/event-jianghu.webp", label: "江湖暗门", focus: "66% 50%" },
@@ -1640,6 +1642,7 @@ const CARAVAN_EVENTS = [
   },
 ];
 
+const ASSET_CONDITION_MAX = 120;
 const PROPERTY_CATALOG = [
   { name: "薄田三亩", price: 180, income: 12, icon: "Agriculture", desc: "岁末可得些许租谷，胜在稳当。" },
   { name: "水田一顷", price: 260, income: 20, icon: "PaddyField", desc: "近渠有水，丰年收租更可观。" },
@@ -1678,6 +1681,11 @@ const REGION_PROFILES = {
   kunbei: { epithet: "朔风雄城", industry: "马市、皮货与军需", custom: "北地尚武直爽，真本事比漂亮话更容易赢得尊敬。", settleCost: 760, incident: ["马市疫惊", "朔风马市忽有良驹倒毙，军府怀疑疫病，商贩却怕封市。"], factions: [{ id: "horse", name: "朔风马帮", type: "行会", stat: "physique", note: "驯马人、皮货商与向导组成的边地联盟。" }, { id: "frontier", name: "昆北军府", type: "军府", stat: "knowledge", note: "负责边防、军需与互市，赏罚分明而戒心很重。" }] },
   sudi: { epithet: "烟雨画桥", industry: "丝坊、园林与精工", custom: "水乡讲究体面与细节，手艺、审美和温和处世都能换来口碑。", settleCost: 880, incident: ["丝坊压价", "外地大商压低新丝收价，小织户想联名停机抗议。"], factions: [{ id: "weavers", name: "苏堤丝坊", type: "行会", stat: "looks", note: "织户、绣娘与绸商共同维持水乡最重要的生计。" }, { id: "garden", name: "园林雅社", type: "士林", stat: "knowledge", note: "园主、画师与文士以诗画往来，也左右地方风雅名声。" }] },
   qingya: { epithet: "云顶药谷", industry: "药材、香火与山货", custom: "山中人敬畏自然与因果，救命的真本领最能换来信任。", settleCost: 460, incident: ["药谷争采", "一味稀有药材忽然被抢采，寺僧、药农与外来商贩争执不休。"], factions: [{ id: "temple", name: "云顶古寺", type: "寺院", stat: "virtue", note: "维持山路、施药与香火秩序，在乡民中颇有威望。" }, { id: "herbalists", name: "青崖药户", type: "行会", stat: "knowledge", note: "药农、采山人与郎中共享山中物候与药路。" }] },
+};
+
+const REGIONAL_LEGACY_DEFS = {
+  granary: { name: "义仓", icon: "CashBox", benefit: "每年在此停留时，口粮折银 +8 铜钱" },
+  dispensary: { name: "药庐", icon: "MedicineBag", benefit: "每年在此停留时，义诊调养使体魄 +1（上限 100）" },
 };
 
 const REGION_SCENE_ART = {
@@ -2645,6 +2653,78 @@ const CAREER_STORY_PACKS = Object.freeze({
           { id: "buy-inspector", title: "托权门压案", note: "花费 220 铜钱；暂保官位，留下更重后患", route: "power", score: -1, cost: 220, effects: { favorability: 4, virtue: -5 }, official: { merit: 12, clean: -6, corruption: 12 }, text: "银钱和名帖赶在巡按之前进了驿馆。案卷被压回箱底，你的名字也写进另一册不能见光的账。" },
         ],
       },
+    ],
+  },
+  "grain-road": {
+    id: "grain-road", careerKind: "merchant", title: "一线粮途", icon: "CashBox",
+    summary: "一条灾年粮路，一纸不敢轻许的供粮约。四年里，你要在周转、船工生计与城中饥民之间做选择。",
+    routeLabels: { supply: "保供", trust: "同舟", profit: "逐利" },
+    actor: { name: "柴渡", gender: "male", occupation: "粮船领队", disposition: "刚直", ambition: "守住粮路" },
+    stages: [
+      { id: "broken-road", title: "断路上的第一船", content: "上游歉收，城中米铺排起长队。领队{partner}带来最后一份船期：若现在垫资，还能抢在浅水期前运粮。大粮行也递来预单，条件是整船只卖给它。", choices: [
+        { id: "advance-grain", title: "垫资保住平价粮", note: "先压下本钱，承诺分售街坊；留下保供粮约", cost: 180, route: "supply", score: 2, flags: ["public-promise"], livelihood: { resource: 18, readiness: 6 }, effects: { virtue: 2 }, text: "你垫下第一船粮钱，把限价与按户分售写进粮约。{partner}提醒你：守住这句话，往后也许不止赔这一笔。" },
+        { id: "pool-shares", title: "与小铺共同出资", note: "让出一部分利润和话语权，换来共担风险的同业", cost: 80, route: "trust", score: 2, flags: ["pooled-shares"], actorAffection: 5, livelihood: { resource: 10, reputation: 4 }, text: "你把船份拆给几家小铺，约定亏损也按份承担。{partner}拿出自己的积蓄，成了与你同船的人。" },
+        { id: "exclusive-order", title: "接下豪商包船单", note: "预收货款 120 铜钱；换来周转，也把货路让给单一买家", gain: 120, route: "profit", score: 0, flags: ["exclusive-contract"], livelihood: { resource: -8, risk: 8 }, text: "大粮行先付预款，要求你不得另卖。船能开了，城中小铺却再也分不到这批货。{partner}把契书折好，没有附和你的笑。" },
+      ] },
+      { id: "water-debt", title: "水涨后的工钱", content: "第二年，急涨的河水泡坏半船粮，船工又受了伤。{partner}把欠薪名单摆在你面前；买家只认交期，小铺的本钱也还压在船上。", choices: [
+        { id: "rescue-crew", title: "先救船工，补足工钱", note: "承担救治与欠薪，少抢一批货；体魄 -3", cost: 120, route: "supply", score: 2, flags: ["crew-rescued"], actorAffection: 10, effects: { physique: -3, virtue: 3 }, livelihood: { resource: -6, risk: -4 }, text: "你先把伤者送上岸，再补足工钱。损失没能挽回，船工却愿留下来陪你重整这条粮路。" },
+        { id: "open-losses", title: "公开损失，重议各家分担", note: "需先前保供粮约或合股约；让各家看见真实亏空", cost: 60, route: "trust", score: 2, requiresAny: ["public-promise", "pooled-shares"], flags: ["open-ledger"], actorAffection: 5, livelihood: { readiness: 10 }, text: "你让{partner}逐项说明货损，没有把自己的失算藏起来。小铺不肯独吞损失，也没有转身离开，大家重新写下分担的数目。" },
+        { id: "sell-damaged", title: "混售受潮粮，先把账做平", note: "消耗存货 8，收回 180 铜钱；商誉与德行受损，买家会追问", gain: 180, route: "profit", score: -1, minLivelihood: { resource: 8 }, flags: ["adulterated-grain"], actorAffection: -12, effects: { virtue: -5 }, livelihood: { resource: -8, reputation: -10, risk: 12 }, world: { "local.sentiment": -3 }, text: "你把受潮粮掺进好粮交货，账面终于好看了。{partner}把一袋坏米单独留在库角，问你将来打算怎样向吃到它的人解释。" },
+        { id: "defer-wages", title: "停航认亏，逐户说明延期", note: "不花钱，也不再卖货；先保留旧账，承受船工失望与商险上升", route: "trust", score: 0, actorAffection: -7, flags: ["wages-deferred"], effects: { mood: -4 }, livelihood: { risk: 7 }, text: "你拿不出足够现钱，只能停船，把亏损与欠薪明白交给每户船工。{partner}没有替你说好话，却仍留下了核对旧账的名单。" },
+      ] },
+      { id: "hungry-city", title: "城门前的秤", content: "第三年，米价再涨。城外的人拿着旧粮约等你开仓，豪商却愿出高价包走现货。{partner}守着秤，一边是能救急的现钱，一边是过去两年积下的承诺。", choices: [
+        { id: "fair-ration", title: "按户平粜，兑现粮约", note: "需保供粮约或救过船工，且存货至少 15；消耗存货 15", route: "supply", score: 2, requiresAny: ["public-promise", "crew-rescued"], minLivelihood: { resource: 15 }, flags: ["fair-ration"], livelihood: { resource: -15, reputation: 8 }, world: { "local.grainPrice": -8, "local.sentiment": 6 }, text: "你把每日份额贴在仓门，先让一户户人家买到口粮。赚得不多，但粮船终于不只是你的一门生意。" },
+        { id: "share-loss", title: "赔清坏粮，重立供货约", note: "需合股约或公开过亏损；补偿买家，留下可共同守住的价", cost: 80, route: "trust", score: 2, requiresAny: ["pooled-shares", "open-ledger"], flags: ["shared-loss", "repaid-losses"], actorAffection: 8, livelihood: { readiness: 8, reputation: 5 }, text: "你把该赔的赔清，承认自己经手的每一笔亏损。几家小铺与{partner}重新签约，这回连坏粮退赔和灾年限价都写了进去。" },
+        { id: "premium-delivery", title: "照豪商高价交货", note: "收入 240 铜钱、消耗存货 10；街坊要继续承受高粮价", gain: 240, route: "profit", score: 0, minLivelihood: { resource: 10 }, flags: ["premium-route"], livelihood: { resource: -10, risk: 6 }, world: { "local.grainPrice": 5, "local.sentiment": -3 }, text: "你将整批粮送进豪商的仓门。账上多了现钱，沿街米铺却又换了一次更高的价牌。" },
+        { id: "admit-delay", title: "承认无粮可交，逐户兑回旧票", note: "无须现钱或存货；留待后续结算，商誉 -4、心情 -3", route: "trust", score: 0, flags: ["delayed-supply"], effects: { mood: -3 }, livelihood: { reputation: -4 }, text: "你没有给空仓挂上有粮的牌子，而是把不能兑现的份额逐户登记，承认这次失约。街坊失望而去，旧票仍得由你往后交代。" },
+      ] },
+      { id: "lasting-charter", title: "丰年重写船契", content: "第四年终于丰收。你可以把粮路变成共同的生计，也可以趁声势卖个好价。{partner}带来这些年留下的粮约、工钱条和退赔单：过去的选择，都在今天的契书里。", choices: [
+        { id: "public-charter", title: "立常年平粜船约", note: "需完成平粜或重立供货约；为下一次荒年留船留粮", cost: 100, route: "supply", score: 2, requiresAny: ["fair-ration", "shared-loss"], flags: ["public-charter"], livelihood: { readiness: 8 }, world: { "local.security": 3 }, text: "你把灾年限价、船工分成和应急份额写进长约。船路仍要挣钱，但不再只由一位豪商决定城里人什么时候能吃上饭。" },
+        { id: "workers-share", title: "把船份交给共患难的人", note: "需救过船工或公开过亏损；偿还旧损，分出一部分船份", cost: 120, route: "trust", score: 2, requiresAny: ["crew-rescued", "open-ledger"], flags: ["workers-share", "repaid-losses"], actorAffection: 8, livelihood: { reputation: 6 }, text: "你与{partner}核清最后一张工钱条，把船份交给留下的人。往后利润要分薄，风浪也不再只压在你一人肩上。" },
+        { id: "sell-route", title: "卖断粮路，收现钱离场", note: "收入 220 铜钱；谁来续供、如何定价，将由买家决定", gain: 220, route: "profit", score: 0, flags: ["sold-route"], actorAffection: -8, text: "买家接过船契，旧日限价被划去。你拿到一笔可观的现钱，{partner}却没有在交割宴上落座。" },
+      ] },
+    ],
+    endings: [
+      { title: "转手粮路", requiresAll: ["sold-route"], text: "你把多年经营变成了一次交割。前些年的照应没有被抹去，但从今以后，船工和小铺不能再靠你的承诺安排来年的生计。", money: 100, experience: 75, actorAffection: -8, livelihood: { reputation: -10, risk: 10 }, world: { "local.grainPrice": 4 } },
+      { title: "财聚人散", requiresAll: ["adulterated-grain"], excludesAny: ["repaid-losses"], text: "船契与银钱都算得清，坏粮和失约却算不平。粮路仍在挣钱，最早与你共事的人已不愿再为你作保。", money: 100, experience: 65, actorAffection: -10, livelihood: { reputation: -14, risk: 16 }, world: { "local.grainPrice": 4 } },
+      { title: "粮路长明", requiresAll: ["fair-ration", "public-charter"], minScore: 6, text: "荒年许下的粮约撑到了丰年。船工、小铺与街坊共同留下这条常年粮路，你的商号开始因守信而被记住。", money: 160, experience: 150, actorAffection: 8, livelihood: { reputation: 20, readiness: 10, risk: -10 }, world: { "local.grainPrice": -8, "local.sentiment": 8 } },
+      { title: "同舟商约", requiresAll: ["workers-share"], minRoutes: { trust: 2 }, text: "你没有独占最厚的利润，也没有独吞所有风浪。船工与小铺终于成了真正的合伙人，遇事肯先与你商量。", money: 120, experience: 130, actorAffection: 10, livelihood: { reputation: 14, readiness: 12, risk: -6 } },
+      { title: "薄利存身", text: "你把这几年做成了一门能继续经营的生意，几次妥协也留在旧账上。没有一诺千金的传奇，却还保得住铺门与伙计的饭碗。", money: 60, experience: 85, livelihood: { reputation: 5, readiness: 6 } },
+    ],
+  },
+  "epidemic-dispensary": {
+    id: "epidemic-dispensary", careerKind: "medicine", title: "药灯未灭", icon: "MedicineBag",
+    summary: "疫病、断药与一批来历不明的便宜药材，让一间小药坊走过四年。救过谁、隐瞒过什么，都会回到灯下。",
+    routeLabels: { care: "济人", evidence: "求证", profit: "保铺" },
+    actor: { name: "林芷", gender: "female", occupation: "药坊药师", disposition: "谨慎", ambition: "行医济人" },
+    stages: [
+      { id: "first-fever", title: "门外第一盏病灯", content: "街坊接连发热，药坊门口亮起等候的灯。药师{partner}发现新进药材有几包标签模糊；与此同时，富户愿预付诊金，请你这一季只替他们留药。", choices: [
+        { id: "retain-samples", title: "逐批验药，先留样本", note: "先花本钱查清药源；取得后续追查所需的留样", cost: 100, route: "evidence", score: 2, flags: ["retained-samples"], actorAffection: 5, livelihood: { resource: 16, readiness: 8 }, text: "你让{partner}逐批登记来处，留下样本，不急着把满柜药材都用出去。门外的人催得急，你却知道出了事必须说得清。" },
+        { id: "triage-clinic", title: "设临时诊棚，先分轻重", note: "花钱搭棚、消耗药材 6；让危急病人先获得照应", cost: 70, route: "care", score: 2, flags: ["triage-clinic"], effects: { virtue: 3 }, livelihood: { resource: -6 }, world: { "local.epidemic": -3 }, text: "你与{partner}分开接诊和取药的队伍，把轻重病情逐一记下。药坊赚不了多少，门前却少了些无处求助的人。" },
+        { id: "private-retainer", title: "先接富户包诊，保住药坊", note: "预收 160 铜钱；药材先供包诊人家，街坊只能另寻门路", gain: 160, route: "profit", score: 0, flags: ["private-retainer"], livelihood: { resource: 4, risk: 7, reputation: -4 }, text: "你先收下包诊银，暂时稳住药坊用度。{partner}把留给富户的药另放一柜，也问你什么时候能再接回那些穷病人。" },
+      ] },
+      { id: "suspect-batch", title: "好转后的反复", content: "第二年，有几位病人的病势反复。一名药商带来便宜得反常的新货，保证比旧药见效更快。{partner}翻出去年留下的记录，请你在继续接诊前先作决定。", choices: [
+        { id: "recall-batch", title: "停用疑药，追查整批来路", note: "需保留过样本；另补药材，承担退换损失", cost: 80, route: "evidence", score: 2, requiresAny: ["retained-samples"], flags: ["recalled-batch"], actorAffection: 7, livelihood: { resource: -8, readiness: 14 }, world: { "local.epidemic": -4 }, text: "你将留样与进货单逐项核对，停用来历不清的药材，再逐户通知复诊。{partner}亲自守着封好的药柜，直到供货人说明来处。" },
+        { id: "visit-patients", title: "挨户复诊，记下每次变化", note: "另备出诊用度，体魄 -4；获得连续病程记录", cost: 50, route: "care", score: 2, flags: ["followup-routes"], actorAffection: 5, effects: { physique: -4 }, livelihood: { readiness: 7, risk: 4 }, world: { "local.epidemic": -3 }, text: "你和{partner}沿着去年的病人名册挨户问诊，不把一时好转当作痊愈。夜路很长，册上终于有了病势反复前后的完整记录。" },
+        { id: "unchecked-batch", title: "收下药商新货，省下周转钱", note: "获得 140 铜钱返利；缺少核验，医名与病患状况会受损", gain: 140, route: "profit", score: -1, flags: ["unchecked-batch"], actorAffection: -12, effects: { virtue: -5 }, livelihood: { readiness: -6, risk: 12, reputation: -6 }, world: { "local.epidemic": 4 }, text: "你听信保证，把没有核清来源的新货放进药柜。账面轻松了几分，接连送回来的问诊条却让{partner}再也睡不踏实。" },
+      ] },
+      { id: "empty-cabinet", title: "断药的长街", content: "第三年，外埠药路断了，街坊的求医灯仍亮着。{partner}带来几家药坊的邀约：共享药材和记录能救急，却也意味着别人会看见你过去的失手。", choices: [
+        { id: "shared-dispensary", title: "合开义药柜，轮流接诊", note: "需设过诊棚或挨户复诊；药材至少 12，消耗药材 12", cost: 140, route: "care", score: 2, requiresAny: ["triage-clinic", "followup-routes"], minLivelihood: { resource: 12 }, flags: ["shared-dispensary"], livelihood: { resource: -12, reputation: 7 }, world: { "local.epidemic": -6, "local.sentiment": 4 }, text: "你与几家药坊把存药合到一处，约定谁都不能先给自家富客留份。{partner}守了第一个夜班，长街终于不必只等一扇门开。" },
+        { id: "share-casebook", title: "公开病程，联合追查药源", note: "需留样、召回记录或复诊记录；同业会看见失误，也能一起纠正", cost: 60, route: "evidence", score: 2, requiresAny: ["retained-samples", "recalled-batch", "followup-routes"], flags: ["shared-casebook"], actorAffection: 6, livelihood: { readiness: 10 }, world: { "local.epidemic": -4 }, text: "你让{partner}把病程、药源和失败的处置都列在同一册里。同行起初议论纷纷，后来有人拿来相同的疑例，线索终于接上。" },
+        { id: "hide-records", title: "守住药源和诊册，独供熟客", note: "收入 220 铜钱；眼前能维持，别家药坊仍要各自摸索", gain: 220, route: "profit", score: 0, flags: ["hidden-records"], actorAffection: -6, livelihood: { reputation: -8, risk: 5 }, text: "你锁起诊册，只接熟客。药坊没有断炊，巷口却有越来越多病人经过你的门，继续寻找愿意收治的人。" },
+      ] },
+      { id: "lamps-after-rain", title: "雨歇后的问诊簿", content: "第四年，疫势渐退，乡里请各家药坊交出这一段日子的记录。{partner}把厚厚的簿册推到灯下：要留下可以被后来人检查的经验，还是只留下好看的招牌？", choices: [
+        { id: "open-records", title: "公开全部医案，也认下失误", note: "需联合病程册或召回记录；保留真实证据，接受同业复核", cost: 80, route: "evidence", score: 2, requiresAny: ["shared-casebook", "recalled-batch"], flags: ["public-records"], actorAffection: 8, effects: { virtue: 4 }, livelihood: { readiness: 8 }, text: "你没有删去无效的处置和用错的药批，把所有能查证的记录都留了下来。{partner}在最后一页签名：愿往后的人少走我们走过的弯路。" },
+        { id: "endow-clinic", title: "把诊棚留作常年义诊", note: "需合开药柜或挨户复诊；留下专款，让贫病者以后仍有门可叩", cost: 120, route: "care", score: 2, requiresAny: ["shared-dispensary", "followup-routes"], flags: ["endowed-clinic"], actorAffection: 8, livelihood: { reputation: 6 }, text: "你与{partner}约定，疫事过去也不拆掉那盏义诊灯。专款不算厚，却能让后来无钱求医的人先坐下再说。" },
+        { id: "private-seal", title: "封存旧簿，只保当下招牌", note: "收到熟客酬谢 200 铜钱；疑问没有消失，旧药批仍可能损伤医名", gain: 200, route: "profit", score: 0, flags: ["private-seal"], actorAffection: -8, livelihood: { reputation: -8 }, text: "你把旧簿锁回柜底，拿到熟客送来的银封。门前招牌擦得很亮，那些没得到答复的家属却没有再来道谢。" },
+      ] },
+    ],
+    endings: [
+      { title: "招牌下的隐痛", requiresAny: ["private-seal", "unchecked-batch"], excludesAny: ["public-records"], text: "药坊保住了银钱，没核清的药源和不肯公开的失误却留在病人家中。招牌越亮，你越难回答旧日的追问。", money: 80, experience: 60, actorAffection: -10, livelihood: { reputation: -16, risk: 15 }, world: { "local.sentiment": -5 } },
+      { title: "医案传灯", requiresAll: ["public-records", "shared-casebook", "recalled-batch"], minScore: 6, text: "留样、召回与连续医案合成了一册经得起复核的记录。它没有许诺包治百病，却让同业能查错、纠错，你的医名由此有了实据。", money: 120, experience: 155, actorAffection: 10, livelihood: { reputation: 22, readiness: 14, risk: -8 }, world: { "local.epidemic": -8 } },
+      { title: "认过重开", requiresAll: ["public-records", "unchecked-batch"], text: "你公开承认那批未核验的药和自己的失算。医名没有立即恢复，但病家得到解释，同业也愿陪你从头核清每一道药源。", experience: 95, actorAffection: 5, livelihood: { reputation: 5, readiness: 12, risk: -8 }, world: { "local.epidemic": -4 } },
+      { title: "一巷安灯", requiresAll: ["endowed-clinic", "shared-dispensary"], minRoutes: { care: 2 }, text: "疫势过去，长街的义诊灯仍没有灭。你留下的不只是一间药坊，还有愿意轮值、共享药材与照看病家的同业。", money: 80, experience: 135, actorAffection: 10, livelihood: { reputation: 18, risk: -6 }, world: { "local.epidemic": -7, "local.sentiment": 6 } },
+      { title: "药坊仍开", text: "你带着几处遗憾撑过这段疫事，药坊得以继续开门。诊册里的不明处尚未全解，往后仍须认真对待每一次复诊。", money: 50, experience: 80, livelihood: { reputation: 4, readiness: 6 } },
     ],
   },
 });
@@ -3790,6 +3870,7 @@ function createRegionalState(residenceId = "qingping") {
       lastActionYear: -1,
       lastEventYear: -1,
       settled: destination.id === validResidence,
+      legacies: [],
     }])),
     alliances: [],
     chronicle: [],
@@ -3805,6 +3886,16 @@ function normalizeRegionalState(source, location = "清平县") {
   const regions = {};
   for (const destination of TRAVEL_DESTINATIONS) {
     const item = base.regions?.[destination.id] && typeof base.regions[destination.id] === "object" ? base.regions[destination.id] : {};
+    const legacies = [];
+    for (const kind of Object.keys(REGIONAL_LEGACY_DEFS)) {
+      const legacy = Array.isArray(item.legacies) ? item.legacies.find((entry) => entry?.kind === kind) : null;
+      if (legacy) legacies.push({
+        kind,
+        founderName: String(legacy.founderName || "先人"),
+        founderGeneration: Math.max(1, Math.round(Number(legacy.founderGeneration) || 1)),
+        foundedYear: Math.max(0, Math.round(Number(legacy.foundedYear) || 0)),
+      });
+    }
     regions[destination.id] = {
       reputation: clampNumber(item.reputation, 0, 100, destination.id === residenceId ? 18 : 0),
       visits: Math.max(0, Math.round(Number(item.visits) || (destination.id === residenceId ? 1 : 0))),
@@ -3812,6 +3903,7 @@ function normalizeRegionalState(source, location = "清平县") {
       lastActionYear: Number.isFinite(Number(item.lastActionYear)) ? Number(item.lastActionYear) : -1,
       lastEventYear: Number.isFinite(Number(item.lastEventYear)) ? Number(item.lastEventYear) : -1,
       settled: destination.id === residenceId || !!item.settled,
+      legacies,
     };
   }
   const alliances = Array.isArray(base.alliances) ? base.alliances.filter((item) => item && REGION_PROFILES[item.regionId]?.factions.some((faction) => faction.id === item.factionId)).map((item) => ({ regionId: String(item.regionId), factionId: String(item.factionId), year: Number(item.year || 0) })).slice(0, 16) : [];
@@ -3864,6 +3956,27 @@ function regionalStateFor(id = state.regional?.currentId) {
 function recordRegionalChronicle(regionId, title, text) {
   state.regional.chronicle.unshift({ year: state.year, regionId, title, text });
   state.regional.chronicle = state.regional.chronicle.slice(0, 60);
+}
+
+function establishRegionalLegacy(kind, regionId = currentRegionalId()) {
+  const definition = REGIONAL_LEGACY_DEFS[kind];
+  if (!state || !definition || !REGION_PROFILES[regionId]) return "";
+  state.regional = normalizeRegionalState(state.regional, state.location);
+  const region = regionalStateFor(regionId);
+  const destination = travelDestinationByStaticId(regionId);
+  const existing = region.legacies.find((legacy) => legacy.kind === kind);
+  if (existing) return `${destination.name}已有第 ${existing.founderGeneration} 代${existing.founderName}创办的${definition.name}，这份乡里遗产继续留给后人，不会重复兴建。`;
+  const legacy = {
+    kind,
+    founderName: state.name,
+    founderGeneration: Math.max(1, Number(state.lineage?.generation) || 1),
+    foundedYear: state.year,
+  };
+  region.legacies.push(legacy);
+  const text = `${destination.name}建起了${definition.name}，乡里记下第 ${legacy.founderGeneration} 代${legacy.founderName}的名字。${definition.benefit}；后代承业后仍可受益。`;
+  recordRegionalChronicle(regionId, `${definition.name}落成`, text);
+  addLog(`乡里遗产 · ${definition.name}`, text, [{ label: "留给地方", value: `${destination.name}${definition.name}` }]);
+  return text;
 }
 
 function changeRegionalReputation(regionId, amount, deltas = []) {
@@ -3999,16 +4112,25 @@ function normalizeFamilyStories(stories) {
   };
 }
 
+function careerChapterRouteKeys(id) {
+  return Object.keys(CAREER_STORY_PACKS[id]?.routeLabels || { law: "清名", family: "家门", power: "权门" });
+}
+
 function normalizeCareerChapters(source) {
   const item = source && typeof source === "object" ? source : {};
   const active = item.active && CAREER_STORY_PACKS[item.active.id] ? item.active : null;
   return {
     active: active ? {
       id: String(active.id),
-      stage: clampNumber(active.stage, 0, CAREER_STORY_PACKS[active.id].stages.length - 1, 0),
+      careerName: String(active.careerName || ""),
+      actorId: String(active.actorId || ""),
+      actorName: String(active.actorName || ""),
+      regionId: REGION_PROFILES[active.regionId] ? active.regionId : "",
+      originName: String(active.originName || ""),
+      stage: Math.floor(clampNumber(active.stage, 0, CAREER_STORY_PACKS[active.id].stages.length - 1, 0)),
       dueYear: Math.max(0, Math.round(Number(active.dueYear) || 0)),
       score: Number.isFinite(Number(active.score)) ? Number(active.score) : 0,
-      routes: Object.fromEntries(["law", "family", "power"].map((key) => [key, Math.max(0, Math.round(Number(active.routes?.[key]) || 0))])),
+      routes: Object.fromEntries(careerChapterRouteKeys(active.id).map((key) => [key, Math.max(0, Math.round(Number(active.routes?.[key]) || 0))])),
       flags: [...new Set(Array.isArray(active.flags) ? active.flags.map(String).filter(Boolean) : [])].slice(0, 20),
       familyKey: String(active.familyKey || ""),
       history: Array.isArray(active.history) ? active.history.filter((entry) => entry && typeof entry === "object").map((entry) => ({
@@ -4022,8 +4144,13 @@ function normalizeCareerChapters(source) {
     completed: Array.isArray(item.completed) ? item.completed.filter((entry) => entry && CAREER_STORY_PACKS[entry.id]).map((entry) => ({
       id: String(entry.id),
       outcome: String(entry.outcome || "案卷留痕"),
+      careerName: String(entry.careerName || ""),
+      careerKind: String(entry.careerKind || CAREER_STORY_PACKS[entry.id].careerKind),
+      summary: String(entry.summary || ""),
+      regionId: REGION_PROFILES[entry.regionId] ? entry.regionId : "",
+      originName: String(entry.originName || ""),
       year: Math.max(0, Math.round(Number(entry.year) || 0)),
-      routes: Object.fromEntries(["law", "family", "power"].map((key) => [key, Math.max(0, Math.round(Number(entry.routes?.[key]) || 0))])),
+      routes: Object.fromEntries(careerChapterRouteKeys(entry.id).map((key) => [key, Math.max(0, Math.round(Number(entry.routes?.[key]) || 0))])),
       history: Array.isArray(entry.history) ? entry.history.filter((item) => item && typeof item === "object").map((item) => ({ stageId: String(item.stageId || ""), choiceId: String(item.choiceId || ""), title: String(item.title || ""), year: Math.max(0, Math.round(Number(item.year) || 0)) })).slice(-12) : [],
     })).slice(-12) : [],
     lastTriggerYear: Number.isFinite(Number(item.lastTriggerYear)) ? Number(item.lastTriggerYear) : -1,
@@ -7116,6 +7243,7 @@ function settleInRegion(regionId) {
 }
 
 function advanceRegionalYear(deltas = []) {
+  if (!state || state.dead) return;
   state.regional = normalizeRegionalState(state.regional, state.location);
   if (state.regional.lastAnnualYear === state.year) return;
   const residence = regionalStateFor(state.regional.residenceId);
@@ -7126,6 +7254,16 @@ function advanceRegionalYear(deltas = []) {
     region.reputation = clamp(region.reputation + 1);
     region.factionFavor[alliance.factionId] = clampNumber(region.factionFavor[alliance.factionId] + 1, -100, 100, 0);
   }
+  const currentId = currentRegionalId();
+  for (const legacy of regionalStateFor(currentId).legacies) {
+    if (legacy.kind === "granary") {
+      changeStat("money", 8, deltas);
+      addLedger("义仓口粮", 8, `${travelDestinationByStaticId(currentId).name}的义仓供给口粮折银，由第 ${legacy.founderGeneration} 代${legacy.founderName}创办。`);
+    } else if (legacy.kind === "dispensary") {
+      changeStat("physique", 1, deltas);
+    }
+  }
+  // 沿用全地域年度标记，换城或重载都不能在同一年重复领取。
   state.regional.lastAnnualYear = state.year;
   deltas.push({ label: "居地声望", value: residenceAssets >= 2 ? 2 : 1 });
 }
@@ -9038,6 +9176,8 @@ function careerActions() {
     common: [["routine", "做工", "尽一日本分，得些薪钱。"]],
   };
   const actions = (CAREER_ACTION_OVERRIDES[careerName] || maps[kind] || maps.common).map((item) => [...item]);
+  const chapterAction = careerChapterAction();
+  if (chapterAction) actions.push(chapterAction);
   const advanced = careerAdvancedCase(careerName);
   if (advanced) {
     const level = careerProgressFor(careerName).level;
@@ -9285,6 +9425,7 @@ function performCareerAction(type) {
   if (!state.career || state.dead || state.currentEvent || state.eventResult || state.pendingCaravan || state.prisonYears > 0 || state.age < 15) return;
   if (type === "resign") return resignCareer();
   const kind = careerKind();
+  if (type === "case:chapter") return startOrResumeCareerChapter();
   if (String(type || "").startsWith("story:")) return startCareerCase();
   if (kind === "caravan") return performCaravanRoute(String(type || "").replace("route:", "") || "county");
   if (kind === "official") return performOfficialAction(type);
@@ -9334,12 +9475,12 @@ function resignCareer() {
   const progress = careerProgressFor(career.name);
   const deltas = [];
   changeStat("mood", kind === "official" ? -3 : 1, deltas);
+  const interruptedChapter = abandonCareerChapter(kind === "official" ? "辞官中断" : "转业中断");
+  if (interruptedChapter) deltas.push({ label: "长案", value: `${interruptedChapter}中断`, type: "text", negative: true });
   if (kind === "official") {
-    const interruptedChapter = abandonCareerChapter();
     state.official.retired = true;
     recordOfficialPost("辞官");
     changeStat("favorability", -2, deltas);
-    if (interruptedChapter) deltas.push({ label: "长案", value: `${interruptedChapter}中断`, type: "text", negative: true });
   }
   state.careerHistory ||= [];
   state.careerHistory.push({ name: career.name, displayName: name, kind, year: state.year, level: progress.level, reason: kind === "official" ? "辞官" : "辞职" });
@@ -9958,7 +10099,7 @@ function officialDeskPanel() {
 
 function annualAssetIncome() {
   return (state.assets || []).reduce((sum, item) => {
-    const condition = clamp(Number(item.condition ?? 72), 20, 120) / 100;
+    const condition = clamp(Number(item.condition ?? 72), 20, ASSET_CONDITION_MAX) / 100;
     const level = Math.max(1, Number(item.level) || 1);
     const modeFactor = item.mode === "self" ? 1.18 : 0.92;
     const worldFactor = state.dynasty ? clamp(0.72 + state.dynasty.prosperity / 190 + state.dynasty.local.sentiment / 500 - state.dynasty.local.disaster / 240, 0.52, 1.42) : 1;
@@ -9983,7 +10124,7 @@ function assetMarketEvent(deltas = []) {
     ? randInt(Math.max(8, Math.round((asset.income || 20) * 0.5)), Math.max(18, Math.round((asset.income || 20) * 1.5)))
     : -randInt(12, Math.max(24, Math.round((asset.income || 20) * 1.2 * modeRisk)));
   changeStat("money", amount, deltas);
-  asset.condition = clamp(Number(asset.condition ?? 72) + (good ? randInt(-2, 4) : -randInt(5, 14)), 15, 120);
+  asset.condition = clamp(Number(asset.condition ?? 72) + (good ? randInt(-2, 4) : -randInt(5, 14)), 15, ASSET_CONDITION_MAX);
   const title = good ? "家产旺收" : "家产修缮";
   const assetRegion = travelDestinationByStaticId(asset.regionId || regionIdFromLocation(asset.location)).name;
   const text = good ? `${assetRegion}的${displayName}今年行情不错，地方口碑也替你省了几道关节，额外添了一笔进项。` : `${assetRegion}的${displayName}需修缮打点，额外折了一笔钱。`;
@@ -10037,6 +10178,13 @@ function assetDisplayName(asset, index) {
   return `${asset.name}（第${assetInstanceNumber(asset, index)}处）`;
 }
 
+function assetRepairQuote(asset) {
+  const condition = clamp(Number(asset.condition ?? 72), 0, ASSET_CONDITION_MAX);
+  const amount = Math.min(20, ASSET_CONDITION_MAX - condition);
+  const fullCost = Math.max(30, Math.round((asset.income || 20) * 1.6));
+  return { condition, amount, cost: Math.ceil(fullCost * amount / 20) };
+}
+
 function manageAsset(index, action) {
   if (!state || state.dead || state.age < 15 || state.prisonYears > 0) return;
   const asset = state.assets[Number(index)];
@@ -10046,20 +10194,21 @@ function manageAsset(index, action) {
   let title = "家产";
   let text = "";
   if (action === "repair") {
-    const cost = Math.max(30, Math.round((asset.income || 20) * 1.6));
-    if (state.stats.money < cost) return;
+    const { condition, amount, cost } = assetRepairQuote(asset);
+    if (amount <= 0 || state.stats.money < cost) return;
     changeStat("money", -cost, deltas);
-    asset.condition = clamp(Number(asset.condition ?? 72) + randInt(10, 24));
-    addLedger("家产修缮", -cost, `修缮${displayName}。`);
+    asset.condition = condition + amount;
+    deltas.push({ label: "家产状态", value: amount });
+    addLedger("家产修缮", -cost, `修缮${displayName}，状态 ${condition} → ${asset.condition}。`);
     title = "修缮家产";
-    text = `${displayName}修缮一新，日后少些漏损。`;
+    text = `${displayName}修缮一新，状态 ${condition} → ${asset.condition}（上限 ${ASSET_CONDITION_MAX}），花费 ${moneyText(cost)}。`;
   } else if (action === "expand") {
     const cost = Math.max(120, Math.round((asset.price || 200) * 0.38));
     if (state.stats.money < cost) return;
     changeStat("money", -cost, deltas);
     asset.level = Math.max(1, Number(asset.level) || 1) + 1;
     asset.income = Math.round(Number(asset.income || 10) * 1.28 + 8);
-    asset.condition = clamp(Number(asset.condition ?? 70) - randInt(4, 10));
+    asset.condition = clamp(Number(asset.condition ?? 70) - randInt(4, 10), 0, ASSET_CONDITION_MAX);
     addLedger("扩建家产", -cost, `扩建${displayName}。`);
     title = "扩建";
     text = `${displayName}添置扩建，年入涨至 ${moneyText(asset.income)}。`;
@@ -13444,15 +13593,8 @@ function officialCareerActions() {
   const actions = OFFICIAL_AFFAIRS
     .filter((affair) => rank >= affair.minRank)
     .map((affair) => [`affair:${affair.id}`, affair.label, affair.note]);
-  state.careerChapters = normalizeCareerChapters(state.careerChapters);
-  const chapter = state.careerChapters.active;
-  const chapterPack = chapter && CAREER_STORY_PACKS[chapter.id];
-  if (chapterPack) {
-    const stage = chapterPack.stages[chapter.stage];
-    actions.push(["case:chapter", `${chapterPack.title} · ${chapter.stage + 1}/${chapterPack.stages.length}`, chapter.dueYear <= state.year ? `继续“${stage.title}”，此前人物和证据会改变本幕选项。` : `${chapter.dueYear - state.year} 年后进入“${stage.title}”。`]);
-  } else if (!state.careerChapters.completed.some((entry) => entry.id === "granary-ledger")) {
-    actions.push(["case:chapter", "跨年长案 · 仓契疑云", "开启四幕官场—家宅剧情；选择会在来年被人物和案卷重新提起。"]);
-  }
+  const chapterAction = careerChapterAction();
+  if (chapterAction) actions.push(chapterAction);
   actions.push(["case:post", `${office.office}专案`, `处理只属于${office.office}这一官职的高级剧情。`]);
   const cases = officialCasePool();
   actions.push(["case:random", "官场要案", cases.length ? "进入带选择的官场剧情，处理得当可涨政绩，也可能招祸。" : "官阶尚低，暂以日常案牍为主。"]);
@@ -13584,6 +13726,7 @@ function careerChapterActorEntries() {
 }
 
 function careerChapterActor(active = state.careerChapters?.active) {
+  if (CAREER_STORY_PACKS[active?.id]?.actor) return npcById(active.actorId);
   const entries = careerChapterActorEntries();
   const entry = entries.find((item) => item.key === active?.familyKey) || entries[0] || null;
   if (entry && active && active.familyKey !== entry.key) active.familyKey = entry.key;
@@ -13593,6 +13736,7 @@ function careerChapterActor(active = state.careerChapters?.active) {
 function careerChapterText(text, actor = careerChapterActor()) {
   return String(text || "")
     .replace(/\{family\}/g, actor?.name || "族中故旧")
+    .replace(/\{partner\}/g, actor?.name || "接手旧事的同业")
     .replace(/\{office\}/g, officialOffice().office);
 }
 
@@ -13600,12 +13744,22 @@ function createCareerChapter(id = "granary-ledger") {
   const pack = CAREER_STORY_PACKS[id];
   if (!pack) return null;
   const actor = careerChapterActorEntries()[0];
+  let colleague = null;
+  if (pack.actor) {
+    colleague = normalizeFriend({ ...pack.actor, id: `chapter-${id}-${state.lineage.generation}-${state.year}`, relation: `${pack.title}同业`, age: randInt(28, 40), physique: 85, affection: 55, alive: true, lastMet: state.age });
+    state.friends.push(colleague);
+  }
   return {
     id,
+    careerName: state.career?.name || "",
+    actorId: colleague?.id || "",
+    actorName: colleague?.name || "",
+    regionId: currentRegionalId(),
+    originName: state.name,
     stage: 0,
     dueYear: state.year,
     score: 0,
-    routes: { law: 0, family: 0, power: 0 },
+    routes: Object.fromEntries(careerChapterRouteKeys(id).map((key) => [key, 0])),
     flags: [],
     familyKey: actor?.key || "",
     history: [],
@@ -13613,10 +13767,34 @@ function createCareerChapter(id = "granary-ledger") {
   };
 }
 
+function careerChapterChoiceLockReason(active, choice) {
+  if (choice.cost && state.stats.money < choice.cost) return `需 ${moneyText(choice.cost)}（当前不足）`;
+  if (choice.requiresAny?.length && !choice.requiresAny.some((flag) => active.flags.includes(flag))) return "此前选择没有留下本项需要的约定、记录或门路";
+  const progress = choice.minLivelihood ? careerProgressFor() : null;
+  for (const [key, need] of Object.entries(choice.minLivelihood || {})) {
+    if (Number(progress?.livelihood?.[key] || 0) < need) return `需${livelihoodDefinition()?.metrics[key] || key}至少 ${need}（当前不足）`;
+  }
+  return "";
+}
+
 function careerChapterChoiceAvailable(active, choice) {
-  if (choice.cost && state.stats.money < choice.cost) return false;
-  if (choice.requiresAny?.length && !choice.requiresAny.some((flag) => active.flags.includes(flag))) return false;
-  return true;
+  return !careerChapterChoiceLockReason(active, choice);
+}
+
+function careerChapterFits(pack, active = null) {
+  return !!state.career && !!pack && careerKind() === pack.careerKind && (!active?.careerName || active.careerName === state.career.name) && (pack.careerKind !== "official" || !state.official?.retired);
+}
+
+function careerChapterAction() {
+  const pack = Object.values(CAREER_STORY_PACKS).find((item) => careerChapterFits(item));
+  if (!pack) return null;
+  const chapters = normalizeCareerChapters(state.careerChapters);
+  const active = chapters.active?.id === pack.id ? chapters.active : null;
+  if (active) {
+    const stage = pack.stages[active.stage];
+    return ["case:chapter", `${pack.title} · ${active.stage + 1}/${pack.stages.length}`, active.dueYear <= state.year ? `继续“${stage.title}”；此前选择会改变后续门路。` : `${active.dueYear - state.year} 年后进入“${stage.title}”。`];
+  }
+  return chapters.completed.some((entry) => entry.id === pack.id) ? null : ["case:chapter", `跨年长案 · ${pack.title}`, pack.summary];
 }
 
 function buildCareerChapterEvent(active = state.careerChapters?.active) {
@@ -13630,21 +13808,17 @@ function buildCareerChapterEvent(active = state.careerChapters?.active) {
     chapterId: pack.id,
     stageIndex: active.stage,
     title: `${pack.title} · ${stage.title}`,
-    content: careerChapterText(stage.content, actor),
+    content: `${pack.actor && !actor ? `${active.actorName || "旧日同业"}已不再主持此事，接手的同业按留下的记录继续与你交涉。\n\n` : ""}${careerChapterText(stage.content, actor)}`,
     icon: pack.icon,
     children: stage.choices.map((choice) => {
-      const available = careerChapterChoiceAvailable(active, choice);
-      const need = choice.requiresAny?.length && !choice.requiresAny.some((flag) => active.flags.includes(flag))
-        ? "此前选择没有留下可用的人证或凭据"
-        : choice.cost && state.stats.money < choice.cost
-          ? `需 ${moneyText(choice.cost)}（当前不足）`
-          : choice.note;
+      const lock = careerChapterChoiceLockReason(active, choice);
+      const need = lock || `${choice.note}${pack.careerKind !== "official" && choice.cost ? ` · 花费 ${moneyText(choice.cost)}` : ""}`;
       return {
         ...choice,
         title: choice.title,
         content: careerChapterText(choice.text, actor),
         note: careerChapterText(need, actor),
-        disabled: !available,
+        disabled: !!lock,
         conditions: [],
         results: [],
         children: [],
@@ -13653,14 +13827,16 @@ function buildCareerChapterEvent(active = state.careerChapters?.active) {
   };
 }
 
-function startOrResumeCareerChapter(id = "granary-ledger") {
-  if (!state.career || careerKind(state.career) !== "official" || state.official?.retired) return;
+function startOrResumeCareerChapter(id = Object.values(CAREER_STORY_PACKS).find((item) => careerChapterFits(item))?.id) {
+  if (!state.career || state.dead || state.prisonYears > 0 || state.age < 15 || state.currentEvent || state.eventResult) return;
   state.careerChapters = normalizeCareerChapters(state.careerChapters);
   const pack = CAREER_STORY_PACKS[id];
-  if (!pack) return;
+  if (!careerChapterFits(pack)) return;
+  if (state.careerChapters.active && !careerChapterFits(CAREER_STORY_PACKS[state.careerChapters.active.id], state.careerChapters.active)) abandonCareerChapter("转业中断");
+  if (state.careerChapters.active && state.careerChapters.active.id !== id) return;
   if (!state.careerChapters.active) {
     if (state.careerChapters.completed.some((entry) => entry.id === id)) {
-      return finishAction(`${pack.title} · 旧案已结`, "这桩案已收入你的官场履历。命册仍保留当年的选择与最终结局。", [], pack.icon);
+      return finishAction(`${pack.title} · 旧事已结`, "这段经历已收入本业履历。命册仍保留当年的选择与最终结局。", [], pack.icon);
     }
     state.careerChapters.active = createCareerChapter(id);
     state.careerChapters.lastTriggerYear = state.year;
@@ -13668,11 +13844,18 @@ function startOrResumeCareerChapter(id = "granary-ledger") {
   const active = state.careerChapters.active;
   if (active.dueYear > state.year) {
     const next = pack.stages[active.stage];
-    return finishAction(`${pack.title} · 案情待续`, `卷宗暂时封存。${active.dueYear - state.year} 年后将进入“${next.title}”；此前留下的人证、污点和家中态度都会保留。`, [], pack.icon);
+    return finishAction(`${pack.title} · 来年待续`, `${active.dueYear - state.year} 年后将进入“${next.title}”；此前选择、约定与人物态度都会保留。`, [], pack.icon);
   }
   state.currentEvent = buildCareerChapterEvent(active);
   save();
   render();
+}
+
+function recordCareerChapter(active, outcome, summary = "") {
+  const pack = CAREER_STORY_PACKS[active.id];
+  state.careerChapters.completed.push({ id: active.id, outcome, summary, careerName: active.careerName || state.career?.name || "", careerKind: pack.careerKind, regionId: active.regionId || "", originName: active.originName || "", year: state.year, routes: { ...active.routes }, history: [...active.history] });
+  state.careerChapters.completed = state.careerChapters.completed.slice(-12);
+  state.careerChapters.active = null;
 }
 
 function abandonCareerChapter(outcome = "辞官中断") {
@@ -13680,32 +13863,60 @@ function abandonCareerChapter(outcome = "辞官中断") {
   const active = state.careerChapters.active;
   if (!active) return "";
   const pack = CAREER_STORY_PACKS[active.id];
-  state.careerChapters.completed.push({ id: active.id, outcome, year: state.year, routes: { ...active.routes }, history: [...active.history] });
-  state.careerChapters.completed = state.careerChapters.completed.slice(-12);
-  state.careerChapters.active = null;
+  recordCareerChapter(active, outcome, `你离开了${active.careerName || "原来的营生"}，未完的“${pack.title}”交由后来人继续。已经付出的代价与此前选择仍保留，未领取结局奖励。`);
   return pack?.title || "未结长案";
 }
 
 function annualCareerChapterEvent() {
   state.careerChapters = normalizeCareerChapters(state.careerChapters);
   const chapters = state.careerChapters;
-  const isOfficial = state.career && careerKind(state.career) === "official" && !state.official?.retired;
-  if (chapters.active && !isOfficial) {
-    const title = abandonCareerChapter();
-    if (title) addLog(`${title} · 辞官中断`, "印信已经交回，尚未查清的卷宗转交后来官员。你留下的证词与人情不会再由本官身收束。", []);
+  if (state.dead || state.prisonYears > 0 || state.age < 15) return null;
+  if (chapters.active && !careerChapterFits(CAREER_STORY_PACKS[chapters.active.id], chapters.active)) {
+    const outcome = CAREER_STORY_PACKS[chapters.active.id].careerKind === "official" ? "辞官中断" : "转业中断";
+    const title = abandonCareerChapter(outcome);
+    if (title) addLog(`${title} · ${outcome}`, "你已离开原来的身份，未完的事交由后来人继续；此前的付出与选择仍保留在本业履历。", []);
     return null;
   }
-  if (!isOfficial || state.dead || state.prisonYears > 0) return null;
   if (chapters.active) return chapters.active.dueYear <= state.year ? buildCareerChapterEvent(chapters.active) : null;
-  const id = "granary-ledger";
+  const id = Object.values(CAREER_STORY_PACKS).find((item) => careerChapterFits(item))?.id;
+  if (!id) return null;
   if (chapters.completed.some((entry) => entry.id === id) || state.year - chapters.lastTriggerYear < 3 || Math.random() > 0.18) return null;
   chapters.active = createCareerChapter(id);
   chapters.lastTriggerYear = state.year;
   return buildCareerChapterEvent(chapters.active);
 }
 
+function completeLivelihoodChapter(active, deltas) {
+  const pack = CAREER_STORY_PACKS[active.id];
+  const ending = pack.endings.find((item) =>
+    (!item.requiresAll?.length || item.requiresAll.every((flag) => active.flags.includes(flag))) &&
+    (!item.requiresAny?.length || item.requiresAny.some((flag) => active.flags.includes(flag))) &&
+    (!item.excludesAny?.length || !item.excludesAny.some((flag) => active.flags.includes(flag))) &&
+    (item.minScore == null || active.score >= Number(item.minScore)) &&
+    Object.entries(item.minRoutes || {}).every(([route, count]) => Number(active.routes[route] || 0) >= count)
+  ) || pack.endings[pack.endings.length - 1];
+  const progress = careerProgressFor();
+  if (ending.money) {
+    changeStat("money", ending.money, deltas);
+    addLedger(`${pack.title} · 结算`, ending.money, ending.text);
+  }
+  for (const [key, amount] of Object.entries(ending.livelihood || {})) changeLivelihoodMetric(progress, key, amount, deltas);
+  if (ending.world) applyWorldChanges(ending.world, deltas);
+  const levelText = addCareerExperience(progress, ending.experience || 0, deltas);
+  progress.records.cases += 1;
+  if (["粮路长明", "同舟商约", "医案传灯", "一巷安灯", "认过重开"].includes(ending.title)) progress.records.successes += 1;
+  const actor = careerChapterActor(active);
+  if (actor) rememberNpcMoment(actor, "本业长线", `${pack.title}最后走向“${ending.title}”。${ending.text}`, ending.actorAffection || 0);
+  const legacyType = ending.title === "粮路长明" ? "granary" : ending.title === "一巷安灯" ? "dispensary" : "";
+  const legacyText = legacyType ? establishRegionalLegacy(legacyType, active.regionId) : "";
+  const text = `${ending.text}${levelText}${legacyText ? `\n\n${legacyText}` : ""}`;
+  recordCareerChapter(active, ending.title, text);
+  return { title: ending.title, text, followup: `“${pack.title}”已收入${state.career.name}履历；商誉、医名、地方变化与同业的记忆都已实际结算。` };
+}
+
 function completeCareerChapter(active, deltas) {
   const pack = CAREER_STORY_PACKS[active.id];
+  if (pack.careerKind !== "official") return completeLivelihoodChapter(active, deltas);
   const actor = careerChapterActor(active);
   const routes = active.routes || {};
   const corrupt = routes.power >= 2 || (active.flags.includes("altered-register") && state.official.corruption >= 25);
@@ -13745,9 +13956,7 @@ function completeCareerChapter(active, deltas) {
     changeStat("mood", -3, deltas);
   }
   const promotion = applyOfficialPromotion(deltas);
-  state.careerChapters.completed.push({ id: active.id, outcome: title, year: state.year, routes: { ...active.routes }, history: [...active.history] });
-  state.careerChapters.completed = state.careerChapters.completed.slice(-12);
-  state.careerChapters.active = null;
+  recordCareerChapter(active, title, `${text}${promotion}`);
   return { title, text: `${text}${promotion}`, followup: corrupt ? "巡按副账已成为两年后的命册伏笔；届时可花钱封口或反查持账之人。" : `“${pack.title}”已经完结并写入官场履历，今后的官评与人物态度会保留这一路线。` };
 }
 
@@ -13757,7 +13966,7 @@ function resolveCareerChapter(event, choice) {
   const pack = active && CAREER_STORY_PACKS[active.id];
   const stage = pack?.stages?.[active.stage];
   const source = stage?.choices?.find((item) => item.id === choice?.id);
-  if (!active || !pack || !stage || !source || !careerChapterChoiceAvailable(active, source)) return;
+  if (!active || !pack || !stage || !source || event.chapterId !== active.id || event.stageIndex !== active.stage || active.dueYear > state.year || !careerChapterFits(pack, active) || state.dead || state.prisonYears > 0 || !careerChapterChoiceAvailable(active, source)) return;
   const actor = careerChapterActor(active);
   const deltas = [];
   if (source.cost) {
@@ -13766,7 +13975,7 @@ function resolveCareerChapter(event, choice) {
   }
   if (source.gain) {
     changeStat("money", source.gain, deltas);
-    addLedger(`${pack.title} · 暗账`, source.gain, careerChapterText(source.text, actor));
+    addLedger(`${pack.title} · ${pack.careerKind === "official" ? "暗账" : "进项"}`, source.gain, careerChapterText(source.text, actor));
   }
   for (const [stat, amount] of Object.entries(source.effects || {})) changeStat(stat, amount, deltas);
   state.official = normalizeOfficial(state.official);
@@ -13779,6 +13988,13 @@ function resolveCareerChapter(event, choice) {
   if (actor && source.familyAffection) {
     actor.affection = clamp(Number(actor.affection || 0) + source.familyAffection);
     deltas.push({ label: actor.name, value: source.familyAffection, stat: "relationship" });
+  }
+  if (pack.careerKind !== "official") {
+    const progress = careerProgressFor();
+    for (const [key, amount] of Object.entries(source.livelihood || {})) changeLivelihoodMetric(progress, key, amount, deltas);
+    if (source.world) applyWorldChanges(source.world, deltas);
+    addCareerExperience(progress, 18, deltas);
+    if (actor) rememberNpcMoment(actor, "本业抉择", `${pack.title} · ${stage.title}：${source.title}`, source.actorAffection || 0);
   }
   const skillBonus = source.skill && Number(state.stats[source.skill] || 0) >= 65 ? 1 : 0;
   active.score += Number(source.score || 0) + skillBonus;
@@ -13797,7 +14013,7 @@ function resolveCareerChapter(event, choice) {
   } else {
     active.stage += 1;
     active.dueYear = state.year + 1;
-    followup = `下一幕“${pack.stages[active.stage].title}”将在来年出现；本次留下的${source.route === "law" ? "证据与清名" : source.route === "family" ? "家中人情与证词" : "权门关系与污点"}会改变可用选项。`;
+    followup = `下一幕“${pack.stages[active.stage].title}”将在来年出现；本次留下的${pack.routeLabels ? `${pack.routeLabels[source.route]}选择与约定` : source.route === "law" ? "证据与清名" : source.route === "family" ? "家中人情与证词" : "权门关系与污点"}会改变可用选项。`;
   }
   state.currentEvent = null;
   state.lastDeltas = deltas;
@@ -13806,8 +14022,8 @@ function resolveCareerChapter(event, choice) {
     text,
     deltas,
     icon: pack.icon,
-    scene: "ink",
-    reason: `这不是独立随机事件：它读取了你的${officialOffice().office}职权、${actor?.name || "家中人"}的态度、前几幕证据以及清浊路线。`,
+    scene: pack.careerKind === "medicine" ? "herb" : "ink",
+    reason: pack.careerKind === "official" ? `这不是独立随机事件：它读取了你的${officialOffice().office}职权、${actor?.name || "家中人"}的态度、前几幕证据以及清浊路线。` : `本幕接续了${active.originName || state.name}在${travelDestinationByStaticId(active.regionId || currentRegionalId()).name}开始的“${pack.title}”；此前约定决定可用选项，钱财与本业资源按实际数目结算。`,
     followup,
   };
   addLog(`${pack.title} · ${title}`, text, deltas);
@@ -15687,6 +15903,14 @@ function regionsView() {
       </div>` : `<p class="regional-away-note">你目前不在${escapeHtml(selectedDestination.name)}。地方事务必须亲自到场，先乘车马前往。</p><div class="main-actions"><button class="primary-btn" data-region-travel="${selectedId}">前往${escapeHtml(selectedDestination.name)}</button></div>`}
     </article>
 
+    ${selectedState.legacies.length ? `<section class="log-preview regional-legacies">
+      <div class="section-title"><h2>乡里遗产</h2><span>后代承业，地方仍记得创办者</span></div>
+      <div class="record-list">${selectedState.legacies.map((legacy) => {
+        const definition = REGIONAL_LEGACY_DEFS[legacy.kind];
+        return `<article class="record-item"><strong>${icon(definition.icon, definition.name)}${definition.name}</strong><p>第 ${legacy.founderGeneration} 代 · ${escapeHtml(legacy.founderName)}创办于其人生第 ${legacy.foundedYear} 年</p><p>${escapeHtml(definition.benefit)}。${local ? "你正在此地，随年度结算生效。" : "需来到此地并度过一年，才可享受照应。"}</p></article>`;
+      }).join("")}</div>
+    </section>` : ""}
+
     <section class="regional-factions-section">
       <div class="section-title"><h2>${escapeHtml(selectedDestination.name)}地方势力</h2><span>好感 60、地方声望 45 可结盟</span></div>
       <div class="regional-faction-grid">${selectedProfile.factions.map((faction) => {
@@ -15804,9 +16028,9 @@ function storyRadarItems() {
       icon: pack.icon,
       eyebrow: `职业长线 · 第 ${active.stage + 1}/${pack.stages.length} 幕`,
       title: pack.title,
-      note: remaining ? `${remaining} 年后进入“${stage.title}”` : `“${stage.title}”已经临门，可去营生页继续`,
-      action: "careerChapter",
-      label: remaining ? "查看案情" : "继续长案",
+      note: remaining ? `${remaining} 年后进入“${stage.title}” · 已作的选择记在命册中` : `“${stage.title}”已经临门，往年的选择将影响这一幕`,
+      action: remaining ? "history" : "careerChapter",
+      label: remaining ? "回顾抉择" : "续写此章",
     });
   }
   if (state.dynasty?.activeArc) {
@@ -15825,7 +16049,7 @@ function storyRadarAction(item) {
   if (item.action === "request") return `<button class="story-radar-action" data-npc-request="${escapeHtml(item.id)}">${escapeHtml(item.label)}</button>`;
   if (item.action === "history") return `<button class="story-radar-action" data-tab="history">${escapeHtml(item.label)}</button>`;
   if (item.action === "mystery") return `<button class="story-radar-action" data-action="resume-mystery">${escapeHtml(item.label)}</button>`;
-  if (item.action === "careerChapter") return `<button class="story-radar-action" data-tab="career">${escapeHtml(item.label)}</button>`;
+  if (item.action === "careerChapter") return `<button class="story-radar-action" data-career-action="case:chapter">${escapeHtml(item.label)}</button>`;
   if (item.action === "world") return `<button class="story-radar-action" data-page="world">${escapeHtml(item.label)}</button>`;
   return `<button class="story-radar-action" data-place="temple">${escapeHtml(item.label)}</button>`;
 }
@@ -16569,16 +16793,17 @@ function assetsView() {
 }
 
 function assetCard(asset, index) {
-  const condition = Math.round(Number(asset.condition ?? 72));
+  const repair = assetRepairQuote(asset);
+  const condition = Math.round(repair.condition);
   const level = Math.max(1, Number(asset.level) || 1);
   const mode = asset.mode === "self" ? "自营" : "出租";
   const displayName = assetDisplayName(asset, index);
   return `
     <article class="record-item asset-card">
-      <strong>${escapeHtml(displayName)} <span>${mode} · ${level}级 · 状态${condition}</span></strong>
+      <strong>${escapeHtml(displayName)} <span>${mode} · ${level}级 · 状态${condition}/${ASSET_CONDITION_MAX}</span></strong>
       <p>${escapeHtml(asset.desc || "家中产业")} · 所在 ${escapeHtml(asset.location || travelDestinationByStaticId(asset.regionId).name)} · 年入 ${moneyText(asset.income || 0)}</p>
       <span class="mini-actions">
-        <button class="text-btn inline-action" data-asset-action="repair" data-asset-index="${index}" ${state.stats.money < Math.max(30, Math.round((asset.income || 20) * 1.6)) ? "disabled" : ""}>修缮</button>
+        <button class="text-btn inline-action" data-asset-action="repair" data-asset-index="${index}" ${repair.amount <= 0 || state.stats.money < repair.cost ? "disabled" : ""}>${repair.amount > 0 ? `修缮 +${repair.amount} · ${moneyText(repair.cost)}` : "无需修缮"}</button>
         <button class="text-btn inline-action" data-asset-action="expand" data-asset-index="${index}" ${state.stats.money < Math.max(120, Math.round((asset.price || 200) * 0.38)) ? "disabled" : ""}>扩建</button>
         <button class="text-btn inline-action" data-asset-action="mode" data-asset-index="${index}">${asset.mode === "self" ? "改出租" : "改自营"}</button>
       </span>
@@ -18377,7 +18602,8 @@ function palaceExamView(stage, current) {
 }
 
 function eventSceneArt(event = {}) {
-  let key = EVENT_KIND_SCENES[event.kind] || EVENT_ACTIVITY_SCENES[state.pendingActivity?.id];
+  const chapterScene = event.kind === "careerChapter" ? ({ "grain-road": "grainRoad", "epidemic-dispensary": "dispensary", "granary-ledger": "official" })[event.chapterId] : "";
+  let key = chapterScene || EVENT_KIND_SCENES[event.kind] || EVENT_ACTIVITY_SCENES[state.pendingActivity?.id];
   if (!key) {
     const text = `${event.title || ""}${event.content || ""}${event.history || ""}`;
     if (/牢|狱|刑|囚|秋审|越狱/.test(text)) key = "prison";
@@ -18401,6 +18627,21 @@ function examHistory() {
       <div class="section-title"><h2>考绩</h2></div>
       ${(state.exam.history || []).map((item) => infoCard(item.stage, `${item.passed ? "取中" : "未中"} · ${item.score} 分${item.title ? ` · ${item.title}` : ""}`)).join("") || `<p class="empty-note">尚未应试</p>`}
     </section>`;
+}
+
+function careerChoiceRecord(history = []) {
+  return `<ol class="chapter-choice-record">${history.map((entry) => `<li><span>${entry.year}岁</span><p>${escapeHtml(entry.title || "旧时抉择")}</p></li>`).join("")}</ol>`;
+}
+
+function careerChapterReading(event) {
+  const pack = CAREER_STORY_PACKS[event.chapterId];
+  const active = normalizeCareerChapters(state.careerChapters).active;
+  if (!pack || !active || active.id !== event.chapterId) return "";
+  const previous = active.history.at(-1);
+  return `<section class="chapter-reading" aria-label="跨年故事进度">
+    <ol class="chapter-steps">${pack.stages.map((stage, index) => `<li class="${index < active.stage ? "is-done" : index === active.stage ? "is-current" : "is-future"}" ${index === active.stage ? 'aria-current="step"' : ""}><span>${index < active.stage ? "✓" : `0${index + 1}`}</span><b>${escapeHtml(stage.title)}</b></li>`).join("")}</ol>
+    ${previous ? `<details class="chapter-recollection"><summary>前情 · ${escapeHtml(previous.title || "旧时抉择")}</summary>${careerChoiceRecord(active.history)}</details>` : `<p class="chapter-opening-note">${pack.stages.length}幕流年，每次抉择都会留在命册中。</p>`}
+  </section>`;
 }
 
 function eventView(event) {
@@ -18428,15 +18669,16 @@ function eventView(event) {
         <img src="${sceneArt.src}" alt="${escapeHtml(sceneArt.label)}场景插画" width="1600" height="900" decoding="async" fetchpriority="high" />
         <figcaption><span>流年画卷</span><b>${escapeHtml(sceneArt.label)}</b></figcaption>
       </figure>
-      <p class="eyebrow">${eyebrow}</p>
+      <p class="eyebrow">${event.kind === "careerChapter" ? "本业长卷 · 一念一生" : eyebrow}</p>
       <h2>${escapeHtml(event.title || "事件")}</h2>
+      ${event.kind === "careerChapter" ? careerChapterReading(event) : ""}
       <p>${formatText(fillPlaceholders(event.content || event.history || "", false))}</p>
       <div class="choice-list ${sceneInteraction ? "scene-choice-grid" : ""}">
         ${
           options.length
             ? options.map(({ child, index }) => `<button class="choice-btn ${sceneInteraction ? "scene-choice" : ""} ${official || careerCase ? "official-choice" : ""}" data-choice="${index}" ${child.disabled ? "disabled" : ""}>
               <span>${escapeHtml(child.title || "继续")}</span>
-              ${(official || familyStory || careerCase || fortuneEvent || darkEvent || prisonEvent || culturalEvent || worldEvent || femaleSchoolEvent || clanEvent || regionalEvent || fateThread || childLifeEvent || npcRequest || event.kind === "scholarStory") && child.note ? `<small>${escapeHtml(child.note)}</small>` : ""}
+              ${(official || familyStory || careerCase || fortuneEvent || darkEvent || prisonEvent || culturalEvent || worldEvent || femaleSchoolEvent || clanEvent || regionalEvent || fateThread || childLifeEvent || npcRequest || event.kind === "scholarStory" || event.kind === "careerChapter") && child.note ? `<small>${escapeHtml(child.note)}</small>` : ""}
             </button>`).join("")
             : `<button class="primary-btn" data-action="finish-event">继续</button>`
         }
@@ -18533,6 +18775,17 @@ function focusResponsivePanel(selector) {
   });
 }
 
+function focusStoryContent() {
+  window.requestAnimationFrame(() => {
+    const panel = app.querySelector(".center-panel");
+    const heading = panel?.querySelector("h2");
+    if (!heading) return;
+    heading.tabIndex = -1;
+    heading.focus({ preventScroll: true });
+    panel.scrollIntoView({ block: "start" });
+  });
+}
+
 function tabContent() {
   if (view.tab === "activities") return activityPanel();
   if (view.tab === "career") return careerPanel();
@@ -18551,6 +18804,41 @@ function tabContent() {
   return overviewPanel();
 }
 
+function careerStoryJournal() {
+  const chapters = normalizeCareerChapters(state.careerChapters);
+  const entries = [...(chapters.active ? [{ ...chapters.active, ongoing: true }] : []), ...chapters.completed.slice().reverse()].slice(0, 8);
+  if (!entries.length) return "";
+  return `<section class="chapter-journal"><div class="section-title"><h2>人生长卷</h2><span>一念落笔，数年回声</span></div>
+    ${entries.map((entry) => {
+      const pack = CAREER_STORY_PACKS[entry.id];
+      const art = eventSceneArt({ kind: "careerChapter", chapterId: entry.id });
+      const routes = pack.routeLabels || { law: "依法", family: "顾家", power: "权势" };
+      const remaining = entry.ongoing ? Math.max(0, entry.dueYear - state.year) : 0;
+      const blocked = state.dead ? "这一世已落幕，此前抉择仍留在命册中。" : state.prisonYears > 0 ? "出狱后，可以再续写这段故事。" : !careerChapterFits(pack, entry) ? "你已离开当时的营生，此前抉择仍会保留。" : state.currentEvent || state.eventResult || state.pendingCaravan || state.age < 15 ? "先处理眼前的事，再回来续写。" : "";
+      return `<details class="chapter-journal-entry" ${entry.ongoing ? "open" : ""}>
+        <summary><img src="${art.src}" alt="" width="68" height="68" loading="lazy"/><span><small>${entry.ongoing ? `正在续写 · 第 ${entry.stage + 1}/${pack.stages.length} 幕` : `${entry.year}岁 · 已落卷`}</small><strong>${escapeHtml(pack.title)}</strong><em>${escapeHtml(entry.ongoing ? pack.stages[entry.stage].title : entry.outcome)}</em></span><b aria-hidden="true">＋</b></summary>
+        <div class="chapter-journal-body">
+          <p>${escapeHtml(entry.ongoing ? pack.summary : entry.summary || "当年的抉择与结局，已记在这一卷中。")}</p>
+          ${entry.actorName ? `<small>往来人物 · ${escapeHtml(entry.actorName)}</small>` : ""}
+          ${entry.history.length ? careerChoiceRecord(entry.history) : '<p class="empty-note">故事刚刚展开，第一笔由你来写。</p>'}
+          <div class="chapter-route-tags">${Object.entries(routes).filter(([key]) => entry.routes[key] > 0).map(([key, label]) => `<span>${escapeHtml(label)} · ${entry.routes[key]}次选择</span>`).join("")}</div>
+          ${entry.ongoing ? `<p class="chapter-next-note">${blocked || (remaining ? `下一幕还需 ${remaining} 年，期间可以照常生活。` : "下一幕已到，可以继续这段故事。")}</p>${!remaining && !blocked ? '<button class="secondary-btn" data-career-action="case:chapter">续写此章</button>' : ""}` : ""}
+        </div>
+      </details>`;
+    }).join("")}
+  </section>`;
+}
+
+function regionalLegacyMemory() {
+  const regional = normalizeRegionalState(state.regional, state.location);
+  const entries = Object.entries(regional.regions).flatMap(([regionId, region]) => (region.legacies || []).map((legacy) => ({ ...legacy, regionId })));
+  if (!entries.length) return "";
+  return `<section class="legacy-memory"><div class="section-title"><h2>留给这片土地</h2><span>人会远行，善举有归处</span></div>${entries.map((entry) => {
+    const definition = REGIONAL_LEGACY_DEFS[entry.kind];
+    return `<article>${icon(definition.icon, definition.name)}<div><strong>${escapeHtml(travelDestinationByStaticId(entry.regionId).name)} · ${escapeHtml(definition.name)}</strong><p>第${entry.founderGeneration}代 · ${escapeHtml(entry.founderName)}创办</p><small>${escapeHtml(definition.benefit)}</small></div></article>`;
+  }).join("")}<button class="text-btn" data-page="regions">去看地方记忆 →</button></section>`;
+}
+
 function historyPanel() {
   const ambition = normalizeAmbition(state.ambition);
   const ambitionDef = ambitionDefinition(ambition?.id);
@@ -18564,6 +18852,8 @@ function historyPanel() {
           <small>${completedGoals().length}/${availableLifeGoals().length} 个成就 · ${state.log.length} 件经历 · ${activeThreads.length} 桩未了之事</small>
       </div>
       ${ambitionDef ? `<section class="history-feature"><strong>人生志向 · ${escapeHtml(ambitionDef.title)}</strong><small>${ambition.completed ? "三重志业皆成" : `已完成 ${ambition.stage}/3 · 当前“${escapeHtml(ambitionDef.stages[ambition.stage]?.title || "收束余生")}”`}</small></section>` : ""}
+      ${careerStoryJournal()}
+      ${regionalLegacyMemory()}
       ${activeThreads.length ? `<section class="thread-preview"><div class="section-title"><h2>未了之事</h2><span>会在往后流年找上门，也可能由继承人接过</span></div>${activeThreads.map((item) => `<article class="record-item thread-item"><strong>${icon(THREAD_KINDS[item.kind].icon, item.title)}${escapeHtml(item.title)}</strong><p>${escapeHtml(item.summary)} · ${item.dueYear <= state.year ? "因果已到" : `${item.dueYear - state.year}年后或有回响`}${item.inherited ? " · 先人遗事" : ""}</p></article>`).join("")}</section>` : ""}
       ${closedThreads.length ? `<section class="thread-preview"><div class="section-title"><h2>往事回响</h2><span>当年的选择，后来的结局</span></div>${closedThreads.map((item) => `<article class="record-item thread-item"><strong>${escapeHtml(item.title)}</strong><p>${escapeHtml(item.summary)}</p><small>结局：${escapeHtml(item.outcome)}${item.inherited ? " · 由后人接续" : ""}</small></article>`).join("")}</section>` : ""}
       <div class="record-list">${state.log.map(logItem).join("") || `<p class="empty-note">暂无记录</p>`}</div>
@@ -19138,6 +19428,7 @@ app.addEventListener("click", (event) => {
     view.page = button.dataset.page;
     view.placeId = button.dataset.place === "activities" ? "" : button.dataset.place || "";
     render();
+    if (button.dataset.page === "regions") focusStoryContent();
     return;
   }
   if (button.dataset.place) {
@@ -19244,7 +19535,11 @@ app.addEventListener("click", (event) => {
     return;
   }
   if (button.dataset.career !== undefined) return takeCareer(button.dataset.career);
-  if (button.dataset.careerAction) return performCareerAction(button.dataset.careerAction);
+  if (button.dataset.careerAction) {
+    performCareerAction(button.dataset.careerAction);
+    if (button.dataset.careerAction === "case:chapter" && state.currentEvent?.kind === "careerChapter") focusStoryContent();
+    return;
+  }
   if (button.dataset.examExtra) return startExtraExam(button.dataset.examExtra);
   if (button.dataset.examAnswer !== undefined) return answerExam(button.dataset.question, button.dataset.examAnswer);
   if (button.dataset.palaceField) return choosePalace(button.dataset.palaceField, button.dataset.palaceValue);

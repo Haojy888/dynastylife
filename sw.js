@@ -1,5 +1,5 @@
 // 发布 HTML、脚本或样式改动时一起递增，触发整组升级。
-const CACHE_VERSION = "2026-10-06-1";
+const CACHE_VERSION = "2026-10-06-2";
 const CACHE_PREFIX = "dynastylife-";
 const SHELL_CACHE = `${CACHE_PREFIX}shell-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}runtime-${CACHE_VERSION}`;
@@ -43,6 +43,8 @@ const APP_SHELL = [
   "/assets/event-clan.webp",
   "/assets/event-region.webp",
   "/assets/event-fortune.webp",
+  "/assets/event-grain-road.webp",
+  "/assets/event-dispensary.webp",
   "/assets/region-qingping.webp",
 ];
 const SHELL_PATHS = new Set(APP_SHELL);

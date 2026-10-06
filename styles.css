@@ -7068,6 +7068,52 @@ dialog.game-overlay::backdrop { background: #152b26a8; backdrop-filter: blur(4px
 .choice-btn > small { margin-top: 5px; font-size: 12px; line-height: 1.55; font-weight: 400; }
 .choice-btn:has(> small) { height: auto; min-height: 65px; padding: 12px 15px; text-align: left; }
 
+/* A chapter keeps its previous choices close to the next decision. */
+.chapter-reading { margin: 18px 0 20px; }
+.chapter-steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; list-style: none; margin: 0; padding: 0; }
+.chapter-steps li { border-top: 2px solid #d7d4c7; padding-top: 7px; min-width: 0; color: #76786d; }
+.chapter-steps span { display: block; font-size: 11px; letter-spacing: .12em; }
+.chapter-steps b { display: block; font-weight: 400; font-size: 12px; line-height: 1.5; margin-top: 3px; overflow-wrap: anywhere; }
+.chapter-steps .is-done { border-color: #537468; color: #416358; }
+.chapter-steps .is-current { border-color: #a4533d; color: #954431; }
+.chapter-steps .is-current b { font-weight: 700; }
+.chapter-opening-note { margin: 10px 0 0; font-size: 11px; color: var(--muted); }
+.chapter-recollection { margin-top: 12px; background: #ebe8db; border-radius: 4px; padding: 0 12px; }
+.chapter-recollection summary { cursor: pointer; font-size: 12px; padding: 11px 0; line-height: 1.6; }
+.chapter-choice-record { margin: 10px 0 12px; padding: 0; list-style: none; }
+.chapter-choice-record li { display: grid; grid-template-columns: 38px minmax(0, 1fr); gap: 10px; padding: 7px 0; align-items: baseline; }
+.chapter-choice-record li + li { border-top: 1px solid #69746020; }
+.chapter-choice-record span { color: #687363; font-size: 11px; font-variant-numeric: tabular-nums; }
+.chapter-choice-record p { margin: 0; font-size: 12px; line-height: 1.65; color: var(--ink); }
+.chapter-journal, .legacy-memory { margin-top: 22px; }
+.chapter-journal > .section-title, .legacy-memory > .section-title { align-items: start; gap: 5px; }
+.chapter-journal .section-title h2, .legacy-memory .section-title h2 { font-size: 17px; }
+.chapter-journal .section-title > span, .legacy-memory .section-title > span { font-size: 10px; text-align: right; }
+.chapter-journal-entry { border: 1px solid #cfcdbd; border-radius: 5px; margin: 10px 0; overflow: hidden; background: #f7f3e8; }
+.chapter-journal-entry > summary { display: grid; grid-template-columns: 64px minmax(0, 1fr) 18px; align-items: center; gap: 12px; padding: 11px; cursor: pointer; list-style: none; }
+.chapter-journal-entry > summary::-webkit-details-marker { display: none; }
+.chapter-journal-entry > summary > img { width: 64px; height: 74px; object-fit: cover; border-radius: 2px; }
+.chapter-journal-entry > summary > span { min-width: 0; }
+.chapter-journal-entry summary small { display: block; color: #697564; font-size: 10px; }
+.chapter-journal-entry summary strong { display: block; margin: 5px 0; font-family: "STSong", "SimSun", serif; font-size: 19px; letter-spacing: .05em; }
+.chapter-journal-entry summary em { display: block; font-style: normal; font-size: 11px; color: #8b513d; }
+.chapter-journal-entry summary > b { font-weight: 400; color: #6d7866; }
+.chapter-journal-entry[open] summary > b { transform: rotate(45deg); }
+.chapter-journal-body { margin: 0 13px; padding: 12px 0 15px; border-top: 1px solid #cfcdbd; }
+.chapter-journal-body > p { font-size: 12px; line-height: 1.85; margin: 0 0 10px; }
+.chapter-journal-body > small { color: var(--muted); font-size: 11px; }
+.chapter-route-tags { display: flex; flex-wrap: wrap; gap: 5px; margin: 10px 0; }
+.chapter-route-tags span { border: 1px solid #71806a38; border-radius: 3px; background: #ebeede; color: #4c624c; padding: 4px 6px; font-size: 10px; }
+.chapter-journal-body .chapter-next-note { color: #7a644a; font-size: 11px; }
+.chapter-journal-body button { min-height: 40px; font-size: 12px; width: 100%; }
+.legacy-memory { padding: 14px; background: #e8ecdf; border: 1px solid #bcc8b5; border-radius: 5px; }
+.legacy-memory article { display: flex; align-items: start; gap: 9px; margin-top: 13px; }
+.legacy-memory article > img { width: 27px; height: 27px; object-fit: contain; flex-shrink: 0; }
+.legacy-memory article strong { font-size: 13px; }
+.legacy-memory article p { margin: 5px 0; font-size: 11px; color: #57684f; }
+.legacy-memory article small { display: block; font-size: 11px; line-height: 1.7; color: #66705d; }
+.legacy-memory > button { font-size: 11px; padding: 0; min-height: 40px; margin-top: 4px; }
+
 @media (max-width: 1000px) and (min-width: 761px) {
   .create-shell { padding: 24px; }
   .prologue-layout { grid-template-columns: .9fr 1fr; }

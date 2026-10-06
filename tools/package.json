@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node test.mjs && node test-save-upgrade.mjs && node test-story-upgrade.mjs && node test-ui-upgrade.mjs && node test-offline-upgrade.mjs",
+    "test": "node test.mjs && node test-save-upgrade.mjs && node test-story-upgrade.mjs && node test-career-stories.mjs && node test-regional-legacy.mjs && node test-asset-upgrade.mjs && node test-ui-upgrade.mjs && node test-story-journal.mjs && node test-offline-upgrade.mjs",
     "test:syntax": "node --check ../app.js && node --check ../game-data.js && node --check ../scene-engine.js && node --check ../sw.js",
     "test:smoke": "node test.mjs",
     "test:visual": "node shoot.mjs",
