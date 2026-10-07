@@ -939,6 +939,7 @@ const EVENT_KIND_SCENES = {
   familyStory: "life",
   femaleSchool: "study",
   scholarStory: "study",
+  heirloom: "clan",
   officialCase: "official",
   careerCase: "career",
   culturalEvent: "culture",
@@ -2345,6 +2346,12 @@ const ITEM_EFFECTS = {
   小布包: { icon: "Backpack", sell: 18, stat: "mood", value: 3, note: "亲人缝制的小包，能装下几件珍重之物。" },
 };
 
+const HEIRLOOM_DEFS = {
+  "grain-charter": { title: "共济粮路船契", icon: "SendLetter", note: "粮路上的旧约与签押，记得当初怎样与人共渡难关。", careerKind: "merchant", useCost: 60, donateCost: 30 },
+  "medical-casebook": { title: "药灯医案", icon: "MedicineBag", note: "病程、药批与失误都据实记下，后来人可以接着查证。", careerKind: "medicine", useCost: 40, donateCost: 25 },
+  "annotated-book": { title: "故人批注的旧书", icon: "Book", note: "字里行间留着相授的学问，也留着人与人之间的旧情。", careerKind: "", useCost: 20, donateCost: 15 },
+};
+
 const ANNUAL_GIFTS = [
   { name: "小布包", icon: "Backpack", note: "亲手缝制的小布包" },
   { name: "启蒙书", icon: "Book1", note: "翻旧的启蒙书" },
@@ -2700,7 +2707,7 @@ const CAREER_STORY_PACKS = Object.freeze({
     stages: [
       { id: "first-fever", title: "门外第一盏病灯", content: "街坊接连发热，药坊门口亮起等候的灯。药师{partner}发现新进药材有几包标签模糊；与此同时，富户愿预付诊金，请你这一季只替他们留药。", choices: [
         { id: "retain-samples", title: "逐批验药，先留样本", note: "先花本钱查清药源；取得后续追查所需的留样", cost: 100, route: "evidence", score: 2, flags: ["retained-samples"], actorAffection: 5, livelihood: { resource: 16, readiness: 8 }, text: "你让{partner}逐批登记来处，留下样本，不急着把满柜药材都用出去。门外的人催得急，你却知道出了事必须说得清。" },
-        { id: "triage-clinic", title: "设临时诊棚，先分轻重", note: "花钱搭棚、消耗药材 6；让危急病人先获得照应", cost: 70, route: "care", score: 2, flags: ["triage-clinic"], effects: { virtue: 3 }, livelihood: { resource: -6 }, world: { "local.epidemic": -3 }, text: "你与{partner}分开接诊和取药的队伍，把轻重病情逐一记下。药坊赚不了多少，门前却少了些无处求助的人。" },
+        { id: "triage-clinic", title: "设临时诊棚，先分轻重", note: "花钱搭棚、消耗药材 6；让危急病人先获得照应", cost: 70, route: "care", score: 2, minLivelihood: { resource: 6 }, flags: ["triage-clinic"], effects: { virtue: 3 }, livelihood: { resource: -6 }, world: { "local.epidemic": -3 }, text: "你与{partner}分开接诊和取药的队伍，把轻重病情逐一记下。药坊赚不了多少，门前却少了些无处求助的人。" },
         { id: "private-retainer", title: "先接富户包诊，保住药坊", note: "预收 160 铜钱；药材先供包诊人家，街坊只能另寻门路", gain: 160, route: "profit", score: 0, flags: ["private-retainer"], livelihood: { resource: 4, risk: 7, reputation: -4 }, text: "你先收下包诊银，暂时稳住药坊用度。{partner}把留给富户的药另放一柜，也问你什么时候能再接回那些穷病人。" },
       ] },
       { id: "suspect-batch", title: "好转后的反复", content: "第二年，有几位病人的病势反复。一名药商带来便宜得反常的新货，保证比旧药见效更快。{partner}翻出去年留下的记录，请你在继续接诊前先作决定。", choices: [
@@ -3002,7 +3009,7 @@ const LIFE_GOALS = [
   { id: "first-caravan", tier: "bronze", title: "走镖上路", icon: "RepairCarriage", desc: "完成第一次押镖或行商路线。", score: 65, done: () => caravanRuns() > 0, advice: "选择镖师行商营生后，挑一条路线出发。" },
   { id: "medicine-visit", tier: "bronze", title: "问诊抓药", icon: "MedicineBag", desc: "去医馆调理或留下医药记录。", score: 40, done: () => logHas(/医馆|问诊|抓药|药|病症|痊愈/), advice: "体魄低时先去医馆，不要硬撑。" },
   { id: "temple-fate", tier: "bronze", title: "香火因缘", icon: "Temple", desc: "在寺庙或德行事件中留下记录。", score: 40, done: () => state.tags.includes("寺庙因缘") || logHas(/寺庙|焚香|香火|佛|庙/), advice: "去寺庙修心，也能添些德行。" },
-  { id: "inventory-five", tier: "bronze", title: "行囊渐满", icon: "Backpack", desc: "行囊物品达到 5 件。", score: 45, done: () => inventoryCount() >= 5, advice: "去市集、黑市或活动中收集物品。" },
+  { id: "inventory-five", tier: "bronze", title: "行囊渐满", icon: "Backpack", desc: "行囊物品达到 5 件。", score: 45, done: () => inventoryUsed() >= 5, advice: "去市集、黑市或活动中收集物品。" },
   { id: "women-school-first", gender: "female", tier: "bronze", title: "闺塾初问", icon: "FemaleSkill", desc: "完成第一桩女学选择剧情。", score: 55, done: () => Number(state.femaleLife?.schoolStories || 0) >= 1, advice: "8 岁后去女学修习任一门六艺。" },
   { id: "women-school-six", gender: "female", tier: "silver", title: "闺塾六艺", icon: "FemaleSkill", desc: "女学六艺都达到 1 级。", score: 145, done: () => FEMALE_SKILLS.every((skill) => skillLevel(skill.name) >= 1), advice: "修习女红、琴艺、诗书、礼仪、算账与岐黄。" },
   { id: "female-medicine", gender: "female", tier: "silver", title: "女医有成", icon: "MedicineBag", desc: "通过任一女医技艺考校。", score: 135, done: () => (state.exam?.history || []).some((item) => /女医|疮疡|医理/.test(item.stage || "") && item.passed), advice: "15 岁后在女学参加女医技艺考校。" },
@@ -3476,6 +3483,7 @@ function normalizeState(raw) {
   next.difficulty ||= "普通";
   next.age = Number.isFinite(Number(next.age)) ? Number(next.age) : 1;
   next.year = Number.isFinite(Number(next.year)) ? Number(next.year) : next.age;
+  next.lastSettledYear = Number.isFinite(Number(next.lastSettledYear)) ? Math.min(Number(next.lastSettledYear), next.year) : next.year;
   next.location ||= "清平县";
   next.stats = next.stats || {};
   for (const key of [...Object.keys(STAT_LABELS), "relationship", "favorability", "money"]) {
@@ -3552,6 +3560,7 @@ function normalizeState(raw) {
   syncClanBranches(next);
   next.familyStories = normalizeFamilyStories(next.familyStories);
   next.careerChapters = normalizeCareerChapters(next.careerChapters);
+  next.heirlooms = restoreHeirlooms(next);
   next.templeFortune = normalizeTempleFortune(next.templeFortune);
   next.underworld = normalizeUnderworld(next.underworld);
   next.mystery = normalizeMysteryState(next.mystery);
@@ -3587,6 +3596,196 @@ function normalizeState(raw) {
     next.pendingTravel = null;
   }
   return next;
+}
+
+function normalizeHeirlooms(source) {
+  const value = source && typeof source === "object" ? source : {};
+  const holderId = String(value.holderId || `holder-${Date.now()}-${Math.random().toString(16).slice(2)}`);
+  const seen = new Set();
+  const items = (Array.isArray(value.items) ? value.items : []).filter((item) => item && Object.hasOwn(HEIRLOOM_DEFS, item.kind) && item.id && !seen.has(String(item.id)) && seen.add(String(item.id))).map((item) => ({
+    id: String(item.id), kind: item.kind, title: HEIRLOOM_DEFS[item.kind].title,
+    origin: {
+      name: String(item.origin?.name || "来历未详"),
+      generation: Number(item.origin?.generation) >= 1 ? Math.round(Number(item.origin.generation)) : null,
+      personId: String(item.origin?.personId || ""), sourceId: String(item.origin?.sourceId || ""),
+      regionId: REGION_PROFILES[item.origin?.regionId] ? item.origin.regionId : "",
+      year: item.origin?.year != null && Number.isFinite(Number(item.origin.year)) ? Number(item.origin.year) : null,
+      summary: String(item.origin?.summary || "旧物来源未被详细记下。"),
+    },
+    status: ["sealed", "donated"].includes(item.status) ? item.status : "kept",
+    holderId: String(item.holderId || holderId), holderName: String(item.holderName || ""),
+    revision: Math.max(Array.isArray(item.history) ? item.history.length : 0, Number.isSafeInteger(item.revision) ? item.revision : 0),
+    usedBy: Array.isArray(item.usedBy) ? [...new Set(item.usedBy.map(String).filter(Boolean))] : [],
+    history: (Array.isArray(item.history) ? item.history : []).filter((entry) => entry && typeof entry === "object").map((entry) => ({
+      holderId: String(entry.holderId || ""), name: String(entry.name || ""), generation: Math.max(1, Math.round(Number(entry.generation) || 1)),
+      year: Math.max(0, Math.round(Number(entry.year) || 0)), action: String(entry.action || "留存"), summary: String(entry.summary || ""),
+    })).slice(-48),
+  }));
+  return { holderId, items };
+}
+
+function grantHeirloom(kind, origin, { owner = state, alreadyUsed = false, migrated = false } = {}) {
+  if (!owner || !Object.hasOwn(HEIRLOOM_DEFS, kind)) return "";
+  owner.heirlooms ||= normalizeHeirlooms();
+  const sourceId = String(origin.sourceId || `${kind}:${owner.heirlooms.holderId}`);
+  if (owner.heirlooms.items.some((item) => item.kind === kind && item.origin.sourceId === sourceId)) return "";
+  const title = HEIRLOOM_DEFS[kind].title;
+  const summary = `${owner.name}${migrated ? "整理旧藏，收存" : "收下"}《${title}》。${alreadyUsed ? "本代成业的经验已结算，此物留待后来人续用。" : "此物可续用、转赠乡里，或封存留给后来人。"}`;
+  owner.heirlooms.items.push({
+    id: `heirloom:${kind}:${sourceId}`, kind, title, origin: { ...origin, sourceId }, status: "kept",
+    holderId: owner.heirlooms.holderId, holderName: owner.name,
+    usedBy: alreadyUsed ? [owner.heirlooms.holderId] : [],
+    history: [{ holderId: owner.heirlooms.holderId, name: owner.name, generation: owner.lineage.generation, year: owner.year, action: migrated ? "旧藏归档" : "初藏", summary }],
+  });
+  owner.heirlooms = normalizeHeirlooms(owner.heirlooms);
+  return summary;
+}
+
+function restoreHeirlooms(owner) {
+  const needsMigration = !owner.heirlooms || typeof owner.heirlooms !== "object";
+  const pending = owner.currentEvent?.kind === "heirloom" ? owner.currentEvent : null;
+  const pendingItem = pending && (Array.isArray(owner.heirlooms?.items) ? owner.heirlooms.items : []).find((item) => item?.id === pending.heirloomId);
+  const legacyPending = pendingItem && !Object.hasOwn(pendingItem, "revision");
+  owner.heirlooms = normalizeHeirlooms(owner.heirlooms);
+  if (legacyPending) {
+    const item = owner.heirlooms.items.find((entry) => entry.id === pending.heirloomId);
+    if (item && item.holderId === pending.holderId && owner.heirlooms.holderId === pending.holderId && item.status === pending.itemStatus && Number.isSafeInteger(pending.revision) && pending.revision >= item.revision) item.revision = pending.revision;
+  }
+  if (!needsMigration) return owner.heirlooms;
+  for (const record of owner.careerChapters.completed) {
+    const kind = record.id === "grain-road" && ["粮路长明", "同舟商约"].includes(record.outcome) ? "grain-charter"
+      : record.id === "epidemic-dispensary" && ["医案传灯", "一巷安灯"].includes(record.outcome) ? "medical-casebook" : "";
+    if (!kind) continue;
+    const knownOwner = record.originName || "";
+    grantHeirloom(kind, { name: knownOwner || "来历未详", generation: knownOwner === owner.name ? owner.lineage.generation : null,
+      personId: knownOwner === owner.name ? owner.heirlooms.holderId : "", sourceId: `old-career:${record.id}:${knownOwner}`,
+      regionId: record.regionId, year: record.year, summary: `旧档记载“${record.outcome}”${knownOwner ? `由${knownOwner}完成` : "，未记明当时的主事人"}；据此收存旧物，不补写未记录的辈分与生死。`,
+    }, { owner, alreadyUsed: !knownOwner || knownOwner === owner.name, migrated: true });
+  }
+  if (owner.inventory.includes("故人批注的旧书")) {
+    const sources = owner.threads.filter((item) => item.sourceId === "scholar-study" && item.status === "resolved" && item.outcome === "收好旧书，记下故人");
+    const source = sources.length === 1 ? sources[0] : null;
+    grantHeirloom("annotated-book", { name: source?.target || "来历未详", personId: source?.targetId || "", generation: null,
+      sourceId: source ? `scholar:${source.id}` : "old-inventory:annotated-book", regionId: "", year: null,
+      summary: source ? `${source.target}批注的旧书，由${owner.name}保存；旧档未记下具体受赠年份。` : "旧档仍持有这本批注旧书，作者与受赠年份未详；保留旧物，不另造一位先人。",
+    }, { owner, migrated: true });
+    owner.inventory = owner.inventory.filter((name) => name !== "故人批注的旧书");
+  }
+  return owner.heirlooms;
+}
+
+function heirloomItems() {
+  if (!state) return [];
+  state.heirlooms ||= normalizeHeirlooms();
+  return state.heirlooms.items;
+}
+
+function heirloomActionState(item) {
+  const def = Object.hasOwn(HEIRLOOM_DEFS, item?.kind) ? HEIRLOOM_DEFS[item.kind] : null;
+  const owned = !!def && item.holderId === state?.heirlooms?.holderId;
+  const reason = !state || state.dead ? "这一生已终，等待承继" : state.prisonYears > 0 ? "出狱后才可处置家传旧物" : !owned ? "此物不在你名下" : item.status === "donated" ? "此物已永久转赠乡里" : yearAdvanceBlockReason();
+  const used = !!item?.usedBy?.includes(state?.heirlooms?.holderId);
+  const specialist = !!def?.careerKind && careerKind() === def.careerKind;
+  const useReason = item?.status === "sealed" ? "先启封旧物" : used ? "你已续用过此物，不能重复领取所得" : state?.age < 8 ? "八岁后才能研读旧物" : Number(state?.stats.money) < Number(def?.useCost) ? `需 ${def?.useCost} 铜钱整理、访习` : "";
+  const donateReason = item?.status === "sealed" ? "先启封旧物" : Number(state?.stats.money) < Number(def?.donateCost) ? `需 ${def?.donateCost} 铜钱誊录、送交` : "";
+  const benefit = item?.kind === "grain-charter" ? specialist ? "商贾经验 +45、门路 +6、商誉 +4，当地声望 +3" : "学识 +3、情商 +2，读懂互保和限价条款"
+    : item?.kind === "medical-casebook" ? specialist ? "医者经验 +45、医案 +8、医名 +4" : "学识 +3、体魄 +2，学会辨认求医时应记下的病程"
+      : "学识 +4、备考 +6，延续书中留下的学问";
+  return {
+    canOpen: !reason, reason, canUse: !reason && !useReason, useReason: reason || useReason, used,
+    canDonate: !reason && !donateReason, donateReason: reason || donateReason,
+    canSeal: !reason && item?.status === "kept", canUnseal: !reason && item?.status === "sealed",
+    statusLabel: { kept: "家中留存", sealed: "封存待后人", donated: "已赠乡里" }[item?.status] || "旧物",
+    useNote: `花费 ${def?.useCost || 0} 铜钱；${benefit}。每位持有人仅一次。`,
+    donateNote: `花费 ${def?.donateCost || 0} 铜钱；德行 +3、当地声望 +5。此件永久离开家门，后人也不能再续用。`,
+  };
+}
+
+function openHeirloom(id) {
+  const item = heirloomItems().find((entry) => entry.id === id);
+  const action = heirloomActionState(item);
+  if (!action.canOpen) return;
+  const children = item.status === "sealed"
+    ? [{ title: "启封重读", heirloomChoice: "unseal", note: "不花钱，不领取收益；启封不会抹去此前续用记录。" }]
+    : [
+      { title: "续用前人经验", heirloomChoice: "use", note: `${action.useNote}${action.canUse ? "" : ` 暂不可选：${action.useReason}。`}`, disabled: !action.canUse },
+      { title: item.kind === "annotated-book" ? "转赠乡学" : "转赠乡里同业", heirloomChoice: "donate", note: `${action.donateNote}${action.canDonate ? "" : ` 暂不可选：${action.donateReason}。`}`, disabled: !action.canDonate },
+      { title: "封存，留给后来人", heirloomChoice: "seal", note: "不花钱，当前不领取收益；旧物、原主人与流转记录保留。" },
+    ];
+  state.currentEvent = { kind: "heirloom", title: item.title, content: `${item.origin.summary}\n\n${HEIRLOOM_DEFS[item.kind].note}\n如今由${item.holderName}保管。${action.used ? "你已领会过此物的经验，可以留给后来人，也可以交给乡里。" : "要怎样接过这份旧日留下的东西，由你决定。"}`, heirloomId: item.id, holderId: state.heirlooms.holderId, itemStatus: item.status, revision: item.revision, children };
+  view.page = "heirlooms";
+  save();
+  render();
+}
+
+function resolveHeirloom(event, choice) {
+  if (!state || state.currentEvent !== event || event.kind !== "heirloom" || !event.children.includes(choice) || choice.disabled) return;
+  if (state.eventResult || state.pendingActivity || state.pendingAnnualEvent || state.pendingTravel || state.pendingCaravan || state.exam?.current || state.poetryRound || state.pendingSurprise) return;
+  const item = heirloomItems().find((entry) => entry.id === event.heirloomId);
+  if (!item || state.dead || state.prisonYears > 0 || item.status === "donated" || event.holderId !== state.heirlooms.holderId || item.holderId !== event.holderId || event.itemStatus !== item.status || event.revision !== item.revision) return;
+  const decision = choice.heirloomChoice;
+  const def = HEIRLOOM_DEFS[item.kind];
+  const deltas = [];
+  let text = "";
+  if (decision === "use") {
+    if (item.status !== "kept" || item.usedBy.includes(event.holderId) || state.age < 8 || state.stats.money < def.useCost) return;
+    changeStat("money", -def.useCost, deltas);
+    addLedger("续用家传旧物", -def.useCost, `整理《${item.title}》，访习前人留下的经验。`);
+    item.usedBy.push(event.holderId);
+    const specialist = !!def.careerKind && careerKind() === def.careerKind;
+    text = `${state.name}没有把《${item.title}》当作白得的凭据，花费 ${moneyText(def.useCost)}誊整、核实，再将其中的经验用于眼前生活。`;
+    if (specialist) {
+      const progress = careerProgressFor();
+      changeLivelihoodMetric(progress, "readiness", item.kind === "medical-casebook" ? 8 : 6, deltas);
+      changeLivelihoodMetric(progress, "reputation", 4, deltas);
+      text += addCareerExperience(progress, 45, deltas);
+      if (item.kind === "grain-charter") {
+        changeRegionalReputation(currentRegionalId(), 3, deltas);
+        text += " 你把互保、限价与退赔旧约逐条向当地同行说明，门路由此有了凭信。";
+      } else text += " 你依旧案核对病程与药批，把前人的失误也编进医案；同业看见了肯求证的医者。";
+    } else {
+      changeStat("knowledge", item.kind === "annotated-book" ? 4 : 3, deltas);
+      if (item.kind === "annotated-book") { addExamPrep(6, deltas); text += " 批注成了你的读书提纲；不论是否入场应试，这份学问都留下了。"; }
+      else { changeStat(item.kind === "grain-charter" ? "eq" : "physique", 2, deltas); text += item.kind === "grain-charter" ? " 你仍做自己的营生，却学会怎样看懂互保条款、守住人情边界。" : " 你没有凭一本旧案自称名医，只学会记录病程、及时求医和照料家人。"; }
+    }
+    text += " 此物仍留在家中，下一位持有人可以继续学习；你不能重复领取所得。";
+  } else if (decision === "donate") {
+    if (item.status !== "kept" || state.stats.money < def.donateCost) return;
+    changeStat("money", -def.donateCost, deltas);
+    addLedger("转赠家传旧物", -def.donateCost, `誊整并送交《${item.title}》。`);
+    changeStat("virtue", 3, deltas);
+    changeRegionalReputation(currentRegionalId(), 5, deltas);
+    item.status = "donated";
+    text = `${state.name}花费 ${moneyText(def.donateCost)}整理《${item.title}》，把原件交给${travelDestinationByStaticId(currentRegionalId()).name}的${item.kind === "annotated-book" ? "乡学" : item.kind === "medical-casebook" ? "药坊同业" : "粮行同业"}，并留下${item.origin.name}的来源纸签。当地人从此可以据它研习；此件永久离开家门，你与后人都不能再使用或取回，家中仅保留流转记录。`;
+    recordRegionalChronicle(currentRegionalId(), `旧物入乡 · ${item.title}`, text);
+  } else if (decision === "seal" && item.status === "kept") {
+    item.status = "sealed";
+    text = `${state.name}把《${item.title}》重新包好，附上来历与流转纸签。现在不领取任何收益，留待后来人决定怎样使用；此前的续用记录仍在。`;
+  } else if (decision === "unseal" && item.status === "sealed") {
+    item.status = "kept";
+    text = `${state.name}启开《${item.title}》的封签。旧物重新可以处置，此次没有收益，此前谁已续用仍记得清楚。`;
+  } else return;
+  item.history.push({ holderId: event.holderId, name: state.name, generation: state.lineage.generation, year: state.year, action: { use: "续用", donate: "转赠乡里", seal: "封存", unseal: "启封" }[decision], summary: text });
+  item.history = item.history.slice(-48);
+  item.revision += 1;
+  state.currentEvent = null;
+  unlockLifeGoals();
+  finishAction(`家传之物 · ${choice.title}`, text, deltas, def.icon);
+}
+
+function carryHeirloomsAcrossInheritance(heir, year, generation) {
+  const source = normalizeHeirlooms(state.heirlooms);
+  const holderId = `person:${heir.heirKind === "spouse" ? state.family.spouseMeta?.id || heir.id : heir.id}`;
+  for (const item of source.items) {
+    if (item.status === "donated" || item.holderId === holderId) continue;
+    const previous = item.holderName;
+    item.holderId = holderId;
+    item.holderName = heir.name;
+    item.history.push({ holderId, name: heir.name, generation, year, action: "承接", summary: `${heir.name}从${previous}手中承接《${item.title}》；原有${item.status === "sealed" ? "封存状态与" : ""}来源、续用记录一并保留。` });
+    item.history = item.history.slice(-48);
+    item.revision += 1;
+  }
+  return { holderId, items: source.items };
 }
 
 function normalizeFemaleLife(source = {}) {
@@ -5835,6 +6034,7 @@ function updateSaveNotice() {
 
 function save() {
   if (!state || state.__ephemeral) return true;
+  if (!state.dead && shouldDie()) die(state.age >= 100 ? "寿终正寝" : "体魄耗尽");
   if (currentSlot < 0) { updateSaveNotice(); return false; }
   return writeSaveSlot(currentSlot, state, { activate: true });
 }
@@ -5862,10 +6062,13 @@ function deleteSaveSlot(slot) {
   }
 }
 
-function yearAdvanceBlockReason() {
+function yearAdvanceBlockReason(allowExam = false) {
   if (!state || state.dead) return "此生已终。";
   if (state.eventResult) return "请先点「点击继续」关闭当前结果。";
   if (state.currentEvent) return "请先处理当前事件再推进流年。";
+  if (state.pendingAnnualEvent) return "请先处理尚未结束的流年后续。";
+  if (state.pendingActivity) return "请先完成眼前的活动。";
+  if (state.exam?.current && !allowExam) return "考试尚未交卷，请先完成或退出考试。";
   if (state.pendingTravel) return "旅途未完，请先走完车马行程。";
   if (state.pendingCaravan) return "押镖途中，请先处理镖路上的抉择。";
   if (state.poetryRound) return "诗会文斗尚未结束，请先应对下联或弃局。";
@@ -6470,6 +6673,7 @@ function resolveScholarStory(event, choice) {
       state.study.prep = Math.min(100, Number(state.study.prep || 0) + 6);
       deltas.push({ label: "备考", value: 6 });
       text = `${person.name}带来亲手批注的书册，还逐篇替你讲透。他把当年的帮助，变成今日肯认真相授的学问。`;
+      text += grantHeirloom("annotated-book", { name: person.name, personId: person.id, generation: null, sourceId: `scholar:${thread.id}`, regionId: currentRegionalId(), year: state.year, summary: `${person.name}亲手批注，因旧日书缘赠予${state.name}；作者与受赠人分别记在纸签上。` }, { alreadyUsed: true });
     } else if (decision === "reconnect") {
       changeStat("mood", 5, deltas);
       text = `你与${person.name}聊起旧书和灯火，没有提银钱。往来不必每一笔都算回报，这次长谈让彼此更亲近。`;
@@ -6477,8 +6681,8 @@ function resolveScholarStory(event, choice) {
       changeStat("relationship", 3, deltas);
       text = `你与${person.name}重新坐到一桌，把旧日的生疏慢慢说开。这次没有天降馈赠，却为往后的交情留了门。`;
     } else if (decision === "remember") {
-      if (!state.inventory.includes("故人批注的旧书")) state.inventory.push("故人批注的旧书");
       text = `你收好${thread.target}的旧书，在命册写下这段往事。${person?.alive === false ? "故人已逝，不能再亲自兑现照应。" : "故人去向未明，未把传闻当作本人许诺。"}`;
+      text += grantHeirloom("annotated-book", { name: thread.target, personId: thread.targetId, generation: null, sourceId: `scholar:${thread.id}`, regionId: currentRegionalId(), year: state.year, summary: `${thread.target}留下批注，由${state.name}在旧书回响中收存。${person?.alive === false ? "作者已逝。" : "作者去向未明，不据此断定生死。"}` });
     } else {
       text = `你与${person.name}互道珍重，各自走进人群。这段旧书之缘就此收束。`;
     }
@@ -7467,106 +7671,7 @@ function nextYear() {
     state.age += 1;
     state.year += 1;
     state.lastDeltas = [];
-    expireNpcRequests(state.lastDeltas);
-
-    if (state.age === 1 && !state.tags.includes("抓周")) {
-      state.tags.push("抓周");
-      state.currentEvent = cloneEvent(START_EVENT);
-      save();
-      render();
-      return;
-    }
-
-    advanceDynastyYear(state.lastDeltas);
-
-    if (state.prisonYears > 0) {
-      const prison = ensurePrisonState();
-      prison.yearsServed += 1;
-      state.prisonYears = Math.max(0, state.prisonYears - 1);
-      applyAgeMilestones(state.lastDeltas);
-      changeStat("mood", -randInt(1, 4), state.lastDeltas);
-      changeStat("physique", randInt(-4, -1), state.lastDeltas);
-      advanceFamilyYear(state.lastDeltas);
-      advanceApprenticesYear(state.lastDeltas);
-      advanceClanYear(state.lastDeltas);
-      advanceNpcAgencyYear(state.lastDeltas);
-      advanceCricketYear(state.lastDeltas);
-      if (shouldDie()) {
-        die("病殁狱中");
-        save();
-        render();
-        return;
-      }
-      state.currentEvent = createPrisonYearEvent(state.prisonYears <= 0);
-      rememberEventKey(state.currentEvent);
-      finishYear(false);
-      return;
-    }
-
-    applyAgeMilestones(state.lastDeltas);
-    if (typeof ensureLeisureSeason === "function") ensureLeisureSeason();
-    changeStat("mood", randInt(-2, 2), state.lastDeltas);
-    changeStat("physique", state.age > 55 ? randInt(-4, -1) : randInt(-1, 2), state.lastDeltas);
-    changeStat("money", state.career ? randInt(18, 80) : randInt(-10, 25), state.lastDeltas);
-    const assetIncome = annualAssetIncome();
-    if (assetIncome) {
-      changeStat("money", assetIncome, state.lastDeltas);
-      addLedger("家产进项", assetIncome, "名下产业送来一年收益。");
-    }
-    assetMarketEvent(state.lastDeltas);
-    applyWorldAnnualImpact(state.lastDeltas);
-    if (state.diseases.length) changeStat("physique", -state.diseases.length, state.lastDeltas);
-    advanceFamilyYear(state.lastDeltas);
-    advanceApprenticesYear(state.lastDeltas);
-    advanceClanYear(state.lastDeltas);
-    advanceRegionalYear(state.lastDeltas);
-    if (typeof applySpouseProfileYear === "function") applySpouseProfileYear(state.lastDeltas);
-    advanceCricketYear(state.lastDeltas);
-    if (typeof runSecretYear === "function") runSecretYear(state.lastDeltas);
-    annualRelationEvent(state.lastDeltas);
-    annualPartnerEvent(state.lastDeltas);
-    advanceNpcAgencyYear(state.lastDeltas);
-    maybeCreateNpcRequest();
-
-    if (shouldDie()) {
-      die(state.age >= 100 ? "寿终正寝" : "体魄耗尽");
-      save();
-      render();
-      return;
-    }
-
-    const annualEvent =
-      annualCareerChapterEvent() ||
-      annualFamilyStoryEvent() ||
-      annualWorldArcEvent() ||
-      annualThreadEvent() ||
-      annualScholarStoryEvent() ||
-      annualChildLifeEvent() ||
-      annualUnderworldEvent() ||
-      annualJianghuEvent() ||
-      annualFortuneEvent() ||
-      annualOfficialCaseEvent() ||
-      annualSecretIntroductionEvent() ||
-      annualRegionalEvent() ||
-      chooseEvent();
-    const culturalEvent = annualCulturalEvent();
-    state.currentEvent = culturalEvent || annualEvent;
-    state.pendingAnnualEvent = culturalEvent ? annualEvent : null;
-    if (annualEvent) rememberEventKey(annualEvent);
-    if (culturalEvent) rememberEventKey(culturalEvent);
-    if (state.underworld) state.underworld.heat = clamp(Number(state.underworld.heat || 0) - randInt(2, 6));
-    if (state.jianghu) state.jianghu.heat = clamp(Number(state.jianghu.heat || 0) - randInt(2, 6));
-    // 有事件时不再叠惊喜弹窗，避免遮住选项导致“点不动”
-    if (!state.currentEvent) {
-      if (typeof offerRandomSecret === "function") {
-        if (!offerRandomSecret(state.lastDeltas)) annualSurpriseEvent(state.lastDeltas);
-      } else {
-        annualSurpriseEvent(state.lastDeltas);
-      }
-      // 只有真的没抽出事件或惊喜时才记“平年”，避免秘密邀约与赠礼同时被写成平年
-      if (!state.pendingSurprise) addLog("平年", "这一年无甚大事，日子仍照常向前。", state.lastDeltas);
-    }
-    finishYear(false);
+    finishYear();
   } catch (error) {
     console.error("nextYear failed", error);
     state.currentEvent = null;
@@ -7581,8 +7686,8 @@ function nextYear() {
   }
 }
 
-function finishYear(runAftermath = true) {
-  if (runAftermath) runAnnualAftermath(state.lastDeltas);
+function finishYear() {
+  runAnnualAftermath(state.lastDeltas);
   unlockLifeGoals();
   if (shouldDie()) die(state.age >= 100 ? "寿终正寝" : "体魄耗尽");
   save();
@@ -7590,12 +7695,109 @@ function finishYear(runAftermath = true) {
 }
 
 function runAnnualAftermath(deltas = state.lastDeltas) {
+  if (!state || state.dead || state.lastSettledYear === state.year) return;
+  // Each elapsed year is settled once, including activity years and save reloads.
+  state.lastSettledYear = state.year;
+  expireNpcRequests(deltas);
+
+  if (state.age === 1 && !state.tags.includes("抓周")) {
+    state.tags.push("抓周");
+    state.currentEvent = cloneEvent(START_EVENT);
+    return;
+  }
+
+  advanceDynastyYear(deltas);
+
+  if (state.prisonYears > 0) {
+    const prison = ensurePrisonState();
+    prison.yearsServed += 1;
+    state.prisonYears = Math.max(0, state.prisonYears - 1);
+    applyAgeMilestones(deltas);
+    changeStat("mood", -randInt(1, 4), deltas);
+    changeStat("physique", randInt(-4, -1), deltas);
+    advanceFamilyYear(deltas);
+    advanceApprenticesYear(deltas);
+    advanceClanYear(deltas);
+    advanceNpcAgencyYear(deltas);
+    advanceCricketYear(deltas);
+    if (shouldDie()) {
+      die("病殁狱中");
+      return;
+    }
+    state.currentEvent = createPrisonYearEvent(state.prisonYears <= 0);
+    rememberEventKey(state.currentEvent);
+    return;
+  }
+
+  applyAgeMilestones(deltas);
+  if (typeof ensureLeisureSeason === "function") ensureLeisureSeason();
+  changeStat("mood", randInt(-2, 2), deltas);
+  changeStat("physique", state.age > 55 ? randInt(-4, -1) : randInt(-1, 2), deltas);
+  changeStat("money", state.career ? randInt(18, 80) : randInt(-10, 25), deltas);
+  const assetIncome = annualAssetIncome();
+  if (assetIncome) {
+    changeStat("money", assetIncome, deltas);
+    addLedger("家产进项", assetIncome, "名下产业送来一年收益。");
+  }
+  assetMarketEvent(deltas);
+  applyWorldAnnualImpact(deltas);
+  if (state.diseases.length) changeStat("physique", -state.diseases.length, deltas);
   advanceFamilyYear(deltas);
   advanceApprenticesYear(deltas);
   advanceClanYear(deltas);
   advanceRegionalYear(deltas);
+  if (typeof applySpouseProfileYear === "function") applySpouseProfileYear(deltas);
   advanceCricketYear(deltas);
-  annualSurpriseEvent(deltas);
+  if (typeof runSecretYear === "function") runSecretYear(deltas);
+  annualRelationEvent(deltas);
+  annualPartnerEvent(deltas);
+  advanceNpcAgencyYear(deltas);
+  maybeCreateNpcRequest();
+
+  if (shouldDie()) {
+    die(state.age >= 100 ? "寿终正寝" : "体魄耗尽");
+    return;
+  }
+
+  // A secret can be exposed during this settlement; its new sentence starts next year.
+  if (state.prisonYears > 0) {
+    state.currentEvent = createPrisonYearEvent();
+    state.pendingAnnualEvent = null;
+    rememberEventKey(state.currentEvent);
+    return;
+  }
+
+  const annualEvent =
+    annualCareerChapterEvent() ||
+    annualFamilyStoryEvent() ||
+    annualWorldArcEvent() ||
+    annualThreadEvent() ||
+    annualScholarStoryEvent() ||
+    annualChildLifeEvent() ||
+    annualUnderworldEvent() ||
+    annualJianghuEvent() ||
+    annualFortuneEvent() ||
+    annualOfficialCaseEvent() ||
+    annualSecretIntroductionEvent() ||
+    annualRegionalEvent() ||
+    chooseEvent();
+  const culturalEvent = annualCulturalEvent();
+  state.currentEvent = culturalEvent || annualEvent;
+  state.pendingAnnualEvent = culturalEvent ? annualEvent : null;
+  if (annualEvent) rememberEventKey(annualEvent);
+  if (culturalEvent) rememberEventKey(culturalEvent);
+  if (state.underworld) state.underworld.heat = clamp(Number(state.underworld.heat || 0) - randInt(2, 6));
+  if (state.jianghu) state.jianghu.heat = clamp(Number(state.jianghu.heat || 0) - randInt(2, 6));
+  // 有事件时不再叠惊喜弹窗，避免遮住选项导致“点不动”
+  if (!state.currentEvent && !state.eventResult) {
+    if (typeof offerRandomSecret === "function") {
+      if (!offerRandomSecret(deltas)) annualSurpriseEvent(deltas);
+    } else {
+      annualSurpriseEvent(deltas);
+    }
+    // 只有真的没抽出事件或惊喜时才记“平年”，避免秘密邀约与赠礼同时被写成平年
+    if (!state.pendingSurprise) addLog("平年", "这一年无甚大事，日子仍照常向前。", deltas);
+  }
 }
 
 function shouldDie() {
@@ -7717,10 +7919,6 @@ function relationCount() {
     + livingChildren().length
     + (state.family.spouse ? 1 : 0)
     + (state.family.concubines || []).filter((item) => item.alive !== false).length;
-}
-
-function inventoryCount() {
-  return (state.inventory || []).length + (state.crickets || []).length + (state.diseases || []).length + Object.values(state.femaleSkills || {}).filter((level) => Number(level) > 0).length;
 }
 
 function miniGameRounds() {
@@ -8547,6 +8745,7 @@ function chooseOption(index) {
   try {
     if (event.kind === "officialCase") return resolveOfficialCase(event, choice);
     if (event.kind === "careerChapter") return resolveCareerChapter(event, choice);
+    if (event.kind === "heirloom") return resolveHeirloom(event, choice);
     if (event.kind === "familyStory") return resolveFamilyStory(event, choice);
     if (event.kind === "careerCase") return resolveCareerCase(event, choice);
     if (event.kind === "fortuneEvent") return resolveFortuneEvent(event, choice);
@@ -8625,6 +8824,7 @@ function finishEvent() {
   addLog(state.currentEvent.title || "事件", fillPlaceholders(state.currentEvent.content || state.currentEvent.history || ""), state.lastDeltas);
   state.currentEvent = null;
   if (state.pendingActivity) return completePendingActivity();
+  resumePendingAnnualEvent();
   save();
   render();
 }
@@ -8633,12 +8833,15 @@ function finishEventResult() {
   if (!state?.eventResult) return;
   state.eventResult = null;
   if (state.pendingActivity) return completePendingActivity();
-  if (!state.dead && state.pendingAnnualEvent) {
-    state.currentEvent = state.pendingAnnualEvent;
-    state.pendingAnnualEvent = null;
-  }
+  resumePendingAnnualEvent();
   save();
   render();
+}
+
+function resumePendingAnnualEvent() {
+  if (state.dead || state.currentEvent || state.eventResult || !state.pendingAnnualEvent) return;
+  state.currentEvent = state.pendingAnnualEvent;
+  state.pendingAnnualEvent = null;
 }
 
 function resultIcon(choice, event) {
@@ -8871,7 +9074,7 @@ function openActivity(id) {
 }
 
 function startActivity(id) {
-  if (!state || state.dead || state.currentEvent || state.eventResult || state.pendingCaravan || state.prisonYears > 0) return;
+  if (yearAdvanceBlockReason() || state.prisonYears > 0) return;
   const activity = getActivity(id);
   if (!activity) return;
   const deltas = [];
@@ -8895,7 +9098,7 @@ function startActivity(id) {
 }
 
 function performHomeAction(action) {
-  if (!state || state.dead || state.currentEvent || state.eventResult || state.pendingCaravan || state.prisonYears > 0) return;
+  if (yearAdvanceBlockReason() || state.prisonYears > 0) return;
   const deltas = [];
   let title = "家中";
   let text = "";
@@ -8947,9 +9150,9 @@ function performHomeAction(action) {
   }
   state.lastDeltas = deltas;
   addLog(title, text, deltas);
+  state.eventResult = { title, text, deltas, icon: iconName };
   state.age += 1;
   state.year += 1;
-  applyAgeMilestones(deltas);
   view.page = "main";
   finishYear();
 }
@@ -8987,11 +9190,16 @@ function expandActivityBuckets(buckets) {
 function completePendingActivity() {
   const pending = state.pendingActivity;
   if (!pending) return;
+  if (!state.dead && (state.currentEvent || state.eventResult || state.pendingTravel || state.pendingCaravan || state.poetryRound || state.exam?.current)) return;
   state.pendingActivity = null;
+  if (state.dead) {
+    save();
+    render();
+    return;
+  }
   state.age += 1;
   state.year += 1;
   if (!state.lastDeltas?.length) state.lastDeltas = pending.deltas || [];
-  applyAgeMilestones(state.lastDeltas);
   view.page = "main";
   finishYear();
 }
@@ -13294,6 +13502,7 @@ function inheritFromChild(id) {
     difficulty: "承继",
     age: startAge,
     year: startAge,
+    lastSettledYear: startAge,
     location: state.location,
     dynasty: carryDynastyAcrossInheritance(state.dynasty, state.year, startAge),
     regional: carryRegionalAcrossInheritance(state.regional, startAge, heir.name),
@@ -13321,6 +13530,7 @@ function inheritFromChild(id) {
     tags: ["承继家业"],
     diseases: [],
     inventory: inheritedInventory,
+    heirlooms: carryHeirloomsAcrossInheritance(heir, startAge, generation + generationStep),
     log: [
       { age: startAge, title: "承继家业", text: `${oldName}身后，${heir.name}以${heir.heirKind === "grandchild" ? heir.relation : "子女"}身份承继第 ${generation + generationStep} 代家业。上一代命格总评为${oldGrade}，${oldScore}分；遗下钱财 ${moneyText(inheritedMoney)}、家产 ${inheritedAssets.length} 处。` },
       { age: startAge, title: "家族命册", text: `家中旧事由长辈收束成册，${heir.name}自此接过门户，也接过${oldName}未竟之事。` },
@@ -13421,6 +13631,7 @@ function inheritFromSpouse(heir) {
     difficulty: "承继",
     age: heirAge,
     year: heirAge,
+    lastSettledYear: heirAge,
     location: old.location,
     dynasty: carryDynastyAcrossInheritance(old.dynasty, old.year, heirAge),
     regional: carryRegionalAcrossInheritance(old.regional, heirAge, heir.name),
@@ -13450,6 +13661,7 @@ function inheritFromSpouse(heir) {
     tags: ["未亡人承业", "承继家业"],
     diseases: [],
     inventory: [...new Set([...(old.inventory || []), "亡夫家书"])].slice(0, 18),
+    heirlooms: carryHeirloomsAcrossInheritance(heir, heirAge, generation),
     log: [
       { age: heirAge, title: "妻承夫业", text: `${oldName}身后，妻子${heir.name}没有让门户散去。她接过账册、田契与家中诸事，以未亡人身份继续第 ${generation} 代人生。` },
       { age: heirAge, title: "家族命册", text: `${heir.name}将${oldName}一生旧事收进命册，也决定从此以自己的名字续写后半生。` },
@@ -13909,7 +14121,9 @@ function completeLivelihoodChapter(active, deltas) {
   if (actor) rememberNpcMoment(actor, "本业长线", `${pack.title}最后走向“${ending.title}”。${ending.text}`, ending.actorAffection || 0);
   const legacyType = ending.title === "粮路长明" ? "granary" : ending.title === "一巷安灯" ? "dispensary" : "";
   const legacyText = legacyType ? establishRegionalLegacy(legacyType, active.regionId) : "";
-  const text = `${ending.text}${levelText}${legacyText ? `\n\n${legacyText}` : ""}`;
+  const heirloomKind = ["粮路长明", "同舟商约"].includes(ending.title) ? "grain-charter" : ["医案传灯", "一巷安灯"].includes(ending.title) ? "medical-casebook" : "";
+  const heirloomText = heirloomKind ? grantHeirloom(heirloomKind, { name: active.originName || state.name, generation: state.lineage.generation, personId: state.heirlooms.holderId, sourceId: `career:${active.id}:${state.heirlooms.holderId}`, regionId: active.regionId, year: state.year, summary: `${active.originName || state.name}完成“${pack.title}”，走向“${ending.title}”，将亲历的选择、代价与旧约整理成册，作为这件旧物的第一位持有者。` }, { alreadyUsed: true }) : "";
+  const text = `${ending.text}${levelText}${legacyText ? `\n\n${legacyText}` : ""}${heirloomText ? `\n\n${heirloomText}` : ""}`;
   recordCareerChapter(active, ending.title, text);
   return { title: ending.title, text, followup: `“${pack.title}”已收入${state.career.name}履历；商誉、医名、地方变化与同业的记忆都已实际结算。` };
 }
@@ -14264,7 +14478,7 @@ function consumeExamPrep() {
 }
 
 function canPrepareExam() {
-  return state.gender === "male" && !state.dead && !state.currentEvent && !state.eventResult && state.prisonYears <= 0 && state.age >= 8;
+  return !!state && state.gender === "male" && !yearAdvanceBlockReason() && state.prisonYears <= 0 && state.age >= 8;
 }
 
 function prepareExam() {
@@ -14281,9 +14495,9 @@ function prepareExam() {
   if (!state.tags.includes("备考")) state.tags.push("备考");
   state.lastDeltas = deltas;
   addLog("备考", "你在书院温经读题，先生圈点得失，心里对下场考试更有把握。", deltas);
+  state.eventResult = { title: "备考一年", text: "你在书院温经读题，先生圈点得失，心里对下场考试更有把握。", deltas, icon: "Book" };
   state.age += 1;
   state.year += 1;
-  applyAgeMilestones(deltas);
   view.page = "main";
   finishYear();
 }
@@ -14314,7 +14528,7 @@ function examStatusNote() {
   if (state.gender === "female") return `<p class="empty-note">本朝科举仅取男子，女子不能参加童试、乡试、会试或殿试。你仍可在女学修习诗书、算学与岐黄，并参加女医技艺考校。</p>`;
   const next = state.exam.rank >= EXAM_STAGES.length - 1 ? null : EXAM_STAGES[state.exam.rank + 1];
   const title = state.exam.rank >= 0 ? EXAM_TITLES[state.exam.rank] : "白身";
-  let reason = "APK 题库未加载。";
+  let reason = "题库尚未准备完成，请稍后再试。";
   if (imperialQuestionPool().length > 0) {
     if (state.exam.rank >= EXAM_STAGES.length - 1) reason = "殿试已毕，可在营生中选择官府职任。";
     else if (state.age < MAIN_EXAM_MIN_AGE) reason = `需满 ${MAIN_EXAM_MIN_AGE} 岁后参加童试。`;
@@ -14763,6 +14977,7 @@ function choosePalace(field, value) {
 }
 
 function submitExam() {
+  if (yearAdvanceBlockReason(true) || state.prisonYears > 0) return;
   const current = state.exam.current;
   if (!current) return;
   const stage = current.extraStage || EXAM_STAGES[current.stageIndex] || EXAM_STAGES[0];
@@ -14827,14 +15042,11 @@ function submitExam() {
   state.exam.current = null;
   state.lastDeltas = deltas;
   addLog(stage.name, text, deltas);
+  state.eventResult = { title: stage.name, text, deltas, icon: "Book" };
   state.age += 1;
   state.year += 1;
-  applyAgeMilestones(deltas);
-  runAnnualAftermath(deltas);
-  unlockLifeGoals();
   view.page = "main";
-  save();
-  render();
+  finishYear();
 }
 
 function addLog(title, text, deltas = []) {
@@ -15093,6 +15305,7 @@ function controlSelector(element) {
 }
 
 function render() {
+  if (state && !state.__ephemeral && !state.dead && shouldDie()) save();
   const previousDialog = app.querySelector("dialog[open]");
   const focusedControl = controlSelector(document.activeElement);
   if (!previousDialog && view.overlay) overlayReturnFocus = focusedControl;
@@ -15508,7 +15721,7 @@ function achievementToast() {
 }
 
 function centerContent() {
-  if (state.dead) return deathView();
+  if (state.dead) return view.page === "save-manager" ? saveManagerView() : deathView();
   // 奇案仅在明确进入办案页时全屏，不再永久挡住「下一年」
   if (state.mystery?.active && view.page === "mystery") return mysteryCaseView();
   if (state.pendingTravel) return travelRunView();
@@ -15518,6 +15731,7 @@ function centerContent() {
   // 文斗是一个需要明确作答或弃局的流程，避免从顶部导航离开后留下幽灵局面。
   if (state.poetryRound) return poetryView();
   if (view.page === "home") return homeView();
+  if (view.page === "heirlooms") return heirloomsView();
   if (view.page === "place") return placeView();
   if (view.page === "assets") return assetsView();
   if (view.page === "relations") return relationsView();
@@ -16169,6 +16383,7 @@ function activityView() {
       <h2>${escapeHtml(activity.label)}</h2>
       <p>${escapeHtml(activity.text)}</p>
       <div class="activity-meta">
+        <span>完成后度过一年</span>
         ${(activity.buckets || []).map((bucket) => `<span>${activityBucketName(bucket)}</span>`).join("")}
       </div>
       <div class="main-actions">
@@ -16493,7 +16708,7 @@ function homeView() {
     <article class="play-card home-card">
       <p class="eyebrow">家中</p>
       <h2>${state.age < 15 ? "庭院日常" : "持家"} </h2>
-      <p>${state.age < 8 ? "年岁尚幼，家中小事也能慢慢养成性情。" : state.age < 15 ? "读书、玩耍、帮忙，都是少年时光。" : "成丁之后，家中也有账册、人情与长辈需要照看。"}</p>
+      <p>${state.age < 8 ? "年岁尚幼，家中小事也能慢慢养成性情。" : state.age < 15 ? "读书、玩耍、帮忙，都是少年时光。" : "成丁之后，家中也有账册、人情与长辈需要照看。"}选择一项家中活动，度过这一年。</p>
       <section class="home-grid">
         ${homeActionButton("study", state.age < 8 ? "认字描红" : "家中温书", "增长学识与备考进度。", "Book", blocked)}
         ${homeActionButton("play", "出门玩耍", "舒展心情，可能结识同龄人。", "BambooHorse", blocked || state.age > 14)}
@@ -16501,6 +16716,7 @@ function homeView() {
         ${homeActionButton("parents", "听父母训导", "增进亲情，也学些做人道理。", "FamilyIcon", blocked)}
         ${homeActionButton("estate", "整理家业", "成丁后清点账册与器物。", "House", blocked || state.age < 15)}
       </section>
+      ${heirloomDoor()}
       <div class="main-actions"><button class="ghost-btn" data-action="back-main">返回</button></div>
     </article>`;
 }
@@ -16512,6 +16728,35 @@ function homeActionButton(action, label, note, iconName, disabled) {
       <strong>${escapeHtml(label)}</strong>
       <small>${escapeHtml(note)}</small>
     </button>`;
+}
+
+function heirloomDoor() {
+  const count = heirloomItems().filter(item => item.status !== "donated").length;
+  return `<button class="heirloom-door" data-page="heirlooms">${icon("MainBook", "家传之物")}<span><strong>家传之物${count ? ` · ${count}件` : ""}</strong><small>${count ? "旧物有来历，后人有自己的选择" : "船契、医案与故人旧书，留给后人接续"}</small></span><b aria-hidden="true">→</b></button>`;
+}
+
+function heirloomsView() {
+  const items = heirloomItems();
+  const kept = items.filter(item => item.status !== "donated").length;
+  return `<article class="play-card heirloom-cabinet">
+    <header><p class="eyebrow">家门旧物 · 一代接一代</p><h2>家传之物</h2><p>一纸船契，一册医案。留给后人的，不只是一件旧物，还有你这一生的选择。</p></header>
+    ${items.length ? `<div class="heirloom-counts"><span><b>${kept}</b>件仍在家中</span><span><b>${items.length - kept}</b>件已赠予乡里</span></div><div class="heirloom-grid">${items.map(heirloomCard).join("")}</div>` : `<section class="heirloom-empty">${icon("MainBook", "尚待落笔")}<h3>旧物尚待落笔</h3><p>守住一条粮路，留下可传的医案，或在旧书缘中收下故人的批注。你的经历，会成为后人打开的第一卷。</p><p>获得的旧物会保留来历；传给家人后，可以续用、转赠，或封存。</p></section>`}
+    <div class="main-actions"><button class="ghost-btn" data-page="home">回到家中</button><button class="secondary-btn" data-page="backpack">查看行囊</button></div>
+  </article>`;
+}
+
+function heirloomCard(item) {
+  const definition = HEIRLOOM_DEFS[item.kind];
+  const action = heirloomActionState(item);
+  const origin = item.origin || {};
+  const history = item.history || [];
+  return `<article class="heirloom-card is-${item.status}">
+    <header class="heirloom-top">${icon(definition.icon, item.title || definition.title)}<div><small>${escapeHtml(action.statusLabel)}</small><h3>${escapeHtml(item.title || definition.title)}</h3></div><span class="heirloom-seal" aria-hidden="true">${item.status === "donated" ? "赠" : item.status === "sealed" ? "藏" : "传"}</span></header>
+    <div class="heirloom-docket"><p>${origin.generation ? `第${origin.generation}代 · ` : "原主 · "}<strong>${escapeHtml(origin.name || "来历未详")}</strong></p><small>${escapeHtml(origin.summary || "旧物的来历尚未详记。")}</small></div>
+    <p class="heirloom-description">${escapeHtml(definition.note)}</p>
+    <details class="heirloom-history"><summary>${history.length}段传承足迹 · 展开看旧事</summary><ol>${history.map(entry => `<li><div><strong>${entry.generation ? `第${entry.generation}代 · ` : ""}${escapeHtml(entry.name || "姓名未详")}${entry.year != null ? ` · ${entry.year}岁` : ""}</strong><p>${escapeHtml(entry.summary)}</p></div></li>`).join("")}</ol></details>
+    ${action.canOpen ? `<p class="heirloom-status">${escapeHtml(item.status === "sealed" ? "封存的旧物仍在，可打开再议去留。" : action.used ? "你已续用过其中的经验，还可以决定这件旧物的去留。" : action.useNote)}</p><button class="secondary-btn" data-heirloom-open="${escapeHtml(item.id)}">${item.status === "sealed" ? "打开封存" : "展开旧物"}</button>` : `<p class="heirloom-status">${escapeHtml(action.reason || action.statusLabel)}</p>`}
+  </article>`;
 }
 
 function placeSceneHeader(place) {
@@ -17116,6 +17361,7 @@ function backpackView() {
         ${INVENTORY_CATEGORIES.map(([id, label]) => `<button class="${tab === id ? "active" : ""}" data-inventory-tab="${id}">${escapeHtml(label)}</button>`).join("")}
       </div>
       <p class="inventory-capacity">通用可存放：${used}/${cap}</p>
+      ${heirloomDoor()}
       <div class="item-grid">
         ${items.map((item) => `
           <article class="item-card">
@@ -18523,7 +18769,7 @@ function examView() {
       <article class="play-card exam-card">
         <p class="eyebrow">科举</p>
         <h2>${escapeHtml(stage?.name || "科举")}</h2>
-        <p>从 APK 题库抽题。选择题中第一个原始答案为正解，殿试按学识、处世、德行综合评卷。</p>
+        <p>每次试卷从经史题库中抽取。答题与备考积累共同影响成绩，殿试还会考察学识、处世与德行。</p>
         <section class="prep-panel">
           <div class="section-title"><h2>备考</h2><strong>${Math.round(state.study?.prep || 0)}/100</strong></div>
           <div class="meter"><i style="width:${clamp(state.study?.prep || 0)}%"></i></div>
@@ -18618,7 +18864,7 @@ function eventSceneArt(event = {}) {
     else if (/营生|买卖|掌柜|工匠|医者|农田|本业/.test(text)) key = "career";
     else key = "life";
   }
-  return { key, ...(EVENT_SCENE_ART[key] || EVENT_SCENE_ART.life) };
+  return { key, ...(EVENT_SCENE_ART[key] || EVENT_SCENE_ART.life), ...(event.kind === "heirloom" ? { label: "家门旧物" } : {}) };
 }
 
 function examHistory() {
@@ -18669,7 +18915,7 @@ function eventView(event) {
         <img src="${sceneArt.src}" alt="${escapeHtml(sceneArt.label)}场景插画" width="1600" height="900" decoding="async" fetchpriority="high" />
         <figcaption><span>流年画卷</span><b>${escapeHtml(sceneArt.label)}</b></figcaption>
       </figure>
-      <p class="eyebrow">${event.kind === "careerChapter" ? "本业长卷 · 一念一生" : eyebrow}</p>
+      <p class="eyebrow">${event.kind === "careerChapter" ? "本业长卷 · 一念一生" : event.kind === "heirloom" ? "家传之物 · 续写前人旧事" : eyebrow}</p>
       <h2>${escapeHtml(event.title || "事件")}</h2>
       ${event.kind === "careerChapter" ? careerChapterReading(event) : ""}
       <p>${formatText(fillPlaceholders(event.content || event.history || "", false))}</p>
@@ -18678,7 +18924,7 @@ function eventView(event) {
           options.length
             ? options.map(({ child, index }) => `<button class="choice-btn ${sceneInteraction ? "scene-choice" : ""} ${official || careerCase ? "official-choice" : ""}" data-choice="${index}" ${child.disabled ? "disabled" : ""}>
               <span>${escapeHtml(child.title || "继续")}</span>
-              ${(official || familyStory || careerCase || fortuneEvent || darkEvent || prisonEvent || culturalEvent || worldEvent || femaleSchoolEvent || clanEvent || regionalEvent || fateThread || childLifeEvent || npcRequest || event.kind === "scholarStory" || event.kind === "careerChapter") && child.note ? `<small>${escapeHtml(child.note)}</small>` : ""}
+              ${(official || familyStory || careerCase || fortuneEvent || darkEvent || prisonEvent || culturalEvent || worldEvent || femaleSchoolEvent || clanEvent || regionalEvent || fateThread || childLifeEvent || npcRequest || event.kind === "scholarStory" || event.kind === "careerChapter" || event.kind === "heirloom") && child.note ? `<small>${escapeHtml(child.note)}</small>` : ""}
             </button>`).join("")
             : `<button class="primary-btn" data-action="finish-event">继续</button>`
         }
@@ -18728,6 +18974,7 @@ function deathView() {
       <div class="main-actions">
         <button class="${heirs.length ? "ghost-btn danger" : "primary-btn"}" data-action="new-life">另开新档</button>
         <button class="secondary-btn" data-tab="history">查看命册</button>
+        <button class="ghost-btn" data-action="open-save-manager">读取或恢复存档</button>
       </div>
     </article>`;
 }
@@ -18798,7 +19045,7 @@ function tabContent() {
       ...state.diseases.map((item) => [`病症：${item}`, "可去医馆调理"]),
       ...visibleLifeTags().map((item) => [`记号：${item}`, "人生经历"]),
     ];
-    return listPanel("行囊", list);
+    return `${heirloomDoor()}${listPanel("行囊", list)}`;
   }
   if (view.tab === "history") return historyPanel();
   return overviewPanel();
@@ -19428,7 +19675,7 @@ app.addEventListener("click", (event) => {
     view.page = button.dataset.page;
     view.placeId = button.dataset.place === "activities" ? "" : button.dataset.place || "";
     render();
-    if (button.dataset.page === "regions") focusStoryContent();
+    if (["regions", "heirlooms"].includes(button.dataset.page)) focusStoryContent();
     return;
   }
   if (button.dataset.place) {
@@ -19535,6 +19782,11 @@ app.addEventListener("click", (event) => {
     return;
   }
   if (button.dataset.career !== undefined) return takeCareer(button.dataset.career);
+  if (button.dataset.heirloomOpen) {
+    openHeirloom(button.dataset.heirloomOpen);
+    if (state.currentEvent?.kind === "heirloom") focusStoryContent();
+    return;
+  }
   if (button.dataset.careerAction) {
     performCareerAction(button.dataset.careerAction);
     if (button.dataset.careerAction === "case:chapter" && state.currentEvent?.kind === "careerChapter") focusStoryContent();

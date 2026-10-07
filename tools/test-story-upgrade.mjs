@@ -115,7 +115,7 @@ try {
     const deadEvent = reunion();
     const beforeDeath = state.stats.money;
     chooseOption(0);
-    const death = { branches: deadEvent.children.map((item) => item.scholarChoice), noReward: state.stats.money === beforeDeath, stillDead: npcById(deceased.person.id, true).alive === false, book: state.inventory.includes("故人批注的旧书") };
+    const death = { branches: deadEvent.children.map((item) => item.scholarChoice), noReward: state.stats.money === beforeDeath, stillDead: npcById(deceased.person.id, true).alive === false, book: state.heirlooms.items.some((item) => item.kind === "annotated-book" && item.origin.personId === deceased.person.id) && !state.inventory.includes("故人批注的旧书") };
 
     reset();
     const inherited = meeting("fund");

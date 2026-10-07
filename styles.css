@@ -7114,6 +7114,53 @@ dialog.game-overlay::backdrop { background: #152b26a8; backdrop-filter: blur(4px
 .legacy-memory article small { display: block; font-size: 11px; line-height: 1.7; color: #66705d; }
 .legacy-memory > button { font-size: 11px; padding: 0; min-height: 40px; margin-top: 4px; }
 
+.heirloom-cabinet > header { padding: 6px 0 22px; border-bottom: 1px solid var(--line); }
+.heirloom-cabinet > header h2 { margin: 10px 0; font-family: "STSong", "SimSun", serif; letter-spacing: .1em; font-size: 32px; }
+.heirloom-cabinet > header > p:last-child { color: var(--muted); line-height: 1.85; font-size: 13px; max-width: 44em; }
+.heirloom-counts { display: flex; flex-wrap: wrap; gap: 10px 24px; padding: 17px 0; color: var(--muted); font-size: 11px; }
+.heirloom-counts b { font-family: "STSong", "SimSun", serif; color: var(--ink); font-size: 22px; font-weight: 400; padding-right: 5px; }
+.heirloom-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 16px; }
+.heirloom-card { position: relative; background: #faf6eb; border: 1px solid #cfc8b6; padding: 19px; border-radius: 5px; min-width: 0; }
+.heirloom-card.is-donated { background: #eceee5; }
+.heirloom-card.is-sealed { background: #f0ece1; }
+.heirloom-top { display: flex; align-items: center; gap: 12px; }
+.heirloom-top > img { width: 49px; height: 49px; object-fit: contain; flex-shrink: 0; }
+.heirloom-top > div { min-width: 0; flex: 1; }
+.heirloom-top small { color: #77745c; font-size: 10px; }
+.heirloom-top h3 { margin: 6px 0; font-family: "STSong", "SimSun", serif; font-size: 20px; line-height: 1.5; }
+.heirloom-seal { display: grid; place-items: center; width: 29px; height: 35px; border: 1px solid #9a5644; color: #9a5644; font-family: "SimSun", serif; font-size: 17px; flex-shrink: 0; transform: rotate(-4deg); }
+.heirloom-card.is-donated .heirloom-seal { color: #567354; border-color: #567354; }
+.heirloom-docket { margin: 17px 0 12px; padding: 11px 0; border-block: 1px solid #6f705929; }
+.heirloom-docket p { margin: 0; font-size: 12px; line-height: 1.75; }
+.heirloom-docket small { display: block; margin-top: 5px; color: var(--muted); font-size: 10px; line-height: 1.8; }
+.heirloom-description { font-size: 12px; line-height: 1.85; color: #68725e; margin: 12px 0; }
+.heirloom-history { border-top: 1px dashed #7d7c6438; margin-top: 12px; }
+.heirloom-history summary { cursor: pointer; font-size: 11px; line-height: 1.7; padding: 13px 0; color: #6d705d; }
+.heirloom-history ol { list-style: none; margin: 0; padding: 0; }
+.heirloom-history li { display: grid; grid-template-columns: 5px minmax(0, 1fr); column-gap: 12px; margin: 0 0 14px; }
+.heirloom-history li::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: #8a7656; margin-top: 7px; }
+.heirloom-history strong { font-size: 11px; font-weight: 400; }
+.heirloom-history p { margin: 5px 0 0; font-size: 11px; color: var(--muted); line-height: 1.75; overflow-wrap: anywhere; }
+.heirloom-card .heirloom-status { font-size: 11px; color: #6d634f; line-height: 1.7; margin-top: 14px; }
+.heirloom-card > button { margin-top: 10px; min-height: 43px; width: 100%; font-size: 13px; }
+.heirloom-empty { padding: 36px 22px; border: 1px dashed #bdbba8; background: #f1f1e6; border-radius: 5px; text-align: center; }
+.heirloom-empty > img { width: 54px; height: 54px; object-fit: contain; opacity: .7; }
+.heirloom-empty h3 { font-size: 20px; font-family: "STSong", "SimSun", serif; font-weight: 400; }
+.heirloom-empty p { margin: 8px auto; max-width: 33em; font-size: 12px; line-height: 1.8; color: var(--muted); }
+.heirloom-door { display: flex; align-items: center; gap: 11px; width: 100%; text-align: left; padding: 14px; margin: 18px 0; border: 1px solid #c2c9b5; border-radius: 5px; background: #e9ecdf; color: var(--ink); }
+.heirloom-door > img { width: 34px; height: 34px; object-fit: contain; }
+.heirloom-door > span { min-width: 0; flex: 1; }
+.heirloom-door strong { display: block; font-size: 14px; }
+.heirloom-door small { display: block; margin-top: 5px; color: #637058; font-size: 11px; line-height: 1.6; }
+.heirloom-door > b { color: #5a7254; font-weight: 400; }
+@media (max-width: 760px) {
+  .heirloom-cabinet { padding: 19px 16px; }
+  .heirloom-cabinet > header h2 { font-size: 28px; }
+  .heirloom-card { padding: 16px; }
+  .heirloom-top h3 { font-size: 22px; }
+  .heirloom-grid { gap: 13px; }
+}
+
 @media (max-width: 1000px) and (min-width: 761px) {
   .create-shell { padding: 24px; }
   .prologue-layout { grid-template-columns: .9fr 1fr; }
