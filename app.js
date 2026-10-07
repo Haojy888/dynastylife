@@ -2,8 +2,13 @@ const DATA = window.DYNASTY_LIFE_DATA || {};
 const SAVE_PREFIX = "dynasty-life-slot-";
 const SAVE_META_KEY = "dynasty-life-save-meta";
 const SAVE_LEGACY_KEY = "dynasty-life-web-modern-v1";
+const SAVE_ACTIVE_KEY = "dynasty-life-active-slot";
 const MAX_SLOTS = 3;
 let currentSlot = -1;
+let saveError = "";
+let failedSaveSlot = -1;
+let saveUiReady = false;
+let pendingSaveImport = null;
 
 const app = document.getElementById("app");
 const COPPER_PER_SILVER = 1000;
@@ -918,6 +923,8 @@ const EVENT_SCENE_ART = {
   study: { src: "assets/event-study.webp", label: "寒窗问学", focus: "65% 50%" },
   official: { src: "assets/event-official.webp", label: "官署公堂", focus: "64% 50%" },
   career: { src: "assets/event-career.webp", label: "市井百业", focus: "61% 50%" },
+  grainRoad: { src: "assets/event-grain-road.webp", label: "一线粮途", focus: "57% 50%" },
+  dispensary: { src: "assets/event-dispensary.webp", label: "药灯未灭", focus: "43% 50%" },
   culture: { src: "assets/event-culture.webp", label: "华夏岁时", focus: "56% 50%" },
   prison: { src: "assets/event-prison.webp", label: "铁窗流年", focus: "68% 50%" },
   jianghu: { src: "assets/event-jianghu.webp", label: "江湖暗门", focus: "66% 50%" },
@@ -931,6 +938,8 @@ const EVENT_KIND_SCENES = {
   dailyStory: "life",
   familyStory: "life",
   femaleSchool: "study",
+  scholarStory: "study",
+  heirloom: "clan",
   officialCase: "official",
   careerCase: "career",
   culturalEvent: "culture",
@@ -1634,6 +1643,7 @@ const CARAVAN_EVENTS = [
   },
 ];
 
+const ASSET_CONDITION_MAX = 120;
 const PROPERTY_CATALOG = [
   { name: "薄田三亩", price: 180, income: 12, icon: "Agriculture", desc: "岁末可得些许租谷，胜在稳当。" },
   { name: "水田一顷", price: 260, income: 20, icon: "PaddyField", desc: "近渠有水，丰年收租更可观。" },
@@ -1672,6 +1682,11 @@ const REGION_PROFILES = {
   kunbei: { epithet: "朔风雄城", industry: "马市、皮货与军需", custom: "北地尚武直爽，真本事比漂亮话更容易赢得尊敬。", settleCost: 760, incident: ["马市疫惊", "朔风马市忽有良驹倒毙，军府怀疑疫病，商贩却怕封市。"], factions: [{ id: "horse", name: "朔风马帮", type: "行会", stat: "physique", note: "驯马人、皮货商与向导组成的边地联盟。" }, { id: "frontier", name: "昆北军府", type: "军府", stat: "knowledge", note: "负责边防、军需与互市，赏罚分明而戒心很重。" }] },
   sudi: { epithet: "烟雨画桥", industry: "丝坊、园林与精工", custom: "水乡讲究体面与细节，手艺、审美和温和处世都能换来口碑。", settleCost: 880, incident: ["丝坊压价", "外地大商压低新丝收价，小织户想联名停机抗议。"], factions: [{ id: "weavers", name: "苏堤丝坊", type: "行会", stat: "looks", note: "织户、绣娘与绸商共同维持水乡最重要的生计。" }, { id: "garden", name: "园林雅社", type: "士林", stat: "knowledge", note: "园主、画师与文士以诗画往来，也左右地方风雅名声。" }] },
   qingya: { epithet: "云顶药谷", industry: "药材、香火与山货", custom: "山中人敬畏自然与因果，救命的真本领最能换来信任。", settleCost: 460, incident: ["药谷争采", "一味稀有药材忽然被抢采，寺僧、药农与外来商贩争执不休。"], factions: [{ id: "temple", name: "云顶古寺", type: "寺院", stat: "virtue", note: "维持山路、施药与香火秩序，在乡民中颇有威望。" }, { id: "herbalists", name: "青崖药户", type: "行会", stat: "knowledge", note: "药农、采山人与郎中共享山中物候与药路。" }] },
+};
+
+const REGIONAL_LEGACY_DEFS = {
+  granary: { name: "义仓", icon: "CashBox", benefit: "每年在此停留时，口粮折银 +8 铜钱" },
+  dispensary: { name: "药庐", icon: "MedicineBag", benefit: "每年在此停留时，义诊调养使体魄 +1（上限 100）" },
 };
 
 const REGION_SCENE_ART = {
@@ -2331,6 +2346,12 @@ const ITEM_EFFECTS = {
   小布包: { icon: "Backpack", sell: 18, stat: "mood", value: 3, note: "亲人缝制的小包，能装下几件珍重之物。" },
 };
 
+const HEIRLOOM_DEFS = {
+  "grain-charter": { title: "共济粮路船契", icon: "SendLetter", note: "粮路上的旧约与签押，记得当初怎样与人共渡难关。", careerKind: "merchant", useCost: 60, donateCost: 30 },
+  "medical-casebook": { title: "药灯医案", icon: "MedicineBag", note: "病程、药批与失误都据实记下，后来人可以接着查证。", careerKind: "medicine", useCost: 40, donateCost: 25 },
+  "annotated-book": { title: "故人批注的旧书", icon: "Book", note: "字里行间留着相授的学问，也留着人与人之间的旧情。", careerKind: "", useCost: 20, donateCost: 15 },
+};
+
 const ANNUAL_GIFTS = [
   { name: "小布包", icon: "Backpack", note: "亲手缝制的小布包" },
   { name: "启蒙书", icon: "Book1", note: "翻旧的启蒙书" },
@@ -2641,6 +2662,78 @@ const CAREER_STORY_PACKS = Object.freeze({
       },
     ],
   },
+  "grain-road": {
+    id: "grain-road", careerKind: "merchant", title: "一线粮途", icon: "CashBox",
+    summary: "一条灾年粮路，一纸不敢轻许的供粮约。四年里，你要在周转、船工生计与城中饥民之间做选择。",
+    routeLabels: { supply: "保供", trust: "同舟", profit: "逐利" },
+    actor: { name: "柴渡", gender: "male", occupation: "粮船领队", disposition: "刚直", ambition: "守住粮路" },
+    stages: [
+      { id: "broken-road", title: "断路上的第一船", content: "上游歉收，城中米铺排起长队。领队{partner}带来最后一份船期：若现在垫资，还能抢在浅水期前运粮。大粮行也递来预单，条件是整船只卖给它。", choices: [
+        { id: "advance-grain", title: "垫资保住平价粮", note: "先压下本钱，承诺分售街坊；留下保供粮约", cost: 180, route: "supply", score: 2, flags: ["public-promise"], livelihood: { resource: 18, readiness: 6 }, effects: { virtue: 2 }, text: "你垫下第一船粮钱，把限价与按户分售写进粮约。{partner}提醒你：守住这句话，往后也许不止赔这一笔。" },
+        { id: "pool-shares", title: "与小铺共同出资", note: "让出一部分利润和话语权，换来共担风险的同业", cost: 80, route: "trust", score: 2, flags: ["pooled-shares"], actorAffection: 5, livelihood: { resource: 10, reputation: 4 }, text: "你把船份拆给几家小铺，约定亏损也按份承担。{partner}拿出自己的积蓄，成了与你同船的人。" },
+        { id: "exclusive-order", title: "接下豪商包船单", note: "预收货款 120 铜钱；换来周转，也把货路让给单一买家", gain: 120, route: "profit", score: 0, flags: ["exclusive-contract"], livelihood: { resource: -8, risk: 8 }, text: "大粮行先付预款，要求你不得另卖。船能开了，城中小铺却再也分不到这批货。{partner}把契书折好，没有附和你的笑。" },
+      ] },
+      { id: "water-debt", title: "水涨后的工钱", content: "第二年，急涨的河水泡坏半船粮，船工又受了伤。{partner}把欠薪名单摆在你面前；买家只认交期，小铺的本钱也还压在船上。", choices: [
+        { id: "rescue-crew", title: "先救船工，补足工钱", note: "承担救治与欠薪，少抢一批货；体魄 -3", cost: 120, route: "supply", score: 2, flags: ["crew-rescued"], actorAffection: 10, effects: { physique: -3, virtue: 3 }, livelihood: { resource: -6, risk: -4 }, text: "你先把伤者送上岸，再补足工钱。损失没能挽回，船工却愿留下来陪你重整这条粮路。" },
+        { id: "open-losses", title: "公开损失，重议各家分担", note: "需先前保供粮约或合股约；让各家看见真实亏空", cost: 60, route: "trust", score: 2, requiresAny: ["public-promise", "pooled-shares"], flags: ["open-ledger"], actorAffection: 5, livelihood: { readiness: 10 }, text: "你让{partner}逐项说明货损，没有把自己的失算藏起来。小铺不肯独吞损失，也没有转身离开，大家重新写下分担的数目。" },
+        { id: "sell-damaged", title: "混售受潮粮，先把账做平", note: "消耗存货 8，收回 180 铜钱；商誉与德行受损，买家会追问", gain: 180, route: "profit", score: -1, minLivelihood: { resource: 8 }, flags: ["adulterated-grain"], actorAffection: -12, effects: { virtue: -5 }, livelihood: { resource: -8, reputation: -10, risk: 12 }, world: { "local.sentiment": -3 }, text: "你把受潮粮掺进好粮交货，账面终于好看了。{partner}把一袋坏米单独留在库角，问你将来打算怎样向吃到它的人解释。" },
+        { id: "defer-wages", title: "停航认亏，逐户说明延期", note: "不花钱，也不再卖货；先保留旧账，承受船工失望与商险上升", route: "trust", score: 0, actorAffection: -7, flags: ["wages-deferred"], effects: { mood: -4 }, livelihood: { risk: 7 }, text: "你拿不出足够现钱，只能停船，把亏损与欠薪明白交给每户船工。{partner}没有替你说好话，却仍留下了核对旧账的名单。" },
+      ] },
+      { id: "hungry-city", title: "城门前的秤", content: "第三年，米价再涨。城外的人拿着旧粮约等你开仓，豪商却愿出高价包走现货。{partner}守着秤，一边是能救急的现钱，一边是过去两年积下的承诺。", choices: [
+        { id: "fair-ration", title: "按户平粜，兑现粮约", note: "需保供粮约或救过船工，且存货至少 15；消耗存货 15", route: "supply", score: 2, requiresAny: ["public-promise", "crew-rescued"], minLivelihood: { resource: 15 }, flags: ["fair-ration"], livelihood: { resource: -15, reputation: 8 }, world: { "local.grainPrice": -8, "local.sentiment": 6 }, text: "你把每日份额贴在仓门，先让一户户人家买到口粮。赚得不多，但粮船终于不只是你的一门生意。" },
+        { id: "share-loss", title: "赔清坏粮，重立供货约", note: "需合股约或公开过亏损；补偿买家，留下可共同守住的价", cost: 80, route: "trust", score: 2, requiresAny: ["pooled-shares", "open-ledger"], flags: ["shared-loss", "repaid-losses"], actorAffection: 8, livelihood: { readiness: 8, reputation: 5 }, text: "你把该赔的赔清，承认自己经手的每一笔亏损。几家小铺与{partner}重新签约，这回连坏粮退赔和灾年限价都写了进去。" },
+        { id: "premium-delivery", title: "照豪商高价交货", note: "收入 240 铜钱、消耗存货 10；街坊要继续承受高粮价", gain: 240, route: "profit", score: 0, minLivelihood: { resource: 10 }, flags: ["premium-route"], livelihood: { resource: -10, risk: 6 }, world: { "local.grainPrice": 5, "local.sentiment": -3 }, text: "你将整批粮送进豪商的仓门。账上多了现钱，沿街米铺却又换了一次更高的价牌。" },
+        { id: "admit-delay", title: "承认无粮可交，逐户兑回旧票", note: "无须现钱或存货；留待后续结算，商誉 -4、心情 -3", route: "trust", score: 0, flags: ["delayed-supply"], effects: { mood: -3 }, livelihood: { reputation: -4 }, text: "你没有给空仓挂上有粮的牌子，而是把不能兑现的份额逐户登记，承认这次失约。街坊失望而去，旧票仍得由你往后交代。" },
+      ] },
+      { id: "lasting-charter", title: "丰年重写船契", content: "第四年终于丰收。你可以把粮路变成共同的生计，也可以趁声势卖个好价。{partner}带来这些年留下的粮约、工钱条和退赔单：过去的选择，都在今天的契书里。", choices: [
+        { id: "public-charter", title: "立常年平粜船约", note: "需完成平粜或重立供货约；为下一次荒年留船留粮", cost: 100, route: "supply", score: 2, requiresAny: ["fair-ration", "shared-loss"], flags: ["public-charter"], livelihood: { readiness: 8 }, world: { "local.security": 3 }, text: "你把灾年限价、船工分成和应急份额写进长约。船路仍要挣钱，但不再只由一位豪商决定城里人什么时候能吃上饭。" },
+        { id: "workers-share", title: "把船份交给共患难的人", note: "需救过船工或公开过亏损；偿还旧损，分出一部分船份", cost: 120, route: "trust", score: 2, requiresAny: ["crew-rescued", "open-ledger"], flags: ["workers-share", "repaid-losses"], actorAffection: 8, livelihood: { reputation: 6 }, text: "你与{partner}核清最后一张工钱条，把船份交给留下的人。往后利润要分薄，风浪也不再只压在你一人肩上。" },
+        { id: "sell-route", title: "卖断粮路，收现钱离场", note: "收入 220 铜钱；谁来续供、如何定价，将由买家决定", gain: 220, route: "profit", score: 0, flags: ["sold-route"], actorAffection: -8, text: "买家接过船契，旧日限价被划去。你拿到一笔可观的现钱，{partner}却没有在交割宴上落座。" },
+      ] },
+    ],
+    endings: [
+      { title: "转手粮路", requiresAll: ["sold-route"], text: "你把多年经营变成了一次交割。前些年的照应没有被抹去，但从今以后，船工和小铺不能再靠你的承诺安排来年的生计。", money: 100, experience: 75, actorAffection: -8, livelihood: { reputation: -10, risk: 10 }, world: { "local.grainPrice": 4 } },
+      { title: "财聚人散", requiresAll: ["adulterated-grain"], excludesAny: ["repaid-losses"], text: "船契与银钱都算得清，坏粮和失约却算不平。粮路仍在挣钱，最早与你共事的人已不愿再为你作保。", money: 100, experience: 65, actorAffection: -10, livelihood: { reputation: -14, risk: 16 }, world: { "local.grainPrice": 4 } },
+      { title: "粮路长明", requiresAll: ["fair-ration", "public-charter"], minScore: 6, text: "荒年许下的粮约撑到了丰年。船工、小铺与街坊共同留下这条常年粮路，你的商号开始因守信而被记住。", money: 160, experience: 150, actorAffection: 8, livelihood: { reputation: 20, readiness: 10, risk: -10 }, world: { "local.grainPrice": -8, "local.sentiment": 8 } },
+      { title: "同舟商约", requiresAll: ["workers-share"], minRoutes: { trust: 2 }, text: "你没有独占最厚的利润，也没有独吞所有风浪。船工与小铺终于成了真正的合伙人，遇事肯先与你商量。", money: 120, experience: 130, actorAffection: 10, livelihood: { reputation: 14, readiness: 12, risk: -6 } },
+      { title: "薄利存身", text: "你把这几年做成了一门能继续经营的生意，几次妥协也留在旧账上。没有一诺千金的传奇，却还保得住铺门与伙计的饭碗。", money: 60, experience: 85, livelihood: { reputation: 5, readiness: 6 } },
+    ],
+  },
+  "epidemic-dispensary": {
+    id: "epidemic-dispensary", careerKind: "medicine", title: "药灯未灭", icon: "MedicineBag",
+    summary: "疫病、断药与一批来历不明的便宜药材，让一间小药坊走过四年。救过谁、隐瞒过什么，都会回到灯下。",
+    routeLabels: { care: "济人", evidence: "求证", profit: "保铺" },
+    actor: { name: "林芷", gender: "female", occupation: "药坊药师", disposition: "谨慎", ambition: "行医济人" },
+    stages: [
+      { id: "first-fever", title: "门外第一盏病灯", content: "街坊接连发热，药坊门口亮起等候的灯。药师{partner}发现新进药材有几包标签模糊；与此同时，富户愿预付诊金，请你这一季只替他们留药。", choices: [
+        { id: "retain-samples", title: "逐批验药，先留样本", note: "先花本钱查清药源；取得后续追查所需的留样", cost: 100, route: "evidence", score: 2, flags: ["retained-samples"], actorAffection: 5, livelihood: { resource: 16, readiness: 8 }, text: "你让{partner}逐批登记来处，留下样本，不急着把满柜药材都用出去。门外的人催得急，你却知道出了事必须说得清。" },
+        { id: "triage-clinic", title: "设临时诊棚，先分轻重", note: "花钱搭棚、消耗药材 6；让危急病人先获得照应", cost: 70, route: "care", score: 2, minLivelihood: { resource: 6 }, flags: ["triage-clinic"], effects: { virtue: 3 }, livelihood: { resource: -6 }, world: { "local.epidemic": -3 }, text: "你与{partner}分开接诊和取药的队伍，把轻重病情逐一记下。药坊赚不了多少，门前却少了些无处求助的人。" },
+        { id: "private-retainer", title: "先接富户包诊，保住药坊", note: "预收 160 铜钱；药材先供包诊人家，街坊只能另寻门路", gain: 160, route: "profit", score: 0, flags: ["private-retainer"], livelihood: { resource: 4, risk: 7, reputation: -4 }, text: "你先收下包诊银，暂时稳住药坊用度。{partner}把留给富户的药另放一柜，也问你什么时候能再接回那些穷病人。" },
+      ] },
+      { id: "suspect-batch", title: "好转后的反复", content: "第二年，有几位病人的病势反复。一名药商带来便宜得反常的新货，保证比旧药见效更快。{partner}翻出去年留下的记录，请你在继续接诊前先作决定。", choices: [
+        { id: "recall-batch", title: "停用疑药，追查整批来路", note: "需保留过样本；另补药材，承担退换损失", cost: 80, route: "evidence", score: 2, requiresAny: ["retained-samples"], flags: ["recalled-batch"], actorAffection: 7, livelihood: { resource: -8, readiness: 14 }, world: { "local.epidemic": -4 }, text: "你将留样与进货单逐项核对，停用来历不清的药材，再逐户通知复诊。{partner}亲自守着封好的药柜，直到供货人说明来处。" },
+        { id: "visit-patients", title: "挨户复诊，记下每次变化", note: "另备出诊用度，体魄 -4；获得连续病程记录", cost: 50, route: "care", score: 2, flags: ["followup-routes"], actorAffection: 5, effects: { physique: -4 }, livelihood: { readiness: 7, risk: 4 }, world: { "local.epidemic": -3 }, text: "你和{partner}沿着去年的病人名册挨户问诊，不把一时好转当作痊愈。夜路很长，册上终于有了病势反复前后的完整记录。" },
+        { id: "unchecked-batch", title: "收下药商新货，省下周转钱", note: "获得 140 铜钱返利；缺少核验，医名与病患状况会受损", gain: 140, route: "profit", score: -1, flags: ["unchecked-batch"], actorAffection: -12, effects: { virtue: -5 }, livelihood: { readiness: -6, risk: 12, reputation: -6 }, world: { "local.epidemic": 4 }, text: "你听信保证，把没有核清来源的新货放进药柜。账面轻松了几分，接连送回来的问诊条却让{partner}再也睡不踏实。" },
+      ] },
+      { id: "empty-cabinet", title: "断药的长街", content: "第三年，外埠药路断了，街坊的求医灯仍亮着。{partner}带来几家药坊的邀约：共享药材和记录能救急，却也意味着别人会看见你过去的失手。", choices: [
+        { id: "shared-dispensary", title: "合开义药柜，轮流接诊", note: "需设过诊棚或挨户复诊；药材至少 12，消耗药材 12", cost: 140, route: "care", score: 2, requiresAny: ["triage-clinic", "followup-routes"], minLivelihood: { resource: 12 }, flags: ["shared-dispensary"], livelihood: { resource: -12, reputation: 7 }, world: { "local.epidemic": -6, "local.sentiment": 4 }, text: "你与几家药坊把存药合到一处，约定谁都不能先给自家富客留份。{partner}守了第一个夜班，长街终于不必只等一扇门开。" },
+        { id: "share-casebook", title: "公开病程，联合追查药源", note: "需留样、召回记录或复诊记录；同业会看见失误，也能一起纠正", cost: 60, route: "evidence", score: 2, requiresAny: ["retained-samples", "recalled-batch", "followup-routes"], flags: ["shared-casebook"], actorAffection: 6, livelihood: { readiness: 10 }, world: { "local.epidemic": -4 }, text: "你让{partner}把病程、药源和失败的处置都列在同一册里。同行起初议论纷纷，后来有人拿来相同的疑例，线索终于接上。" },
+        { id: "hide-records", title: "守住药源和诊册，独供熟客", note: "收入 220 铜钱；眼前能维持，别家药坊仍要各自摸索", gain: 220, route: "profit", score: 0, flags: ["hidden-records"], actorAffection: -6, livelihood: { reputation: -8, risk: 5 }, text: "你锁起诊册，只接熟客。药坊没有断炊，巷口却有越来越多病人经过你的门，继续寻找愿意收治的人。" },
+      ] },
+      { id: "lamps-after-rain", title: "雨歇后的问诊簿", content: "第四年，疫势渐退，乡里请各家药坊交出这一段日子的记录。{partner}把厚厚的簿册推到灯下：要留下可以被后来人检查的经验，还是只留下好看的招牌？", choices: [
+        { id: "open-records", title: "公开全部医案，也认下失误", note: "需联合病程册或召回记录；保留真实证据，接受同业复核", cost: 80, route: "evidence", score: 2, requiresAny: ["shared-casebook", "recalled-batch"], flags: ["public-records"], actorAffection: 8, effects: { virtue: 4 }, livelihood: { readiness: 8 }, text: "你没有删去无效的处置和用错的药批，把所有能查证的记录都留了下来。{partner}在最后一页签名：愿往后的人少走我们走过的弯路。" },
+        { id: "endow-clinic", title: "把诊棚留作常年义诊", note: "需合开药柜或挨户复诊；留下专款，让贫病者以后仍有门可叩", cost: 120, route: "care", score: 2, requiresAny: ["shared-dispensary", "followup-routes"], flags: ["endowed-clinic"], actorAffection: 8, livelihood: { reputation: 6 }, text: "你与{partner}约定，疫事过去也不拆掉那盏义诊灯。专款不算厚，却能让后来无钱求医的人先坐下再说。" },
+        { id: "private-seal", title: "封存旧簿，只保当下招牌", note: "收到熟客酬谢 200 铜钱；疑问没有消失，旧药批仍可能损伤医名", gain: 200, route: "profit", score: 0, flags: ["private-seal"], actorAffection: -8, livelihood: { reputation: -8 }, text: "你把旧簿锁回柜底，拿到熟客送来的银封。门前招牌擦得很亮，那些没得到答复的家属却没有再来道谢。" },
+      ] },
+    ],
+    endings: [
+      { title: "招牌下的隐痛", requiresAny: ["private-seal", "unchecked-batch"], excludesAny: ["public-records"], text: "药坊保住了银钱，没核清的药源和不肯公开的失误却留在病人家中。招牌越亮，你越难回答旧日的追问。", money: 80, experience: 60, actorAffection: -10, livelihood: { reputation: -16, risk: 15 }, world: { "local.sentiment": -5 } },
+      { title: "医案传灯", requiresAll: ["public-records", "shared-casebook", "recalled-batch"], minScore: 6, text: "留样、召回与连续医案合成了一册经得起复核的记录。它没有许诺包治百病，却让同业能查错、纠错，你的医名由此有了实据。", money: 120, experience: 155, actorAffection: 10, livelihood: { reputation: 22, readiness: 14, risk: -8 }, world: { "local.epidemic": -8 } },
+      { title: "认过重开", requiresAll: ["public-records", "unchecked-batch"], text: "你公开承认那批未核验的药和自己的失算。医名没有立即恢复，但病家得到解释，同业也愿陪你从头核清每一道药源。", experience: 95, actorAffection: 5, livelihood: { reputation: 5, readiness: 12, risk: -8 }, world: { "local.epidemic": -4 } },
+      { title: "一巷安灯", requiresAll: ["endowed-clinic", "shared-dispensary"], minRoutes: { care: 2 }, text: "疫势过去，长街的义诊灯仍没有灭。你留下的不只是一间药坊，还有愿意轮值、共享药材与照看病家的同业。", money: 80, experience: 135, actorAffection: 10, livelihood: { reputation: 18, risk: -6 }, world: { "local.epidemic": -7, "local.sentiment": 6 } },
+      { title: "药坊仍开", text: "你带着几处遗憾撑过这段疫事，药坊得以继续开门。诊册里的不明处尚未全解，往后仍须认真对待每一次复诊。", money: 50, experience: 80, livelihood: { reputation: 4, readiness: 6 } },
+    ],
+  },
 });
 
 function validateStoryContent(packs = CAREER_STORY_PACKS) {
@@ -2916,7 +3009,7 @@ const LIFE_GOALS = [
   { id: "first-caravan", tier: "bronze", title: "走镖上路", icon: "RepairCarriage", desc: "完成第一次押镖或行商路线。", score: 65, done: () => caravanRuns() > 0, advice: "选择镖师行商营生后，挑一条路线出发。" },
   { id: "medicine-visit", tier: "bronze", title: "问诊抓药", icon: "MedicineBag", desc: "去医馆调理或留下医药记录。", score: 40, done: () => logHas(/医馆|问诊|抓药|药|病症|痊愈/), advice: "体魄低时先去医馆，不要硬撑。" },
   { id: "temple-fate", tier: "bronze", title: "香火因缘", icon: "Temple", desc: "在寺庙或德行事件中留下记录。", score: 40, done: () => state.tags.includes("寺庙因缘") || logHas(/寺庙|焚香|香火|佛|庙/), advice: "去寺庙修心，也能添些德行。" },
-  { id: "inventory-five", tier: "bronze", title: "行囊渐满", icon: "Backpack", desc: "行囊物品达到 5 件。", score: 45, done: () => inventoryCount() >= 5, advice: "去市集、黑市或活动中收集物品。" },
+  { id: "inventory-five", tier: "bronze", title: "行囊渐满", icon: "Backpack", desc: "行囊物品达到 5 件。", score: 45, done: () => inventoryUsed() >= 5, advice: "去市集、黑市或活动中收集物品。" },
   { id: "women-school-first", gender: "female", tier: "bronze", title: "闺塾初问", icon: "FemaleSkill", desc: "完成第一桩女学选择剧情。", score: 55, done: () => Number(state.femaleLife?.schoolStories || 0) >= 1, advice: "8 岁后去女学修习任一门六艺。" },
   { id: "women-school-six", gender: "female", tier: "silver", title: "闺塾六艺", icon: "FemaleSkill", desc: "女学六艺都达到 1 级。", score: 145, done: () => FEMALE_SKILLS.every((skill) => skillLevel(skill.name) >= 1), advice: "修习女红、琴艺、诗书、礼仪、算账与岐黄。" },
   { id: "female-medicine", gender: "female", tier: "silver", title: "女医有成", icon: "MedicineBag", desc: "通过任一女医技艺考校。", score: 135, done: () => (state.exam?.history || []).some((item) => /女医|疮疡|医理/.test(item.stage || "") && item.passed), advice: "15 岁后在女学参加女医技艺考校。" },
@@ -3043,6 +3136,8 @@ let view = {
   overlay: state && !state.onboarding?.seen ? "onboarding" : state?.pendingSurprise ? "surprise" : "",
 };
 
+saveUiReady = true;
+updateSaveNotice();
 setAssetVars();
 
 function setAssetVars() {
@@ -3388,6 +3483,7 @@ function normalizeState(raw) {
   next.difficulty ||= "普通";
   next.age = Number.isFinite(Number(next.age)) ? Number(next.age) : 1;
   next.year = Number.isFinite(Number(next.year)) ? Number(next.year) : next.age;
+  next.lastSettledYear = Number.isFinite(Number(next.lastSettledYear)) ? Math.min(Number(next.lastSettledYear), next.year) : next.year;
   next.location ||= "清平县";
   next.stats = next.stats || {};
   for (const key of [...Object.keys(STAT_LABELS), "relationship", "favorability", "money"]) {
@@ -3464,6 +3560,7 @@ function normalizeState(raw) {
   syncClanBranches(next);
   next.familyStories = normalizeFamilyStories(next.familyStories);
   next.careerChapters = normalizeCareerChapters(next.careerChapters);
+  next.heirlooms = restoreHeirlooms(next);
   next.templeFortune = normalizeTempleFortune(next.templeFortune);
   next.underworld = normalizeUnderworld(next.underworld);
   next.mystery = normalizeMysteryState(next.mystery);
@@ -3499,6 +3596,196 @@ function normalizeState(raw) {
     next.pendingTravel = null;
   }
   return next;
+}
+
+function normalizeHeirlooms(source) {
+  const value = source && typeof source === "object" ? source : {};
+  const holderId = String(value.holderId || `holder-${Date.now()}-${Math.random().toString(16).slice(2)}`);
+  const seen = new Set();
+  const items = (Array.isArray(value.items) ? value.items : []).filter((item) => item && Object.hasOwn(HEIRLOOM_DEFS, item.kind) && item.id && !seen.has(String(item.id)) && seen.add(String(item.id))).map((item) => ({
+    id: String(item.id), kind: item.kind, title: HEIRLOOM_DEFS[item.kind].title,
+    origin: {
+      name: String(item.origin?.name || "来历未详"),
+      generation: Number(item.origin?.generation) >= 1 ? Math.round(Number(item.origin.generation)) : null,
+      personId: String(item.origin?.personId || ""), sourceId: String(item.origin?.sourceId || ""),
+      regionId: REGION_PROFILES[item.origin?.regionId] ? item.origin.regionId : "",
+      year: item.origin?.year != null && Number.isFinite(Number(item.origin.year)) ? Number(item.origin.year) : null,
+      summary: String(item.origin?.summary || "旧物来源未被详细记下。"),
+    },
+    status: ["sealed", "donated"].includes(item.status) ? item.status : "kept",
+    holderId: String(item.holderId || holderId), holderName: String(item.holderName || ""),
+    revision: Math.max(Array.isArray(item.history) ? item.history.length : 0, Number.isSafeInteger(item.revision) ? item.revision : 0),
+    usedBy: Array.isArray(item.usedBy) ? [...new Set(item.usedBy.map(String).filter(Boolean))] : [],
+    history: (Array.isArray(item.history) ? item.history : []).filter((entry) => entry && typeof entry === "object").map((entry) => ({
+      holderId: String(entry.holderId || ""), name: String(entry.name || ""), generation: Math.max(1, Math.round(Number(entry.generation) || 1)),
+      year: Math.max(0, Math.round(Number(entry.year) || 0)), action: String(entry.action || "留存"), summary: String(entry.summary || ""),
+    })).slice(-48),
+  }));
+  return { holderId, items };
+}
+
+function grantHeirloom(kind, origin, { owner = state, alreadyUsed = false, migrated = false } = {}) {
+  if (!owner || !Object.hasOwn(HEIRLOOM_DEFS, kind)) return "";
+  owner.heirlooms ||= normalizeHeirlooms();
+  const sourceId = String(origin.sourceId || `${kind}:${owner.heirlooms.holderId}`);
+  if (owner.heirlooms.items.some((item) => item.kind === kind && item.origin.sourceId === sourceId)) return "";
+  const title = HEIRLOOM_DEFS[kind].title;
+  const summary = `${owner.name}${migrated ? "整理旧藏，收存" : "收下"}《${title}》。${alreadyUsed ? "本代成业的经验已结算，此物留待后来人续用。" : "此物可续用、转赠乡里，或封存留给后来人。"}`;
+  owner.heirlooms.items.push({
+    id: `heirloom:${kind}:${sourceId}`, kind, title, origin: { ...origin, sourceId }, status: "kept",
+    holderId: owner.heirlooms.holderId, holderName: owner.name,
+    usedBy: alreadyUsed ? [owner.heirlooms.holderId] : [],
+    history: [{ holderId: owner.heirlooms.holderId, name: owner.name, generation: owner.lineage.generation, year: owner.year, action: migrated ? "旧藏归档" : "初藏", summary }],
+  });
+  owner.heirlooms = normalizeHeirlooms(owner.heirlooms);
+  return summary;
+}
+
+function restoreHeirlooms(owner) {
+  const needsMigration = !owner.heirlooms || typeof owner.heirlooms !== "object";
+  const pending = owner.currentEvent?.kind === "heirloom" ? owner.currentEvent : null;
+  const pendingItem = pending && (Array.isArray(owner.heirlooms?.items) ? owner.heirlooms.items : []).find((item) => item?.id === pending.heirloomId);
+  const legacyPending = pendingItem && !Object.hasOwn(pendingItem, "revision");
+  owner.heirlooms = normalizeHeirlooms(owner.heirlooms);
+  if (legacyPending) {
+    const item = owner.heirlooms.items.find((entry) => entry.id === pending.heirloomId);
+    if (item && item.holderId === pending.holderId && owner.heirlooms.holderId === pending.holderId && item.status === pending.itemStatus && Number.isSafeInteger(pending.revision) && pending.revision >= item.revision) item.revision = pending.revision;
+  }
+  if (!needsMigration) return owner.heirlooms;
+  for (const record of owner.careerChapters.completed) {
+    const kind = record.id === "grain-road" && ["粮路长明", "同舟商约"].includes(record.outcome) ? "grain-charter"
+      : record.id === "epidemic-dispensary" && ["医案传灯", "一巷安灯"].includes(record.outcome) ? "medical-casebook" : "";
+    if (!kind) continue;
+    const knownOwner = record.originName || "";
+    grantHeirloom(kind, { name: knownOwner || "来历未详", generation: knownOwner === owner.name ? owner.lineage.generation : null,
+      personId: knownOwner === owner.name ? owner.heirlooms.holderId : "", sourceId: `old-career:${record.id}:${knownOwner}`,
+      regionId: record.regionId, year: record.year, summary: `旧档记载“${record.outcome}”${knownOwner ? `由${knownOwner}完成` : "，未记明当时的主事人"}；据此收存旧物，不补写未记录的辈分与生死。`,
+    }, { owner, alreadyUsed: !knownOwner || knownOwner === owner.name, migrated: true });
+  }
+  if (owner.inventory.includes("故人批注的旧书")) {
+    const sources = owner.threads.filter((item) => item.sourceId === "scholar-study" && item.status === "resolved" && item.outcome === "收好旧书，记下故人");
+    const source = sources.length === 1 ? sources[0] : null;
+    grantHeirloom("annotated-book", { name: source?.target || "来历未详", personId: source?.targetId || "", generation: null,
+      sourceId: source ? `scholar:${source.id}` : "old-inventory:annotated-book", regionId: "", year: null,
+      summary: source ? `${source.target}批注的旧书，由${owner.name}保存；旧档未记下具体受赠年份。` : "旧档仍持有这本批注旧书，作者与受赠年份未详；保留旧物，不另造一位先人。",
+    }, { owner, migrated: true });
+    owner.inventory = owner.inventory.filter((name) => name !== "故人批注的旧书");
+  }
+  return owner.heirlooms;
+}
+
+function heirloomItems() {
+  if (!state) return [];
+  state.heirlooms ||= normalizeHeirlooms();
+  return state.heirlooms.items;
+}
+
+function heirloomActionState(item) {
+  const def = Object.hasOwn(HEIRLOOM_DEFS, item?.kind) ? HEIRLOOM_DEFS[item.kind] : null;
+  const owned = !!def && item.holderId === state?.heirlooms?.holderId;
+  const reason = !state || state.dead ? "这一生已终，等待承继" : state.prisonYears > 0 ? "出狱后才可处置家传旧物" : !owned ? "此物不在你名下" : item.status === "donated" ? "此物已永久转赠乡里" : yearAdvanceBlockReason();
+  const used = !!item?.usedBy?.includes(state?.heirlooms?.holderId);
+  const specialist = !!def?.careerKind && careerKind() === def.careerKind;
+  const useReason = item?.status === "sealed" ? "先启封旧物" : used ? "你已续用过此物，不能重复领取所得" : state?.age < 8 ? "八岁后才能研读旧物" : Number(state?.stats.money) < Number(def?.useCost) ? `需 ${def?.useCost} 铜钱整理、访习` : "";
+  const donateReason = item?.status === "sealed" ? "先启封旧物" : Number(state?.stats.money) < Number(def?.donateCost) ? `需 ${def?.donateCost} 铜钱誊录、送交` : "";
+  const benefit = item?.kind === "grain-charter" ? specialist ? "商贾经验 +45、门路 +6、商誉 +4，当地声望 +3" : "学识 +3、情商 +2，读懂互保和限价条款"
+    : item?.kind === "medical-casebook" ? specialist ? "医者经验 +45、医案 +8、医名 +4" : "学识 +3、体魄 +2，学会辨认求医时应记下的病程"
+      : "学识 +4、备考 +6，延续书中留下的学问";
+  return {
+    canOpen: !reason, reason, canUse: !reason && !useReason, useReason: reason || useReason, used,
+    canDonate: !reason && !donateReason, donateReason: reason || donateReason,
+    canSeal: !reason && item?.status === "kept", canUnseal: !reason && item?.status === "sealed",
+    statusLabel: { kept: "家中留存", sealed: "封存待后人", donated: "已赠乡里" }[item?.status] || "旧物",
+    useNote: `花费 ${def?.useCost || 0} 铜钱；${benefit}。每位持有人仅一次。`,
+    donateNote: `花费 ${def?.donateCost || 0} 铜钱；德行 +3、当地声望 +5。此件永久离开家门，后人也不能再续用。`,
+  };
+}
+
+function openHeirloom(id) {
+  const item = heirloomItems().find((entry) => entry.id === id);
+  const action = heirloomActionState(item);
+  if (!action.canOpen) return;
+  const children = item.status === "sealed"
+    ? [{ title: "启封重读", heirloomChoice: "unseal", note: "不花钱，不领取收益；启封不会抹去此前续用记录。" }]
+    : [
+      { title: "续用前人经验", heirloomChoice: "use", note: `${action.useNote}${action.canUse ? "" : ` 暂不可选：${action.useReason}。`}`, disabled: !action.canUse },
+      { title: item.kind === "annotated-book" ? "转赠乡学" : "转赠乡里同业", heirloomChoice: "donate", note: `${action.donateNote}${action.canDonate ? "" : ` 暂不可选：${action.donateReason}。`}`, disabled: !action.canDonate },
+      { title: "封存，留给后来人", heirloomChoice: "seal", note: "不花钱，当前不领取收益；旧物、原主人与流转记录保留。" },
+    ];
+  state.currentEvent = { kind: "heirloom", title: item.title, content: `${item.origin.summary}\n\n${HEIRLOOM_DEFS[item.kind].note}\n如今由${item.holderName}保管。${action.used ? "你已领会过此物的经验，可以留给后来人，也可以交给乡里。" : "要怎样接过这份旧日留下的东西，由你决定。"}`, heirloomId: item.id, holderId: state.heirlooms.holderId, itemStatus: item.status, revision: item.revision, children };
+  view.page = "heirlooms";
+  save();
+  render();
+}
+
+function resolveHeirloom(event, choice) {
+  if (!state || state.currentEvent !== event || event.kind !== "heirloom" || !event.children.includes(choice) || choice.disabled) return;
+  if (state.eventResult || state.pendingActivity || state.pendingAnnualEvent || state.pendingTravel || state.pendingCaravan || state.exam?.current || state.poetryRound || state.pendingSurprise) return;
+  const item = heirloomItems().find((entry) => entry.id === event.heirloomId);
+  if (!item || state.dead || state.prisonYears > 0 || item.status === "donated" || event.holderId !== state.heirlooms.holderId || item.holderId !== event.holderId || event.itemStatus !== item.status || event.revision !== item.revision) return;
+  const decision = choice.heirloomChoice;
+  const def = HEIRLOOM_DEFS[item.kind];
+  const deltas = [];
+  let text = "";
+  if (decision === "use") {
+    if (item.status !== "kept" || item.usedBy.includes(event.holderId) || state.age < 8 || state.stats.money < def.useCost) return;
+    changeStat("money", -def.useCost, deltas);
+    addLedger("续用家传旧物", -def.useCost, `整理《${item.title}》，访习前人留下的经验。`);
+    item.usedBy.push(event.holderId);
+    const specialist = !!def.careerKind && careerKind() === def.careerKind;
+    text = `${state.name}没有把《${item.title}》当作白得的凭据，花费 ${moneyText(def.useCost)}誊整、核实，再将其中的经验用于眼前生活。`;
+    if (specialist) {
+      const progress = careerProgressFor();
+      changeLivelihoodMetric(progress, "readiness", item.kind === "medical-casebook" ? 8 : 6, deltas);
+      changeLivelihoodMetric(progress, "reputation", 4, deltas);
+      text += addCareerExperience(progress, 45, deltas);
+      if (item.kind === "grain-charter") {
+        changeRegionalReputation(currentRegionalId(), 3, deltas);
+        text += " 你把互保、限价与退赔旧约逐条向当地同行说明，门路由此有了凭信。";
+      } else text += " 你依旧案核对病程与药批，把前人的失误也编进医案；同业看见了肯求证的医者。";
+    } else {
+      changeStat("knowledge", item.kind === "annotated-book" ? 4 : 3, deltas);
+      if (item.kind === "annotated-book") { addExamPrep(6, deltas); text += " 批注成了你的读书提纲；不论是否入场应试，这份学问都留下了。"; }
+      else { changeStat(item.kind === "grain-charter" ? "eq" : "physique", 2, deltas); text += item.kind === "grain-charter" ? " 你仍做自己的营生，却学会怎样看懂互保条款、守住人情边界。" : " 你没有凭一本旧案自称名医，只学会记录病程、及时求医和照料家人。"; }
+    }
+    text += " 此物仍留在家中，下一位持有人可以继续学习；你不能重复领取所得。";
+  } else if (decision === "donate") {
+    if (item.status !== "kept" || state.stats.money < def.donateCost) return;
+    changeStat("money", -def.donateCost, deltas);
+    addLedger("转赠家传旧物", -def.donateCost, `誊整并送交《${item.title}》。`);
+    changeStat("virtue", 3, deltas);
+    changeRegionalReputation(currentRegionalId(), 5, deltas);
+    item.status = "donated";
+    text = `${state.name}花费 ${moneyText(def.donateCost)}整理《${item.title}》，把原件交给${travelDestinationByStaticId(currentRegionalId()).name}的${item.kind === "annotated-book" ? "乡学" : item.kind === "medical-casebook" ? "药坊同业" : "粮行同业"}，并留下${item.origin.name}的来源纸签。当地人从此可以据它研习；此件永久离开家门，你与后人都不能再使用或取回，家中仅保留流转记录。`;
+    recordRegionalChronicle(currentRegionalId(), `旧物入乡 · ${item.title}`, text);
+  } else if (decision === "seal" && item.status === "kept") {
+    item.status = "sealed";
+    text = `${state.name}把《${item.title}》重新包好，附上来历与流转纸签。现在不领取任何收益，留待后来人决定怎样使用；此前的续用记录仍在。`;
+  } else if (decision === "unseal" && item.status === "sealed") {
+    item.status = "kept";
+    text = `${state.name}启开《${item.title}》的封签。旧物重新可以处置，此次没有收益，此前谁已续用仍记得清楚。`;
+  } else return;
+  item.history.push({ holderId: event.holderId, name: state.name, generation: state.lineage.generation, year: state.year, action: { use: "续用", donate: "转赠乡里", seal: "封存", unseal: "启封" }[decision], summary: text });
+  item.history = item.history.slice(-48);
+  item.revision += 1;
+  state.currentEvent = null;
+  unlockLifeGoals();
+  finishAction(`家传之物 · ${choice.title}`, text, deltas, def.icon);
+}
+
+function carryHeirloomsAcrossInheritance(heir, year, generation) {
+  const source = normalizeHeirlooms(state.heirlooms);
+  const holderId = `person:${heir.heirKind === "spouse" ? state.family.spouseMeta?.id || heir.id : heir.id}`;
+  for (const item of source.items) {
+    if (item.status === "donated" || item.holderId === holderId) continue;
+    const previous = item.holderName;
+    item.holderId = holderId;
+    item.holderName = heir.name;
+    item.history.push({ holderId, name: heir.name, generation, year, action: "承接", summary: `${heir.name}从${previous}手中承接《${item.title}》；原有${item.status === "sealed" ? "封存状态与" : ""}来源、续用记录一并保留。` });
+    item.history = item.history.slice(-48);
+    item.revision += 1;
+  }
+  return { holderId, items: source.items };
 }
 
 function normalizeFemaleLife(source = {}) {
@@ -3782,6 +4069,7 @@ function createRegionalState(residenceId = "qingping") {
       lastActionYear: -1,
       lastEventYear: -1,
       settled: destination.id === validResidence,
+      legacies: [],
     }])),
     alliances: [],
     chronicle: [],
@@ -3797,6 +4085,16 @@ function normalizeRegionalState(source, location = "清平县") {
   const regions = {};
   for (const destination of TRAVEL_DESTINATIONS) {
     const item = base.regions?.[destination.id] && typeof base.regions[destination.id] === "object" ? base.regions[destination.id] : {};
+    const legacies = [];
+    for (const kind of Object.keys(REGIONAL_LEGACY_DEFS)) {
+      const legacy = Array.isArray(item.legacies) ? item.legacies.find((entry) => entry?.kind === kind) : null;
+      if (legacy) legacies.push({
+        kind,
+        founderName: String(legacy.founderName || "先人"),
+        founderGeneration: Math.max(1, Math.round(Number(legacy.founderGeneration) || 1)),
+        foundedYear: Math.max(0, Math.round(Number(legacy.foundedYear) || 0)),
+      });
+    }
     regions[destination.id] = {
       reputation: clampNumber(item.reputation, 0, 100, destination.id === residenceId ? 18 : 0),
       visits: Math.max(0, Math.round(Number(item.visits) || (destination.id === residenceId ? 1 : 0))),
@@ -3804,6 +4102,7 @@ function normalizeRegionalState(source, location = "清平县") {
       lastActionYear: Number.isFinite(Number(item.lastActionYear)) ? Number(item.lastActionYear) : -1,
       lastEventYear: Number.isFinite(Number(item.lastEventYear)) ? Number(item.lastEventYear) : -1,
       settled: destination.id === residenceId || !!item.settled,
+      legacies,
     };
   }
   const alliances = Array.isArray(base.alliances) ? base.alliances.filter((item) => item && REGION_PROFILES[item.regionId]?.factions.some((faction) => faction.id === item.factionId)).map((item) => ({ regionId: String(item.regionId), factionId: String(item.factionId), year: Number(item.year || 0) })).slice(0, 16) : [];
@@ -3856,6 +4155,27 @@ function regionalStateFor(id = state.regional?.currentId) {
 function recordRegionalChronicle(regionId, title, text) {
   state.regional.chronicle.unshift({ year: state.year, regionId, title, text });
   state.regional.chronicle = state.regional.chronicle.slice(0, 60);
+}
+
+function establishRegionalLegacy(kind, regionId = currentRegionalId()) {
+  const definition = REGIONAL_LEGACY_DEFS[kind];
+  if (!state || !definition || !REGION_PROFILES[regionId]) return "";
+  state.regional = normalizeRegionalState(state.regional, state.location);
+  const region = regionalStateFor(regionId);
+  const destination = travelDestinationByStaticId(regionId);
+  const existing = region.legacies.find((legacy) => legacy.kind === kind);
+  if (existing) return `${destination.name}已有第 ${existing.founderGeneration} 代${existing.founderName}创办的${definition.name}，这份乡里遗产继续留给后人，不会重复兴建。`;
+  const legacy = {
+    kind,
+    founderName: state.name,
+    founderGeneration: Math.max(1, Number(state.lineage?.generation) || 1),
+    foundedYear: state.year,
+  };
+  region.legacies.push(legacy);
+  const text = `${destination.name}建起了${definition.name}，乡里记下第 ${legacy.founderGeneration} 代${legacy.founderName}的名字。${definition.benefit}；后代承业后仍可受益。`;
+  recordRegionalChronicle(regionId, `${definition.name}落成`, text);
+  addLog(`乡里遗产 · ${definition.name}`, text, [{ label: "留给地方", value: `${destination.name}${definition.name}` }]);
+  return text;
 }
 
 function changeRegionalReputation(regionId, amount, deltas = []) {
@@ -3915,6 +4235,9 @@ function normalizeThreads(source) {
     title: String(item.title || THREAD_KINDS[item.kind].label),
     summary: String(item.summary || "旧事尚未收尾。"),
     target: String(item.target || ""),
+    targetId: String(item.targetId || ""),
+    sourceId: String(item.sourceId || ""),
+    choiceId: String(item.choiceId || ""),
     stakes: Math.max(20, Math.round(Number(item.stakes) || 80)),
     createdYear: Math.max(0, Math.round(Number(item.createdYear) || 0)),
     dueYear: Math.max(0, Math.round(Number(item.dueYear) || 0)),
@@ -3988,16 +4311,25 @@ function normalizeFamilyStories(stories) {
   };
 }
 
+function careerChapterRouteKeys(id) {
+  return Object.keys(CAREER_STORY_PACKS[id]?.routeLabels || { law: "清名", family: "家门", power: "权门" });
+}
+
 function normalizeCareerChapters(source) {
   const item = source && typeof source === "object" ? source : {};
   const active = item.active && CAREER_STORY_PACKS[item.active.id] ? item.active : null;
   return {
     active: active ? {
       id: String(active.id),
-      stage: clampNumber(active.stage, 0, CAREER_STORY_PACKS[active.id].stages.length - 1, 0),
+      careerName: String(active.careerName || ""),
+      actorId: String(active.actorId || ""),
+      actorName: String(active.actorName || ""),
+      regionId: REGION_PROFILES[active.regionId] ? active.regionId : "",
+      originName: String(active.originName || ""),
+      stage: Math.floor(clampNumber(active.stage, 0, CAREER_STORY_PACKS[active.id].stages.length - 1, 0)),
       dueYear: Math.max(0, Math.round(Number(active.dueYear) || 0)),
       score: Number.isFinite(Number(active.score)) ? Number(active.score) : 0,
-      routes: Object.fromEntries(["law", "family", "power"].map((key) => [key, Math.max(0, Math.round(Number(active.routes?.[key]) || 0))])),
+      routes: Object.fromEntries(careerChapterRouteKeys(active.id).map((key) => [key, Math.max(0, Math.round(Number(active.routes?.[key]) || 0))])),
       flags: [...new Set(Array.isArray(active.flags) ? active.flags.map(String).filter(Boolean) : [])].slice(0, 20),
       familyKey: String(active.familyKey || ""),
       history: Array.isArray(active.history) ? active.history.filter((entry) => entry && typeof entry === "object").map((entry) => ({
@@ -4011,8 +4343,13 @@ function normalizeCareerChapters(source) {
     completed: Array.isArray(item.completed) ? item.completed.filter((entry) => entry && CAREER_STORY_PACKS[entry.id]).map((entry) => ({
       id: String(entry.id),
       outcome: String(entry.outcome || "案卷留痕"),
+      careerName: String(entry.careerName || ""),
+      careerKind: String(entry.careerKind || CAREER_STORY_PACKS[entry.id].careerKind),
+      summary: String(entry.summary || ""),
+      regionId: REGION_PROFILES[entry.regionId] ? entry.regionId : "",
+      originName: String(entry.originName || ""),
       year: Math.max(0, Math.round(Number(entry.year) || 0)),
-      routes: Object.fromEntries(["law", "family", "power"].map((key) => [key, Math.max(0, Math.round(Number(entry.routes?.[key]) || 0))])),
+      routes: Object.fromEntries(careerChapterRouteKeys(entry.id).map((key) => [key, Math.max(0, Math.round(Number(entry.routes?.[key]) || 0))])),
       history: Array.isArray(entry.history) ? entry.history.filter((item) => item && typeof item === "object").map((item) => ({ stageId: String(item.stageId || ""), choiceId: String(item.choiceId || ""), title: String(item.title || ""), year: Math.max(0, Math.round(Number(item.year) || 0)) })).slice(-12) : [],
     })).slice(-12) : [],
     lastTriggerYear: Number.isFinite(Number(item.lastTriggerYear)) ? Number(item.lastTriggerYear) : -1,
@@ -5501,15 +5838,28 @@ function normalizeGamble(gamble) {
 function slotKey(index) { return `${SAVE_PREFIX}${index}`; }
 
 function loadSlotMeta() {
-  try { return JSON.parse(localStorage.getItem(SAVE_META_KEY)) || []; } catch { return []; }
+  try {
+    const parsed = JSON.parse(localStorage.getItem(SAVE_META_KEY));
+    const meta = Array.isArray(parsed) ? parsed.slice(0, MAX_SLOTS) : [];
+    for (let slot = 0; slot < MAX_SLOTS; slot += 1) {
+      if (meta[slot]) continue;
+      const raw = localStorage.getItem(slotKey(slot));
+      if (!raw) continue;
+      try {
+        const saved = JSON.parse(raw);
+        if (saved?.name && saved?.stats) meta[slot] = { slot, name: saved.name, age: Number(saved.age) || 0, timestamp: 0, title: saved.dead ? saved.deathReason || "已故" : "进行中" };
+      } catch { /* 损坏的槽位仍保留原文，写入前会备份。 */ }
+    }
+    return meta;
+  } catch { return []; }
 }
 function saveSlotMeta(meta) { localStorage.setItem(SAVE_META_KEY, JSON.stringify(meta)); }
 
 function firstEmptySlot(meta = loadSlotMeta()) {
   for (let i = 0; i < MAX_SLOTS; i += 1) {
-    if (!meta[i]) return i;
+    try { if (!meta[i] && !localStorage.getItem(slotKey(i))) return i; } catch { return -1; }
   }
-  return 0;
+  return -1;
 }
 
 function updateSlotMeta(index, sourceState = state) {
@@ -5538,8 +5888,17 @@ function loadSave(slot) {
 
 function loadCurrentSave() {
   const meta = loadSlotMeta();
-  for (let i = meta.length - 1; i >= 0; i--) {
-    if (meta[i]) { const s = loadSave(i); if (s) { currentSlot = i; s.saveSlot = i; return s; } }
+  let active = -1;
+  try {
+    const value = localStorage.getItem(SAVE_ACTIVE_KEY);
+    if (value !== null) active = Number(value);
+  } catch { /* 存储不可用时继续尝试兼容存档。 */ }
+  const slots = Array.from({ length: MAX_SLOTS }, (_, slot) => slot)
+    .sort((a, b) => Number(meta[b]?.timestamp || 0) - Number(meta[a]?.timestamp || 0));
+  if (Number.isInteger(active) && active >= 0 && active < MAX_SLOTS) slots.unshift(active);
+  for (const slot of new Set(slots)) {
+    const saved = loadSave(slot);
+    if (saved) { currentSlot = slot; saved.saveSlot = slot; rememberActiveSlot(slot); return saved; }
   }
   return migrateOldSave();
 }
@@ -5549,34 +5908,167 @@ function migrateOldSave() {
     const raw = localStorage.getItem(SAVE_LEGACY_KEY);
     if (!raw) return null;
     const s = normalizeState(JSON.parse(raw));
-    s.saveSlot = 0; currentSlot = 0;
-    localStorage.setItem(slotKey(0), JSON.stringify(s));
-    localStorage.removeItem(SAVE_LEGACY_KEY);
-    updateSlotMeta(0, s);
+    currentSlot = firstEmptySlot();
+    s.saveSlot = currentSlot;
+    if (currentSlot >= 0 && writeSaveSlot(currentSlot, s, { activate: true })) localStorage.removeItem(SAVE_LEGACY_KEY);
     return s;
   } catch { return null; }
 }
 
-function save() {
-  if (state && !state.__ephemeral && currentSlot >= 0) {
-    state.saveSlot = currentSlot;
-    localStorage.setItem(slotKey(currentSlot), JSON.stringify(state));
-    updateSlotMeta(currentSlot, state);
+function backupKey(slot) { return `${slotKey(slot)}-backup`; }
+
+function slotBackupRaw(slot) {
+  let raw = localStorage.getItem(backupKey(slot));
+  const current = localStorage.getItem(slotKey(slot));
+  while (raw) {
+    const backup = JSON.parse(raw);
+    // 未提交正文时仍提供原备份；即使存储随后完全不可写，也不会丢掉它。
+    if (!Object.hasOwn(backup, "previousRaw") || backup.raw !== current) return raw;
+    raw = backup.previousRaw;
   }
+  return null;
+}
+
+function loadSlotBackup(slot) {
+  try {
+    const backup = JSON.parse(slotBackupRaw(slot));
+    return backup?.raw ? { ...backup, state: normalizeState(JSON.parse(backup.raw)) } : null;
+  } catch { return null; }
+}
+
+function backupSaveSlot(slot, preservePrevious = false) {
+  const raw = localStorage.getItem(slotKey(slot));
+  if (!raw) return null;
+  const backup = { timestamp: Date.now(), raw };
+  if (preservePrevious) backup.previousRaw = slotBackupRaw(slot);
+  localStorage.setItem(backupKey(slot), JSON.stringify(backup));
+  return backup;
+}
+
+function writeSaveSlot(slot, sourceState, { backup = false, activate = false } = {}) {
+  if (!Number.isInteger(slot) || slot < 0 || slot >= MAX_SLOTS || !sourceState) return false;
+  let previousMeta;
+  let previousActive;
+  let metaUpdated = false;
+  let activeUpdated = false;
+  try {
+    previousMeta = localStorage.getItem(SAVE_META_KEY);
+    previousActive = localStorage.getItem(SAVE_ACTIVE_KEY);
+    let pendingBackup;
+    try { pendingBackup = JSON.parse(localStorage.getItem(backupKey(slot))); } catch { /* 已损坏的备份不妨碍保存正文。 */ }
+    if (pendingBackup && Object.hasOwn(pendingBackup, "previousRaw")) {
+      // 先收束上次中断的写入，再允许自动保存改变正文，避免误把失败的恢复当作已提交。
+      const retained = JSON.parse(slotBackupRaw(slot));
+      if (retained) localStorage.setItem(backupKey(slot), JSON.stringify({ timestamp: retained.timestamp, raw: retained.raw }));
+      else localStorage.removeItem(backupKey(slot));
+    }
+    const serialized = JSON.stringify({ ...sourceState, saveSlot: slot });
+    // 备份写入失败就停止，原存档不会被新内容覆盖。
+    const stagedBackup = backup && localStorage.getItem(slotKey(slot)) !== serialized ? backupSaveSlot(slot, true) : null;
+    updateSlotMeta(slot, sourceState);
+    metaUpdated = true;
+    if (activate) { localStorage.setItem(SAVE_ACTIVE_KEY, String(slot)); activeUpdated = true; }
+    // 原文最后提交：索引或活动槽位写入失败时，旧进度仍在原处。
+    localStorage.setItem(slotKey(slot), serialized);
+    sourceState.saveSlot = slot;
+    if (stagedBackup) {
+      // 提交后再释放更早的备份；清理失败时，完整记录仍可正常读取。
+      try { localStorage.setItem(backupKey(slot), JSON.stringify({ timestamp: stagedBackup.timestamp, raw: stagedBackup.raw })); } catch { /* 保留完整备份记录。 */ }
+    }
+    if (activate || failedSaveSlot === slot) { saveError = ""; failedSaveSlot = -1; }
+    updateSaveNotice();
+    return true;
+  } catch {
+    try {
+      if (metaUpdated) {
+        if (previousMeta === null) localStorage.removeItem(SAVE_META_KEY);
+        else localStorage.setItem(SAVE_META_KEY, previousMeta);
+      }
+      if (activeUpdated) {
+        if (previousActive === null) localStorage.removeItem(SAVE_ACTIVE_KEY);
+        else localStorage.setItem(SAVE_ACTIVE_KEY, previousActive);
+      }
+    } catch { /* 持久化仍不可用时保留页面进度与已写入的备份，供玩家导出。 */ }
+    saveError = "浏览器未能完成保存，可能是存储空间不足或存储被禁用。请先导出当前进度，暂时不要刷新或关闭页面。";
+    failedSaveSlot = slot;
+    updateSaveNotice();
+    return false;
+  }
+}
+
+function rememberActiveSlot(slot) {
+  try { localStorage.setItem(SAVE_ACTIVE_KEY, String(slot)); } catch {
+    saveError = "浏览器无法记住当前存档。请先导出当前进度，暂时不要刷新或关闭页面。";
+    failedSaveSlot = slot;
+  }
+  updateSaveNotice();
+}
+
+function updateSaveNotice() {
+  if (!saveUiReady) return;
+  const message = saveError || (state && !state.__ephemeral && currentSlot < 0 ? "当前人生还没有存档位。请前往存档管理选择保存位置，或先导出当前进度。" : "");
+  let notice = document.getElementById("save-status-notice");
+  const dialog = app.querySelector("dialog[open]");
+  const modal = dialog?.querySelector(".profile-modal");
+  if (!message) {
+    notice?.remove();
+    app.style.paddingBottom = "";
+    if (dialog) dialog.style.paddingBottom = "";
+    modal?.style.removeProperty("max-height");
+    return;
+  }
+  if (!notice) {
+    notice = document.createElement("aside");
+    notice.id = "save-status-notice";
+    notice.className = "save-status-notice";
+    notice.setAttribute("role", "alert");
+  }
+  const host = dialog || document.body;
+  if (notice.parentElement !== host) host.appendChild(notice);
+  notice.innerHTML = `<div><strong>请保护当前进度</strong><p>${escapeHtml(message)}</p></div><div class="save-notice-actions">${state ? `<button type="button" data-action="export">导出当前进度</button><button type="button" data-action="open-save-manager">存档管理</button>${currentSlot >= 0 ? `<button type="button" data-action="retry-save">重试保存</button>` : ""}` : ""}</div>`;
+  const space = notice.offsetHeight + 28;
+  app.style.paddingBottom = dialog ? "" : `${space}px`;
+  if (dialog) dialog.style.paddingBottom = `${space}px`;
+  if (modal) modal.style.maxHeight = `min(820px, calc(100dvh - ${space + 28}px))`;
+}
+
+function save() {
+  if (!state || state.__ephemeral) return true;
+  if (!state.dead && shouldDie()) die(state.age >= 100 ? "寿终正寝" : "体魄耗尽");
+  if (currentSlot < 0) { updateSaveNotice(); return false; }
+  return writeSaveSlot(currentSlot, state, { activate: true });
 }
 
 function clearSave() {
-  if (currentSlot >= 0) {
-    localStorage.removeItem(slotKey(currentSlot));
-    clearSlotMeta(currentSlot);
-    currentSlot = -1;
+  if (currentSlot < 0) return true;
+  return deleteSaveSlot(currentSlot);
+}
+
+function deleteSaveSlot(slot) {
+  try {
+    backupSaveSlot(slot);
+    localStorage.removeItem(slotKey(slot));
+    clearSlotMeta(slot);
+    if (currentSlot === slot) {
+      currentSlot = -1;
+      localStorage.removeItem(SAVE_ACTIVE_KEY);
+    }
+    return true;
+  } catch {
+    saveError = "浏览器未能完成存档操作。请先导出当前进度，原存档或覆盖前备份仍可在存档管理中查看。";
+    failedSaveSlot = slot;
+    updateSaveNotice();
+    return false;
   }
 }
 
-function yearAdvanceBlockReason() {
+function yearAdvanceBlockReason(allowExam = false) {
   if (!state || state.dead) return "此生已终。";
   if (state.eventResult) return "请先点「点击继续」关闭当前结果。";
   if (state.currentEvent) return "请先处理当前事件再推进流年。";
+  if (state.pendingAnnualEvent) return "请先处理尚未结束的流年后续。";
+  if (state.pendingActivity) return "请先完成眼前的活动。";
+  if (state.exam?.current && !allowExam) return "考试尚未交卷，请先完成或退出考试。";
   if (state.pendingTravel) return "旅途未完，请先走完车马行程。";
   if (state.pendingCaravan) return "押镖途中，请先处理镖路上的抉择。";
   if (state.poetryRound) return "诗会文斗尚未结束，请先应对下联或弃局。";
@@ -5991,7 +6483,7 @@ function applyWorldAnnualImpact(deltas = []) {
   }
 }
 
-function significantNpcRefs() {
+function significantNpcRefs(includeDead = false) {
   const people = [
     state.family.father,
     state.family.mother,
@@ -6000,7 +6492,7 @@ function significantNpcRefs() {
     ...(state.family.concubines || []),
     ...(state.family.children || []),
     ...(state.friends || []),
-  ].filter((person) => person && person.alive !== false);
+  ].filter((person) => person && (includeDead || person.alive !== false));
   const seen = new Set();
   return people.filter((person) => {
     const key = person.id || person.name;
@@ -6085,8 +6577,132 @@ function advanceNpcAgencyYear(deltas = []) {
   }
 }
 
-function npcById(id) {
-  return significantNpcRefs().find((person) => String(person.id || person.name) === String(id || "")) || null;
+function npcById(id, includeDead = false) {
+  return significantNpcRefs(includeDead).find((person) => String(person.id || person.name) === String(id || "")) || null;
+}
+
+function annualScholarStoryEvent() {
+  if (!state || state.dead || state.prisonYears > 0 || state.age < 12 || state.age > 20 || state.tags.includes("旧书缘起")) return null;
+  const id = `scholar-${state.lineage.generation}-${state.year}`;
+  const person = npcById(id, true) || normalizeFriend({ id, name: makePersonName("male"), gender: "male", relation: "旧书摊相识", age: Math.max(16, state.age + 2), physique: 80, affection: 48, ambition: "读书进身", occupation: "抄书谋生", wealth: 18, disposition: "重情", alive: true });
+  if (!state.friends.some((item) => item.id === person.id)) state.friends.push(person);
+  return {
+    kind: "scholarStory", storyStage: "meeting", npcId: person.id, title: "旧书与新路 · 一饭之交", icon: "Letter",
+    content: `面摊前，书生${person.name}只讨一碗热汤，怀里还抱着舍不得卖的旧书。他想进城求学，却凑不齐束脩。你听完他的打算，决定……`,
+    children: [
+      { title: "资助束脩", scholarChoice: "fund", note: `付出 ${moneyText(40)}，帮${person.name}踏上求学路`, disabled: state.stats.money < 40 },
+      { title: "陪他抄书筹钱", scholarChoice: "copy", note: "用一段闲暇相助，学识 +2、心情 -2；不花钱" },
+      { title: "婉言辞去", scholarChoice: "decline", note: "不作空口承诺；他的路会继续，你们也许还会重逢" },
+    ],
+  };
+}
+
+function scholarReunionEvent(thread) {
+  const person = npcById(thread.targetId, true);
+  const absent = !person || person.alive === false;
+  const helped = ["fund", "copy"].includes(thread.choiceId);
+  const estranged = !!person && person.affection < 30;
+  const origin = thread.inherited ? "你的先人" : "你";
+  const livelihood = person?.occupation === "抄书谋生" ? "在城南书塾谋得一份差事" : `在${person?.occupation || "自己的营生"}上渐渐站稳`;
+  let content;
+  let children;
+  if (absent) {
+    content = `${person?.alive === false ? `${thread.target}已经离世` : `${thread.target}已不知去向`}。一册旧书辗转送到门前，扉页记着${origin}当年${thread.choiceId === "fund" ? "资助束脩" : thread.choiceId === "copy" ? "陪他抄书" : "在面摊与他短暂相逢"}的事。往事有了回音，却再没有本人登门。`;
+    children = [{ title: "收好旧书，记下故人", scholarChoice: "remember", note: "保存这段往事；不会获得故人的银钱或引荐" }];
+  } else if (helped && !estranged) {
+    content = `${person.name}托人送来亲笔信：他已${livelihood}，一直记着${origin}${thread.choiceId === "fund" ? "替他补齐束脩" : "陪他抄书筹钱"}的情分。${thread.inherited ? "得知故人已逝，他愿把这份照应交到后人手里。" : "听闻你近来的打算，他主动问起有没有能帮上的地方。"}`;
+    children = [
+      { title: "接受周转银", scholarChoice: "aid", note: `他从积蓄中拿出 ${moneyText(thread.choiceId === "fund" ? 100 : 60)}；这是回报，没有新增借债` },
+      { title: "请他指点学业", scholarChoice: "study", note: "学识 +8、备考 +6；往年的抄书与求学化作今日门路" },
+      { title: "只叙旧，不求回报", scholarChoice: "reconnect", note: "心情 +5，与他的情分更深" },
+    ];
+  } else {
+    content = `${person.name}如今已${livelihood}。${estranged ? "他没有忘记当年的帮助，但后来的疏远与失约也还横在你们之间。" : `他还记得${origin}当年在面摊听他说完了打算，却没有继续来往。`}这次相见，他客气问候，没有主动许下人情。你愿不愿意重新走近？`;
+    children = [
+      { title: "坐下叙旧，重新来往", scholarChoice: "reconcile", note: "关系从这次谈心重新积累，没有凭空回报" },
+      { title: "互道珍重", scholarChoice: "part", note: "各自前行，命册保留这次重逢" },
+    ];
+  }
+  return { kind: "scholarStory", storyStage: "reunion", threadId: thread.id, npcId: thread.targetId, title: `旧书与新路 · ${absent ? "旧书归来" : helped && !estranged ? "故人来信" : "又逢故人"}`, content: `${thread.summary}\n\n${content}`, icon: "Letter", children };
+}
+
+function resolveScholarStory(event, choice) {
+  if (choice.disabled) return;
+  const person = npcById(event.npcId, true);
+  const deltas = [];
+  let text = "";
+  let reason = "";
+  let followup = "";
+  if (event.storyStage === "meeting") {
+    if (!person || person.alive === false || state.tags.includes("旧书缘起")) return;
+    const decision = choice.scholarChoice;
+    if (!["fund", "copy", "decline"].includes(decision)) return;
+    if (decision === "fund") {
+      if (state.stats.money < 40) return;
+      changeStat("money", -40, deltas);
+      changeStat("virtue", 3, deltas);
+      person.wealth = clamp(person.wealth + 12);
+      addLedger("书生束脩", -40, `资助${person.name}求学，赠与而非借贷。`);
+      text = `你替${person.name}补齐了束脩。他没有许诺富贵，只把你的名字郑重写在旧书扉页。`;
+    } else if (decision === "copy") {
+      changeStat("knowledge", 2, deltas);
+      changeStat("mood", -2, deltas);
+      person.wealth = clamp(person.wealth + 6);
+      text = `你陪${person.name}抄了几晚书，替他挣到第一笔束脩。银钱不多，但他记住了灯下与你并肩赶工的人情。`;
+    } else {
+      text = `你向${person.name}道明难处，没有许下做不到的承诺。他收起旧书，仍决定靠抄书继续求学。`;
+    }
+    state.tags.push("旧书缘起");
+    rememberNpcMoment(person, "旧书之缘", text, decision === "decline" ? 0 : 12);
+    person.lastAction = "筹措束脩，准备入城求学";
+    openThread("favor", `${person.name}的旧书之缘`, `${state.name}与${person.name}在面摊相识，选择了“${choice.title}”。`, { key: `scholar-study:${person.id}`, targetId: person.id, target: person.name, sourceId: "scholar-study", choiceId: decision, delay: 3, stakes: decision === "fund" ? 40 : 20 });
+    reason = `这次选择已记在${person.name}的记忆中，赠与不会被算成欠债。`;
+    followup = "三年后，这位书生的境遇与当年的选择会一起回到你的生活；命册已留下来由。";
+  } else {
+    const thread = state.threads.find((item) => item.id === event.threadId && item.sourceId === "scholar-study" && item.status === "active");
+    if (!thread || thread.dueYear > state.year || !scholarReunionEvent(thread).children.some((item) => item.scholarChoice === choice.scholarChoice)) return;
+    const decision = choice.scholarChoice;
+    if (decision === "aid") {
+      const amount = thread.choiceId === "fund" ? 100 : 60;
+      changeStat("money", amount, deltas);
+      person.wealth = clamp(person.wealth - 10);
+      addLedger("故人援手", amount, `${person.name}记着当年“${thread.choiceId === "fund" ? "资助束脩" : "陪他抄书"}”，主动赠银照应。`);
+      text = `${person.name}送来 ${moneyText(amount)}，叮嘱你不必写借据。${thread.inherited ? "先人的善意，在这一代有了回响。" : "当年递出去的善意，如今成了有人愿意为你分担。"}`;
+    } else if (decision === "study") {
+      changeStat("knowledge", 8, deltas);
+      state.study.prep = Math.min(100, Number(state.study.prep || 0) + 6);
+      deltas.push({ label: "备考", value: 6 });
+      text = `${person.name}带来亲手批注的书册，还逐篇替你讲透。他把当年的帮助，变成今日肯认真相授的学问。`;
+      text += grantHeirloom("annotated-book", { name: person.name, personId: person.id, generation: null, sourceId: `scholar:${thread.id}`, regionId: currentRegionalId(), year: state.year, summary: `${person.name}亲手批注，因旧日书缘赠予${state.name}；作者与受赠人分别记在纸签上。` }, { alreadyUsed: true });
+    } else if (decision === "reconnect") {
+      changeStat("mood", 5, deltas);
+      text = `你与${person.name}聊起旧书和灯火，没有提银钱。往来不必每一笔都算回报，这次长谈让彼此更亲近。`;
+    } else if (decision === "reconcile") {
+      changeStat("relationship", 3, deltas);
+      text = `你与${person.name}重新坐到一桌，把旧日的生疏慢慢说开。这次没有天降馈赠，却为往后的交情留了门。`;
+    } else if (decision === "remember") {
+      text = `你收好${thread.target}的旧书，在命册写下这段往事。${person?.alive === false ? "故人已逝，不能再亲自兑现照应。" : "故人去向未明，未把传闻当作本人许诺。"}`;
+      text += grantHeirloom("annotated-book", { name: thread.target, personId: thread.targetId, generation: null, sourceId: `scholar:${thread.id}`, regionId: currentRegionalId(), year: state.year, summary: `${thread.target}留下批注，由${state.name}在旧书回响中收存。${person?.alive === false ? "作者已逝。" : "作者去向未明，不据此断定生死。"}` });
+    } else {
+      text = `你与${person.name}互道珍重，各自走进人群。这段旧书之缘就此收束。`;
+    }
+    if (person?.alive !== false && person) {
+      if (person.occupation === "抄书谋生") person.occupation = "书塾助教";
+      rememberNpcMoment(person, "旧书回响", `${state.name}选择“${choice.title}”。${text}`, ["reconnect", "reconcile"].includes(decision) ? 8 : decision === "part" ? 0 : 4);
+      person.lastAction = `与你${choice.title}`;
+    }
+    thread.status = "resolved";
+    thread.outcome = choice.title;
+    reason = `当年的选择是“${{ fund: "资助束脩", copy: "陪他抄书筹钱", decline: "婉言辞去" }[thread.choiceId] || "旧日相逢"}”；本次回应也读取了${thread.target}现在的生死与亲疏。`;
+    followup = "前因与结局已收入命册；这段往事也留在人物记忆中。";
+  }
+  state.currentEvent = null;
+  state.lastDeltas = deltas;
+  addLog(event.title, text, deltas);
+  state.eventResult = { title: choice.title, text, deltas, icon: "Letter", scene: "ink", reason, followup };
+  unlockLifeGoals();
+  save();
+  render();
 }
 
 function npcRequestType(person) {
@@ -6203,7 +6819,7 @@ function resolveNpcRequest(event, choice) {
     if (person) rememberNpcMoment(person, "被拒", `你推辞了“${request.title}”`, -8);
     request.status = "declined";
     request.outcome = "如实推辞";
-    openThread("family", `与${request.npcName}之间的一次推辞`, `${request.npcName}曾为“${request.title}”向你开口，你选择了推辞。`, { key: `npc-request:${request.id}`, target: request.npcName, delay: 2, stakes: 80 });
+    openThread("family", `与${request.npcName}之间的一次推辞`, `${request.npcName}曾为“${request.title}”向你开口，你选择了推辞。`, { key: `npc-request:${request.id}`, sourceId: "npc-request", choiceId: "decline", targetId: request.npcId, target: request.npcName, delay: 2, stakes: 80 });
   }
   const text = accepted
     ? `你没有只回一封客套信，而是备好 ${moneyText(meta.cost)} 亲自处理了“${request.title}”。${request.npcName}把这份照应记在了心里。`
@@ -6257,7 +6873,7 @@ function openThread(kind, title, summary, options = {}) {
   if (!THREAD_KINDS[kind]) return null;
   state.threads = normalizeThreads(state.threads);
   const key = String(options.key || `${kind}:${title}`);
-  const existing = state.threads.find((item) => item.status === "active" && (item.key === key || item.kind === kind));
+  const existing = state.threads.find((item) => item.status === "active" && item.key === key);
   if (existing) return existing;
   const thread = {
     id: `thread-${state.year}-${Date.now()}-${Math.random().toString(16).slice(2)}`,
@@ -6266,6 +6882,9 @@ function openThread(kind, title, summary, options = {}) {
     title: title || THREAD_KINDS[kind].label,
     summary: summary || "这件事还没有真正收尾。",
     target: String(options.target || ""),
+    targetId: String(options.targetId || ""),
+    sourceId: String(options.sourceId || ""),
+    choiceId: String(options.choiceId || ""),
     stakes: Math.max(20, Math.round(Number(options.stakes) || randInt(60, 160))),
     createdYear: state.year,
     dueYear: state.year + Math.max(1, Math.round(Number(options.delay) || randInt(1, 3))),
@@ -6278,19 +6897,10 @@ function openThread(kind, title, summary, options = {}) {
   return thread;
 }
 
-function maybeOpenThreadFromLog(title = "", text = "") {
-  if (!state || state.dead || state.age < 12 || /未了之事|旧账来时|善缘回响|暗局余波|旧诺来问/.test(title)) return;
-  const source = `${title}${text}`;
-  if (/借钱|借款|欠下|赊欠|担保/.test(source)) return openThread("debt", "账上还有一笔人情", text, { stakes: randInt(80, 220) });
-  if (/分家|争产|不睦|生隙|挽留同住/.test(source)) return openThread("family", "家门里没有说完的话", text, { stakes: 90 });
-  if (/黑市|舞弊|买题|卖题|冒名|出千|赎身/.test(source)) return openThread("shadow", "有人记住了这桩暗事", text, { stakes: randInt(140, 320) });
-  if (/答应|约定|承诺|托付/.test(source)) return openThread("promise", "旧日一句承诺", text, { stakes: 100 });
-  if (/周济|救治|救命|赈济|解围|相助/.test(source)) return openThread("favor", "一段善缘尚有后话", text, { stakes: 70 });
-}
-
 function annualThreadEvent() {
   const thread = normalizeThreads(state.threads).filter((item) => item.status === "active" && item.dueYear <= state.year).sort((a, b) => a.dueYear - b.dueYear)[0];
   if (!thread) return null;
+  if (thread.sourceId === "scholar-study") return scholarReunionEvent(thread);
   const honorCost = ["debt", "shadow"].includes(thread.kind) ? thread.stakes : Math.min(120, thread.stakes);
   const configs = {
     debt: ["如数了结", `拿出 ${moneyText(thread.stakes)}，把银钱与人情一并结清。`, "暂且拖延", "眼下不愿出钱，只求再宽限一年。"],
@@ -6312,7 +6922,8 @@ function annualThreadEvent() {
 
 function resolveFateThread(event, choice) {
   const thread = state.threads.find((item) => item.id === event.threadId);
-  if (!thread || choice.disabled) return;
+  if (!thread || thread.status !== "active" || choice.disabled) return;
+  const person = thread.targetId ? npcById(thread.targetId) : null;
   const deltas = [];
   const honor = choice.threadChoice === "honor";
   const cost = thread.kind === "debt" || thread.kind === "shadow" ? thread.stakes : Math.min(120, thread.stakes);
@@ -6326,6 +6937,10 @@ function resolveFateThread(event, choice) {
     changeStat("relationship", 4, deltas);
     thread.status = "resolved";
     thread.outcome = "守信收尾";
+  } else if (thread.kind === "debt" && thread.sourceId === "relation-borrow") {
+    changeStat("relationship", -2, deltas);
+    thread.dueYear = state.year + 1;
+    thread.outcome = "暂缓一年";
   } else {
     const clever = thread.kind === "shadow" && state.stats.eq + state.stats.knowledge >= 135;
     changeStat(clever ? "knowledge" : "virtue", clever ? 4 : -5, deltas);
@@ -6334,9 +6949,10 @@ function resolveFateThread(event, choice) {
     thread.status = clever ? "resolved" : "broken";
     thread.outcome = clever ? "反查得解" : "留下裂痕";
   }
+  if (person) rememberNpcMoment(person, honor ? "旧事了结" : "旧事失约", `${state.name}选择“${choice.title}”：${thread.title}`, honor ? 6 : -6);
   state.currentEvent = null;
   state.lastDeltas = deltas;
-  const text = honor ? `你选择“${choice.title}”，终于把${thread.title}妥善收束。` : `你选择“${choice.title}”。此事虽暂时过去，却在命册里留下了“${thread.outcome}”的结果。`;
+  const text = honor ? `你选择“${choice.title}”，终于把${thread.title}妥善收束。` : thread.status === "active" ? `你请${thread.target}再宽限一年。尚欠的 ${moneyText(thread.stakes)}仍记在账上，这次延期也影响了对方对你的信任。` : `你选择“${choice.title}”。此事虽暂时过去，却在命册里留下了“${thread.outcome}”的结果。`;
   addLog(`未了之事 · ${thread.title}`, text, deltas);
   state.eventResult = { title: choice.title, text, deltas, icon: THREAD_KINDS[thread.kind].icon, scene: thread.kind === "shadow" ? "ember" : "ink" };
   updateAmbitionProgress();
@@ -6411,7 +7027,7 @@ function resolveChildLifeEvent(event, choice) {
   child.lastActionYear = state.year;
   child.lastAction = success ? `${event.title.replace(`${child.name} · `, "")}顺利` : `${event.title.replace(`${child.name} · `, "")}受挫`;
   rememberNpcMoment(child, "前程", `${choice.title}：${child.lastAction}`, success ? 2 : -1);
-  if (!success && choice.childChoice === "release") openThread("family", `${child.name}的前程心结`, `${child.name}觉得家中没有在最难时伸手，这份失落尚未说开。`, { target: child.name, delay: 2 });
+  if (!success && choice.childChoice === "release") openThread("family", `${child.name}的前程心结`, `${child.name}觉得家中没有在最难时伸手，这份失落尚未说开。`, { target: child.name, targetId: child.id, sourceId: "child-life", choiceId: "release", delay: 2 });
   const text = success ? `${choice.title}之后，${child.name}终于在${child.occupation}上迈过一道坎，也更愿把自己的打算告诉你。` : `${choice.title}之后，${child.name}的打算没有如愿。此事让他重新审视自己的志向，也改变了你们之间的亲疏。`;
   state.currentEvent = null;
   state.lastDeltas = deltas;
@@ -6831,6 +7447,7 @@ function settleInRegion(regionId) {
 }
 
 function advanceRegionalYear(deltas = []) {
+  if (!state || state.dead) return;
   state.regional = normalizeRegionalState(state.regional, state.location);
   if (state.regional.lastAnnualYear === state.year) return;
   const residence = regionalStateFor(state.regional.residenceId);
@@ -6841,6 +7458,16 @@ function advanceRegionalYear(deltas = []) {
     region.reputation = clamp(region.reputation + 1);
     region.factionFavor[alliance.factionId] = clampNumber(region.factionFavor[alliance.factionId] + 1, -100, 100, 0);
   }
+  const currentId = currentRegionalId();
+  for (const legacy of regionalStateFor(currentId).legacies) {
+    if (legacy.kind === "granary") {
+      changeStat("money", 8, deltas);
+      addLedger("义仓口粮", 8, `${travelDestinationByStaticId(currentId).name}的义仓供给口粮折银，由第 ${legacy.founderGeneration} 代${legacy.founderName}创办。`);
+    } else if (legacy.kind === "dispensary") {
+      changeStat("physique", 1, deltas);
+    }
+  }
+  // 沿用全地域年度标记，换城或重载都不能在同一年重复领取。
   state.regional.lastAnnualYear = state.year;
   deltas.push({ label: "居地声望", value: residenceAssets >= 2 ? 2 : 1 });
 }
@@ -7044,105 +7671,7 @@ function nextYear() {
     state.age += 1;
     state.year += 1;
     state.lastDeltas = [];
-    expireNpcRequests(state.lastDeltas);
-
-    if (state.age === 1 && !state.tags.includes("抓周")) {
-      state.tags.push("抓周");
-      state.currentEvent = cloneEvent(START_EVENT);
-      save();
-      render();
-      return;
-    }
-
-    advanceDynastyYear(state.lastDeltas);
-
-    if (state.prisonYears > 0) {
-      const prison = ensurePrisonState();
-      prison.yearsServed += 1;
-      state.prisonYears = Math.max(0, state.prisonYears - 1);
-      applyAgeMilestones(state.lastDeltas);
-      changeStat("mood", -randInt(1, 4), state.lastDeltas);
-      changeStat("physique", randInt(-4, -1), state.lastDeltas);
-      advanceFamilyYear(state.lastDeltas);
-      advanceApprenticesYear(state.lastDeltas);
-      advanceClanYear(state.lastDeltas);
-      advanceNpcAgencyYear(state.lastDeltas);
-      advanceCricketYear(state.lastDeltas);
-      if (shouldDie()) {
-        die("病殁狱中");
-        save();
-        render();
-        return;
-      }
-      state.currentEvent = createPrisonYearEvent(state.prisonYears <= 0);
-      rememberEventKey(state.currentEvent);
-      finishYear(false);
-      return;
-    }
-
-    applyAgeMilestones(state.lastDeltas);
-    if (typeof ensureLeisureSeason === "function") ensureLeisureSeason();
-    changeStat("mood", randInt(-2, 2), state.lastDeltas);
-    changeStat("physique", state.age > 55 ? randInt(-4, -1) : randInt(-1, 2), state.lastDeltas);
-    changeStat("money", state.career ? randInt(18, 80) : randInt(-10, 25), state.lastDeltas);
-    const assetIncome = annualAssetIncome();
-    if (assetIncome) {
-      changeStat("money", assetIncome, state.lastDeltas);
-      addLedger("家产进项", assetIncome, "名下产业送来一年收益。");
-    }
-    assetMarketEvent(state.lastDeltas);
-    applyWorldAnnualImpact(state.lastDeltas);
-    if (state.diseases.length) changeStat("physique", -state.diseases.length, state.lastDeltas);
-    advanceFamilyYear(state.lastDeltas);
-    advanceApprenticesYear(state.lastDeltas);
-    advanceClanYear(state.lastDeltas);
-    advanceRegionalYear(state.lastDeltas);
-    if (typeof applySpouseProfileYear === "function") applySpouseProfileYear(state.lastDeltas);
-    advanceCricketYear(state.lastDeltas);
-    if (typeof runSecretYear === "function") runSecretYear(state.lastDeltas);
-    annualRelationEvent(state.lastDeltas);
-    annualPartnerEvent(state.lastDeltas);
-    advanceNpcAgencyYear(state.lastDeltas);
-    maybeCreateNpcRequest();
-
-    if (shouldDie()) {
-      die(state.age >= 100 ? "寿终正寝" : "体魄耗尽");
-      save();
-      render();
-      return;
-    }
-
-    const annualEvent =
-      annualCareerChapterEvent() ||
-      annualFamilyStoryEvent() ||
-      annualWorldArcEvent() ||
-      annualThreadEvent() ||
-      annualChildLifeEvent() ||
-      annualUnderworldEvent() ||
-      annualJianghuEvent() ||
-      annualFortuneEvent() ||
-      annualOfficialCaseEvent() ||
-      annualSecretIntroductionEvent() ||
-      annualRegionalEvent() ||
-      chooseEvent();
-    const culturalEvent = annualCulturalEvent();
-    state.currentEvent = culturalEvent || annualEvent;
-    state.pendingAnnualEvent = culturalEvent ? annualEvent : null;
-    if (annualEvent) rememberEventKey(annualEvent);
-    if (culturalEvent) rememberEventKey(culturalEvent);
-    if (state.underworld) state.underworld.heat = clamp(Number(state.underworld.heat || 0) - randInt(2, 6));
-    if (state.jianghu) state.jianghu.heat = clamp(Number(state.jianghu.heat || 0) - randInt(2, 6));
-    // 有事件时不再叠惊喜弹窗，避免遮住选项导致“点不动”
-    if (!state.currentEvent) {
-      if (typeof offerRandomSecret === "function") {
-        if (!offerRandomSecret(state.lastDeltas)) annualSurpriseEvent(state.lastDeltas);
-      } else {
-        annualSurpriseEvent(state.lastDeltas);
-      }
-      // 只有真的没抽出事件或惊喜时才记“平年”，避免秘密邀约与赠礼同时被写成平年
-      if (!state.pendingSurprise) addLog("平年", "这一年无甚大事，日子仍照常向前。", state.lastDeltas);
-    }
-    finishYear(false);
+    finishYear();
   } catch (error) {
     console.error("nextYear failed", error);
     state.currentEvent = null;
@@ -7157,8 +7686,8 @@ function nextYear() {
   }
 }
 
-function finishYear(runAftermath = true) {
-  if (runAftermath) runAnnualAftermath(state.lastDeltas);
+function finishYear() {
+  runAnnualAftermath(state.lastDeltas);
   unlockLifeGoals();
   if (shouldDie()) die(state.age >= 100 ? "寿终正寝" : "体魄耗尽");
   save();
@@ -7166,12 +7695,109 @@ function finishYear(runAftermath = true) {
 }
 
 function runAnnualAftermath(deltas = state.lastDeltas) {
+  if (!state || state.dead || state.lastSettledYear === state.year) return;
+  // Each elapsed year is settled once, including activity years and save reloads.
+  state.lastSettledYear = state.year;
+  expireNpcRequests(deltas);
+
+  if (state.age === 1 && !state.tags.includes("抓周")) {
+    state.tags.push("抓周");
+    state.currentEvent = cloneEvent(START_EVENT);
+    return;
+  }
+
+  advanceDynastyYear(deltas);
+
+  if (state.prisonYears > 0) {
+    const prison = ensurePrisonState();
+    prison.yearsServed += 1;
+    state.prisonYears = Math.max(0, state.prisonYears - 1);
+    applyAgeMilestones(deltas);
+    changeStat("mood", -randInt(1, 4), deltas);
+    changeStat("physique", randInt(-4, -1), deltas);
+    advanceFamilyYear(deltas);
+    advanceApprenticesYear(deltas);
+    advanceClanYear(deltas);
+    advanceNpcAgencyYear(deltas);
+    advanceCricketYear(deltas);
+    if (shouldDie()) {
+      die("病殁狱中");
+      return;
+    }
+    state.currentEvent = createPrisonYearEvent(state.prisonYears <= 0);
+    rememberEventKey(state.currentEvent);
+    return;
+  }
+
+  applyAgeMilestones(deltas);
+  if (typeof ensureLeisureSeason === "function") ensureLeisureSeason();
+  changeStat("mood", randInt(-2, 2), deltas);
+  changeStat("physique", state.age > 55 ? randInt(-4, -1) : randInt(-1, 2), deltas);
+  changeStat("money", state.career ? randInt(18, 80) : randInt(-10, 25), deltas);
+  const assetIncome = annualAssetIncome();
+  if (assetIncome) {
+    changeStat("money", assetIncome, deltas);
+    addLedger("家产进项", assetIncome, "名下产业送来一年收益。");
+  }
+  assetMarketEvent(deltas);
+  applyWorldAnnualImpact(deltas);
+  if (state.diseases.length) changeStat("physique", -state.diseases.length, deltas);
   advanceFamilyYear(deltas);
   advanceApprenticesYear(deltas);
   advanceClanYear(deltas);
   advanceRegionalYear(deltas);
+  if (typeof applySpouseProfileYear === "function") applySpouseProfileYear(deltas);
   advanceCricketYear(deltas);
-  annualSurpriseEvent(deltas);
+  if (typeof runSecretYear === "function") runSecretYear(deltas);
+  annualRelationEvent(deltas);
+  annualPartnerEvent(deltas);
+  advanceNpcAgencyYear(deltas);
+  maybeCreateNpcRequest();
+
+  if (shouldDie()) {
+    die(state.age >= 100 ? "寿终正寝" : "体魄耗尽");
+    return;
+  }
+
+  // A secret can be exposed during this settlement; its new sentence starts next year.
+  if (state.prisonYears > 0) {
+    state.currentEvent = createPrisonYearEvent();
+    state.pendingAnnualEvent = null;
+    rememberEventKey(state.currentEvent);
+    return;
+  }
+
+  const annualEvent =
+    annualCareerChapterEvent() ||
+    annualFamilyStoryEvent() ||
+    annualWorldArcEvent() ||
+    annualThreadEvent() ||
+    annualScholarStoryEvent() ||
+    annualChildLifeEvent() ||
+    annualUnderworldEvent() ||
+    annualJianghuEvent() ||
+    annualFortuneEvent() ||
+    annualOfficialCaseEvent() ||
+    annualSecretIntroductionEvent() ||
+    annualRegionalEvent() ||
+    chooseEvent();
+  const culturalEvent = annualCulturalEvent();
+  state.currentEvent = culturalEvent || annualEvent;
+  state.pendingAnnualEvent = culturalEvent ? annualEvent : null;
+  if (annualEvent) rememberEventKey(annualEvent);
+  if (culturalEvent) rememberEventKey(culturalEvent);
+  if (state.underworld) state.underworld.heat = clamp(Number(state.underworld.heat || 0) - randInt(2, 6));
+  if (state.jianghu) state.jianghu.heat = clamp(Number(state.jianghu.heat || 0) - randInt(2, 6));
+  // 有事件时不再叠惊喜弹窗，避免遮住选项导致“点不动”
+  if (!state.currentEvent && !state.eventResult) {
+    if (typeof offerRandomSecret === "function") {
+      if (!offerRandomSecret(deltas)) annualSurpriseEvent(deltas);
+    } else {
+      annualSurpriseEvent(deltas);
+    }
+    // 只有真的没抽出事件或惊喜时才记“平年”，避免秘密邀约与赠礼同时被写成平年
+    if (!state.pendingSurprise) addLog("平年", "这一年无甚大事，日子仍照常向前。", deltas);
+  }
 }
 
 function shouldDie() {
@@ -7293,10 +7919,6 @@ function relationCount() {
     + livingChildren().length
     + (state.family.spouse ? 1 : 0)
     + (state.family.concubines || []).filter((item) => item.alive !== false).length;
-}
-
-function inventoryCount() {
-  return (state.inventory || []).length + (state.crickets || []).length + (state.diseases || []).length + Object.values(state.femaleSkills || {}).filter((level) => Number(level) > 0).length;
 }
 
 function miniGameRounds() {
@@ -8098,7 +8720,19 @@ function bucketMatchesAge(bucket, age) {
 }
 
 function cloneEvent(event) {
-  return event ? JSON.parse(JSON.stringify(event)) : null;
+  if (!event) return null;
+  const copy = JSON.parse(JSON.stringify(event));
+  copy.people ||= {};
+  for (const [, index] of JSON.stringify(copy).matchAll(/\{(\d+)\}/g)) {
+    if (copy.people[index]) continue;
+    let person = state.friends[Number(index)];
+    if (!person) {
+      person = normalizeFriend({ name: makePersonName(Math.random() > 0.5 ? "male" : "female"), lastMet: state.age });
+      state.friends.push(person);
+    }
+    copy.people[index] = person.name || person;
+  }
+  return copy;
 }
 
 function chooseOption(index) {
@@ -8111,6 +8745,7 @@ function chooseOption(index) {
   try {
     if (event.kind === "officialCase") return resolveOfficialCase(event, choice);
     if (event.kind === "careerChapter") return resolveCareerChapter(event, choice);
+    if (event.kind === "heirloom") return resolveHeirloom(event, choice);
     if (event.kind === "familyStory") return resolveFamilyStory(event, choice);
     if (event.kind === "careerCase") return resolveCareerCase(event, choice);
     if (event.kind === "fortuneEvent") return resolveFortuneEvent(event, choice);
@@ -8128,6 +8763,7 @@ function chooseOption(index) {
     if (event.kind === "fateThread") return resolveFateThread(event, choice);
     if (event.kind === "childLife") return resolveChildLifeEvent(event, choice);
     if (event.kind === "npcRequest") return resolveNpcRequest(event, choice);
+    if (event.kind === "scholarStory") return resolveScholarStory(event, choice);
 
     const deltas = applyResults(choice.results || []);
     state.lastDeltas = mergeDeltas(state.pendingActivity?.deltas, deltas);
@@ -8135,7 +8771,7 @@ function chooseOption(index) {
     addLog(choice.title || event.title || "事件", resultText, deltas);
     // 嵌套子事件：若后续分支条件全部不成立，直接结算，避免卡死
     const nextChildren = viableChildren(choice);
-    const nested = nextChildren.length && !state.dead ? { ...choice, kind: event.kind || choice.kind || "" } : null;
+    const nested = nextChildren.length && !state.dead ? { ...choice, kind: event.kind || choice.kind || "", people: event.people } : null;
     state.currentEvent = nested;
     unlockLifeGoals();
     if (!state.currentEvent) {
@@ -8188,6 +8824,7 @@ function finishEvent() {
   addLog(state.currentEvent.title || "事件", fillPlaceholders(state.currentEvent.content || state.currentEvent.history || ""), state.lastDeltas);
   state.currentEvent = null;
   if (state.pendingActivity) return completePendingActivity();
+  resumePendingAnnualEvent();
   save();
   render();
 }
@@ -8196,12 +8833,15 @@ function finishEventResult() {
   if (!state?.eventResult) return;
   state.eventResult = null;
   if (state.pendingActivity) return completePendingActivity();
-  if (!state.dead && state.pendingAnnualEvent) {
-    state.currentEvent = state.pendingAnnualEvent;
-    state.pendingAnnualEvent = null;
-  }
+  resumePendingAnnualEvent();
   save();
   render();
+}
+
+function resumePendingAnnualEvent() {
+  if (state.dead || state.currentEvent || state.eventResult || !state.pendingAnnualEvent) return;
+  state.currentEvent = state.pendingAnnualEvent;
+  state.pendingAnnualEvent = null;
 }
 
 function resultIcon(choice, event) {
@@ -8387,8 +9027,38 @@ function settleEstateDispute(type) {
   render();
 }
 
-function carryThreadsAcrossInheritance(source, startYear, oldName) {
-  return normalizeThreads(source).filter((item) => item.status === "active").map((item) => ({ ...item, inherited: true, dueYear: Math.max(Number(startYear) + 1, Number(item.dueYear || 0)), summary: `${oldName}留下的旧事：${item.summary}` })).slice(0, 8);
+function carryThreadsAcrossInheritance(source, startYear, oldName, oldYear = state.year) {
+  const threads = normalizeThreads(source);
+  const carried = [...threads.filter((item) => item.status === "active"), ...threads.filter((item) => item.status !== "active" && item.sourceId)];
+  return carried.slice(0, 16).map((item) => ({ ...item, inherited: true, createdYear: Math.max(0, Number(startYear) - Math.max(0, oldYear - item.createdYear)), dueYear: Number(startYear) + Math.max(1, item.dueYear - Number(oldYear)), summary: `${oldName}留下的旧事：${item.summary}` }));
+}
+
+function carryStoryContactsAcrossInheritance(threads, startYear, oldYear = state.year) {
+  const ids = new Set(threads.map((item) => item.targetId).filter(Boolean));
+  return (state.friends || []).filter((person) => ids.has(person.id)).map((person) => normalizeFriend({
+    ...person,
+    relation: "先人故交",
+    lastActionYear: -1,
+    lastMet: -1,
+    memories: (person.memories || []).map((memory) => ({ ...memory, year: Math.max(0, startYear - Math.max(0, oldYear - memory.year)) })),
+  }));
+}
+
+function settleInheritedSelfDebt(threads, heirId, heirName, age) {
+  return threads.filter((item) => item.status === "active" && item.kind === "debt" && item.sourceId === "relation-borrow" && item.targetId === heirId).map((item) => {
+    item.status = "resolved";
+    item.outcome = "债权债务抵消";
+    return { age, title: "承继旧账 · 债权债务抵消", text: `${heirName}承继家业后，先人向本人借得的 ${moneyText(item.stakes)}归于同一名下。这笔旧账就此结清，没有再从遗产中扣钱。` };
+  });
+}
+
+function heirVocation(heir, startYear) {
+  // Only exact, non-official occupations transfer; an NPC's progress is not an examination credential.
+  const career = Number(heir.age) >= 15 ? allCareers().find((item) => item.name === heir.occupation && careerKind(item) !== "official" && (Number(item.genderRequire ?? item.GenderRequire) !== 1 || heir.gender === "female")) || null : null;
+  const definition = LIFE_AMBITIONS.find((item) => item.title === heir.ambition);
+  const ambition = definition && Number(heir.age) >= 15 ? { id: definition.id, stage: 0, chosenYear: startYear, completed: false } : null;
+  const text = `${heir.name}此前以${heir.occupation || "料理家业"}度日，心中所求是“${heir.ambition || "求安稳"}”。${career ? "接掌门户后，仍继续自己的本业。" : "这段来历保留在命册；接下来的营生由其自行选择。"}`;
+  return { career, ambition, text };
 }
 
 function getActivity(id) {
@@ -8404,7 +9074,7 @@ function openActivity(id) {
 }
 
 function startActivity(id) {
-  if (!state || state.dead || state.currentEvent || state.eventResult || state.pendingCaravan || state.prisonYears > 0) return;
+  if (yearAdvanceBlockReason() || state.prisonYears > 0) return;
   const activity = getActivity(id);
   if (!activity) return;
   const deltas = [];
@@ -8428,7 +9098,7 @@ function startActivity(id) {
 }
 
 function performHomeAction(action) {
-  if (!state || state.dead || state.currentEvent || state.eventResult || state.pendingCaravan || state.prisonYears > 0) return;
+  if (yearAdvanceBlockReason() || state.prisonYears > 0) return;
   const deltas = [];
   let title = "家中";
   let text = "";
@@ -8480,9 +9150,9 @@ function performHomeAction(action) {
   }
   state.lastDeltas = deltas;
   addLog(title, text, deltas);
+  state.eventResult = { title, text, deltas, icon: iconName };
   state.age += 1;
   state.year += 1;
-  applyAgeMilestones(deltas);
   view.page = "main";
   finishYear();
 }
@@ -8520,11 +9190,16 @@ function expandActivityBuckets(buckets) {
 function completePendingActivity() {
   const pending = state.pendingActivity;
   if (!pending) return;
+  if (!state.dead && (state.currentEvent || state.eventResult || state.pendingTravel || state.pendingCaravan || state.poetryRound || state.exam?.current)) return;
   state.pendingActivity = null;
+  if (state.dead) {
+    save();
+    render();
+    return;
+  }
   state.age += 1;
   state.year += 1;
   if (!state.lastDeltas?.length) state.lastDeltas = pending.deltas || [];
-  applyAgeMilestones(state.lastDeltas);
   view.page = "main";
   finishYear();
 }
@@ -8709,6 +9384,8 @@ function careerActions() {
     common: [["routine", "做工", "尽一日本分，得些薪钱。"]],
   };
   const actions = (CAREER_ACTION_OVERRIDES[careerName] || maps[kind] || maps.common).map((item) => [...item]);
+  const chapterAction = careerChapterAction();
+  if (chapterAction) actions.push(chapterAction);
   const advanced = careerAdvancedCase(careerName);
   if (advanced) {
     const level = careerProgressFor(careerName).level;
@@ -8956,6 +9633,7 @@ function performCareerAction(type) {
   if (!state.career || state.dead || state.currentEvent || state.eventResult || state.pendingCaravan || state.prisonYears > 0 || state.age < 15) return;
   if (type === "resign") return resignCareer();
   const kind = careerKind();
+  if (type === "case:chapter") return startOrResumeCareerChapter();
   if (String(type || "").startsWith("story:")) return startCareerCase();
   if (kind === "caravan") return performCaravanRoute(String(type || "").replace("route:", "") || "county");
   if (kind === "official") return performOfficialAction(type);
@@ -9005,12 +9683,12 @@ function resignCareer() {
   const progress = careerProgressFor(career.name);
   const deltas = [];
   changeStat("mood", kind === "official" ? -3 : 1, deltas);
+  const interruptedChapter = abandonCareerChapter(kind === "official" ? "辞官中断" : "转业中断");
+  if (interruptedChapter) deltas.push({ label: "长案", value: `${interruptedChapter}中断`, type: "text", negative: true });
   if (kind === "official") {
-    const interruptedChapter = abandonCareerChapter();
     state.official.retired = true;
     recordOfficialPost("辞官");
     changeStat("favorability", -2, deltas);
-    if (interruptedChapter) deltas.push({ label: "长案", value: `${interruptedChapter}中断`, type: "text", negative: true });
   }
   state.careerHistory ||= [];
   state.careerHistory.push({ name: career.name, displayName: name, kind, year: state.year, level: progress.level, reason: kind === "official" ? "辞官" : "辞职" });
@@ -9629,7 +10307,7 @@ function officialDeskPanel() {
 
 function annualAssetIncome() {
   return (state.assets || []).reduce((sum, item) => {
-    const condition = clamp(Number(item.condition ?? 72), 20, 120) / 100;
+    const condition = clamp(Number(item.condition ?? 72), 20, ASSET_CONDITION_MAX) / 100;
     const level = Math.max(1, Number(item.level) || 1);
     const modeFactor = item.mode === "self" ? 1.18 : 0.92;
     const worldFactor = state.dynasty ? clamp(0.72 + state.dynasty.prosperity / 190 + state.dynasty.local.sentiment / 500 - state.dynasty.local.disaster / 240, 0.52, 1.42) : 1;
@@ -9654,7 +10332,7 @@ function assetMarketEvent(deltas = []) {
     ? randInt(Math.max(8, Math.round((asset.income || 20) * 0.5)), Math.max(18, Math.round((asset.income || 20) * 1.5)))
     : -randInt(12, Math.max(24, Math.round((asset.income || 20) * 1.2 * modeRisk)));
   changeStat("money", amount, deltas);
-  asset.condition = clamp(Number(asset.condition ?? 72) + (good ? randInt(-2, 4) : -randInt(5, 14)), 15, 120);
+  asset.condition = clamp(Number(asset.condition ?? 72) + (good ? randInt(-2, 4) : -randInt(5, 14)), 15, ASSET_CONDITION_MAX);
   const title = good ? "家产旺收" : "家产修缮";
   const assetRegion = travelDestinationByStaticId(asset.regionId || regionIdFromLocation(asset.location)).name;
   const text = good ? `${assetRegion}的${displayName}今年行情不错，地方口碑也替你省了几道关节，额外添了一笔进项。` : `${assetRegion}的${displayName}需修缮打点，额外折了一笔钱。`;
@@ -9708,6 +10386,13 @@ function assetDisplayName(asset, index) {
   return `${asset.name}（第${assetInstanceNumber(asset, index)}处）`;
 }
 
+function assetRepairQuote(asset) {
+  const condition = clamp(Number(asset.condition ?? 72), 0, ASSET_CONDITION_MAX);
+  const amount = Math.min(20, ASSET_CONDITION_MAX - condition);
+  const fullCost = Math.max(30, Math.round((asset.income || 20) * 1.6));
+  return { condition, amount, cost: Math.ceil(fullCost * amount / 20) };
+}
+
 function manageAsset(index, action) {
   if (!state || state.dead || state.age < 15 || state.prisonYears > 0) return;
   const asset = state.assets[Number(index)];
@@ -9717,20 +10402,21 @@ function manageAsset(index, action) {
   let title = "家产";
   let text = "";
   if (action === "repair") {
-    const cost = Math.max(30, Math.round((asset.income || 20) * 1.6));
-    if (state.stats.money < cost) return;
+    const { condition, amount, cost } = assetRepairQuote(asset);
+    if (amount <= 0 || state.stats.money < cost) return;
     changeStat("money", -cost, deltas);
-    asset.condition = clamp(Number(asset.condition ?? 72) + randInt(10, 24));
-    addLedger("家产修缮", -cost, `修缮${displayName}。`);
+    asset.condition = condition + amount;
+    deltas.push({ label: "家产状态", value: amount });
+    addLedger("家产修缮", -cost, `修缮${displayName}，状态 ${condition} → ${asset.condition}。`);
     title = "修缮家产";
-    text = `${displayName}修缮一新，日后少些漏损。`;
+    text = `${displayName}修缮一新，状态 ${condition} → ${asset.condition}（上限 ${ASSET_CONDITION_MAX}），花费 ${moneyText(cost)}。`;
   } else if (action === "expand") {
     const cost = Math.max(120, Math.round((asset.price || 200) * 0.38));
     if (state.stats.money < cost) return;
     changeStat("money", -cost, deltas);
     asset.level = Math.max(1, Number(asset.level) || 1) + 1;
     asset.income = Math.round(Number(asset.income || 10) * 1.28 + 8);
-    asset.condition = clamp(Number(asset.condition ?? 70) - randInt(4, 10));
+    asset.condition = clamp(Number(asset.condition ?? 70) - randInt(4, 10), 0, ASSET_CONDITION_MAX);
     addLedger("扩建家产", -cost, `扩建${displayName}。`);
     title = "扩建";
     text = `${displayName}添置扩建，年入涨至 ${moneyText(asset.income)}。`;
@@ -12350,7 +13036,14 @@ function interactRelation(id, actionId) {
   if (action.money) {
     const amount = rangeValue(action.money);
     changeStat("money", amount, deltas);
-    if (target.kind === "friend") target.person.debt = (target.person.debt || 0) + amount;
+    const targetId = String(target.person.id || target.name);
+    const key = `borrow:${targetId}`;
+    const previous = state.threads.find((item) => item.key === key && item.status === "active");
+    const thread = openThread("debt", `借${target.name}的钱`, `你向${target.name}借得 ${moneyText(amount)}，约定两年后归还。`, { key, targetId, target: target.name, sourceId: "relation-borrow", choiceId: "borrow", stakes: amount, delay: 2 });
+    if (previous) {
+      thread.stakes += amount;
+      thread.summary = `你先后向${target.name}借钱，尚欠 ${moneyText(thread.stakes)}；仍按最早约定还款。`;
+    }
     addLedger("亲友周济", amount, `${target.name}借与你一笔钱。`);
   }
   changeStat("relationship", rangeValue(action.relationship || [0, 0]), deltas);
@@ -12755,6 +13448,8 @@ function inheritFromChild(id) {
   const heirParent = heir.heirKind === "grandchild" ? livingChildren().find((child) => child.id === heir.parentId) : null;
   const inheritedMoney = Math.max(20, Math.round(Math.max(0, state.stats.money || 0) * normalizeLegacy(state.legacy).inheritanceRate));
   const inheritedThreads = carryThreadsAcrossInheritance(state.threads, Math.max(0, Math.round(Number(heir.age) || 0)), oldName);
+  const settledSelfDebt = settleInheritedSelfDebt(inheritedThreads, heir.id, heir.name, Math.max(0, Math.round(Number(heir.age) || 0)));
+  const inheritedContacts = carryStoryContactsAcrossInheritance(inheritedThreads, Math.max(0, Math.round(Number(heir.age) || 0)));
   const inheritedAssets = (state.assets || []).map((asset) => ({ ...asset, inherited: true, owner: heir.name }));
   const inheritedInventory = [...new Set([...(state.inventory || []), "家书"])]
     .filter((item) => typeof item === "string")
@@ -12766,13 +13461,14 @@ function inheritFromChild(id) {
     .filter((child) => child.id !== heir.id)
     .map((child) => ({
       ...normalizeNpcAgency(child, child.gender === "female" ? (child.age >= heir.age ? "姐姐" : "妹妹") : child.age >= heir.age ? "哥哥" : "弟弟", child.age),
+      id: child.id,
       name: child.name,
       relation: child.gender === "female" ? (child.age >= heir.age ? "姐姐" : "妹妹") : child.age >= heir.age ? "哥哥" : "弟弟",
       gender: child.gender,
       alive: child.alive,
       affection: child.affection,
       age: child.age,
-      physique: randInt(45, 78),
+      physique: child.physique,
     }));
   const inheritedSpouse = heir.heirKind === "child" && heir.spouse && heir.spouse.alive !== false ? heir.spouse : null;
   const inheritedChildren = heir.heirKind === "child" ? (heir.grandchildren || []).filter((item) => item.alive !== false).map((item) => ({ ...item, relation: item.gender === "female" ? "女儿" : "儿子", parentId: undefined })) : [];
@@ -12798,6 +13494,7 @@ function inheritFromChild(id) {
   const heirStudy = clamp(Number(heir.study || 0));
   const heirVirtue = clamp(Number(heir.virtue || 50));
   const heirAptitude = clamp(Number(heir.aptitude || 55));
+  const vocation = heirVocation(heir, startAge);
   state = normalizeState({
     name: heir.name,
     gender: heir.gender,
@@ -12805,6 +13502,7 @@ function inheritFromChild(id) {
     difficulty: "承继",
     age: startAge,
     year: startAge,
+    lastSettledYear: startAge,
     location: state.location,
     dynasty: carryDynastyAcrossInheritance(state.dynasty, state.year, startAge),
     regional: carryRegionalAcrossInheritance(state.regional, startAge, heir.name),
@@ -12821,23 +13519,26 @@ function inheritFromChild(id) {
     },
     talents: pickMany(DATA.database?.talents || [], 3),
     coreTalent: sample(DATA.database?.coreTalents || []),
-    career: null,
-    ambition: null,
+    career: vocation.career,
+    ambition: vocation.ambition,
     threads: inheritedThreads,
     npcRequests: [],
     apprentices: [],
     apprenticeLastYear: -1,
     legacy: { funeral: null, dispute: null, inheritanceRate: 0.78 },
-    friends: [],
+    friends: inheritedContacts,
     tags: ["承继家业"],
     diseases: [],
     inventory: inheritedInventory,
+    heirlooms: carryHeirloomsAcrossInheritance(heir, startAge, generation + generationStep),
     log: [
       { age: startAge, title: "承继家业", text: `${oldName}身后，${heir.name}以${heir.heirKind === "grandchild" ? heir.relation : "子女"}身份承继第 ${generation + generationStep} 代家业。上一代命格总评为${oldGrade}，${oldScore}分；遗下钱财 ${moneyText(inheritedMoney)}、家产 ${inheritedAssets.length} 处。` },
       { age: startAge, title: "家族命册", text: `家中旧事由长辈收束成册，${heir.name}自此接过门户，也接过${oldName}未竟之事。` },
+      { age: startAge, title: "接过自己的人生", text: vocation.text },
+      ...settledSelfDebt,
       ...oldLog.slice(0, 42).map((item) => ({ ...item, inherited: true })),
     ],
-    biography: `${heir.name}承${oldName}遗业而立，是这一门第 ${generation + generationStep} 代主事人。家中旧事皆入命册，钱财田宅亦随之过户。`,
+    biography: `${heir.name}承${oldName}遗业而立，是这一门第 ${generation + generationStep} 代主事人。家中旧事皆入命册，钱财田宅亦随之过户。${vocation.text}`,
     assets: inheritedAssets,
     ledger: [
       { age: startAge, title: "承继家产", amount: inheritedMoney, text: `承继${oldName}遗下的钱财与产业。` },
@@ -12907,6 +13608,10 @@ function inheritFromSpouse(heir) {
   const inheritedAssets = (old.assets || []).map((asset) => ({ ...asset, inherited: true, owner: heir.name }));
   const familyName = heir.name.slice(0, 1) || old.name.slice(0, 1);
   const heirAge = Math.max(16, Math.round(Number(heir.age) || Math.max(18, old.age - 3)));
+  const inheritedThreads = carryThreadsAcrossInheritance(old.threads, heirAge, oldName, old.year);
+  const settledSelfDebt = settleInheritedSelfDebt(inheritedThreads, old.family.spouseMeta?.id || old.family.spouse, heir.name, heirAge);
+  const inheritedContacts = carryStoryContactsAcrossInheritance(inheritedThreads, heirAge, old.year);
+  const vocation = heirVocation(heir, heirAge);
   const children = (old.family.children || []).map((child) => normalizeChild({ ...child, otherParent: child.otherParent || oldName }, child.name?.slice(0, 1) || oldName.slice(0, 1)));
   const ancestors = [{
     name: oldName,
@@ -12926,6 +13631,7 @@ function inheritFromSpouse(heir) {
     difficulty: "承继",
     age: heirAge,
     year: heirAge,
+    lastSettledYear: heirAge,
     location: old.location,
     dynasty: carryDynastyAcrossInheritance(old.dynasty, old.year, heirAge),
     regional: carryRegionalAcrossInheritance(old.regional, heirAge, heir.name),
@@ -12942,25 +13648,28 @@ function inheritFromSpouse(heir) {
     },
     talents: pickMany(DATA.database?.talents || [], 3),
     coreTalent: sample(DATA.database?.coreTalents || []),
-    career: null,
+    career: vocation.career,
     careerProgress: {},
     careerHistory: [],
-    ambition: null,
-    threads: carryThreadsAcrossInheritance(old.threads, heirAge, oldName),
+    ambition: vocation.ambition,
+    threads: inheritedThreads,
     npcRequests: [],
     apprentices: [],
     apprenticeLastYear: -1,
     legacy: { funeral: null, dispute: null, inheritanceRate: 0.78 },
-    friends: [],
+    friends: inheritedContacts,
     tags: ["未亡人承业", "承继家业"],
     diseases: [],
     inventory: [...new Set([...(old.inventory || []), "亡夫家书"])].slice(0, 18),
+    heirlooms: carryHeirloomsAcrossInheritance(heir, heirAge, generation),
     log: [
       { age: heirAge, title: "妻承夫业", text: `${oldName}身后，妻子${heir.name}没有让门户散去。她接过账册、田契与家中诸事，以未亡人身份继续第 ${generation} 代人生。` },
       { age: heirAge, title: "家族命册", text: `${heir.name}将${oldName}一生旧事收进命册，也决定从此以自己的名字续写后半生。` },
+      { age: heirAge, title: "接过自己的人生", text: vocation.text },
+      ...settledSelfDebt,
       ...oldLog.slice(0, 42).map((item) => ({ ...item, inherited: true })),
     ],
-    biography: `${heir.name}原为${oldName}之妻。夫亡之后，她承接家业、抚育子女，成为这一门第 ${generation} 代新的主事人。`,
+    biography: `${heir.name}原为${oldName}之妻。夫亡之后，她承接家业、抚育子女，成为这一门第 ${generation} 代新的主事人。${vocation.text}`,
     assets: inheritedAssets,
     ledger: [{ age: heirAge, title: "妻承夫业", amount: inheritedMoney, text: `接掌${oldName}遗下的钱财与产业。` }, ...(old.ledger || []).slice(0, 80).map((item) => ({ ...item, inherited: true }))],
     crickets: [],
@@ -13096,15 +13805,8 @@ function officialCareerActions() {
   const actions = OFFICIAL_AFFAIRS
     .filter((affair) => rank >= affair.minRank)
     .map((affair) => [`affair:${affair.id}`, affair.label, affair.note]);
-  state.careerChapters = normalizeCareerChapters(state.careerChapters);
-  const chapter = state.careerChapters.active;
-  const chapterPack = chapter && CAREER_STORY_PACKS[chapter.id];
-  if (chapterPack) {
-    const stage = chapterPack.stages[chapter.stage];
-    actions.push(["case:chapter", `${chapterPack.title} · ${chapter.stage + 1}/${chapterPack.stages.length}`, chapter.dueYear <= state.year ? `继续“${stage.title}”，此前人物和证据会改变本幕选项。` : `${chapter.dueYear - state.year} 年后进入“${stage.title}”。`]);
-  } else if (!state.careerChapters.completed.some((entry) => entry.id === "granary-ledger")) {
-    actions.push(["case:chapter", "跨年长案 · 仓契疑云", "开启四幕官场—家宅剧情；选择会在来年被人物和案卷重新提起。"]);
-  }
+  const chapterAction = careerChapterAction();
+  if (chapterAction) actions.push(chapterAction);
   actions.push(["case:post", `${office.office}专案`, `处理只属于${office.office}这一官职的高级剧情。`]);
   const cases = officialCasePool();
   actions.push(["case:random", "官场要案", cases.length ? "进入带选择的官场剧情，处理得当可涨政绩，也可能招祸。" : "官阶尚低，暂以日常案牍为主。"]);
@@ -13236,6 +13938,7 @@ function careerChapterActorEntries() {
 }
 
 function careerChapterActor(active = state.careerChapters?.active) {
+  if (CAREER_STORY_PACKS[active?.id]?.actor) return npcById(active.actorId);
   const entries = careerChapterActorEntries();
   const entry = entries.find((item) => item.key === active?.familyKey) || entries[0] || null;
   if (entry && active && active.familyKey !== entry.key) active.familyKey = entry.key;
@@ -13245,6 +13948,7 @@ function careerChapterActor(active = state.careerChapters?.active) {
 function careerChapterText(text, actor = careerChapterActor()) {
   return String(text || "")
     .replace(/\{family\}/g, actor?.name || "族中故旧")
+    .replace(/\{partner\}/g, actor?.name || "接手旧事的同业")
     .replace(/\{office\}/g, officialOffice().office);
 }
 
@@ -13252,12 +13956,22 @@ function createCareerChapter(id = "granary-ledger") {
   const pack = CAREER_STORY_PACKS[id];
   if (!pack) return null;
   const actor = careerChapterActorEntries()[0];
+  let colleague = null;
+  if (pack.actor) {
+    colleague = normalizeFriend({ ...pack.actor, id: `chapter-${id}-${state.lineage.generation}-${state.year}`, relation: `${pack.title}同业`, age: randInt(28, 40), physique: 85, affection: 55, alive: true, lastMet: state.age });
+    state.friends.push(colleague);
+  }
   return {
     id,
+    careerName: state.career?.name || "",
+    actorId: colleague?.id || "",
+    actorName: colleague?.name || "",
+    regionId: currentRegionalId(),
+    originName: state.name,
     stage: 0,
     dueYear: state.year,
     score: 0,
-    routes: { law: 0, family: 0, power: 0 },
+    routes: Object.fromEntries(careerChapterRouteKeys(id).map((key) => [key, 0])),
     flags: [],
     familyKey: actor?.key || "",
     history: [],
@@ -13265,10 +13979,34 @@ function createCareerChapter(id = "granary-ledger") {
   };
 }
 
+function careerChapterChoiceLockReason(active, choice) {
+  if (choice.cost && state.stats.money < choice.cost) return `需 ${moneyText(choice.cost)}（当前不足）`;
+  if (choice.requiresAny?.length && !choice.requiresAny.some((flag) => active.flags.includes(flag))) return "此前选择没有留下本项需要的约定、记录或门路";
+  const progress = choice.minLivelihood ? careerProgressFor() : null;
+  for (const [key, need] of Object.entries(choice.minLivelihood || {})) {
+    if (Number(progress?.livelihood?.[key] || 0) < need) return `需${livelihoodDefinition()?.metrics[key] || key}至少 ${need}（当前不足）`;
+  }
+  return "";
+}
+
 function careerChapterChoiceAvailable(active, choice) {
-  if (choice.cost && state.stats.money < choice.cost) return false;
-  if (choice.requiresAny?.length && !choice.requiresAny.some((flag) => active.flags.includes(flag))) return false;
-  return true;
+  return !careerChapterChoiceLockReason(active, choice);
+}
+
+function careerChapterFits(pack, active = null) {
+  return !!state.career && !!pack && careerKind() === pack.careerKind && (!active?.careerName || active.careerName === state.career.name) && (pack.careerKind !== "official" || !state.official?.retired);
+}
+
+function careerChapterAction() {
+  const pack = Object.values(CAREER_STORY_PACKS).find((item) => careerChapterFits(item));
+  if (!pack) return null;
+  const chapters = normalizeCareerChapters(state.careerChapters);
+  const active = chapters.active?.id === pack.id ? chapters.active : null;
+  if (active) {
+    const stage = pack.stages[active.stage];
+    return ["case:chapter", `${pack.title} · ${active.stage + 1}/${pack.stages.length}`, active.dueYear <= state.year ? `继续“${stage.title}”；此前选择会改变后续门路。` : `${active.dueYear - state.year} 年后进入“${stage.title}”。`];
+  }
+  return chapters.completed.some((entry) => entry.id === pack.id) ? null : ["case:chapter", `跨年长案 · ${pack.title}`, pack.summary];
 }
 
 function buildCareerChapterEvent(active = state.careerChapters?.active) {
@@ -13282,21 +14020,17 @@ function buildCareerChapterEvent(active = state.careerChapters?.active) {
     chapterId: pack.id,
     stageIndex: active.stage,
     title: `${pack.title} · ${stage.title}`,
-    content: careerChapterText(stage.content, actor),
+    content: `${pack.actor && !actor ? `${active.actorName || "旧日同业"}已不再主持此事，接手的同业按留下的记录继续与你交涉。\n\n` : ""}${careerChapterText(stage.content, actor)}`,
     icon: pack.icon,
     children: stage.choices.map((choice) => {
-      const available = careerChapterChoiceAvailable(active, choice);
-      const need = choice.requiresAny?.length && !choice.requiresAny.some((flag) => active.flags.includes(flag))
-        ? "此前选择没有留下可用的人证或凭据"
-        : choice.cost && state.stats.money < choice.cost
-          ? `需 ${moneyText(choice.cost)}（当前不足）`
-          : choice.note;
+      const lock = careerChapterChoiceLockReason(active, choice);
+      const need = lock || `${choice.note}${pack.careerKind !== "official" && choice.cost ? ` · 花费 ${moneyText(choice.cost)}` : ""}`;
       return {
         ...choice,
         title: choice.title,
         content: careerChapterText(choice.text, actor),
         note: careerChapterText(need, actor),
-        disabled: !available,
+        disabled: !!lock,
         conditions: [],
         results: [],
         children: [],
@@ -13305,14 +14039,16 @@ function buildCareerChapterEvent(active = state.careerChapters?.active) {
   };
 }
 
-function startOrResumeCareerChapter(id = "granary-ledger") {
-  if (!state.career || careerKind(state.career) !== "official" || state.official?.retired) return;
+function startOrResumeCareerChapter(id = Object.values(CAREER_STORY_PACKS).find((item) => careerChapterFits(item))?.id) {
+  if (!state.career || state.dead || state.prisonYears > 0 || state.age < 15 || state.currentEvent || state.eventResult) return;
   state.careerChapters = normalizeCareerChapters(state.careerChapters);
   const pack = CAREER_STORY_PACKS[id];
-  if (!pack) return;
+  if (!careerChapterFits(pack)) return;
+  if (state.careerChapters.active && !careerChapterFits(CAREER_STORY_PACKS[state.careerChapters.active.id], state.careerChapters.active)) abandonCareerChapter("转业中断");
+  if (state.careerChapters.active && state.careerChapters.active.id !== id) return;
   if (!state.careerChapters.active) {
     if (state.careerChapters.completed.some((entry) => entry.id === id)) {
-      return finishAction(`${pack.title} · 旧案已结`, "这桩案已收入你的官场履历。命册仍保留当年的选择与最终结局。", [], pack.icon);
+      return finishAction(`${pack.title} · 旧事已结`, "这段经历已收入本业履历。命册仍保留当年的选择与最终结局。", [], pack.icon);
     }
     state.careerChapters.active = createCareerChapter(id);
     state.careerChapters.lastTriggerYear = state.year;
@@ -13320,11 +14056,18 @@ function startOrResumeCareerChapter(id = "granary-ledger") {
   const active = state.careerChapters.active;
   if (active.dueYear > state.year) {
     const next = pack.stages[active.stage];
-    return finishAction(`${pack.title} · 案情待续`, `卷宗暂时封存。${active.dueYear - state.year} 年后将进入“${next.title}”；此前留下的人证、污点和家中态度都会保留。`, [], pack.icon);
+    return finishAction(`${pack.title} · 来年待续`, `${active.dueYear - state.year} 年后将进入“${next.title}”；此前选择、约定与人物态度都会保留。`, [], pack.icon);
   }
   state.currentEvent = buildCareerChapterEvent(active);
   save();
   render();
+}
+
+function recordCareerChapter(active, outcome, summary = "") {
+  const pack = CAREER_STORY_PACKS[active.id];
+  state.careerChapters.completed.push({ id: active.id, outcome, summary, careerName: active.careerName || state.career?.name || "", careerKind: pack.careerKind, regionId: active.regionId || "", originName: active.originName || "", year: state.year, routes: { ...active.routes }, history: [...active.history] });
+  state.careerChapters.completed = state.careerChapters.completed.slice(-12);
+  state.careerChapters.active = null;
 }
 
 function abandonCareerChapter(outcome = "辞官中断") {
@@ -13332,32 +14075,62 @@ function abandonCareerChapter(outcome = "辞官中断") {
   const active = state.careerChapters.active;
   if (!active) return "";
   const pack = CAREER_STORY_PACKS[active.id];
-  state.careerChapters.completed.push({ id: active.id, outcome, year: state.year, routes: { ...active.routes }, history: [...active.history] });
-  state.careerChapters.completed = state.careerChapters.completed.slice(-12);
-  state.careerChapters.active = null;
+  recordCareerChapter(active, outcome, `你离开了${active.careerName || "原来的营生"}，未完的“${pack.title}”交由后来人继续。已经付出的代价与此前选择仍保留，未领取结局奖励。`);
   return pack?.title || "未结长案";
 }
 
 function annualCareerChapterEvent() {
   state.careerChapters = normalizeCareerChapters(state.careerChapters);
   const chapters = state.careerChapters;
-  const isOfficial = state.career && careerKind(state.career) === "official" && !state.official?.retired;
-  if (chapters.active && !isOfficial) {
-    const title = abandonCareerChapter();
-    if (title) addLog(`${title} · 辞官中断`, "印信已经交回，尚未查清的卷宗转交后来官员。你留下的证词与人情不会再由本官身收束。", []);
+  if (state.dead || state.prisonYears > 0 || state.age < 15) return null;
+  if (chapters.active && !careerChapterFits(CAREER_STORY_PACKS[chapters.active.id], chapters.active)) {
+    const outcome = CAREER_STORY_PACKS[chapters.active.id].careerKind === "official" ? "辞官中断" : "转业中断";
+    const title = abandonCareerChapter(outcome);
+    if (title) addLog(`${title} · ${outcome}`, "你已离开原来的身份，未完的事交由后来人继续；此前的付出与选择仍保留在本业履历。", []);
     return null;
   }
-  if (!isOfficial || state.dead || state.prisonYears > 0) return null;
   if (chapters.active) return chapters.active.dueYear <= state.year ? buildCareerChapterEvent(chapters.active) : null;
-  const id = "granary-ledger";
+  const id = Object.values(CAREER_STORY_PACKS).find((item) => careerChapterFits(item))?.id;
+  if (!id) return null;
   if (chapters.completed.some((entry) => entry.id === id) || state.year - chapters.lastTriggerYear < 3 || Math.random() > 0.18) return null;
   chapters.active = createCareerChapter(id);
   chapters.lastTriggerYear = state.year;
   return buildCareerChapterEvent(chapters.active);
 }
 
+function completeLivelihoodChapter(active, deltas) {
+  const pack = CAREER_STORY_PACKS[active.id];
+  const ending = pack.endings.find((item) =>
+    (!item.requiresAll?.length || item.requiresAll.every((flag) => active.flags.includes(flag))) &&
+    (!item.requiresAny?.length || item.requiresAny.some((flag) => active.flags.includes(flag))) &&
+    (!item.excludesAny?.length || !item.excludesAny.some((flag) => active.flags.includes(flag))) &&
+    (item.minScore == null || active.score >= Number(item.minScore)) &&
+    Object.entries(item.minRoutes || {}).every(([route, count]) => Number(active.routes[route] || 0) >= count)
+  ) || pack.endings[pack.endings.length - 1];
+  const progress = careerProgressFor();
+  if (ending.money) {
+    changeStat("money", ending.money, deltas);
+    addLedger(`${pack.title} · 结算`, ending.money, ending.text);
+  }
+  for (const [key, amount] of Object.entries(ending.livelihood || {})) changeLivelihoodMetric(progress, key, amount, deltas);
+  if (ending.world) applyWorldChanges(ending.world, deltas);
+  const levelText = addCareerExperience(progress, ending.experience || 0, deltas);
+  progress.records.cases += 1;
+  if (["粮路长明", "同舟商约", "医案传灯", "一巷安灯", "认过重开"].includes(ending.title)) progress.records.successes += 1;
+  const actor = careerChapterActor(active);
+  if (actor) rememberNpcMoment(actor, "本业长线", `${pack.title}最后走向“${ending.title}”。${ending.text}`, ending.actorAffection || 0);
+  const legacyType = ending.title === "粮路长明" ? "granary" : ending.title === "一巷安灯" ? "dispensary" : "";
+  const legacyText = legacyType ? establishRegionalLegacy(legacyType, active.regionId) : "";
+  const heirloomKind = ["粮路长明", "同舟商约"].includes(ending.title) ? "grain-charter" : ["医案传灯", "一巷安灯"].includes(ending.title) ? "medical-casebook" : "";
+  const heirloomText = heirloomKind ? grantHeirloom(heirloomKind, { name: active.originName || state.name, generation: state.lineage.generation, personId: state.heirlooms.holderId, sourceId: `career:${active.id}:${state.heirlooms.holderId}`, regionId: active.regionId, year: state.year, summary: `${active.originName || state.name}完成“${pack.title}”，走向“${ending.title}”，将亲历的选择、代价与旧约整理成册，作为这件旧物的第一位持有者。` }, { alreadyUsed: true }) : "";
+  const text = `${ending.text}${levelText}${legacyText ? `\n\n${legacyText}` : ""}${heirloomText ? `\n\n${heirloomText}` : ""}`;
+  recordCareerChapter(active, ending.title, text);
+  return { title: ending.title, text, followup: `“${pack.title}”已收入${state.career.name}履历；商誉、医名、地方变化与同业的记忆都已实际结算。` };
+}
+
 function completeCareerChapter(active, deltas) {
   const pack = CAREER_STORY_PACKS[active.id];
+  if (pack.careerKind !== "official") return completeLivelihoodChapter(active, deltas);
   const actor = careerChapterActor(active);
   const routes = active.routes || {};
   const corrupt = routes.power >= 2 || (active.flags.includes("altered-register") && state.official.corruption >= 25);
@@ -13397,9 +14170,7 @@ function completeCareerChapter(active, deltas) {
     changeStat("mood", -3, deltas);
   }
   const promotion = applyOfficialPromotion(deltas);
-  state.careerChapters.completed.push({ id: active.id, outcome: title, year: state.year, routes: { ...active.routes }, history: [...active.history] });
-  state.careerChapters.completed = state.careerChapters.completed.slice(-12);
-  state.careerChapters.active = null;
+  recordCareerChapter(active, title, `${text}${promotion}`);
   return { title, text: `${text}${promotion}`, followup: corrupt ? "巡按副账已成为两年后的命册伏笔；届时可花钱封口或反查持账之人。" : `“${pack.title}”已经完结并写入官场履历，今后的官评与人物态度会保留这一路线。` };
 }
 
@@ -13409,7 +14180,7 @@ function resolveCareerChapter(event, choice) {
   const pack = active && CAREER_STORY_PACKS[active.id];
   const stage = pack?.stages?.[active.stage];
   const source = stage?.choices?.find((item) => item.id === choice?.id);
-  if (!active || !pack || !stage || !source || !careerChapterChoiceAvailable(active, source)) return;
+  if (!active || !pack || !stage || !source || event.chapterId !== active.id || event.stageIndex !== active.stage || active.dueYear > state.year || !careerChapterFits(pack, active) || state.dead || state.prisonYears > 0 || !careerChapterChoiceAvailable(active, source)) return;
   const actor = careerChapterActor(active);
   const deltas = [];
   if (source.cost) {
@@ -13418,7 +14189,7 @@ function resolveCareerChapter(event, choice) {
   }
   if (source.gain) {
     changeStat("money", source.gain, deltas);
-    addLedger(`${pack.title} · 暗账`, source.gain, careerChapterText(source.text, actor));
+    addLedger(`${pack.title} · ${pack.careerKind === "official" ? "暗账" : "进项"}`, source.gain, careerChapterText(source.text, actor));
   }
   for (const [stat, amount] of Object.entries(source.effects || {})) changeStat(stat, amount, deltas);
   state.official = normalizeOfficial(state.official);
@@ -13431,6 +14202,13 @@ function resolveCareerChapter(event, choice) {
   if (actor && source.familyAffection) {
     actor.affection = clamp(Number(actor.affection || 0) + source.familyAffection);
     deltas.push({ label: actor.name, value: source.familyAffection, stat: "relationship" });
+  }
+  if (pack.careerKind !== "official") {
+    const progress = careerProgressFor();
+    for (const [key, amount] of Object.entries(source.livelihood || {})) changeLivelihoodMetric(progress, key, amount, deltas);
+    if (source.world) applyWorldChanges(source.world, deltas);
+    addCareerExperience(progress, 18, deltas);
+    if (actor) rememberNpcMoment(actor, "本业抉择", `${pack.title} · ${stage.title}：${source.title}`, source.actorAffection || 0);
   }
   const skillBonus = source.skill && Number(state.stats[source.skill] || 0) >= 65 ? 1 : 0;
   active.score += Number(source.score || 0) + skillBonus;
@@ -13449,7 +14227,7 @@ function resolveCareerChapter(event, choice) {
   } else {
     active.stage += 1;
     active.dueYear = state.year + 1;
-    followup = `下一幕“${pack.stages[active.stage].title}”将在来年出现；本次留下的${source.route === "law" ? "证据与清名" : source.route === "family" ? "家中人情与证词" : "权门关系与污点"}会改变可用选项。`;
+    followup = `下一幕“${pack.stages[active.stage].title}”将在来年出现；本次留下的${pack.routeLabels ? `${pack.routeLabels[source.route]}选择与约定` : source.route === "law" ? "证据与清名" : source.route === "family" ? "家中人情与证词" : "权门关系与污点"}会改变可用选项。`;
   }
   state.currentEvent = null;
   state.lastDeltas = deltas;
@@ -13458,8 +14236,8 @@ function resolveCareerChapter(event, choice) {
     text,
     deltas,
     icon: pack.icon,
-    scene: "ink",
-    reason: `这不是独立随机事件：它读取了你的${officialOffice().office}职权、${actor?.name || "家中人"}的态度、前几幕证据以及清浊路线。`,
+    scene: pack.careerKind === "medicine" ? "herb" : "ink",
+    reason: pack.careerKind === "official" ? `这不是独立随机事件：它读取了你的${officialOffice().office}职权、${actor?.name || "家中人"}的态度、前几幕证据以及清浊路线。` : `本幕接续了${active.originName || state.name}在${travelDestinationByStaticId(active.regionId || currentRegionalId()).name}开始的“${pack.title}”；此前约定决定可用选项，钱财与本业资源按实际数目结算。`,
     followup,
   };
   addLog(`${pack.title} · ${title}`, text, deltas);
@@ -13700,7 +14478,7 @@ function consumeExamPrep() {
 }
 
 function canPrepareExam() {
-  return state.gender === "male" && !state.dead && !state.currentEvent && !state.eventResult && state.prisonYears <= 0 && state.age >= 8;
+  return !!state && state.gender === "male" && !yearAdvanceBlockReason() && state.prisonYears <= 0 && state.age >= 8;
 }
 
 function prepareExam() {
@@ -13717,9 +14495,9 @@ function prepareExam() {
   if (!state.tags.includes("备考")) state.tags.push("备考");
   state.lastDeltas = deltas;
   addLog("备考", "你在书院温经读题，先生圈点得失，心里对下场考试更有把握。", deltas);
+  state.eventResult = { title: "备考一年", text: "你在书院温经读题，先生圈点得失，心里对下场考试更有把握。", deltas, icon: "Book" };
   state.age += 1;
   state.year += 1;
-  applyAgeMilestones(deltas);
   view.page = "main";
   finishYear();
 }
@@ -13750,7 +14528,7 @@ function examStatusNote() {
   if (state.gender === "female") return `<p class="empty-note">本朝科举仅取男子，女子不能参加童试、乡试、会试或殿试。你仍可在女学修习诗书、算学与岐黄，并参加女医技艺考校。</p>`;
   const next = state.exam.rank >= EXAM_STAGES.length - 1 ? null : EXAM_STAGES[state.exam.rank + 1];
   const title = state.exam.rank >= 0 ? EXAM_TITLES[state.exam.rank] : "白身";
-  let reason = "APK 题库未加载。";
+  let reason = "题库尚未准备完成，请稍后再试。";
   if (imperialQuestionPool().length > 0) {
     if (state.exam.rank >= EXAM_STAGES.length - 1) reason = "殿试已毕，可在营生中选择官府职任。";
     else if (state.age < MAIN_EXAM_MIN_AGE) reason = `需满 ${MAIN_EXAM_MIN_AGE} 岁后参加童试。`;
@@ -14199,6 +14977,7 @@ function choosePalace(field, value) {
 }
 
 function submitExam() {
+  if (yearAdvanceBlockReason(true) || state.prisonYears > 0) return;
   const current = state.exam.current;
   if (!current) return;
   const stage = current.extraStage || EXAM_STAGES[current.stageIndex] || EXAM_STAGES[0];
@@ -14263,30 +15042,25 @@ function submitExam() {
   state.exam.current = null;
   state.lastDeltas = deltas;
   addLog(stage.name, text, deltas);
+  state.eventResult = { title: stage.name, text, deltas, icon: "Book" };
   state.age += 1;
   state.year += 1;
-  applyAgeMilestones(deltas);
-  runAnnualAftermath(deltas);
-  unlockLifeGoals();
   view.page = "main";
-  save();
-  render();
+  finishYear();
 }
 
 function addLog(title, text, deltas = []) {
   state.log.unshift({ age: state.age, title, text, deltas });
   state.log = state.log.slice(0, 160);
-  maybeOpenThreadFromLog(title, text);
 }
 
 function fillPlaceholders(text, mutate = true) {
-  let n = 0;
-  return String(text || "").replace(/\{(\d+)\}/g, () => {
-    const existing = state.friends[n++];
-    const friend = existing?.name || existing || makePersonName(state.gender === "male" ? "female" : "male");
-    if (mutate && !state.friends.some((item) => item.name === friend)) {
-      state.friends.push(normalizeFriend({ name: friend, gender: Math.random() > 0.5 ? "male" : "female", affection: randInt(38, 72), lastMet: state.age }));
-    }
+  const names = new Map();
+  return String(text || "").replace(/\{(\d+)\}/g, (_, index) => {
+    if (names.has(index)) return names.get(index);
+    const existing = state.friends[Number(index)];
+    const friend = state.currentEvent?.people?.[index] || existing?.name || existing || "一位故友";
+    names.set(index, friend);
     return friend;
   });
 }
@@ -14522,22 +15296,49 @@ const BORDER_GLOW_TARGETS = [
 ];
 
 let lastRenderedRoute = "";
+let overlayReturnFocus = "";
+
+function controlSelector(element) {
+  if (!element?.attributes) return "";
+  const attributes = [...element.attributes].filter(item => item.name.startsWith("data-"));
+  return attributes.map(item => `[${item.name}="${CSS.escape(item.value)}"]`).join("");
+}
 
 function render() {
+  if (state && !state.__ephemeral && !state.dead && shouldDie()) save();
+  const previousDialog = app.querySelector("dialog[open]");
+  const focusedControl = controlSelector(document.activeElement);
+  if (!previousDialog && view.overlay) overlayReturnFocus = focusedControl;
   const route = `${view.screen}:${view.page}`;
   const routeChanged = !!lastRenderedRoute && lastRenderedRoute !== route;
   lastRenderedRoute = route;
   window.DynastySceneEngine?.beforeRender?.();
   app.innerHTML = view.screen === "game" && state ? renderGame() : renderCreate();
-  initBorderGlow();
   initProfileCards();
   window.DynastySceneEngine?.sync?.(app);
+  const dialog = app.querySelector("dialog.game-overlay");
+  if (dialog) {
+    dialog.showModal();
+    if (previousDialog && focusedControl) dialog.querySelector(focusedControl)?.focus({ preventScroll: true });
+    dialog.addEventListener("cancel", event => {
+      event.preventDefault();
+      dialog.querySelector('[data-action="finish-onboarding"], [data-action="close-overlay"], [data-action="close-surprise"], [data-action="decline-secret"]')?.click();
+    });
+  } else if (previousDialog) {
+    const target = overlayReturnFocus ? app.querySelector(overlayReturnFocus) : null;
+    const fallback = app.querySelector('.mobile-tools-toggle');
+    (target?.getClientRects().length ? target : fallback?.getClientRects().length ? fallback : app.querySelector('.profile-trigger'))?.focus({ preventScroll: true });
+    overlayReturnFocus = "";
+  } else if (view.screen === "create" && focusedControl) {
+    app.querySelector(focusedControl)?.focus({ preventScroll: true });
+  }
   if (routeChanged && !window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
     app.querySelector(".center-panel > *")?.animate(
       [{ opacity: 0.35, transform: "translateY(5px)" }, { opacity: 1, transform: "translateY(0)" }],
       { duration: 180, easing: "ease-out" },
     );
   }
+  updateSaveNotice();
 }
 
 function initBorderGlow() {
@@ -14630,342 +15431,7 @@ function resetBorderGlowPointer(event) {
   event.currentTarget.style.setProperty("--edge-proximity", "0");
 }
 
-function initLightfallBackground() {
-  const canvas = document.getElementById("lightfall-bg");
-  if (!canvas) return;
 
-  const gl = canvas.getContext("webgl", {
-    alpha: true,
-    antialias: true,
-    depth: false,
-    stencil: false,
-    preserveDrawingBuffer: true,
-  });
-  if (!gl) {
-    canvas.classList.add("lightfall-bg--fallback");
-    return;
-  }
-
-  const vertexShader = `
-    attribute vec2 aPosition;
-    varying vec2 vUv;
-
-    void main() {
-      vUv = aPosition * 0.5 + 0.5;
-      gl_Position = vec4(aPosition, 0.0, 1.0);
-    }
-  `;
-
-  const fragmentShader = `
-    precision highp float;
-
-    uniform vec3 iResolution;
-    uniform vec2 iMouse;
-    uniform float iTime;
-    uniform vec3 uColor0;
-    uniform vec3 uColor1;
-    uniform vec3 uColor2;
-    uniform vec3 uColor3;
-    uniform vec3 uColor4;
-    uniform vec3 uColor5;
-    uniform vec3 uColor6;
-    uniform vec3 uColor7;
-    uniform int uColorCount;
-    uniform vec3 uBgColor;
-    uniform vec3 uMouseColor;
-    uniform float uSpeed;
-    uniform int uStreakCount;
-    uniform float uStreakWidth;
-    uniform float uStreakLength;
-    uniform float uGlow;
-    uniform float uDensity;
-    uniform float uTwinkle;
-    uniform float uZoom;
-    uniform float uBgGlow;
-    uniform float uOpacity;
-    uniform float uMouseEnabled;
-    uniform float uMouseStrength;
-    uniform float uMouseRadius;
-
-    varying vec2 vUv;
-
-    vec3 palette(float h) {
-      int count = uColorCount;
-      if (count < 1) count = 1;
-      int idx = int(floor(clamp(h, 0.0, 0.999999) * float(count)));
-      if (idx <= 0) return uColor0;
-      if (idx == 1) return uColor1;
-      if (idx == 2) return uColor2;
-      if (idx == 3) return uColor3;
-      if (idx == 4) return uColor4;
-      if (idx == 5) return uColor5;
-      if (idx == 6) return uColor6;
-      return uColor7;
-    }
-
-    vec3 tanhv(vec3 x) {
-      vec3 e = exp(-2.0 * x);
-      return (1.0 - e) / (1.0 + e);
-    }
-
-    vec2 sceneC(vec2 frag, vec2 r) {
-      vec2 P = (frag + frag - r) / r.x;
-      float z = 0.0;
-      float d = 1e3;
-      vec4 O = vec4(0.0);
-      for (int k = 0; k < 39; k++) {
-        if (d <= 1e-4) break;
-        O = z * normalize(vec4(P, uZoom, 0.0)) - vec4(0.0, 4.0, 1.0, 0.0) / 4.5;
-        d = 1.0 - sqrt(length(O * O));
-        z += d;
-      }
-      return vec2(O.x, atan(O.z, O.y));
-    }
-
-    void mainImage(out vec4 o, vec2 C) {
-      vec2 r = iResolution.xy;
-      vec2 uv0 = (C + C - r) / r.x;
-      float T = 0.1 * iTime * uSpeed + 9.0;
-      float angRings = max(1.0, floor(6.28318530718 * max(uDensity, 0.05) + 0.5));
-      vec2 Y = vec2(5e-3, 6.28318530718 / angRings);
-
-      vec2 c0 = sceneC(C, r);
-      vec2 cdx = sceneC(C + vec2(1.0, 0.0), r);
-      vec2 cdy = sceneC(C + vec2(0.0, 1.0), r);
-      vec2 dCx = cdx - c0;
-      vec2 dCy = cdy - c0;
-      dCx.y -= 6.28318530718 * floor(dCx.y / 6.28318530718 + 0.5);
-      dCy.y -= 6.28318530718 * floor(dCy.y / 6.28318530718 + 0.5);
-      vec2 fw = abs(dCx) + abs(dCy);
-      C = c0;
-
-      vec2 P = vec2(2.0, 1.0) * uv0 - (r / r.x) * vec2(0.0, 1.0);
-      vec4 O = vec4(uBgColor * 90.0 * uBgGlow / (1e3 * dot(P, P) + 6.0), 0.0);
-
-      float mGlow = 0.0;
-      if (uMouseEnabled > 0.5) {
-        vec2 mN = (iMouse + iMouse - r) / r.x;
-        float md = length(uv0 - mN);
-        mGlow = exp(-md * md / max(uMouseRadius * uMouseRadius, 1e-4)) * uMouseStrength;
-        O.rgb += uMouseColor * mGlow * 0.25;
-      }
-
-      float zr = 5e-4 * uStreakWidth;
-      vec2 rr = vec2(max(length(fw), 1e-5));
-      float tail = 19.0 / max(uStreakLength, 0.05);
-
-      for (int m = 0; m < 16; m++) {
-        if (m >= uStreakCount) break;
-        float jf = float(m) + 1.0;
-        float ic = fract(sin(dot(vec2(jf, floor(C.x / Y.x + 0.5)), vec2(7.0, 11.0)) * 73.0));
-        vec2 Pp = C - (T + T * ic) * vec2(0.0, 1.0);
-        Pp -= floor(Pp / Y + 0.5) * Y;
-        float h = fract(8663.0 * ic);
-        vec3 col = palette(h);
-        float weight = mix(1.5, 1.0 + sin(T + 7.0 * h + 4.0), uTwinkle);
-        weight *= 1.0 + mGlow * 2.0;
-        vec2 inner = vec2(length(max(Pp, vec2(-1.0, 0.0))), length(Pp) - zr) - zr;
-        vec2 sm = vec2(1.0) - smoothstep(-rr, rr, inner);
-        O.rgb += dot(sm, vec2(exp(tail * Pp.y), 3.0)) * col * weight;
-        C.x += Y.x / 8.0;
-      }
-
-      vec3 colr = sqrt(tanhv(max(O.rgb * uGlow - vec3(0.04, 0.08, 0.02), 0.0)));
-      o = vec4(colr, uOpacity);
-    }
-
-    void main() {
-      vec4 color;
-      mainImage(color, vUv * iResolution.xy);
-      gl_FragColor = color;
-    }
-  `;
-
-  const program = createLightfallProgram(gl, vertexShader, fragmentShader);
-  if (!program) {
-    canvas.classList.add("lightfall-bg--fallback");
-    return;
-  }
-
-  const positionBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
-
-  const positionLocation = gl.getAttribLocation(program, "aPosition");
-  const uniformLocations = {
-    resolution: gl.getUniformLocation(program, "iResolution"),
-    mouse: gl.getUniformLocation(program, "iMouse"),
-    time: gl.getUniformLocation(program, "iTime"),
-    colors: Array.from({ length: 8 }, (_, index) => gl.getUniformLocation(program, `uColor${index}`)),
-    colorCount: gl.getUniformLocation(program, "uColorCount"),
-    bgColor: gl.getUniformLocation(program, "uBgColor"),
-    mouseColor: gl.getUniformLocation(program, "uMouseColor"),
-    speed: gl.getUniformLocation(program, "uSpeed"),
-    streakCount: gl.getUniformLocation(program, "uStreakCount"),
-    streakWidth: gl.getUniformLocation(program, "uStreakWidth"),
-    streakLength: gl.getUniformLocation(program, "uStreakLength"),
-    glow: gl.getUniformLocation(program, "uGlow"),
-    density: gl.getUniformLocation(program, "uDensity"),
-    twinkle: gl.getUniformLocation(program, "uTwinkle"),
-    zoom: gl.getUniformLocation(program, "uZoom"),
-    bgGlow: gl.getUniformLocation(program, "uBgGlow"),
-    opacity: gl.getUniformLocation(program, "uOpacity"),
-    mouseEnabled: gl.getUniformLocation(program, "uMouseEnabled"),
-    mouseStrength: gl.getUniformLocation(program, "uMouseStrength"),
-    mouseRadius: gl.getUniformLocation(program, "uMouseRadius"),
-  };
-  const lightfall = {
-    colors: ["#ffe2a8", "#6dd6bf", "#cf8d55", "#9fb6ff"],
-    backgroundColor: "#2f7d6d",
-    speed: 0.68,
-    streakCount: 5,
-    streakWidth: 0.92,
-    streakLength: 1.05,
-    glow: 0.68,
-    density: 0.62,
-    twinkle: 0.58,
-    zoom: 3.05,
-    backgroundGlow: 0.58,
-    opacity: 0.82,
-    mouseInteraction: true,
-    mouseStrength: 0.45,
-    mouseRadius: 0.9,
-    mouseDampening: 0.15,
-  };
-  const colorData = prepLightfallColors(lightfall.colors);
-  const backgroundColor = hexToLightfallRgb(lightfall.backgroundColor);
-  const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-  const mouse = { current: [0, 0], target: [0, 0], hasPointer: false };
-  let dpr = Math.min(window.devicePixelRatio || 1, 1.6);
-  let lastTime = performance.now();
-  let frameId = 0;
-
-  gl.disable(gl.DEPTH_TEST);
-  gl.enable(gl.BLEND);
-  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-  gl.clearColor(0, 0, 0, 0);
-
-  function resize() {
-    dpr = Math.min(window.devicePixelRatio || 1, 1.6);
-    const width = Math.max(1, Math.floor(canvas.clientWidth * dpr));
-    const height = Math.max(1, Math.floor(canvas.clientHeight * dpr));
-    if (canvas.width !== width || canvas.height !== height) {
-      canvas.width = width;
-      canvas.height = height;
-      gl.viewport(0, 0, width, height);
-      if (!mouse.hasPointer) {
-        mouse.current = [width / 2, height / 2];
-        mouse.target = [width / 2, height / 2];
-      }
-    }
-  }
-
-  function updatePointer(event) {
-    const rect = canvas.getBoundingClientRect();
-    mouse.hasPointer = true;
-    mouse.target = [(event.clientX - rect.left) * dpr, (rect.height - (event.clientY - rect.top)) * dpr];
-    if (lightfall.mouseDampening <= 0) mouse.current = [...mouse.target];
-  }
-
-  function draw(now = performance.now()) {
-    resize();
-    const delta = Math.min((now - lastTime) / 1000, 0.05);
-    lastTime = now;
-    if (lightfall.mouseDampening > 0) {
-      const factor = Math.min(1, 1 - Math.exp(-delta / Math.max(lightfall.mouseDampening, 0.0001)));
-      mouse.current[0] += (mouse.target[0] - mouse.current[0]) * factor;
-      mouse.current[1] += (mouse.target[1] - mouse.current[1]) * factor;
-    }
-
-    gl.clear(gl.COLOR_BUFFER_BIT);
-    gl.useProgram(program);
-    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-    gl.enableVertexAttribArray(positionLocation);
-    gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
-    gl.uniform3f(uniformLocations.resolution, canvas.width, canvas.height, 1);
-    gl.uniform2f(uniformLocations.mouse, mouse.current[0], mouse.current[1]);
-    gl.uniform1f(uniformLocations.time, reducedMotion ? 0 : now * 0.001);
-    uniformLocations.colors.forEach((location, index) => gl.uniform3fv(location, colorData.arr[index]));
-    gl.uniform1i(uniformLocations.colorCount, colorData.count);
-    gl.uniform3fv(uniformLocations.bgColor, backgroundColor);
-    gl.uniform3fv(uniformLocations.mouseColor, colorData.avg);
-    gl.uniform1f(uniformLocations.speed, lightfall.speed);
-    gl.uniform1i(uniformLocations.streakCount, Math.max(1, Math.min(16, Math.round(lightfall.streakCount))));
-    gl.uniform1f(uniformLocations.streakWidth, lightfall.streakWidth);
-    gl.uniform1f(uniformLocations.streakLength, lightfall.streakLength);
-    gl.uniform1f(uniformLocations.glow, lightfall.glow);
-    gl.uniform1f(uniformLocations.density, lightfall.density);
-    gl.uniform1f(uniformLocations.twinkle, lightfall.twinkle);
-    gl.uniform1f(uniformLocations.zoom, lightfall.zoom);
-    gl.uniform1f(uniformLocations.bgGlow, lightfall.backgroundGlow);
-    gl.uniform1f(uniformLocations.opacity, lightfall.opacity);
-    gl.uniform1f(uniformLocations.mouseEnabled, lightfall.mouseInteraction ? 1 : 0);
-    gl.uniform1f(uniformLocations.mouseStrength, lightfall.mouseStrength);
-    gl.uniform1f(uniformLocations.mouseRadius, lightfall.mouseRadius);
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-    canvas.dataset.lightfallReady = "1";
-
-    if (!reducedMotion) frameId = window.requestAnimationFrame(draw);
-  }
-
-  window.addEventListener("resize", () => {
-    if (reducedMotion) draw();
-  }, { passive: true });
-  window.addEventListener("pointermove", updatePointer, { passive: true });
-  canvas.addEventListener("webglcontextlost", (event) => {
-    event.preventDefault();
-    if (frameId) window.cancelAnimationFrame(frameId);
-    canvas.classList.add("lightfall-bg--fallback");
-  });
-  draw();
-}
-
-function createLightfallProgram(gl, vertexSource, fragmentSource) {
-  const vertexShader = compileLightfallShader(gl, gl.VERTEX_SHADER, vertexSource);
-  const fragmentShader = compileLightfallShader(gl, gl.FRAGMENT_SHADER, fragmentSource);
-  if (!vertexShader || !fragmentShader) return null;
-
-  const program = gl.createProgram();
-  gl.attachShader(program, vertexShader);
-  gl.attachShader(program, fragmentShader);
-  gl.linkProgram(program);
-  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) return null;
-  return program;
-}
-
-function compileLightfallShader(gl, type, source) {
-  const shader = gl.createShader(type);
-  gl.shaderSource(shader, source);
-  gl.compileShader(shader);
-  return gl.getShaderParameter(shader, gl.COMPILE_STATUS) ? shader : null;
-}
-
-function prepLightfallColors(input) {
-  const base = (input?.length ? input : ["#a6c8ff", "#5227ff", "#ff9ffc"]).slice(0, 8);
-  const arr = [];
-  for (let i = 0; i < 8; i += 1) arr.push(hexToLightfallRgb(base[Math.min(i, base.length - 1)]));
-  const avg = [0, 0, 0];
-  for (let i = 0; i < base.length; i += 1) {
-    avg[0] += arr[i][0];
-    avg[1] += arr[i][1];
-    avg[2] += arr[i][2];
-  }
-  avg[0] /= base.length;
-  avg[1] /= base.length;
-  avg[2] /= base.length;
-  return { arr, count: base.length, avg };
-}
-
-function hexToLightfallRgb(hex) {
-  const value = String(hex || "#000000").replace("#", "").padEnd(6, "0");
-  return [
-    parseInt(value.slice(0, 2), 16) / 255,
-    parseInt(value.slice(2, 4), 16) / 255,
-    parseInt(value.slice(4, 6), 16) / 255,
-  ];
-}
-
-initLightfallBackground();
 render();
 
 function renderCreate() {
@@ -14973,51 +15439,30 @@ function renderCreate() {
   const hasSave = meta.some((slot) => slot !== null);
   return `
     <main class="app-shell create-shell">
-      <section class="create-panel">
-        <div class="brand-row">
-          <div>
-            <p class="eyebrow">古代人生 Web</p>
-            <h1>新的一生</h1>
-          </div>
-          ${hasSave ? `<button class="ghost-btn" data-action="continue-save">继续</button>` : ""}
+      <header class="prologue-brand"><span class="brand-seal" aria-hidden="true">生</span><strong>古代人生</strong><span>一生一卷 · 世代相传</span></header>
+      <section class="prologue-layout">
+        <div class="prologue-landscape">
+          <img src="assets/region-qingping.webp" alt="晨光中的清平县，石桥、水巷与烟火人家" width="1400" height="933" fetchpriority="high" />
+          <div class="prologue-copy"><span class="prologue-chapter">卷一 / 初入人间</span><h1>落笔一生<br>余响百年</h1><p>在烟火人间谋一份生计，<br>与故人结缘，为后辈留下一个家。</p></div>
+          <div class="prologue-caption"><span>清平县 · 人间初照</span><span>你的故事，从这里开始</span></div>
         </div>
-
-        <div class="form-grid">
-          <label class="field">
-            <span>性别</span>
-            <span class="segmented">
-              <button class="${draft.gender === "male" ? "active" : ""}" data-gender="male">男</button>
-              <button class="${draft.gender === "female" ? "active" : ""}" data-gender="female">女</button>
-            </span>
-          </label>
-          <label class="field">
-            <span>姓名</span>
-            <input data-field="name" value="${escapeHtml(draft.family + draft.given)}">
-          </label>
-          <label class="field">
-            <span>出身</span>
-            <select data-field="difficulty">
-              ${["普通", "富贵", "寒门"].map((item) => `<option ${item === draft.difficulty ? "selected" : ""}>${item}</option>`).join("")}
-            </select>
-          </label>
-        </div>
-
-        <section class="talent-area">
-          <div class="section-title">
-            <h2>天赋</h2>
-            <button class="text-btn" data-action="reroll">重抽</button>
+        <section class="create-panel">
+          <div class="brand-row"><div><p class="eyebrow">写下你的第一笔</p><h2>新的一生</h2></div>${hasSave ? `<button class="ghost-btn" data-action="continue-save">续写前缘</button>` : `<span class="chapter-seal" aria-hidden="true">初生</span>`}</div>
+          <p class="create-intro">出身是起点，往后由你选择。</p>
+          <div class="form-grid">
+            <div class="field"><span id="create-gender-label">性别</span><span class="segmented" role="group" aria-labelledby="create-gender-label"><button aria-pressed="${draft.gender === "male"}" class="${draft.gender === "male" ? "active" : ""}" data-gender="male">男</button><button aria-pressed="${draft.gender === "female"}" class="${draft.gender === "female" ? "active" : ""}" data-gender="female">女</button></span></div>
+            <label class="field"><span>出身</span><select data-field="difficulty">${["普通", "富贵", "寒门"].map((item) => `<option ${item === draft.difficulty ? "selected" : ""}>${item}</option>`).join("")}</select></label>
+            <label class="field name-field"><span>姓名</span><span class="name-input"><input data-field="name" maxlength="12" autocomplete="off" value="${escapeHtml(draft.family + draft.given)}"><button class="text-btn" data-action="random-name" aria-label="随机换一个名字">换一个</button></span></label>
           </div>
-          <div class="talent-grid">
-            ${talentCard(draft.coreTalent, "命格")}
-            ${draft.talents.map((talent) => talentCard(talent, "天赋")).join("")}
-          </div>
+          <section class="talent-area">
+            <div class="section-title"><h3>此生命数</h3><button class="text-btn" data-action="reroll">重抽天赋 ↻</button></div>
+            <div class="destiny-preview"><span>命格</span><strong>${escapeHtml(draft.coreTalent?.name || "未定")}</strong><div>${draft.talents.map(talent => `<span>${escapeHtml(talent.name)}</span>`).join("")}</div></div>
+            <details class="destiny-details"><summary>查看命格与天赋影响</summary><div class="talent-grid">${talentCard(draft.coreTalent, "命格")}${draft.talents.map((talent) => talentCard(talent, "天赋")).join("")}</div></details>
+          </section>
+          <div class="create-actions"><button class="primary-btn" data-action="start-life">开启此生 <span aria-hidden="true">→</span></button><small>进度保存在此浏览器 · 可在菜单导出备份</small></div>
         </section>
-
-        <div class="create-actions">
-          <button class="secondary-btn" data-action="random-name">换名字</button>
-          <button class="primary-btn" data-action="start-life">开始人生</button>
-        </div>
       </section>
+      <footer class="prologue-notes"><span><b>01</b> 选择一生的方向</span><span><b>02</b> 留下人与人的故事</span><span><b>03</b> 把家业交给下一代</span></footer>
     </main>`;
 }
 
@@ -15042,7 +15487,7 @@ function renderGame() {
   const mobilePanelMode = mobilePanelAvailable && view.mobileSection === "panel";
   return `
     <main class="app-shell game-shell ${view.page !== "main" ? "focus-page" : ""} ${mobilePanelMode ? "mobile-panel-mode" : "mobile-life-mode"}">
-      <header class="topbar">
+      <header class="topbar ${view.toolsOpen ? "tools-open" : ""}">
         <div class="identity">
           <button class="avatar profile-trigger" data-overlay="profile" title="资料">${profileAvatarHtml("top-avatar-img")}</button>
           <div>
@@ -15050,7 +15495,8 @@ function renderGame() {
             <p>${state.age}岁 · ${escapeHtml(state.location)} · ${escapeHtml(state.difficulty)}</p>
           </div>
         </div>
-        <div class="top-actions">
+        <button class="mobile-tools-toggle" data-action="toggle-tools" aria-expanded="${!!view.toolsOpen}" aria-controls="game-tools">${view.toolsOpen ? "收起 ×" : "更多 ☰"}</button>
+        <div class="top-actions" id="game-tools">
           <button class="shortcut-btn guide-shortcut" data-action="open-onboarding" title="新手引导">
             ${icon("MainBook", "新手引导")}
             <span>引导</span>
@@ -15070,7 +15516,8 @@ function renderGame() {
 
       <section class="status-strip">
         ${resourcePill("钱财", moneyText(state.stats.money, { compact: true }))}
-        ${resourcePill("营生", currentCareerName() || "无")}
+        ${resourcePill("营生", currentCareerName() || (state.age < 15 ? "尚在幼年" : "待择业"))}
+        <span class="mobile-vital ${state.stats.physique < 35 ? "bad" : ""}">体魄 <b>${Math.round(state.stats.physique)}</b></span>
         ${(Number(state.underworld?.heat || 0) + Number(state.jianghu?.heat || 0)) > 0 ? resourcePill("风声", Math.round(Number(state.underworld?.heat || 0) + Number(state.jianghu?.heat || 0)), "bad") : ""}
         ${state.prisonYears > 0 ? resourcePill("牢狱", `余刑 ${state.prisonYears} 年`, "bad") : ""}
         ${state.diseases.map((item) => resourcePill("病症", item, "bad")).join("")}
@@ -15115,55 +15562,31 @@ function onboardingOverlay() {
       ? `先关注体魄、学识和家中关系，等 15 岁后再选营生${state.gender === "male" ? "或科举" : "；女学从 8 岁开放"}。`
       : state.gender === "female" ? "可以先去“女学”修习六艺、参加女医考校，或在“营生”谋一份差事。" : "可以先去“营生”谋一份差事，或去“书院”参加科举。";
   const firstAction = state.age < 1
-    ? `<button class="primary-btn" data-action="onboarding-next-year">开始第一年</button>`
-    : `<button class="primary-btn" data-action="finish-onboarding">知道了</button>`;
+    ? `<button class="primary-btn" data-action="onboarding-next-year" autofocus>开始第一年 →</button>`
+    : `<button class="primary-btn" data-action="finish-onboarding" autofocus>回到这一年</button>`;
   return `
-    <section class="game-overlay onboarding-overlay">
-      <article class="profile-modal onboarding-modal">
-        <button class="profile-close" data-action="finish-onboarding" title="关闭">×</button>
-        <div class="onboarding-hero">
-          <div class="onboarding-seal">${profileAvatarHtml("onboarding-avatar")}</div>
-          <div>
-            <p class="eyebrow">新手引导</p>
-            <h2>你是 ${escapeHtml(state.name)}</h2>
-            <p>你刚来到 ${escapeHtml(state.location)}，出身为${escapeHtml(state.difficulty)}。这不是单线剧情，而是一段会被选择、年龄、亲友和钱财一起推动的人生。</p>
-          </div>
-        </div>
-
-        <div class="onboarding-grid">
-          <section class="onboarding-card">
-            <strong>我是谁</strong>
-            <p>你会从幼年开始长大，经历家事、读书、交友、营生、婚育、仕途和死亡。每一年都会留下记录。</p>
-          </section>
-          <section class="onboarding-card">
-            <strong>能干什么</strong>
-            <p>${state.gender === "female" ? "你可以经营属性、照顾亲友、修习女学六艺、谋生置业、婚育传家；也能读经、行医、行商或投身歌舞本业。科举与青楼寻欢则受时代身份限制。" : "你可以经营属性，照顾亲友，买房置业，参加科举，当官办事，也能去瓦舍、博坊、雅戏和行商押镖。"}</p>
-          </section>
-          <section class="onboarding-card highlight">
-            <strong>第一步做什么</strong>
-            <p>${escapeHtml(firstStep)}</p>
-          </section>
-        </div>
-
-        <ol class="onboarding-steps">
-          <li><b>看状态</b><span>桌面端左侧、手机端头像资料里可查看心情、体魄、学识等核心属性；体魄太低会有生命风险。</span></li>
-          <li><b>点中间事件</b><span>人生事件会给你选择，不同选项会改属性、钱财和关系。</span></li>
-          <li><b>切换页签</b><span>桌面端使用右侧页签，手机端使用顶部吸附导航，可快速查看营生、亲友、行囊和命册。</span></li>
-          <li><b>长大后解锁</b><span>${state.gender === "female" ? "8 岁开放女学，15 岁后开放营生和女医考校；科举仅向男子开放。" : "15 岁后开放营生和童试，18 岁后会开放更多成人活动。"}</span></li>
+    <dialog class="game-overlay onboarding-overlay" aria-labelledby="onboarding-title">
+      <article class="profile-modal onboarding-modal first-letter">
+        <button class="profile-close" data-action="finish-onboarding" aria-label="关闭引导">×</button>
+        <span class="chapter-seal" aria-hidden="true">启程</span>
+        <p class="eyebrow">给初来人间的你</p>
+        <h2 id="onboarding-title">${escapeHtml(state.name)}，故事开始了。</h2>
+        <p class="letter-origin">${escapeHtml(state.location)} · ${escapeHtml(state.difficulty)}人家</p>
+        <ol class="first-steps">
+          <li><b>一</b><span><strong>做一个选择</strong><small>遇见事情，按自己的心意作答。</small></span></li>
+          <li><b>二</b><span><strong>看看留下什么</strong><small>钱财、身体、人情，都可能改变。</small></span></li>
+          <li><b>三</b><span><strong>再走一年</strong><small>长大、结缘，旧事也会有回响。</small></span></li>
         </ol>
-
-        <div class="onboarding-actions">
-          <button class="secondary-btn" data-action="finish-onboarding">以后再看</button>
-          ${firstAction}
-        </div>
+        <p class="first-step-note">${escapeHtml(firstStep)}</p>
+        <div class="onboarding-actions">${firstAction}<button class="text-btn" data-action="finish-onboarding">先自己看看</button></div>
       </article>
-    </section>`;
+    </dialog>`;
 }
 
 function profileOverlay() {
   const born = state.biography.match(/生于([^，。]+)/)?.[1] || state.location;
   return `
-    <section class="game-overlay">
+    <dialog class="game-overlay" aria-label="人物资料">
       <article class="profile-modal">
         <button class="profile-close" data-action="close-overlay" title="关闭">×</button>
         <div class="profile-layout">
@@ -15186,7 +15609,7 @@ function profileOverlay() {
           </div>
         </div>
       </article>
-    </section>`;
+    </dialog>`;
 }
 
 function profileAvatarHtml(className = "profile-avatar-img") {
@@ -15263,7 +15686,7 @@ function profileCard() {
 function surpriseOverlay() {
   const gift = state.pendingSurprise || {};
   return `
-    <section class="game-overlay">
+    <dialog class="game-overlay" aria-label="${escapeHtml(gift.title || "人生奇遇")}">
       <article class="profile-modal surprise-modal">
         <p class="eyebrow">${escapeHtml(gift.category || "惊喜")}</p>
         <h2>${escapeHtml(gift.title || "小事")}</h2>
@@ -15274,7 +15697,7 @@ function surpriseOverlay() {
           ? `<div class="main-actions"><button class="primary-btn" data-action="accept-secret">接下暗事</button><button class="ghost-btn" data-action="decline-secret">婉拒</button></div>`
           : `<button class="primary-btn" data-action="close-surprise">确定</button>`}
       </article>
-    </section>`;
+    </dialog>`;
 }
 
 function achievementToast() {
@@ -15298,7 +15721,7 @@ function achievementToast() {
 }
 
 function centerContent() {
-  if (state.dead) return deathView();
+  if (state.dead) return view.page === "save-manager" ? saveManagerView() : deathView();
   // 奇案仅在明确进入办案页时全屏，不再永久挡住「下一年」
   if (state.mystery?.active && view.page === "mystery") return mysteryCaseView();
   if (state.pendingTravel) return travelRunView();
@@ -15308,6 +15731,7 @@ function centerContent() {
   // 文斗是一个需要明确作答或弃局的流程，避免从顶部导航离开后留下幽灵局面。
   if (state.poetryRound) return poetryView();
   if (view.page === "home") return homeView();
+  if (view.page === "heirlooms") return heirloomsView();
   if (view.page === "place") return placeView();
   if (view.page === "assets") return assetsView();
   if (view.page === "relations") return relationsView();
@@ -15693,6 +16117,14 @@ function regionsView() {
       </div>` : `<p class="regional-away-note">你目前不在${escapeHtml(selectedDestination.name)}。地方事务必须亲自到场，先乘车马前往。</p><div class="main-actions"><button class="primary-btn" data-region-travel="${selectedId}">前往${escapeHtml(selectedDestination.name)}</button></div>`}
     </article>
 
+    ${selectedState.legacies.length ? `<section class="log-preview regional-legacies">
+      <div class="section-title"><h2>乡里遗产</h2><span>后代承业，地方仍记得创办者</span></div>
+      <div class="record-list">${selectedState.legacies.map((legacy) => {
+        const definition = REGIONAL_LEGACY_DEFS[legacy.kind];
+        return `<article class="record-item"><strong>${icon(definition.icon, definition.name)}${definition.name}</strong><p>第 ${legacy.founderGeneration} 代 · ${escapeHtml(legacy.founderName)}创办于其人生第 ${legacy.foundedYear} 年</p><p>${escapeHtml(definition.benefit)}。${local ? "你正在此地，随年度结算生效。" : "需来到此地并度过一年，才可享受照应。"}</p></article>`;
+      }).join("")}</div>
+    </section>` : ""}
+
     <section class="regional-factions-section">
       <div class="section-title"><h2>${escapeHtml(selectedDestination.name)}地方势力</h2><span>好感 60、地方声望 45 可结盟</span></div>
       <div class="regional-faction-grid">${selectedProfile.factions.map((faction) => {
@@ -15810,9 +16242,9 @@ function storyRadarItems() {
       icon: pack.icon,
       eyebrow: `职业长线 · 第 ${active.stage + 1}/${pack.stages.length} 幕`,
       title: pack.title,
-      note: remaining ? `${remaining} 年后进入“${stage.title}”` : `“${stage.title}”已经临门，可去营生页继续`,
-      action: "careerChapter",
-      label: remaining ? "查看案情" : "继续长案",
+      note: remaining ? `${remaining} 年后进入“${stage.title}” · 已作的选择记在命册中` : `“${stage.title}”已经临门，往年的选择将影响这一幕`,
+      action: remaining ? "history" : "careerChapter",
+      label: remaining ? "回顾抉择" : "续写此章",
     });
   }
   if (state.dynasty?.activeArc) {
@@ -15831,7 +16263,7 @@ function storyRadarAction(item) {
   if (item.action === "request") return `<button class="story-radar-action" data-npc-request="${escapeHtml(item.id)}">${escapeHtml(item.label)}</button>`;
   if (item.action === "history") return `<button class="story-radar-action" data-tab="history">${escapeHtml(item.label)}</button>`;
   if (item.action === "mystery") return `<button class="story-radar-action" data-action="resume-mystery">${escapeHtml(item.label)}</button>`;
-  if (item.action === "careerChapter") return `<button class="story-radar-action" data-tab="career">${escapeHtml(item.label)}</button>`;
+  if (item.action === "careerChapter") return `<button class="story-radar-action" data-career-action="case:chapter">${escapeHtml(item.label)}</button>`;
   if (item.action === "world") return `<button class="story-radar-action" data-page="world">${escapeHtml(item.label)}</button>`;
   return `<button class="story-radar-action" data-place="temple">${escapeHtml(item.label)}</button>`;
 }
@@ -15852,11 +16284,11 @@ function overviewView() {
   const generation = Math.max(1, Number(state.lineage?.generation) || 1);
   const blockReason = yearAdvanceBlockReason();
   const yearBlocked = !!blockReason;
+  const scene = regionSceneArt(regionIdFromLocation(state.location));
   return `
     <article class="play-card life-scroll">
-      <p class="eyebrow">流年 · ${escapeHtml(phase.name)} · 第${generation}代</p>
-      <h2>${state.age}岁</h2>
-      <p>${state.age === 0 ? escapeHtml(state.biography) : latestYearText()}</p>
+      <header class="life-landscape"><img src="${escapeHtml(scene.hero)}" alt="${escapeHtml(scene.alt)}" decoding="async"/><div><p>${escapeHtml(state.dynasty?.eraName || "本朝")}${state.dynasty?.reignYear || 1}年 · ${escapeHtml(state.location)}</p><h2>${state.age}<small>岁</small></h2><span>${escapeHtml(phase.name)} · ${escapeHtml(state.lineage?.familyName || state.name.slice(0, 1))}氏第${generation}代</span></div><span class="life-landscape-seal" aria-hidden="true">流年</span></header>
+      <p class="life-passage">${state.age === 0 ? escapeHtml(state.biography) : latestYearText()}</p>
       <div class="life-brief">
         <span><b>今岁重心</b>${escapeHtml(phase.focus)}</span>
         <span><b>家族传承</b>${escapeHtml(state.lineage?.familyName || state.name.slice(0, 1))}氏第${generation}代</span>
@@ -15865,11 +16297,12 @@ function overviewView() {
       <p class="life-tip">${escapeHtml(lifeInsight())}</p>
       ${yearBlocked ? `<p class="empty-note">${escapeHtml(blockReason)}</p>` : ""}
       ${state.mystery?.active ? `<p class="dark-warning">你手头还有未结奇案「${escapeHtml(activeMysteryCase()?.title || "旧案")}」。可继续查，也可先推进流年。</p><div class="main-actions"><button class="secondary-btn" data-action="resume-mystery">继续办案</button></div>` : ""}
-      <div class="main-actions">
+      <div class="main-actions life-year-actions">
         <button class="primary-btn year-btn" data-action="next-year" ${yearBlocked ? "disabled" : ""}>下一年</button>
         <button class="secondary-btn" data-page="place" data-place="activities">安排活动</button>
       </div>
     </article>
+    ${earlyLifeGuide()}
     ${storyRadarPanel()}
     ${ambitionPanel()}
     <details class="overview-secondary" ${state.dynasty?.activeArc || secretLineNoticeCount() ? "open" : ""}>
@@ -15881,7 +16314,7 @@ function overviewView() {
         ${secretPulseView()}
       </div>
     </details>
-    <section class="goal-strip">
+    <section class="goal-strip ${state.age < 15 ? "later-life-goals" : ""}">
       ${goals.map((goal) => `
         <article class="goal-card">
           ${icon(goal.icon, goal.title)}
@@ -15900,6 +16333,16 @@ function overviewView() {
         </button>`).join("")}
     </section>
     ${recentLog()}`;
+}
+
+function earlyLifeGuide() {
+  if (state.age >= 15) return "";
+  const lesson = state.age < 2
+    ? { number: "一", title: "从抓周开始", text: "选一件心仪的物什，再看看这次选择给你留下什么。", action: 'data-tab="history"', label: "翻开命册" }
+    : state.age < 8
+      ? { number: "二", title: "先认得身边的人", text: "到亲友页看看父母与故人。闲谈、陪伴，都能慢慢经营一段关系。", action: 'data-tab="relations"', label: "看看亲友" }
+      : { number: "三", title: "长成自己的模样", text: state.gender === "female" ? "女学已开放，可以修习六艺；十五岁后再择一份营生。" : "去书院温课，或安排一项活动。十五岁后，科举与营生会向你开放。", action: 'data-tab="activities"', label: "安排活动" };
+  return `<section class="early-life-guide"><span class="guide-number">${lesson.number}</span><div><small>初识人间 · 随年龄展开</small><strong>${lesson.title}</strong><p>${lesson.text}</p></div><button class="text-btn" ${lesson.action}>${lesson.label} →</button></section>`;
 }
 
 function ambitionPanel() {
@@ -15940,6 +16383,7 @@ function activityView() {
       <h2>${escapeHtml(activity.label)}</h2>
       <p>${escapeHtml(activity.text)}</p>
       <div class="activity-meta">
+        <span>完成后度过一年</span>
         ${(activity.buckets || []).map((bucket) => `<span>${activityBucketName(bucket)}</span>`).join("")}
       </div>
       <div class="main-actions">
@@ -16125,23 +16569,21 @@ function resultReasonText(result = {}) {
   const numeric = deltas.filter((item) => typeof item.value === "number");
   const gains = numeric.filter((item) => item.value > 0).sort((a, b) => b.value - a.value);
   const losses = numeric.filter((item) => item.value < 0).sort((a, b) => a.value - b.value);
-  if (gains.length && losses.length) return `这不是单纯的成败：你以${losses[0].label}为代价，换来了${gains[0].label}的变化。人物关系、身份和当时的处境共同决定了结果。`;
-  if (gains.length) return `你的选择让${gains.slice(0, 2).map((item) => item.label).join("与")}得到正向变化；此前积累的属性、身份与人情也参与了这次结算。`;
-  if (losses.length) return `这次选择触发了${losses.slice(0, 2).map((item) => item.label).join("与")}方面的代价。它不是孤立扣点，而会继续影响后续人物与事件。`;
-  if (/成功|得当|如愿|化解|救/.test(result.text || "")) return "你的当前身份、能力与选择方向彼此吻合，因此事情得以顺利推进。";
-  if (/失败|未果|失手|受阻|拒绝/.test(result.text || "")) return "当前能力、资源或人物立场没有完全支撑这次选择，因此结果留下了代价。";
-  return "这次结果主要记录你的态度与人物记忆；即使没有立即增减数值，后续关系仍可能因此改变。";
+  if (gains.length && losses.length) return `本次结算中，${losses[0].label}有所下降，${gains[0].label}有所增长。具体经过已记在上方。`;
+  if (gains.length) return `这次经历增加了${gains.slice(0, 2).map((item) => item.label).join("与")}，变化列在上方。`;
+  if (losses.length) return `这次经历带来了${losses.slice(0, 2).map((item) => item.label).join("与")}方面的消耗，变化列在上方。`;
+  return "这次经历已记录；没有结算即时的数值变化。";
 }
 
 function resultFollowupText(result = {}) {
   if (result.followup) return String(result.followup);
   const freshThread = normalizeThreads(state.threads).find((item) => item.status === "active" && item.createdYear === state.year);
-  if (freshThread) return `命册新增伏笔“${freshThread.title}”。它预计在 ${Math.max(0, freshThread.dueYear - state.year)} 年后，或在相关人物再次出现时回响。`;
+  if (freshThread) return `命册中还有待续的旧事“${freshThread.title}”，预计在 ${Math.max(0, freshThread.dueYear - state.year)} 年后回响。可查看命册了解它的前因。`;
   const request = normalizeNpcRequests(state.npcRequests).find((item) => item.status === "pending");
   if (request) return `${request.relation}${request.npcName}仍在等待“${request.title}”的答复，期限会继续向前推进。`;
   const dueThread = normalizeThreads(state.threads).find((item) => item.status === "active" && item.dueYear <= state.year + 1);
   if (dueThread) return `旧事“${dueThread.title}”已经临近，接下来的流年可能直接接续这条因果。`;
-  return "这次选择已写入命册。后续随机事件、人物关系与生涯评价会读取这段经历。";
+  return "这次选择已写入命册，可随时翻阅这段经历。";
 }
 
 function eventResultView() {
@@ -16266,7 +16708,7 @@ function homeView() {
     <article class="play-card home-card">
       <p class="eyebrow">家中</p>
       <h2>${state.age < 15 ? "庭院日常" : "持家"} </h2>
-      <p>${state.age < 8 ? "年岁尚幼，家中小事也能慢慢养成性情。" : state.age < 15 ? "读书、玩耍、帮忙，都是少年时光。" : "成丁之后，家中也有账册、人情与长辈需要照看。"}</p>
+      <p>${state.age < 8 ? "年岁尚幼，家中小事也能慢慢养成性情。" : state.age < 15 ? "读书、玩耍、帮忙，都是少年时光。" : "成丁之后，家中也有账册、人情与长辈需要照看。"}选择一项家中活动，度过这一年。</p>
       <section class="home-grid">
         ${homeActionButton("study", state.age < 8 ? "认字描红" : "家中温书", "增长学识与备考进度。", "Book", blocked)}
         ${homeActionButton("play", "出门玩耍", "舒展心情，可能结识同龄人。", "BambooHorse", blocked || state.age > 14)}
@@ -16274,6 +16716,7 @@ function homeView() {
         ${homeActionButton("parents", "听父母训导", "增进亲情，也学些做人道理。", "FamilyIcon", blocked)}
         ${homeActionButton("estate", "整理家业", "成丁后清点账册与器物。", "House", blocked || state.age < 15)}
       </section>
+      ${heirloomDoor()}
       <div class="main-actions"><button class="ghost-btn" data-action="back-main">返回</button></div>
     </article>`;
 }
@@ -16285,6 +16728,35 @@ function homeActionButton(action, label, note, iconName, disabled) {
       <strong>${escapeHtml(label)}</strong>
       <small>${escapeHtml(note)}</small>
     </button>`;
+}
+
+function heirloomDoor() {
+  const count = heirloomItems().filter(item => item.status !== "donated").length;
+  return `<button class="heirloom-door" data-page="heirlooms">${icon("MainBook", "家传之物")}<span><strong>家传之物${count ? ` · ${count}件` : ""}</strong><small>${count ? "旧物有来历，后人有自己的选择" : "船契、医案与故人旧书，留给后人接续"}</small></span><b aria-hidden="true">→</b></button>`;
+}
+
+function heirloomsView() {
+  const items = heirloomItems();
+  const kept = items.filter(item => item.status !== "donated").length;
+  return `<article class="play-card heirloom-cabinet">
+    <header><p class="eyebrow">家门旧物 · 一代接一代</p><h2>家传之物</h2><p>一纸船契，一册医案。留给后人的，不只是一件旧物，还有你这一生的选择。</p></header>
+    ${items.length ? `<div class="heirloom-counts"><span><b>${kept}</b>件仍在家中</span><span><b>${items.length - kept}</b>件已赠予乡里</span></div><div class="heirloom-grid">${items.map(heirloomCard).join("")}</div>` : `<section class="heirloom-empty">${icon("MainBook", "尚待落笔")}<h3>旧物尚待落笔</h3><p>守住一条粮路，留下可传的医案，或在旧书缘中收下故人的批注。你的经历，会成为后人打开的第一卷。</p><p>获得的旧物会保留来历；传给家人后，可以续用、转赠，或封存。</p></section>`}
+    <div class="main-actions"><button class="ghost-btn" data-page="home">回到家中</button><button class="secondary-btn" data-page="backpack">查看行囊</button></div>
+  </article>`;
+}
+
+function heirloomCard(item) {
+  const definition = HEIRLOOM_DEFS[item.kind];
+  const action = heirloomActionState(item);
+  const origin = item.origin || {};
+  const history = item.history || [];
+  return `<article class="heirloom-card is-${item.status}">
+    <header class="heirloom-top">${icon(definition.icon, item.title || definition.title)}<div><small>${escapeHtml(action.statusLabel)}</small><h3>${escapeHtml(item.title || definition.title)}</h3></div><span class="heirloom-seal" aria-hidden="true">${item.status === "donated" ? "赠" : item.status === "sealed" ? "藏" : "传"}</span></header>
+    <div class="heirloom-docket"><p>${origin.generation ? `第${origin.generation}代 · ` : "原主 · "}<strong>${escapeHtml(origin.name || "来历未详")}</strong></p><small>${escapeHtml(origin.summary || "旧物的来历尚未详记。")}</small></div>
+    <p class="heirloom-description">${escapeHtml(definition.note)}</p>
+    <details class="heirloom-history"><summary>${history.length}段传承足迹 · 展开看旧事</summary><ol>${history.map(entry => `<li><div><strong>${entry.generation ? `第${entry.generation}代 · ` : ""}${escapeHtml(entry.name || "姓名未详")}${entry.year != null ? ` · ${entry.year}岁` : ""}</strong><p>${escapeHtml(entry.summary)}</p></div></li>`).join("")}</ol></details>
+    ${action.canOpen ? `<p class="heirloom-status">${escapeHtml(item.status === "sealed" ? "封存的旧物仍在，可打开再议去留。" : action.used ? "你已续用过其中的经验，还可以决定这件旧物的去留。" : action.useNote)}</p><button class="secondary-btn" data-heirloom-open="${escapeHtml(item.id)}">${item.status === "sealed" ? "打开封存" : "展开旧物"}</button>` : `<p class="heirloom-status">${escapeHtml(action.reason || action.statusLabel)}</p>`}
+  </article>`;
 }
 
 function placeSceneHeader(place) {
@@ -16566,16 +17038,17 @@ function assetsView() {
 }
 
 function assetCard(asset, index) {
-  const condition = Math.round(Number(asset.condition ?? 72));
+  const repair = assetRepairQuote(asset);
+  const condition = Math.round(repair.condition);
   const level = Math.max(1, Number(asset.level) || 1);
   const mode = asset.mode === "self" ? "自营" : "出租";
   const displayName = assetDisplayName(asset, index);
   return `
     <article class="record-item asset-card">
-      <strong>${escapeHtml(displayName)} <span>${mode} · ${level}级 · 状态${condition}</span></strong>
+      <strong>${escapeHtml(displayName)} <span>${mode} · ${level}级 · 状态${condition}/${ASSET_CONDITION_MAX}</span></strong>
       <p>${escapeHtml(asset.desc || "家中产业")} · 所在 ${escapeHtml(asset.location || travelDestinationByStaticId(asset.regionId).name)} · 年入 ${moneyText(asset.income || 0)}</p>
       <span class="mini-actions">
-        <button class="text-btn inline-action" data-asset-action="repair" data-asset-index="${index}" ${state.stats.money < Math.max(30, Math.round((asset.income || 20) * 1.6)) ? "disabled" : ""}>修缮</button>
+        <button class="text-btn inline-action" data-asset-action="repair" data-asset-index="${index}" ${repair.amount <= 0 || state.stats.money < repair.cost ? "disabled" : ""}>${repair.amount > 0 ? `修缮 +${repair.amount} · ${moneyText(repair.cost)}` : "无需修缮"}</button>
         <button class="text-btn inline-action" data-asset-action="expand" data-asset-index="${index}" ${state.stats.money < Math.max(120, Math.round((asset.price || 200) * 0.38)) ? "disabled" : ""}>扩建</button>
         <button class="text-btn inline-action" data-asset-action="mode" data-asset-index="${index}">${asset.mode === "self" ? "改出租" : "改自营"}</button>
       </span>
@@ -16888,6 +17361,7 @@ function backpackView() {
         ${INVENTORY_CATEGORIES.map(([id, label]) => `<button class="${tab === id ? "active" : ""}" data-inventory-tab="${id}">${escapeHtml(label)}</button>`).join("")}
       </div>
       <p class="inventory-capacity">通用可存放：${used}/${cap}</p>
+      ${heirloomDoor()}
       <div class="item-grid">
         ${items.map((item) => `
           <article class="item-card">
@@ -16954,6 +17428,8 @@ function saveManagerView() {
   const slots = [];
   for (let i = 0; i < MAX_SLOTS; i++) {
     const info = meta[i];
+    const backup = loadSlotBackup(i);
+    const backupRow = backup ? `<div class="save-slot-backup"><span>上次备份：${escapeHtml(backup.state.name)} · ${Math.round(backup.state.age)}岁</span><button class="text-btn" data-save-slot="${i}" data-save-action="restore-backup">恢复上次备份</button></div>` : "";
     const isCurrent = currentSlot === i;
     const isDead = state?.dead;
     if (info) {
@@ -16965,7 +17441,7 @@ function saveManagerView() {
         </div>
         <div class="save-slot-body">
           <strong>${escapeHtml(info.name)}</strong>
-          <span class="save-slot-meta">${info.age}岁 · ${info.title} · ${timeStr}</span>
+          <span class="save-slot-meta">${info.age}岁 · ${escapeHtml(info.title)} · ${timeStr}</span>
         </div>
         <div class="save-slot-actions">
           ${state && !isDead ? `<button class="text-btn" data-save-slot="${i}" data-save-action="overwrite">覆盖保存</button>` : ""}
@@ -16973,6 +17449,7 @@ function saveManagerView() {
           <button class="text-btn" data-save-slot="${i}" data-save-action="export-slot">导出</button>
           <button class="text-btn danger" data-save-slot="${i}" data-save-action="delete">删除</button>
         </div>
+        ${backupRow}
       </article>`);
     } else {
       slots.push(`<article class="save-slot empty">
@@ -16987,6 +17464,7 @@ function saveManagerView() {
           ${state && !isDead ? `<button class="text-btn" data-save-slot="${i}" data-save-action="save-here">保存到此处</button>` : ""}
           <button class="text-btn" data-save-slot="${i}" data-save-action="import-slot">导入存档</button>
         </div>
+        ${backupRow}
       </article>`);
     }
   }
@@ -16994,7 +17472,17 @@ function saveManagerView() {
     <article class="play-card save-manager-card">
       <p class="eyebrow">存档管理</p>
       <h2>多槽位存档</h2>
-      <p>3 个存档位，可保存、读取、导入导出各局人生。</p>
+      <p>3 个存档位。覆盖或删除前会保留一份备份，可在对应槽位恢复；也可以导出文件长期留存。</p>
+      ${pendingSaveImport ? `<section class="save-import-review" aria-labelledby="save-import-title">
+        <h3 id="save-import-title">确认导入：${escapeHtml(pendingSaveImport.state.name)}</h3>
+        <p>${Math.round(pendingSaveImport.state.age)}岁 · 请选择保存位置。覆盖已有存档前，还会请你确认。</p>
+        <label for="save-import-target">导入到哪个存档位</label>
+        <select id="save-import-target">
+          <option value="" ${pendingSaveImport.targetSlot < 0 ? "selected" : ""} disabled>请选择目标存档位</option>
+          ${Array.from({ length: MAX_SLOTS }, (_, slot) => `<option value="${slot}" ${pendingSaveImport.targetSlot === slot ? "selected" : ""}>存档位 ${slot + 1} · ${meta[slot] ? escapeHtml(`${meta[slot].name}（${meta[slot].age}岁，将被覆盖）`) : "空"}</option>`).join("")}
+        </select>
+        <div class="save-slot-actions"><button class="primary-btn" data-action="confirm-save-import">确认导入</button><button class="ghost-btn" data-action="cancel-save-import">取消</button></div>
+      </section>` : ""}
       <div class="save-slots">
         ${slots.join("")}
       </div>
@@ -17016,7 +17504,7 @@ function menuView() {
         <button class="list-btn" data-page="codex">${icon("MainBook", "图鉴")}<span>成就图鉴<small>查看铜银金成就、人生阶段与本局评分。</small></span></button>
         <button class="list-btn" data-action="open-save-manager">${icon("MenuButton0", "存档")}<span>存档管理<small>多槽位保存、读取与导入导出。</small></span></button>
         <button class="list-btn" data-action="export">${icon("MenuButton1", "导出")}<span>导出存档<small>下载当前人生 JSON。</small></span></button>
-        <button class="list-btn danger" data-action="new-life">${icon("MenuButton2", "重开")}<span>重新开始<small>清空当前存档并开新档。</small></span></button>
+        <button class="list-btn danger" data-action="new-life">${icon("MenuButton2", "重开")}<span>重新开始<small>备份当前存档后开启新人生。</small></span></button>
       </div>
       <div class="main-actions"><button class="ghost-btn" data-action="back-main">返回</button></div>
     </article>`;
@@ -18281,7 +18769,7 @@ function examView() {
       <article class="play-card exam-card">
         <p class="eyebrow">科举</p>
         <h2>${escapeHtml(stage?.name || "科举")}</h2>
-        <p>从 APK 题库抽题。选择题中第一个原始答案为正解，殿试按学识、处世、德行综合评卷。</p>
+        <p>每次试卷从经史题库中抽取。答题与备考积累共同影响成绩，殿试还会考察学识、处世与德行。</p>
         <section class="prep-panel">
           <div class="section-title"><h2>备考</h2><strong>${Math.round(state.study?.prep || 0)}/100</strong></div>
           <div class="meter"><i style="width:${clamp(state.study?.prep || 0)}%"></i></div>
@@ -18360,7 +18848,8 @@ function palaceExamView(stage, current) {
 }
 
 function eventSceneArt(event = {}) {
-  let key = EVENT_KIND_SCENES[event.kind] || EVENT_ACTIVITY_SCENES[state.pendingActivity?.id];
+  const chapterScene = event.kind === "careerChapter" ? ({ "grain-road": "grainRoad", "epidemic-dispensary": "dispensary", "granary-ledger": "official" })[event.chapterId] : "";
+  let key = chapterScene || EVENT_KIND_SCENES[event.kind] || EVENT_ACTIVITY_SCENES[state.pendingActivity?.id];
   if (!key) {
     const text = `${event.title || ""}${event.content || ""}${event.history || ""}`;
     if (/牢|狱|刑|囚|秋审|越狱/.test(text)) key = "prison";
@@ -18375,7 +18864,7 @@ function eventSceneArt(event = {}) {
     else if (/营生|买卖|掌柜|工匠|医者|农田|本业/.test(text)) key = "career";
     else key = "life";
   }
-  return { key, ...(EVENT_SCENE_ART[key] || EVENT_SCENE_ART.life) };
+  return { key, ...(EVENT_SCENE_ART[key] || EVENT_SCENE_ART.life), ...(event.kind === "heirloom" ? { label: "家门旧物" } : {}) };
 }
 
 function examHistory() {
@@ -18384,6 +18873,21 @@ function examHistory() {
       <div class="section-title"><h2>考绩</h2></div>
       ${(state.exam.history || []).map((item) => infoCard(item.stage, `${item.passed ? "取中" : "未中"} · ${item.score} 分${item.title ? ` · ${item.title}` : ""}`)).join("") || `<p class="empty-note">尚未应试</p>`}
     </section>`;
+}
+
+function careerChoiceRecord(history = []) {
+  return `<ol class="chapter-choice-record">${history.map((entry) => `<li><span>${entry.year}岁</span><p>${escapeHtml(entry.title || "旧时抉择")}</p></li>`).join("")}</ol>`;
+}
+
+function careerChapterReading(event) {
+  const pack = CAREER_STORY_PACKS[event.chapterId];
+  const active = normalizeCareerChapters(state.careerChapters).active;
+  if (!pack || !active || active.id !== event.chapterId) return "";
+  const previous = active.history.at(-1);
+  return `<section class="chapter-reading" aria-label="跨年故事进度">
+    <ol class="chapter-steps">${pack.stages.map((stage, index) => `<li class="${index < active.stage ? "is-done" : index === active.stage ? "is-current" : "is-future"}" ${index === active.stage ? 'aria-current="step"' : ""}><span>${index < active.stage ? "✓" : `0${index + 1}`}</span><b>${escapeHtml(stage.title)}</b></li>`).join("")}</ol>
+    ${previous ? `<details class="chapter-recollection"><summary>前情 · ${escapeHtml(previous.title || "旧时抉择")}</summary>${careerChoiceRecord(active.history)}</details>` : `<p class="chapter-opening-note">${pack.stages.length}幕流年，每次抉择都会留在命册中。</p>`}
+  </section>`;
 }
 
 function eventView(event) {
@@ -18411,15 +18915,16 @@ function eventView(event) {
         <img src="${sceneArt.src}" alt="${escapeHtml(sceneArt.label)}场景插画" width="1600" height="900" decoding="async" fetchpriority="high" />
         <figcaption><span>流年画卷</span><b>${escapeHtml(sceneArt.label)}</b></figcaption>
       </figure>
-      <p class="eyebrow">${eyebrow}</p>
+      <p class="eyebrow">${event.kind === "careerChapter" ? "本业长卷 · 一念一生" : event.kind === "heirloom" ? "家传之物 · 续写前人旧事" : eyebrow}</p>
       <h2>${escapeHtml(event.title || "事件")}</h2>
+      ${event.kind === "careerChapter" ? careerChapterReading(event) : ""}
       <p>${formatText(fillPlaceholders(event.content || event.history || "", false))}</p>
       <div class="choice-list ${sceneInteraction ? "scene-choice-grid" : ""}">
         ${
           options.length
             ? options.map(({ child, index }) => `<button class="choice-btn ${sceneInteraction ? "scene-choice" : ""} ${official || careerCase ? "official-choice" : ""}" data-choice="${index}" ${child.disabled ? "disabled" : ""}>
               <span>${escapeHtml(child.title || "继续")}</span>
-              ${(official || familyStory || careerCase || fortuneEvent || darkEvent || prisonEvent || culturalEvent || worldEvent || femaleSchoolEvent || clanEvent || regionalEvent || fateThread || childLifeEvent || npcRequest) && child.note ? `<small>${escapeHtml(child.note)}</small>` : ""}
+              ${(official || familyStory || careerCase || fortuneEvent || darkEvent || prisonEvent || culturalEvent || worldEvent || femaleSchoolEvent || clanEvent || regionalEvent || fateThread || childLifeEvent || npcRequest || event.kind === "scholarStory" || event.kind === "careerChapter" || event.kind === "heirloom") && child.note ? `<small>${escapeHtml(child.note)}</small>` : ""}
             </button>`).join("")
             : `<button class="primary-btn" data-action="finish-event">继续</button>`
         }
@@ -18469,6 +18974,7 @@ function deathView() {
       <div class="main-actions">
         <button class="${heirs.length ? "ghost-btn danger" : "primary-btn"}" data-action="new-life">另开新档</button>
         <button class="secondary-btn" data-tab="history">查看命册</button>
+        <button class="ghost-btn" data-action="open-save-manager">读取或恢复存档</button>
       </div>
     </article>`;
 }
@@ -18516,6 +19022,17 @@ function focusResponsivePanel(selector) {
   });
 }
 
+function focusStoryContent() {
+  window.requestAnimationFrame(() => {
+    const panel = app.querySelector(".center-panel");
+    const heading = panel?.querySelector("h2");
+    if (!heading) return;
+    heading.tabIndex = -1;
+    heading.focus({ preventScroll: true });
+    panel.scrollIntoView({ block: "start" });
+  });
+}
+
 function tabContent() {
   if (view.tab === "activities") return activityPanel();
   if (view.tab === "career") return careerPanel();
@@ -18528,16 +19045,52 @@ function tabContent() {
       ...state.diseases.map((item) => [`病症：${item}`, "可去医馆调理"]),
       ...visibleLifeTags().map((item) => [`记号：${item}`, "人生经历"]),
     ];
-    return listPanel("行囊", list);
+    return `${heirloomDoor()}${listPanel("行囊", list)}`;
   }
   if (view.tab === "history") return historyPanel();
   return overviewPanel();
+}
+
+function careerStoryJournal() {
+  const chapters = normalizeCareerChapters(state.careerChapters);
+  const entries = [...(chapters.active ? [{ ...chapters.active, ongoing: true }] : []), ...chapters.completed.slice().reverse()].slice(0, 8);
+  if (!entries.length) return "";
+  return `<section class="chapter-journal"><div class="section-title"><h2>人生长卷</h2><span>一念落笔，数年回声</span></div>
+    ${entries.map((entry) => {
+      const pack = CAREER_STORY_PACKS[entry.id];
+      const art = eventSceneArt({ kind: "careerChapter", chapterId: entry.id });
+      const routes = pack.routeLabels || { law: "依法", family: "顾家", power: "权势" };
+      const remaining = entry.ongoing ? Math.max(0, entry.dueYear - state.year) : 0;
+      const blocked = state.dead ? "这一世已落幕，此前抉择仍留在命册中。" : state.prisonYears > 0 ? "出狱后，可以再续写这段故事。" : !careerChapterFits(pack, entry) ? "你已离开当时的营生，此前抉择仍会保留。" : state.currentEvent || state.eventResult || state.pendingCaravan || state.age < 15 ? "先处理眼前的事，再回来续写。" : "";
+      return `<details class="chapter-journal-entry" ${entry.ongoing ? "open" : ""}>
+        <summary><img src="${art.src}" alt="" width="68" height="68" loading="lazy"/><span><small>${entry.ongoing ? `正在续写 · 第 ${entry.stage + 1}/${pack.stages.length} 幕` : `${entry.year}岁 · 已落卷`}</small><strong>${escapeHtml(pack.title)}</strong><em>${escapeHtml(entry.ongoing ? pack.stages[entry.stage].title : entry.outcome)}</em></span><b aria-hidden="true">＋</b></summary>
+        <div class="chapter-journal-body">
+          <p>${escapeHtml(entry.ongoing ? pack.summary : entry.summary || "当年的抉择与结局，已记在这一卷中。")}</p>
+          ${entry.actorName ? `<small>往来人物 · ${escapeHtml(entry.actorName)}</small>` : ""}
+          ${entry.history.length ? careerChoiceRecord(entry.history) : '<p class="empty-note">故事刚刚展开，第一笔由你来写。</p>'}
+          <div class="chapter-route-tags">${Object.entries(routes).filter(([key]) => entry.routes[key] > 0).map(([key, label]) => `<span>${escapeHtml(label)} · ${entry.routes[key]}次选择</span>`).join("")}</div>
+          ${entry.ongoing ? `<p class="chapter-next-note">${blocked || (remaining ? `下一幕还需 ${remaining} 年，期间可以照常生活。` : "下一幕已到，可以继续这段故事。")}</p>${!remaining && !blocked ? '<button class="secondary-btn" data-career-action="case:chapter">续写此章</button>' : ""}` : ""}
+        </div>
+      </details>`;
+    }).join("")}
+  </section>`;
+}
+
+function regionalLegacyMemory() {
+  const regional = normalizeRegionalState(state.regional, state.location);
+  const entries = Object.entries(regional.regions).flatMap(([regionId, region]) => (region.legacies || []).map((legacy) => ({ ...legacy, regionId })));
+  if (!entries.length) return "";
+  return `<section class="legacy-memory"><div class="section-title"><h2>留给这片土地</h2><span>人会远行，善举有归处</span></div>${entries.map((entry) => {
+    const definition = REGIONAL_LEGACY_DEFS[entry.kind];
+    return `<article>${icon(definition.icon, definition.name)}<div><strong>${escapeHtml(travelDestinationByStaticId(entry.regionId).name)} · ${escapeHtml(definition.name)}</strong><p>第${entry.founderGeneration}代 · ${escapeHtml(entry.founderName)}创办</p><small>${escapeHtml(definition.benefit)}</small></div></article>`;
+  }).join("")}<button class="text-btn" data-page="regions">去看地方记忆 →</button></section>`;
 }
 
 function historyPanel() {
   const ambition = normalizeAmbition(state.ambition);
   const ambitionDef = ambitionDefinition(ambition?.id);
   const activeThreads = normalizeThreads(state.threads).filter((item) => item.status === "active");
+  const closedThreads = normalizeThreads(state.threads).filter((item) => item.sourceId && item.status !== "active").slice(0, 8);
   return `
     <section class="panel-content">
       <h2>命册</h2>
@@ -18546,7 +19099,10 @@ function historyPanel() {
           <small>${completedGoals().length}/${availableLifeGoals().length} 个成就 · ${state.log.length} 件经历 · ${activeThreads.length} 桩未了之事</small>
       </div>
       ${ambitionDef ? `<section class="history-feature"><strong>人生志向 · ${escapeHtml(ambitionDef.title)}</strong><small>${ambition.completed ? "三重志业皆成" : `已完成 ${ambition.stage}/3 · 当前“${escapeHtml(ambitionDef.stages[ambition.stage]?.title || "收束余生")}”`}</small></section>` : ""}
+      ${careerStoryJournal()}
+      ${regionalLegacyMemory()}
       ${activeThreads.length ? `<section class="thread-preview"><div class="section-title"><h2>未了之事</h2><span>会在往后流年找上门，也可能由继承人接过</span></div>${activeThreads.map((item) => `<article class="record-item thread-item"><strong>${icon(THREAD_KINDS[item.kind].icon, item.title)}${escapeHtml(item.title)}</strong><p>${escapeHtml(item.summary)} · ${item.dueYear <= state.year ? "因果已到" : `${item.dueYear - state.year}年后或有回响`}${item.inherited ? " · 先人遗事" : ""}</p></article>`).join("")}</section>` : ""}
+      ${closedThreads.length ? `<section class="thread-preview"><div class="section-title"><h2>往事回响</h2><span>当年的选择，后来的结局</span></div>${closedThreads.map((item) => `<article class="record-item thread-item"><strong>${escapeHtml(item.title)}</strong><p>${escapeHtml(item.summary)}</p><small>结局：${escapeHtml(item.outcome)}${item.inherited ? " · 由后人接续" : ""}</small></article>`).join("")}</section>` : ""}
       <div class="record-list">${state.log.map(logItem).join("") || `<p class="empty-note">暂无记录</p>`}</div>
     </section>`;
 }
@@ -18816,20 +19372,17 @@ function finishOnboarding({ advance = false } = {}) {
 app.addEventListener("click", (event) => {
   const button = event.target.closest("button");
   if (!button) return;
+  if (button.closest("#save-status-notice")) return;
+  if (button.dataset.action === "toggle-tools") {
+    view.toolsOpen = !view.toolsOpen;
+    render();
+    app.querySelector('[data-action="toggle-tools"]')?.focus({ preventScroll: true });
+    return;
+  }
+  view.toolsOpen = false;
 
   if (button.dataset.action === "continue-save") {
-    if (!state) {
-      const meta = loadSlotMeta();
-      const index = meta
-        .map((info, slot) => (info ? { ...info, slot } : null))
-        .filter(Boolean)
-        .sort((a, b) => Number(b.timestamp || 0) - Number(a.timestamp || 0))[0]?.slot;
-      if (Number.isFinite(index)) {
-        state = loadSave(index);
-        currentSlot = index;
-        if (state) state.saveSlot = index;
-      }
-    }
+    if (!state) state = loadCurrentSave();
     view.screen = "game";
     view.page = "save-manager";
     render();
@@ -18904,27 +19457,72 @@ app.addEventListener("click", (event) => {
     }
     return;
   }
+  if (button.dataset.action === "cancel-save-import") {
+    pendingSaveImport = null;
+    render();
+    return;
+  }
+  if (button.dataset.action === "confirm-save-import") {
+    const selected = document.getElementById("save-import-target")?.value;
+    if (!pendingSaveImport || selected === "" || selected === undefined) {
+      alert("请先选择目标存档位，现有存档尚未更改。");
+      return;
+    }
+    const slot = Number(selected);
+    pendingSaveImport.targetSlot = slot;
+    const existing = loadSlotMeta()[slot];
+    if (existing && !confirm(`将导入存档写入存档位 ${slot + 1}，覆盖「${existing.name}」？覆盖前会保留一份可恢复的备份。`)) return;
+    const imported = pendingSaveImport.state;
+    const isCurrent = currentSlot === slot;
+    if (!writeSaveSlot(slot, imported, { backup: true, activate: isCurrent })) return;
+    if (isCurrent) {
+      state = imported;
+      view.overlay = state.onboarding?.seen ? (state.pendingSurprise ? "surprise" : "") : "onboarding";
+    }
+    pendingSaveImport = null;
+    updateSaveNotice();
+    render();
+    return;
+  }
   if (button.dataset.saveSlot !== undefined && button.dataset.saveAction) {
     const slot = Number(button.dataset.saveSlot);
     const action = button.dataset.saveAction;
     if (action === "overwrite" || action === "save-here") {
+      const existing = loadSlotMeta()[slot];
+      if (existing && !confirm(`将当前人生保存到存档位 ${slot + 1}，覆盖「${existing.name}」？覆盖前会保留一份可恢复的备份。`)) return;
+      if (!writeSaveSlot(slot, state, { backup: true, activate: true })) return;
       currentSlot = slot;
-      if (state) state.saveSlot = slot;
-      save();
+      updateSaveNotice();
       render();
       return;
     }
     if (action === "load") {
+      if ((saveError || currentSlot < 0) && state && !confirm("当前页面可能有未保存的进度。建议先导出；仍要读取另一份存档吗？")) return;
       const loaded = loadSave(slot);
       if (loaded) {
         state = loaded;
         currentSlot = slot;
         state.saveSlot = slot;
+        saveError = "";
+        rememberActiveSlot(slot);
         view.screen = "game";
         view.page = "main";
         view.overlay = state.onboarding?.seen ? (state.pendingSurprise ? "surprise" : "") : "onboarding";
         render();
       }
+      return;
+    }
+    if (action === "restore-backup") {
+      const backup = loadSlotBackup(slot);
+      if (!backup || !confirm(`恢复「${backup.state.name}」${Math.round(backup.state.age)}岁时的备份到存档位 ${slot + 1}？该槽现有存档会成为新的备份。请先导出页面上尚未保存的进度。`)) return;
+      const isCurrent = currentSlot === slot;
+      if (!writeSaveSlot(slot, backup.state, { backup: true, activate: isCurrent })) return;
+      if (isCurrent) {
+        state = backup.state;
+        view.overlay = state.onboarding?.seen ? (state.pendingSurprise ? "surprise" : "") : "onboarding";
+      }
+      updateSaveNotice();
+      render();
       return;
     }
     if (action === "export-slot") {
@@ -18941,9 +19539,9 @@ app.addEventListener("click", (event) => {
       return;
     }
     if (action === "delete") {
-      localStorage.removeItem(slotKey(slot));
-      clearSlotMeta(slot);
-      if (currentSlot === slot) currentSlot = -1;
+      if (!confirm(`删除存档位 ${slot + 1}？会保留一份可恢复的备份。`)) return;
+      if (!deleteSaveSlot(slot)) return;
+      updateSaveNotice();
       render();
       return;
     }
@@ -18959,8 +19557,12 @@ app.addEventListener("click", (event) => {
     return;
   }
   if (button.dataset.action === "new-life") {
-    clearSave();
+    if (!confirm("结束当前人生并重新开始？当前存档会保留一份备份；尚未保存的进度请先导出。")) return;
+    if (!clearSave()) return;
     state = null;
+    saveError = "";
+    pendingSaveImport = null;
+    updateSaveNotice();
     draft = newDraft(draft?.gender);
     view = { screen: "create", page: "main", tab: "overview", activityId: "", placeId: "", overlay: "" };
     render();
@@ -19073,6 +19675,7 @@ app.addEventListener("click", (event) => {
     view.page = button.dataset.page;
     view.placeId = button.dataset.place === "activities" ? "" : button.dataset.place || "";
     render();
+    if (["regions", "heirlooms"].includes(button.dataset.page)) focusStoryContent();
     return;
   }
   if (button.dataset.place) {
@@ -19179,7 +19782,16 @@ app.addEventListener("click", (event) => {
     return;
   }
   if (button.dataset.career !== undefined) return takeCareer(button.dataset.career);
-  if (button.dataset.careerAction) return performCareerAction(button.dataset.careerAction);
+  if (button.dataset.heirloomOpen) {
+    openHeirloom(button.dataset.heirloomOpen);
+    if (state.currentEvent?.kind === "heirloom") focusStoryContent();
+    return;
+  }
+  if (button.dataset.careerAction) {
+    performCareerAction(button.dataset.careerAction);
+    if (button.dataset.careerAction === "case:chapter" && state.currentEvent?.kind === "careerChapter") focusStoryContent();
+    return;
+  }
   if (button.dataset.examExtra) return startExtraExam(button.dataset.examExtra);
   if (button.dataset.examAnswer !== undefined) return answerExam(button.dataset.question, button.dataset.examAnswer);
   if (button.dataset.palaceField) return choosePalace(button.dataset.palaceField, button.dataset.palaceValue);
@@ -19196,40 +19808,38 @@ app.addEventListener("input", (event) => {
   if (target.dataset.touhuControl) setTouhuControl(target.dataset.touhuControl, target.value);
 });
 
+document.addEventListener("click", (event) => {
+  const button = event.target.closest("#save-status-notice button");
+  if (!button) return;
+  if (button.dataset.action === "export") return exportSave();
+  if (button.dataset.action === "retry-save") return save();
+  if (button.dataset.action === "open-save-manager") {
+    view.screen = "game";
+    view.page = "save-manager";
+    view.overlay = "";
+    render();
+  }
+});
+
 document.addEventListener("change", (event) => {
   const input = event.target;
   if (input.id !== "save-import-input" || !input.files?.length) return;
   const file = input.files[0];
+  const requestedSlot = input.dataset.importTargetSlot;
   const reader = new FileReader();
   reader.onload = (e) => {
     try {
       const imported = JSON.parse(e.target.result);
-      if (!imported.name || !imported.stats) { alert("无效的存档文件"); return; }
+      if (!imported || typeof imported !== "object" || Array.isArray(imported) || typeof imported.name !== "string" || !imported.name || !imported.stats || typeof imported.stats !== "object" || Array.isArray(imported.stats)) { alert("无效的存档文件"); return; }
       const importedState = normalizeState(imported);
-      const targetSlot = input.dataset.importTargetSlot !== "" ? Number(input.dataset.importTargetSlot) : -1;
-      if (targetSlot >= 0 && targetSlot < MAX_SLOTS) {
-        importedState.saveSlot = targetSlot;
-        localStorage.setItem(slotKey(targetSlot), JSON.stringify(importedState));
-        updateSlotMeta(targetSlot, importedState);
-        if (view.page === "save-manager") render();
-        else {
-          state = importedState;
-          currentSlot = targetSlot;
-          view.screen = "game";
-          view.page = "main";
-          view.overlay = state.onboarding?.seen ? (state.pendingSurprise ? "surprise" : "") : "onboarding";
-          render();
-        }
-      } else {
-        const meta = loadSlotMeta();
-        const slot = firstEmptySlot(meta);
-        importedState.saveSlot = slot;
-        localStorage.setItem(slotKey(slot), JSON.stringify(importedState));
-        updateSlotMeta(slot, importedState);
-        if (view.page === "save-manager") render();
-      }
+      const targetSlot = requestedSlot !== "" && requestedSlot !== undefined ? Number(requestedSlot) : firstEmptySlot();
+      pendingSaveImport = { state: importedState, targetSlot: Number.isInteger(targetSlot) && targetSlot >= 0 && targetSlot < MAX_SLOTS ? targetSlot : -1 };
+      view.page = "save-manager";
+      view.overlay = "";
+      render();
     } catch { alert("导入失败：存档文件格式有误"); }
   };
+  reader.onerror = () => alert("无法读取存档文件，请重新选择。");
   reader.readAsText(file);
   input.value = "";
   input.dataset.importTargetSlot = "";

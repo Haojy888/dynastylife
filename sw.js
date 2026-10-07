@@ -1,11 +1,11 @@
-const CACHE_VERSION = "2026-08-10-5";
+// 发布 HTML、脚本或样式改动时一起递增，触发整组升级。
+const CACHE_VERSION = "2026-10-07-1";
 const CACHE_PREFIX = "dynastylife-";
 const SHELL_CACHE = `${CACHE_PREFIX}shell-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}runtime-${CACHE_VERSION}`;
 
 // 首次访问后即可离线进入游戏；其余同源图片会在游玩过程中自动加入运行时缓存。
 const APP_SHELL = [
-  "/",
   "/index.html",
   "/styles.css",
   "/scene-engine.js",
@@ -43,14 +43,19 @@ const APP_SHELL = [
   "/assets/event-clan.webp",
   "/assets/event-region.webp",
   "/assets/event-fortune.webp",
+  "/assets/event-grain-road.webp",
+  "/assets/event-dispensary.webp",
+  "/assets/region-qingping.webp",
 ];
+const SHELL_PATHS = new Set(APP_SHELL);
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(SHELL_CACHE)
-      .then((cache) => cache.addAll(APP_SHELL))
-      .then(() => self.skipWaiting()),
+      // 整组下载成功才安装；绕过 HTTP 缓存，避免把旧脚本混进新版外壳。
+      .then((cache) => cache.addAll(APP_SHELL.map((path) => new Request(path, { cache: "reload" })))),
   );
+  // 升级等待旧页面全部关闭；正在游玩的页面始终使用原来的整组资源。
 });
 
 self.addEventListener("activate", (event) => {
@@ -73,22 +78,15 @@ async function updateRuntimeCache(request) {
 }
 
 async function cachedWithRefresh(request, event) {
-  const shell = await caches.open(SHELL_CACHE);
   const runtime = await caches.open(RUNTIME_CACHE);
-  // 安装缓存负责离线兜底，运行时缓存保存最近一次联网拿到的新版本。
-  // 优先读取运行时缓存，避免后台更新成功后仍长期命中旧的安装版本。
-  const cached = await runtime.match(request) || await shell.match(request);
+  // 只有外壳之外的图片允许独立更新，HTML、脚本、样式不进入运行时缓存。
+  const cached = await runtime.match(request);
   const refresh = updateRuntimeCache(request);
   if (cached) {
     event.waitUntil(refresh.catch(() => undefined));
     return cached;
   }
-  try {
-    return await refresh;
-  } catch (error) {
-    if (request.mode === "navigate") return shell.match("/");
-    throw error;
-  }
+  return refresh;
 }
 
 self.addEventListener("fetch", (event) => {
@@ -97,14 +95,15 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
-  if (request.mode === "navigate") {
-    event.respondWith(cachedWithRefresh(request, event));
+  if (request.mode === "navigate" || SHELL_PATHS.has(url.pathname)) {
+    const path = request.mode === "navigate" ? "/index.html" : url.pathname;
+    event.respondWith(caches.open(SHELL_CACHE).then(async (cache) => (
+      await cache.match(path) || Response.error()
+    )));
     return;
   }
 
-  event.respondWith(cachedWithRefresh(request, event));
-});
-
-self.addEventListener("message", (event) => {
-  if (event.data === "SKIP_WAITING") self.skipWaiting();
+  if (request.destination === "image" || /\.(?:png|jpe?g|webp|gif|svg|ico)$/i.test(url.pathname)) {
+    event.respondWith(cachedWithRefresh(request, event));
+  }
 });
