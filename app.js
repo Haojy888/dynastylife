@@ -925,6 +925,8 @@ const EVENT_SCENE_ART = {
   career: { src: "assets/event-career.webp", label: "市井百业", focus: "61% 50%" },
   grainRoad: { src: "assets/event-grain-road.webp", label: "一线粮途", focus: "57% 50%" },
   dispensary: { src: "assets/event-dispensary.webp", label: "药灯未灭", focus: "43% 50%" },
+  springWater: { src: "assets/region-qingping.webp", label: "一渠春水", focus: "45% 55%" },
+  workshopPromise: { src: "assets/event-career.webp", label: "百工一诺", focus: "61% 50%" },
   culture: { src: "assets/event-culture.webp", label: "华夏岁时", focus: "56% 50%" },
   prison: { src: "assets/event-prison.webp", label: "铁窗流年", focus: "68% 50%" },
   jianghu: { src: "assets/event-jianghu.webp", label: "江湖暗门", focus: "66% 50%" },
@@ -2350,6 +2352,8 @@ const HEIRLOOM_DEFS = {
   "grain-charter": { title: "共济粮路船契", icon: "SendLetter", note: "粮路上的旧约与签押，记得当初怎样与人共渡难关。", careerKind: "merchant", useCost: 60, donateCost: 30 },
   "medical-casebook": { title: "药灯医案", icon: "MedicineBag", note: "病程、药批与失误都据实记下，后来人可以接着查证。", careerKind: "medicine", useCost: 40, donateCost: 25 },
   "annotated-book": { title: "故人批注的旧书", icon: "Book", note: "字里行间留着相授的学问，也留着人与人之间的旧情。", careerKind: "", useCost: 20, donateCost: 15 },
+  "water-register": { title: "分水农事簿", icon: "Agriculture", note: "水尺、轮灌次序与各田收成都记在册中，让后来人有据商量怎样共用一渠活水。", careerKind: "farmer", useCost: 40, donateCost: 25 },
+  "craft-pattern": { title: "百工留样册", icon: "Craftsman", note: "留样、工序与修错的缘由一并收存，后来人接过手艺，也接过对托付者的承诺。", careerKind: "craft", useCost: 50, donateCost: 25 },
 };
 
 const ANNUAL_GIFTS = [
@@ -2734,6 +2738,76 @@ const CAREER_STORY_PACKS = Object.freeze({
       { title: "药坊仍开", text: "你带着几处遗憾撑过这段疫事，药坊得以继续开门。诊册里的不明处尚未全解，往后仍须认真对待每一次复诊。", money: 50, experience: 80, livelihood: { reputation: 4, readiness: 6 } },
     ],
   },
+  "spring-water": {
+    id: "spring-water", careerKind: "farmer", title: "一渠春水", icon: "Agriculture",
+    summary: "一条旧渠连着上下游的田。量水、修闸、分粮与立约之间，你要决定守住自家收成，还是让邻里也有来年的春天。",
+    routeLabels: { commons: "共渠", agreement: "守约", profit: "自家" },
+    actor: { name: "陶穗", gender: "female", occupation: "巡水农户", disposition: "刚直", ambition: "求安稳" },
+    stages: [
+      { id: "measure-spring", title: "春分量水", content: "春水来得比往年迟。上游要先灌大田，下游却说秧苗已等不起。巡水的{partner}抱来一把旧水尺：渠能有多宽，人的分寸又该在哪里？", choices: [
+        { id: "survey-channel", title: "量水查契，把田亩记清", note: "请人丈量与誊契，地力 +6；留下可核对的水尺与旧契", cost: 60, route: "commons", score: 2, flags: ["measured-water"], actorAffection: 5, effects: { knowledge: 2 }, livelihood: { readiness: 6 }, text: "你与{partner}逐段量渠，把高低田、旧水口和各户用水时辰一一画清。有人不愿认账，水尺上的刻痕却不会替谁说谎。" },
+        { id: "join-labor", title: "先出工清渠，不争先水", note: "不花钱，体魄 -3、地力 +4；用工日换取共修的凭据", route: "agreement", score: 1, flags: ["joint-labor"], actorAffection: 4, effects: { physique: -3, virtue: 2 }, livelihood: { readiness: 4 }, text: "你先跳下淤渠，把堵住的草根和乱石运上岸。{partner}替每个出工的人记下工日，也提醒众人：出力不能只换来口头上的客气。" },
+        { id: "lease-headwater", title: "收下上游包水钱", note: "收入 100 铜钱；替上游保先水，下游会记得这份私约", gain: 100, route: "profit", score: -1, flags: ["private-water"], actorAffection: -7, effects: { virtue: -3 }, livelihood: { risk: 6 }, text: "你收下上游的包水钱，把自家和大户的田排在最前。{partner}没有拦你，只在巡水册上另记一行：这份约定，没有问过下游。" },
+      ] },
+      { id: "shared-mouth", title: "芒种争口", content: "第二年芒种将至，旧渠口又起了争执。有人搬来木石想私设水闸，{partner}拿着去年的记录，请你把曾经答应的话变成看得见的安排。", choices: [
+        { id: "shared-weir", title: "共修分水闸，按册轮灌", note: "需量过水或参与清渠；消耗仓粮 8，支付料工钱", cost: 90, minLivelihood: { resource: 8 }, requiresAny: ["measured-water", "joint-labor"], route: "commons", score: 2, flags: ["shared-weir"], actorAffection: 6, livelihood: { resource: -8, readiness: 8, reputation: 4 }, world: { "local.disaster": -4 }, text: "你把仓粮拿来供工，按水尺修成分水闸。{partner}与各村轮流验闸，不再让谁在夜里悄悄多开半寸。" },
+        { id: "negotiate-turns", title: "挨户议时，先排轮水表", note: "不花钱、不耗仓粮；乡望 +2，留下各户认可的轮水约定", route: "agreement", score: 1, flags: ["rotation-plan"], actorAffection: 4, effects: { eq: 2 }, livelihood: { reputation: 2, risk: -2 }, text: "你和{partner}挨家走了一遍，将远近田分成几个时段。表上没有谁能永远优先，各户都按了自己的指印。" },
+        { id: "private-dike", title: "替大户守闸，收取酬劳", note: "收入 100 铜钱；灾损 +8，下游人情受损", gain: 100, route: "profit", score: -1, flags: ["private-dike"], actorAffection: -8, effects: { virtue: -4 }, livelihood: { risk: 8, reputation: -5 }, world: { "local.sentiment": -3 }, text: "你替大户守住新闸，酬劳足以补家中开销。下游的裂田却越来越多，{partner}将这些田名也写进了同一本册子。" },
+      ] },
+      { id: "check-fields", title: "白露验田", content: "第三年，水势忽涨忽落，有的田结了穗，有的田只剩一层薄苗。{partner}请你沿渠验收：是把经验分给别人，守住轮灌承诺，还是先把自家的粮收进仓？", choices: [
+        { id: "teach-water", title: "分粮教灌，把成败都记下", note: "需共修水闸或轮水表；消耗仓粮 10，另备示范用度", cost: 50, minLivelihood: { resource: 10 }, requiresAny: ["shared-weir", "rotation-plan"], route: "commons", score: 2, flags: ["open-water"], actorAffection: 6, effects: { virtue: 3 }, livelihood: { resource: -10, readiness: 6, reputation: 4 }, text: "你从仓里分出示范粮，带各户看水色、试田泥。不只好田入册，旱死的苗和轮灌失误也照写；{partner}说，能让别人查错的经验才留得住。" },
+        { id: "keep-rotation", title: "自己补夜班，守住轮灌", note: "需轮水表或量水旧契；不花钱，体魄 -3，乡望 +4", requiresAny: ["rotation-plan", "measured-water"], route: "agreement", score: 2, flags: ["kept-rotation"], actorAffection: 5, effects: { physique: -3 }, livelihood: { reputation: 4, risk: -3 }, text: "你替病倒的巡水人守了几夜，哪怕自家田已轮到，也没有先动闸板。{partner}送来热饭时，看见表上的时辰一格都没有被擦改。" },
+        { id: "guard-own-field", title: "先护自家收成，暂退水争", note: "收入 40 铜钱；不再增加共渠记录，邻里自行商量后续", gain: 40, route: "profit", score: 0, flags: ["private-harvest"], actorAffection: -2, text: "你把剩下的力气用在自家田里，卖掉一小份新粮。{partner}仍沿渠巡水，却不再替你许下惠及各户的承诺。" },
+      ] },
+      { id: "write-water", title: "冬至立约", content: "第四年冬至，各户围着火盆议来年的用水。{partner}将旧契、水尺和几年的收成摊开：这条渠以后听谁的，又该给后来人留下怎样的规矩？", choices: [
+        { id: "public-register", title: "公开分水农事簿，连过失也署名", note: "需共修水闸或公开农事记录；誊清公示，不删堵坝和失约旧事", cost: 60, requiresAny: ["shared-weir", "open-water"], route: "commons", score: 2, flags: ["public-register"], actorAffection: 7, effects: { virtue: 3 }, livelihood: { reputation: 5 }, text: "你把水尺、轮灌次序、各田收成和曾经的不公都誊在同一册里，请各户核对后署名。{partner}没有替你抹去旧过，也没有抹去后来补上的工。" },
+        { id: "renew-turns", title: "续签轮水约，由各户轮值", note: "需轮水表或守过轮灌；支付誊契钱，保留互相查验的办法", cost: 20, requiresAny: ["rotation-plan", "kept-rotation"], route: "agreement", score: 2, flags: ["renewed-turns"], actorAffection: 5, livelihood: { reputation: 3 }, text: "你不把闸钥留在一家手里，将轮水表交给各户轮值。{partner}在末页写下：约不靠一个人永远在场，要靠后来人也能看清。" },
+        { id: "close-water-account", title: "结清私账，不再主持渠事", note: "收回 80 铜钱；不领取共渠成果，今后由各户另议水约", gain: 80, route: "profit", score: 0, flags: ["closed-water"], actorAffection: -3, text: "你结清自家垫款和工钱，将余下渠事交回各户。银钱算得清，沿渠的人情却未必都能结清；{partner}把你的旧账另封一页。" },
+      ] },
+    ],
+    endings: [
+      { title: "补缺还田", requiresAll: ["public-register"], requiresAny: ["private-water", "private-dike"], text: "你将曾经优先自家的私约也公开了。失水的人家得到解释和补救的凭据，旧过没有因此消失，但一条能相互查验的新约终于开始。", experience: 95, actorAffection: 4, livelihood: { reputation: 5, risk: -5 }, world: { "local.sentiment": 3 } },
+      { title: "一渠同春", requiresAll: ["public-register", "shared-weir", "open-water"], excludesAny: ["private-water", "private-dike"], minScore: 6, success: true, heirloom: "water-register", text: "一渠水终于不再只认上游的田。水闸、示范田和农事簿都有可查的记录；你与各户共同守下的春天，被写进一册可留给后人的分水农事簿。", money: 100, experience: 150, actorAffection: 10, livelihood: { readiness: 12, reputation: 18, risk: -7 }, world: { "local.disaster": -5, "local.sentiment": 5 } },
+      { title: "轮水守约", requiresAll: ["renewed-turns", "kept-rotation"], excludesAny: ["private-water", "private-dike"], minRoutes: { agreement: 2 }, success: true, heirloom: "water-register", text: "你没有建起最阔气的水闸，却让薄薄的轮水约经得住几个荒年。各户会轮值，也会查验，分水农事簿留下的是谁都不能独占的次序。", money: 70, experience: 125, actorAffection: 8, livelihood: { readiness: 8, reputation: 15, risk: -5 } },
+      { title: "渠成田裂", requiresAny: ["private-water", "private-dike"], excludesAny: ["public-register"], minRoutes: { profit: 2 }, text: "自家的粮仓比从前充实，渠下游却还有裂田。水闸成了几户人的凭仗，也让邻里把你的名字与那几份私约记在一起。", money: 100, experience: 65, actorAffection: -10, livelihood: { reputation: -10, risk: 10 }, world: { "local.sentiment": -4 } },
+      { title: "守田待春", text: "你守住了这一段农家日子，却没能把各户的分歧都议成一份长约。渠水仍向前，未写清的事还要留待下一个春天。", money: 40, experience: 80, livelihood: { readiness: 4, reputation: 2 } },
+    ],
+  },
+  "workshop-promise": {
+    id: "workshop-promise", careerKind: "craft", title: "百工一诺", icon: "Craftsman",
+    summary: "一张急单带来生意，也带来有裂的试件、难守的交期与不肯认错的人。四年里，你决定作坊靠招牌、契约还是可传的手艺立足。",
+    routeLabels: { craft: "验作", promise: "守诺", profit: "逐利" },
+    actor: { name: "沈衡", gender: "male", occupation: "验作师傅", disposition: "谨慎", ambition: "置办家业" },
+    stages: [
+      { id: "urgent-order", title: "接下急单", content: "行里来了一张大单，主顾催得急，料商又保证新料便宜好用。验作师傅{partner}把一件旧样放在案上：接得下这单，未必就守得住交货时的那句话。", choices: [
+        { id: "keep-sample", title: "买料试作，封存对照样", note: "先付试料钱，学识 +2；留下以后查验材料与工序的实样", cost: 70, route: "craft", score: 2, flags: ["kept-sample"], actorAffection: 5, effects: { knowledge: 2 }, text: "你照旧样先做一批小试件，把来料、用时和成败都写在封签上。{partner}替你保留一份，答应日后验货时拿出来对照。" },
+        { id: "agree-milestones", title: "先议分段交付，不空许期限", note: "不花钱，情商 +2；主顾同意先验样、后收成件", route: "promise", score: 1, flags: ["staged-promise"], actorAffection: 4, effects: { eq: 2 }, text: "你没有拍胸脯答应一口交齐，而是将验样、成件、收货分成几段。{partner}在契上加了一句：哪一段有错，就在哪一段停下。" },
+        { id: "rush-order", title: "收下赶工赏，照限期包交", note: "收入 140 铜钱；未作验证便许诺交齐，往后可能只能带错赶工", gain: 140, route: "profit", score: -1, flags: ["rushed-contract"], actorAffection: -4, effects: { virtue: -2 }, text: "你收下赶工赏，答应无论如何按期交齐。{partner}看着未试过的新料没有作声，只把交期在账边圈了两道。" },
+      ] },
+      { id: "cracked-sample", title: "试件有裂", content: "第二年，送回的试件出现了细裂。料商怪工序，帮工怪赶工，主顾只想知道还能不能按约收货。{partner}请你先把谁的话放下，去看裂口究竟在哪里。", choices: [
+        { id: "prove-process", title: "取封样复验，逐道查工序", note: "需保留过对照样；支付复验用度，学识 +3，取得可追溯的验作记录", cost: 60, requiresAny: ["kept-sample"], route: "craft", score: 2, flags: ["verified-process"], actorAffection: 6, effects: { knowledge: 3 }, text: "你拆开封样，让{partner}逐道复核同批材料的变化。裂口不是一句手艺不好就能搪塞的事，工序、来料和失误终于都有了出处。" },
+        { id: "disclose-flaw", title: "当面告知瑕疵，请主顾缓期", note: "不花钱，体魄 -2；认下停工与补验的责任，留下修复余地", route: "promise", score: 1, flags: ["disclosed-flaw"], actorAffection: 5, effects: { physique: -2, virtue: 2 }, text: "你带着裂件去见主顾，把能查清与尚未查清的事分别说开。催责没有立刻停下，{partner}却终于敢把返工清单写在明处。" },
+        { id: "conceal-flaw", title: "磨去裂痕，收下料商补贴", note: "收入 120 铜钱；隐去瑕疵，责任与风险都留给后来收货的人", gain: 120, route: "profit", score: -1, flags: ["concealed-flaw"], actorAffection: -10, effects: { virtue: -4 }, text: "你把裂痕修饰过去，收下料商的补贴。{partner}没有在验作单上签名，帮工也开始明白：这里最先保住的，是账面。" },
+      ] },
+      { id: "delivery-promise", title: "交货之约", content: "第三年，主顾来验这一批成件，同行也想知道作坊究竟摸清了多少门道。{partner}将验单推到你面前：手艺要怎样做给人看，承诺又该由谁来担？", choices: [
+        { id: "teach-work", title: "召同行试作，把验法教明", note: "需复验记录或已公开瑕疵；支付试作与工日钱，让同行共同检查", cost: 90, requiresAny: ["verified-process", "disclosed-flaw"], route: "craft", score: 2, flags: ["shared-process"], actorAffection: 6, effects: { knowledge: 3, virtue: 2 }, text: "你请同行用相同工序重做试件，不藏好法子，也不藏做坏的那一步。{partner}把各家的不同结果一并留样，作坊里第一次有人能据实质疑你的做法。" },
+        { id: "rework-order", title: "自付返工钱，按约补齐", note: "需验样或已告知瑕疵；承担返工，不向帮工推责", cost: 50, requiresAny: ["kept-sample", "verified-process", "disclosed-flaw"], route: "promise", score: 2, flags: ["reworked-order"], actorAffection: 5, effects: { physique: -2, virtue: 2 }, text: "你把返工钱记在自己名下，不扣帮工的旧工钱。{partner}陪你逐件验收，主顾再来时，终于能拿成件与当初答应的样子对照。" },
+        { id: "deliver-unchecked", title: "照期交货，先结清这一单", note: "收入 180 铜钱；未经补验或返工，成件的疑问仍由主顾承担", gain: 180, route: "profit", score: -1, flags: ["unchecked-delivery"], actorAffection: -7, effects: { virtue: -3 }, text: "你将成件按期交出，收齐这一单余款。箱封贴得端正，{partner}没签下的验作栏却仍空着，谁也不能说里头的疑问已经解决。" },
+      ] },
+      { id: "leave-a-pattern", title: "留下何物", content: "第四年，作坊有了新的帮工，也有主顾拿着旧契上门。{partner}问你：往后人们提起这间作坊，凭的是一块招牌，还是每个人都能查验、学会的真东西？", choices: [
+        { id: "open-pattern", title: "整理留样册，把失误一并公开", note: "需共同试作或复验记录；誊图留样，不删旧日隐瞒与误判", cost: 60, requiresAny: ["shared-process", "verified-process"], route: "craft", score: 2, flags: ["open-pattern"], actorAffection: 7, effects: { knowledge: 2, virtue: 3 }, text: "你将工序、留样和返工缘由整理成册，连曾经含糊过的验单也附在后面。{partner}写下的不是恭维话，而是后来人还能重复验证的做法。" },
+        { id: "keep-warranty", title: "续立保修契，旧件也可回坊", note: "需返工记录或公开认过瑕疵；支付立契钱，保留旧件追责的凭据", cost: 30, requiresAny: ["reworked-order", "disclosed-flaw"], route: "promise", score: 2, flags: ["kept-warranty"], actorAffection: 5, effects: { eq: 2 }, text: "你不再用交货当作责任的终点，将旧件、工序和回坊办法写进保修契。{partner}把对照样留在坊里，答应不论谁来当家，都要认这些旧约。" },
+        { id: "sell-reputation", title: "转让招牌，收取名号钱", note: "收入 160 铜钱；不留下公开验法，旧件的争议仍会跟着招牌走", gain: 160, route: "profit", score: 0, flags: ["sold-reputation"], actorAffection: -5, text: "你转让招牌和熟客门路，名号钱落进袋里。{partner}带走了没有签完的验单，新东家接下的也不只是几笔生意。" },
+      ] },
+    ],
+    endings: [
+      { title: "拆旧重作", requiresAll: ["open-pattern"], requiresAny: ["concealed-flaw", "unchecked-delivery", "rushed-contract"], text: "你将赶工、隐瞒或未经验收的旧账也摊开了。声誉不会凭一次公开立刻恢复，但留样和赔修有了可查的根据，作坊从认错这一道工序重新开张。", experience: 95, actorAffection: 4, world: { "local.sentiment": 2 } },
+      { title: "百工传式", requiresAll: ["open-pattern", "shared-process", "verified-process"], excludesAny: ["concealed-flaw", "unchecked-delivery", "rushed-contract"], minScore: 6, success: true, heirloom: "craft-pattern", text: "同行拿着留样也能做出经得住验看的成件，徒弟知道好在哪里，也知道错该怎样查。百工留样册留下的不是一位名匠的神话，而是可教、可问、可重做的真本事。", money: 140, experience: 160, actorAffection: 10 },
+      { title: "一诺成器", requiresAll: ["kept-warranty", "reworked-order"], excludesAny: ["concealed-flaw", "unchecked-delivery"], minRoutes: { promise: 2 }, success: true, heirloom: "craft-pattern", text: "你没有挣下最响亮的名号，却让主顾敢把用了几年的旧件送回作坊。工序、留样与保修约都收进册里，后人接过这门手艺时，也知道一句承诺要由什么来担。", money: 100, experience: 135, actorAffection: 8 },
+      { title: "招牌空响", requiresAny: ["sold-reputation", "unchecked-delivery"], excludesAny: ["open-pattern", "kept-warranty"], text: "招牌换来了银钱，旧件与验单却没有因此变好。你能转让名号，不能转让旁人记住的失信；街上有人再提这间作坊时，先问的已经是那几道裂口。", money: 80, experience: 60, actorAffection: -10, world: { "local.sentiment": -4 } },
+      { title: "小坊守成", text: "作坊撑过了急单和返工，手上多了几分经验，也留着尚未说清的旧事。往后能不能把生意做长，还要看下一件成品和下一次承诺。", money: 50, experience: 80 },
+    ],
+  },
 });
 
 function validateStoryContent(packs = CAREER_STORY_PACKS) {
@@ -3024,6 +3098,8 @@ const LIFE_GOALS = [
   { id: "medicine-master", tier: "silver", title: "悬壶济世", icon: "MedicineBag", desc: "医者医名达到 55，且完成两次惠民义举。", score: 175, done: () => Number(state.careerProgress?.医者?.livelihood?.reputation || 0) >= 55 && Number(state.careerProgress?.医者?.livelihood?.records?.publicGood || 0) >= 2, advice: "以医者身份坐堂积累医名，并多做施药义诊。" },
   { id: "merchant-master", tier: "silver", title: "货殖有道", icon: "CashBox", desc: "商贾商誉达到 55，累计本业净收一千文。", score: 175, done: () => Number(state.careerProgress?.商贾?.livelihood?.reputation || 0) >= 55 && Number(state.careerProgress?.商贾?.livelihood?.records?.earnings || 0) >= 1000, advice: "稳做零售、谨慎走远货，也可平粜积攒商誉。" },
   { id: "farmer-master", tier: "silver", title: "五谷丰登", icon: "Agriculture", desc: "农户仓粮达到 70，并完成两次修渠惠民。", score: 175, done: () => Number(state.careerProgress?.农户?.livelihood?.resource || 0) >= 70 && Number(state.careerProgress?.农户?.livelihood?.records?.publicGood || 0) >= 2, advice: "养地播种后开镰收谷，也要修渠降低灾损。" },
+  { id: "water-promise", tier: "silver", title: "同渠之约", icon: "Agriculture", desc: "在《一渠春水》中留下共修或守约的结局。", score: 160, done: () => (state.careerChapters?.completed || []).some(entry => entry.id === "spring-water" && ["一渠同春", "轮水守约"].includes(entry.outcome)), advice: "选择农户营生，翻开本业长卷，修渠时也替下游留一份水。" },
+  { id: "craft-promise", tier: "silver", title: "百工有信", icon: "Craftsman", desc: "在《百工一诺》中留下传艺或守诺的结局。", score: 160, done: () => (state.careerChapters?.completed || []).some(entry => entry.id === "workshop-promise" && ["百工传式", "一诺成器"].includes(entry.outcome)), advice: "以匠作营生开启长卷，检验材料、认下责任，再决定手艺怎样传下去。" },
   { id: "network", tier: "silver", title: "亲友满座", icon: "Relationship1", desc: "亲友记录达到 8 人。", score: 90, done: () => relationCount() >= 8, advice: "多去会友、酒楼、探亲，扩展人脉。" },
   { id: "clan-hall", tier: "silver", title: "宗祠初成", icon: "Courtyard", desc: "修建第一阶宗祠。", score: 135, done: () => Number(state.clan?.hallLevel || 0) >= 1, advice: "在宗族家谱中捐资公中，再修建宗祠。" },
   { id: "clan-branches", tier: "silver", title: "开枝散叶", icon: "FamilyIcon", desc: "宗族形成三房以上。", score: 150, done: () => (state.clan?.branches || []).length >= 3, advice: "兄弟分家、成年子女成婚后都会形成新的支房。" },
@@ -3690,6 +3766,8 @@ function heirloomActionState(item) {
   const donateReason = item?.status === "sealed" ? "先启封旧物" : Number(state?.stats.money) < Number(def?.donateCost) ? `需 ${def?.donateCost} 铜钱誊录、送交` : "";
   const benefit = item?.kind === "grain-charter" ? specialist ? "商贾经验 +45、门路 +6、商誉 +4，当地声望 +3" : "学识 +3、情商 +2，读懂互保和限价条款"
     : item?.kind === "medical-casebook" ? specialist ? "医者经验 +45、医案 +8、医名 +4" : "学识 +3、体魄 +2，学会辨认求医时应记下的病程"
+      : item?.kind === "water-register" ? specialist ? "农户经验 +45、地力 +8、乡望 +4" : "学识 +3、体魄 +2，学会依时灌溉与照料田地"
+        : item?.kind === "craft-pattern" ? specialist ? "匠作经验 +45、学识 +3，核验留样并理解每道工序" : "学识 +3、情商 +2，读懂工序、验收与守约的分寸"
       : "学识 +4、备考 +6，延续书中留下的学问";
   return {
     canOpen: !reason, reason, canUse: !reason && !useReason, useReason: reason || useReason, used,
@@ -3736,17 +3814,28 @@ function resolveHeirloom(event, choice) {
     text = `${state.name}没有把《${item.title}》当作白得的凭据，花费 ${moneyText(def.useCost)}誊整、核实，再将其中的经验用于眼前生活。`;
     if (specialist) {
       const progress = careerProgressFor();
-      changeLivelihoodMetric(progress, "readiness", item.kind === "medical-casebook" ? 8 : 6, deltas);
-      changeLivelihoodMetric(progress, "reputation", 4, deltas);
+      if (item.kind === "craft-pattern") changeStat("knowledge", 3, deltas);
+      else {
+        changeLivelihoodMetric(progress, "readiness", item.kind === "grain-charter" ? 6 : 8, deltas);
+        changeLivelihoodMetric(progress, "reputation", 4, deltas);
+      }
       text += addCareerExperience(progress, 45, deltas);
       if (item.kind === "grain-charter") {
         changeRegionalReputation(currentRegionalId(), 3, deltas);
         text += " 你把互保、限价与退赔旧约逐条向当地同行说明，门路由此有了凭信。";
-      } else text += " 你依旧案核对病程与药批，把前人的失误也编进医案；同业看见了肯求证的医者。";
+      } else if (item.kind === "water-register") text += " 你按旧簿核对水尺与各田收成，重新安排轮灌和养地；邻里愿意依有据可查的水约与你合作。";
+      else if (item.kind === "craft-pattern") text += " 你逐页核验留样与工序，把前人返工的缘由也试过一遍；这份手艺靠亲手验证，才成了自己的本领。";
+      else text += " 你依旧案核对病程与药批，把前人的失误也编进医案；同业看见了肯求证的医者。";
     } else {
       changeStat("knowledge", item.kind === "annotated-book" ? 4 : 3, deltas);
       if (item.kind === "annotated-book") { addExamPrep(6, deltas); text += " 批注成了你的读书提纲；不论是否入场应试，这份学问都留下了。"; }
-      else { changeStat(item.kind === "grain-charter" ? "eq" : "physique", 2, deltas); text += item.kind === "grain-charter" ? " 你仍做自己的营生，却学会怎样看懂互保条款、守住人情边界。" : " 你没有凭一本旧案自称名医，只学会记录病程、及时求医和照料家人。"; }
+      else {
+        changeStat(["grain-charter", "craft-pattern"].includes(item.kind) ? "eq" : "physique", 2, deltas);
+        text += item.kind === "grain-charter" ? " 你仍做自己的营生，却学会怎样看懂互保条款、守住人情边界。"
+          : item.kind === "water-register" ? " 你按农事簿照料家中田园，懂得何时引水、何时歇地，也记下与邻里轮灌的时辰。"
+            : item.kind === "craft-pattern" ? " 你仍做自己的营生，却更懂得怎样约定工期、核验成品，体谅每一道工序所需的心力。"
+              : " 你没有凭一本旧案自称名医，只学会记录病程、及时求医和照料家人。";
+      }
     }
     text += " 此物仍留在家中，下一位持有人可以继续学习；你不能重复领取所得。";
   } else if (decision === "donate") {
@@ -3756,7 +3845,8 @@ function resolveHeirloom(event, choice) {
     changeStat("virtue", 3, deltas);
     changeRegionalReputation(currentRegionalId(), 5, deltas);
     item.status = "donated";
-    text = `${state.name}花费 ${moneyText(def.donateCost)}整理《${item.title}》，把原件交给${travelDestinationByStaticId(currentRegionalId()).name}的${item.kind === "annotated-book" ? "乡学" : item.kind === "medical-casebook" ? "药坊同业" : "粮行同业"}，并留下${item.origin.name}的来源纸签。当地人从此可以据它研习；此件永久离开家门，你与后人都不能再使用或取回，家中仅保留流转记录。`;
+    const recipient = { "annotated-book": "乡学", "medical-casebook": "药坊同业", "water-register": "用水农户", "craft-pattern": "匠作同业", "grain-charter": "粮行同业" }[item.kind];
+    text = `${state.name}花费 ${moneyText(def.donateCost)}整理《${item.title}》，把原件交给${travelDestinationByStaticId(currentRegionalId()).name}的${recipient}，并留下${item.origin.name}的来源纸签。当地人从此可以据它研习；此件永久离开家门，你与后人都不能再使用或取回，家中仅保留流转记录。`;
     recordRegionalChronicle(currentRegionalId(), `旧物入乡 · ${item.title}`, text);
   } else if (decision === "seal" && item.status === "kept") {
     item.status = "sealed";
@@ -14040,7 +14130,7 @@ function buildCareerChapterEvent(active = state.careerChapters?.active) {
 }
 
 function startOrResumeCareerChapter(id = Object.values(CAREER_STORY_PACKS).find((item) => careerChapterFits(item))?.id) {
-  if (!state.career || state.dead || state.prisonYears > 0 || state.age < 15 || state.currentEvent || state.eventResult) return;
+  if (yearAdvanceBlockReason() || !state.career || state.prisonYears > 0 || state.age < 15) return;
   state.careerChapters = normalizeCareerChapters(state.careerChapters);
   const pack = CAREER_STORY_PACKS[id];
   if (!careerChapterFits(pack)) return;
@@ -14116,16 +14206,16 @@ function completeLivelihoodChapter(active, deltas) {
   if (ending.world) applyWorldChanges(ending.world, deltas);
   const levelText = addCareerExperience(progress, ending.experience || 0, deltas);
   progress.records.cases += 1;
-  if (["粮路长明", "同舟商约", "医案传灯", "一巷安灯", "认过重开"].includes(ending.title)) progress.records.successes += 1;
+  if (ending.success === true || ["粮路长明", "同舟商约", "医案传灯", "一巷安灯", "认过重开"].includes(ending.title)) progress.records.successes += 1;
   const actor = careerChapterActor(active);
   if (actor) rememberNpcMoment(actor, "本业长线", `${pack.title}最后走向“${ending.title}”。${ending.text}`, ending.actorAffection || 0);
   const legacyType = ending.title === "粮路长明" ? "granary" : ending.title === "一巷安灯" ? "dispensary" : "";
   const legacyText = legacyType ? establishRegionalLegacy(legacyType, active.regionId) : "";
-  const heirloomKind = ["粮路长明", "同舟商约"].includes(ending.title) ? "grain-charter" : ["医案传灯", "一巷安灯"].includes(ending.title) ? "medical-casebook" : "";
+  const heirloomKind = ending.heirloom || (["粮路长明", "同舟商约"].includes(ending.title) ? "grain-charter" : ["医案传灯", "一巷安灯"].includes(ending.title) ? "medical-casebook" : "");
   const heirloomText = heirloomKind ? grantHeirloom(heirloomKind, { name: active.originName || state.name, generation: state.lineage.generation, personId: state.heirlooms.holderId, sourceId: `career:${active.id}:${state.heirlooms.holderId}`, regionId: active.regionId, year: state.year, summary: `${active.originName || state.name}完成“${pack.title}”，走向“${ending.title}”，将亲历的选择、代价与旧约整理成册，作为这件旧物的第一位持有者。` }, { alreadyUsed: true }) : "";
   const text = `${ending.text}${levelText}${legacyText ? `\n\n${legacyText}` : ""}${heirloomText ? `\n\n${heirloomText}` : ""}`;
   recordCareerChapter(active, ending.title, text);
-  return { title: ending.title, text, followup: `“${pack.title}”已收入${state.career.name}履历；商誉、医名、地方变化与同业的记忆都已实际结算。` };
+  return { title: ending.title, text, followup: `“${pack.title}”已收入${state.career.name}履历；本业所得、地方变化与同业的记忆都已实际结算。` };
 }
 
 function completeCareerChapter(active, deltas) {
@@ -14175,6 +14265,7 @@ function completeCareerChapter(active, deltas) {
 }
 
 function resolveCareerChapter(event, choice) {
+  if (!state || state.currentEvent !== event || state.eventResult || state.exam?.current || state.pendingTravel || state.pendingCaravan || state.pendingActivity || state.poetryRound || state.pendingSurprise || (state.mystery?.active && view.page === "mystery")) return;
   state.careerChapters = normalizeCareerChapters(state.careerChapters);
   const active = state.careerChapters.active;
   const pack = active && CAREER_STORY_PACKS[active.id];
@@ -15732,6 +15823,7 @@ function centerContent() {
   if (state.poetryRound) return poetryView();
   if (view.page === "home") return homeView();
   if (view.page === "heirlooms") return heirloomsView();
+  if (view.page === "stories") return careerStoriesView();
   if (view.page === "place") return placeView();
   if (view.page === "assets") return assetsView();
   if (view.page === "relations") return relationsView();
@@ -16717,6 +16809,7 @@ function homeView() {
         ${homeActionButton("estate", "整理家业", "成丁后清点账册与器物。", "House", blocked || state.age < 15)}
       </section>
       ${heirloomDoor()}
+      ${careerStoriesDoor()}
       <div class="main-actions"><button class="ghost-btn" data-action="back-main">返回</button></div>
     </article>`;
 }
@@ -16732,7 +16825,44 @@ function homeActionButton(action, label, note, iconName, disabled) {
 
 function heirloomDoor() {
   const count = heirloomItems().filter(item => item.status !== "donated").length;
-  return `<button class="heirloom-door" data-page="heirlooms">${icon("MainBook", "家传之物")}<span><strong>家传之物${count ? ` · ${count}件` : ""}</strong><small>${count ? "旧物有来历，后人有自己的选择" : "船契、医案与故人旧书，留给后人接续"}</small></span><b aria-hidden="true">→</b></button>`;
+  return `<button class="heirloom-door" data-page="heirlooms">${icon("MainBook", "家传之物")}<span><strong>家传之物${count ? ` · ${count}件` : ""}</strong><small>${count ? "旧物有来历，后人有自己的选择" : "船契、医案、农事与匠作旧册，留给后人接续"}</small></span><b aria-hidden="true">→</b></button>`;
+}
+
+function careerStoriesDoor() {
+  const active = state.careerChapters?.active;
+  const pack = active && CAREER_STORY_PACKS[active.id];
+  return `<button class="heirloom-door story-shelf-door" data-page="stories">${icon("MainBook", "本业长卷")}<span><strong>本业长卷 · ${Object.keys(CAREER_STORY_PACKS).length}卷人生</strong><small>${escapeHtml(pack ? `正在续写《${pack.title}》 · 第${active.stage + 1}幕` : "从田畴到作坊，一次选择，数年回声")}</small></span><b aria-hidden="true">→</b></button>`;
+}
+
+function careerStoriesView() {
+  const chapters = normalizeCareerChapters(state.careerChapters);
+  const packs = Object.values(CAREER_STORY_PACKS);
+  const finished = new Set(chapters.completed.map(entry => entry.id)).size;
+  const rank = pack => chapters.active?.id === pack.id ? 0 : careerChapterFits(pack) ? 1 : ["spring-water", "workshop-promise"].includes(pack.id) ? 2 : 3;
+  return `<article class="play-card story-library">
+    <header class="story-library-header"><p class="eyebrow">本业长卷 · 各有来路</p><h2>把日子，过成一卷故事</h2><p>一渠水能灌活几家田，一件器物能守住几分信。你这一年的决定，会在往后的日子里重新找上门。</p><div class="story-library-counts"><span><b>${packs.length}</b>卷可遇</span><span><b>${finished}</b>卷已记入命册</span><span>每卷四幕 · 每幕相隔一年</span></div></header>
+    <p class="story-library-tip">先选一门营生，再开启相应故事。翻阅本页不耗年；开始后，备考、持家或流年推进都会带来下一幕。此前的选择与本钱会影响后续门路。</p>
+    <div class="story-library-grid">${packs.slice().sort((a, b) => rank(a) - rank(b)).map(pack => careerStoryCard(pack, chapters)).join("")}</div>
+    <div class="main-actions"><button class="ghost-btn" data-action="back-main">回到流年</button><button class="secondary-btn" data-tab="history">翻看我的命册</button></div>
+  </article>`;
+}
+
+function careerStoryCard(pack, chapters) {
+  const active = chapters.active?.id === pack.id ? chapters.active : null;
+  const record = chapters.completed.find(entry => entry.id === pack.id);
+  const fits = careerChapterFits(pack, active);
+  const role = { official: "官府职任", merchant: "商贾", medicine: "医者", farmer: "农户", craft: "木匠、玉匠、铁匠等匠作营生" }[pack.careerKind] || "对应营生";
+  const art = eventSceneArt({ kind: "careerChapter", chapterId: pack.id });
+  const reason = record ? "这卷经历已留下结局，不能重复领取报酬。" : state.age < 15 ? "十五岁后选择对应营生，即可开始。" : !fits ? `需在营生页选择${role}。${state.career ? "当前已有营生，改业需先辞去旧职。" : ""}` : state.prisonYears > 0 ? "出狱后可以再续此卷。" : chapters.active && !active ? "先收束正在续写的那一卷。" : yearAdvanceBlockReason();
+  const wait = active ? Math.max(0, active.dueYear - state.year) : 0;
+  const canStart = !reason && !wait;
+  const status = record ? `已落卷 · ${record.outcome}` : active ? `正在续写 · 第${active.stage + 1}/${pack.stages.length}幕` : fits ? "今生可启卷" : "待你入此业";
+  return `<section class="story-book ${active ? "is-active" : ""}" data-story-id="${escapeHtml(pack.id)}">
+    <figure><img src="${escapeHtml(art.src)}" alt="" width="1600" height="900" loading="lazy" decoding="async"><figcaption>${escapeHtml(role)}<span>${pack.stages.length}幕</span></figcaption></figure>
+    <div class="story-book-copy"><small class="story-book-status">${escapeHtml(status)}</small><h3>${escapeHtml(pack.title)}</h3><p>${escapeHtml(pack.summary)}</p><details class="story-book-contents"><summary>翻看卷目</summary><ol>${pack.stages.map((stage, index) => `<li ${active?.stage === index ? 'aria-current="step"' : ""}><span>${String(index + 1).padStart(2, "0")}</span>${escapeHtml(stage.title)}</li>`).join("")}</ol></details>
+    <p class="story-book-note">${escapeHtml(reason || (wait ? `还需${wait}年进入“${pack.stages[active.stage].title}”，旧选择已留在命册。` : active ? `“${pack.stages[active.stage].title}”已到，由你续写。` : "从第一幕开始，你的每项取舍都会记下。"))}</p>
+    ${record ? '<button class="ghost-btn" data-tab="history">回看当年抉择</button>' : !fits ? '<button class="secondary-btn" data-tab="career">去营生页择业</button>' : `<button class="primary-btn" data-start-chapter="${escapeHtml(pack.id)}" ${canStart ? "" : "disabled"}>${active ? (wait ? "来年再续" : "续写此章") : "从此启卷"}</button>`}</div>
+  </section>`;
 }
 
 function heirloomsView() {
@@ -16740,7 +16870,7 @@ function heirloomsView() {
   const kept = items.filter(item => item.status !== "donated").length;
   return `<article class="play-card heirloom-cabinet">
     <header><p class="eyebrow">家门旧物 · 一代接一代</p><h2>家传之物</h2><p>一纸船契，一册医案。留给后人的，不只是一件旧物，还有你这一生的选择。</p></header>
-    ${items.length ? `<div class="heirloom-counts"><span><b>${kept}</b>件仍在家中</span><span><b>${items.length - kept}</b>件已赠予乡里</span></div><div class="heirloom-grid">${items.map(heirloomCard).join("")}</div>` : `<section class="heirloom-empty">${icon("MainBook", "尚待落笔")}<h3>旧物尚待落笔</h3><p>守住一条粮路，留下可传的医案，或在旧书缘中收下故人的批注。你的经历，会成为后人打开的第一卷。</p><p>获得的旧物会保留来历；传给家人后，可以续用、转赠，或封存。</p></section>`}
+    ${items.length ? `<div class="heirloom-counts"><span><b>${kept}</b>件仍在家中</span><span><b>${items.length - kept}</b>件已赠予乡里</span></div><div class="heirloom-grid">${items.map(heirloomCard).join("")}</div>` : `<section class="heirloom-empty">${icon("MainBook", "尚待落笔")}<h3>旧物尚待落笔</h3><p>守住粮路、记录医案、立下分水旧约、整理百工留样，或收下故人的批注。你的经历，会成为后人打开的第一卷。</p><p>获得的旧物会保留来历；传给家人后，可以续用、转赠，或封存。</p><button class="text-btn" data-page="stories">翻看本业长卷 →</button></section>`}
     <div class="main-actions"><button class="ghost-btn" data-page="home">回到家中</button><button class="secondary-btn" data-page="backpack">查看行囊</button></div>
   </article>`;
 }
@@ -17501,6 +17631,7 @@ function menuView() {
       <h2>设置</h2>
       <p>保存、导出或重新开始当前人生。</p>
       <div class="button-list">
+        <button class="list-btn" data-page="stories">${icon("MainBook", "本业长卷")}<span>本业长卷<small>翻阅官场、商路、医案、农事与匠作故事，寻找今生的下一卷。</small></span></button>
         <button class="list-btn" data-page="codex">${icon("MainBook", "图鉴")}<span>成就图鉴<small>查看铜银金成就、人生阶段与本局评分。</small></span></button>
         <button class="list-btn" data-action="open-save-manager">${icon("MenuButton0", "存档")}<span>存档管理<small>多槽位保存、读取与导入导出。</small></span></button>
         <button class="list-btn" data-action="export">${icon("MenuButton1", "导出")}<span>导出存档<small>下载当前人生 JSON。</small></span></button>
@@ -18848,7 +18979,7 @@ function palaceExamView(stage, current) {
 }
 
 function eventSceneArt(event = {}) {
-  const chapterScene = event.kind === "careerChapter" ? ({ "grain-road": "grainRoad", "epidemic-dispensary": "dispensary", "granary-ledger": "official" })[event.chapterId] : "";
+  const chapterScene = event.kind === "careerChapter" ? ({ "grain-road": "grainRoad", "epidemic-dispensary": "dispensary", "granary-ledger": "official", "spring-water": "springWater", "workshop-promise": "workshopPromise" })[event.chapterId] : "";
   let key = chapterScene || EVENT_KIND_SCENES[event.kind] || EVENT_ACTIVITY_SCENES[state.pendingActivity?.id];
   if (!key) {
     const text = `${event.title || ""}${event.content || ""}${event.history || ""}`;
@@ -19220,6 +19351,7 @@ function careerPanel() {
       ${state.career && livelihoodDefinition() ? livelihoodCareerSummary(progress) : ""}
       ${state.career && !officialCareer ? careerPracticeSummary(progress) : ""}
       ${officialCareer ? officialDeskPanel() : ""}
+      ${careerStoriesDoor()}
       ${apprenticePanel()}
       ${state.age < 15 ? `<p class="empty-note">未满 15 岁，暂不能外出营生。</p>` : ""}
       ${state.prisonYears > 0 ? `<p class="empty-note">刑期未满，暂不能谋职。</p>` : ""}
@@ -19675,7 +19807,7 @@ app.addEventListener("click", (event) => {
     view.page = button.dataset.page;
     view.placeId = button.dataset.place === "activities" ? "" : button.dataset.place || "";
     render();
-    if (["regions", "heirlooms"].includes(button.dataset.page)) focusStoryContent();
+    if (["regions", "heirlooms", "stories"].includes(button.dataset.page)) focusStoryContent();
     return;
   }
   if (button.dataset.place) {
@@ -19785,6 +19917,11 @@ app.addEventListener("click", (event) => {
   if (button.dataset.heirloomOpen) {
     openHeirloom(button.dataset.heirloomOpen);
     if (state.currentEvent?.kind === "heirloom") focusStoryContent();
+    return;
+  }
+  if (button.dataset.startChapter) {
+    startOrResumeCareerChapter(button.dataset.startChapter);
+    if (state.currentEvent?.kind === "careerChapter") focusStoryContent();
     return;
   }
   if (button.dataset.careerAction) {
