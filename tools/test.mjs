@@ -95,7 +95,7 @@ try {
     };
   });
   assert.deepEqual(eventIllustrations.mapped, eventIllustrations.routes, "事件类型没有路由到对应插画");
-  assert.equal(eventIllustrations.assetCount, 13, "流年事件插画数量不完整");
+  assert.equal(eventIllustrations.assetCount, 15, "流年场景配置不完整");
   assert.equal(eventIllustrations.rendered, true, "流年事件卡没有渲染插画");
   assert.equal(eventIllustrations.engineVersion, "pixi-8.19.0", "PixiJS 动态画卷引擎没有初始化");
   assert.equal(eventIllustrations.pixiVersion, "8.19.0", "PixiJS 运行时版本不正确");
@@ -644,7 +644,7 @@ try {
     const expectedActions = {
       医者: ["medicine:prepare", "medicine:clinic", "medicine:housecall", "medicine:charity", "case:chapter", "story:advanced", "resign"],
       商贾: ["merchant:restock", "merchant:retail", "merchant:venture", "merchant:fair", "case:chapter", "story:advanced", "resign"],
-      农户: ["farmer:tend", "farmer:sow", "farmer:harvest", "farmer:irrigate", "story:advanced", "resign"],
+      农户: ["farmer:tend", "farmer:sow", "farmer:harvest", "farmer:irrigate", "case:chapter", "story:advanced", "resign"],
     };
     const runs = [];
     state.age = 30;

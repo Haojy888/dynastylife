@@ -7114,6 +7114,42 @@ dialog.game-overlay::backdrop { background: #152b26a8; backdrop-filter: blur(4px
 .legacy-memory article small { display: block; font-size: 11px; line-height: 1.7; color: #66705d; }
 .legacy-memory > button { font-size: 11px; padding: 0; min-height: 40px; margin-top: 4px; }
 
+.story-shelf-door { background: #f0e9da; border-color: #cec0a6; }
+.story-shelf-door small { color: #796647; }
+.story-library-header { border-bottom: 1px solid var(--line); padding: 6px 0 24px; }
+.story-library-header h2 { font-family: "STSong", "SimSun", serif; font-weight: 400; font-size: clamp(27px, 3vw, 40px); line-height: 1.5; margin: 12px 0; }
+.story-library-header > p:last-of-type { max-width: 45em; font-size: 14px; line-height: 1.9; color: var(--muted); }
+.story-library-counts { display: flex; flex-wrap: wrap; gap: 12px 24px; margin-top: 22px; color: #756b54; font-size: 12px; align-items: baseline; }
+.story-library-counts b { font-family: "STSong", "SimSun", serif; font-size: 25px; color: var(--ink); font-weight: 400; margin-right: 6px; }
+.story-library-tip { font-size: 12px; line-height: 1.9; color: #74674e; margin: 19px 0 23px; }
+.story-library-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr)); gap: 20px; align-items: start; }
+.story-book { border: 1px solid #cfc4af; background: #fbf7ed; border-radius: 5px; overflow: hidden; min-width: 0; }
+.story-book.is-active { border-color: #6f8a6b; box-shadow: 0 0 0 1px #6f8a6b33; }
+.story-book > figure { position: relative; height: 160px; margin: 0; overflow: hidden; background: #686f56; }
+.story-book > figure > img { width: 100%; height: 100%; object-fit: cover; }
+.story-book figcaption { display: flex; justify-content: space-between; align-items: end; gap: 15px; position: absolute; inset: 0; padding: 17px; background: linear-gradient(transparent 45%, #182b22d9); color: #f6eddb; font-size: 11px; }
+.story-book figcaption > span { white-space: nowrap; font-size: 12px; }
+.story-book-copy { padding: 20px; }
+.story-book-status { font-size: 11px; color: #8c6345; line-height: 1.8; }
+.story-book.is-active .story-book-status { color: #426446; }
+.story-book h3 { font-family: "STSong", "SimSun", serif; font-weight: 400; font-size: 27px; letter-spacing: .08em; margin: 7px 0 12px; }
+.story-book-copy > p { font-size: 13px; line-height: 1.85; color: #65705c; }
+.story-book-contents { border-block: 1px solid #8270542e; margin-top: 17px; }
+.story-book-contents > summary { min-height: 42px; cursor: pointer; padding: 13px 0; font-size: 12px; color: #796b50; }
+.story-book-contents ol { list-style: none; padding: 0 0 6px; margin: 0; }
+.story-book-contents li { display: flex; gap: 12px; margin: 10px 0; line-height: 1.8; font-size: 12px; color: #6c725f; }
+.story-book-contents li > span { color: #9b8b6e; font-variant-numeric: tabular-nums; }
+.story-book-contents [aria-current="step"] { color: #315d46; font-weight: 600; }
+.story-book-copy > .story-book-note { font-size: 11px; line-height: 1.85; color: #7a6b50; margin-top: 17px; min-height: 3.7em; }
+.story-book-copy > button { width: 100%; min-height: 43px; margin-top: 9px; font-size: 13px; }
+@media (max-width: 760px) {
+  .story-library { padding: 20px 16px; }
+  .story-library-grid { gap: 16px; }
+  .story-library-header { padding-bottom: 18px; }
+  .story-book-copy { padding: 18px; }
+  .story-book > figure { height: 154px; }
+}
+
 .heirloom-cabinet > header { padding: 6px 0 22px; border-bottom: 1px solid var(--line); }
 .heirloom-cabinet > header h2 { margin: 10px 0; font-family: "STSong", "SimSun", serif; letter-spacing: .1em; font-size: 32px; }
 .heirloom-cabinet > header > p:last-child { color: var(--muted); line-height: 1.85; font-size: 13px; max-width: 44em; }
