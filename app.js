@@ -4407,7 +4407,7 @@ function careerChapterRouteKeys(id) {
 
 function normalizeCareerChapters(source) {
   const item = source && typeof source === "object" ? source : {};
-  const active = item.active && CAREER_STORY_PACKS[item.active.id] ? item.active : null;
+  const active = item.active && Object.hasOwn(CAREER_STORY_PACKS, item.active.id) ? item.active : null;
   return {
     active: active ? {
       id: String(active.id),
@@ -4430,7 +4430,7 @@ function normalizeCareerChapters(source) {
       })).slice(-12) : [],
       startedYear: Math.max(0, Math.round(Number(active.startedYear) || 0)),
     } : null,
-    completed: Array.isArray(item.completed) ? item.completed.filter((entry) => entry && CAREER_STORY_PACKS[entry.id]).map((entry) => ({
+    completed: Array.isArray(item.completed) ? item.completed.filter((entry) => entry && Object.hasOwn(CAREER_STORY_PACKS, entry.id)).map((entry) => ({
       id: String(entry.id),
       outcome: String(entry.outcome || "案卷留痕"),
       careerName: String(entry.careerName || ""),
@@ -4908,8 +4908,39 @@ function normalizeLineage(lineage, familyName) {
   return {
     generation: Math.max(1, Math.round(Number(source.generation) || 1)),
     familyName: source.familyName || familyName,
-    ancestors: Array.isArray(source.ancestors) ? source.ancestors.slice(0, 12) : [],
+    ancestors: Array.isArray(source.ancestors) ? source.ancestors.filter(person => person && typeof person === "object" && typeof person.name === "string" && person.name).slice(0, 12).map(normalizeAncestorRecord) : [],
   };
+}
+
+function normalizeAncestorRecord(source) {
+  const number = (value, fallback = 0) => value != null && Number.isFinite(Number(value)) ? Math.max(0, Math.round(Number(value))) : fallback;
+  return {
+    name: String(source.name || "姓名未详"),
+    personId: String(source.personId || ""),
+    generation: number(source.generation, null) || null,
+    age: number(source.age, null),
+    reason: String(source.reason || ""), score: number(source.score), grade: String(source.grade || ""),
+    exam: String(source.exam || ""), assets: number(source.assets), money: number(source.money),
+    career: String(source.career || ""), location: String(source.location || ""), era: String(source.era || ""),
+    chapters: source.chapters && typeof source.chapters === "object" && !Array.isArray(source.chapters) ? normalizeCareerChapters(source.chapters) : null,
+    heirlooms: (Array.isArray(source.heirlooms) ? source.heirlooms : []).filter(item => item && Object.hasOwn(HEIRLOOM_DEFS, item.kind)).slice(0, 20).map(item => ({
+      kind: item.kind, title: HEIRLOOM_DEFS[item.kind].title, originName: String(item.originName || "来历未详"),
+      status: ["sealed", "donated"].includes(item.status) ? item.status : "kept",
+    })),
+  };
+}
+
+function currentLifeRecord() {
+  const score = lifeScore();
+  return normalizeAncestorRecord({
+    name: state.name, personId: state.heirlooms?.holderId, generation: state.lineage?.generation, age: state.age,
+    reason: state.dead ? state.deathReason || "命数已尽" : "这一生仍在续写", score, grade: lifeGrade(score),
+    exam: state.exam.rank >= 0 ? EXAM_TITLES[state.exam.rank] : "白身",
+    assets: state.assets.length, money: state.stats.money, career: currentCareerName() || "",
+    location: state.location, era: state.dynasty ? `${state.dynasty.eraName}${state.dynasty.reignYear}年` : "",
+    chapters: state.careerChapters,
+    heirlooms: heirloomItems().map(item => ({ kind: item.kind, status: item.status, originName: item.origin.name })),
+  });
 }
 
 function createClanState(familyName = "李") {
@@ -13567,16 +13598,7 @@ function inheritFromChild(id) {
   const parentFather = heirParent?.gender === "male" ? heirParent.name : heirParent?.spouse?.name || `${familyName}父`;
   const parentMother = heirParent?.gender === "female" ? heirParent.name : heirParent?.spouse?.name || `${familyName}母`;
   const ancestors = [
-    {
-      name: oldName,
-      age: state.age,
-      reason: state.deathReason || "命数已尽",
-      score: oldScore,
-      grade: oldGrade,
-      exam: state.exam.rank >= 0 ? EXAM_TITLES[state.exam.rank] : "白身",
-      assets: (state.assets || []).length,
-      money: Math.round(state.stats.money || 0),
-    },
+    currentLifeRecord(),
     ...((state.lineage?.ancestors || []).slice(0, 11)),
   ];
   const heirAge = Math.max(0, Math.round(Number(heir.age) || 0));
@@ -13703,16 +13725,7 @@ function inheritFromSpouse(heir) {
   const inheritedContacts = carryStoryContactsAcrossInheritance(inheritedThreads, heirAge, old.year);
   const vocation = heirVocation(heir, heirAge);
   const children = (old.family.children || []).map((child) => normalizeChild({ ...child, otherParent: child.otherParent || oldName }, child.name?.slice(0, 1) || oldName.slice(0, 1)));
-  const ancestors = [{
-    name: oldName,
-    age: old.age,
-    reason: old.deathReason || "命数已尽",
-    score: oldScore,
-    grade: oldGrade,
-    exam: old.exam.rank >= 0 ? EXAM_TITLES[old.exam.rank] : "白身",
-    assets: (old.assets || []).length,
-    money: Math.round(old.stats.money || 0),
-  }, ...((old.lineage?.ancestors || []).slice(0, 11))];
+  const ancestors = [currentLifeRecord(), ...((old.lineage?.ancestors || []).slice(0, 11))];
   const spouseMemory = normalizePartner({ name: oldName, relation: "故配", gender: "male", age: old.age, physique: 0, alive: false, affection: old.family.spouseAffection || 78 }, oldName.slice(0, 1), "故配", "former-spouse");
   state = normalizeState({
     name: heir.name,
@@ -14612,7 +14625,7 @@ function careerLockedReason(career) {
 }
 
 function canOpenExam() {
-  return state.gender === "male" && !state.dead && !state.currentEvent && !state.eventResult && !state.pendingCaravan && state.prisonYears <= 0 && state.age >= MAIN_EXAM_MIN_AGE && !examTakenThisYear() && state.exam.rank < EXAM_STAGES.length - 1 && imperialQuestionPool().length > 0;
+  return !!state && state.gender === "male" && !yearAdvanceBlockReason() && state.prisonYears <= 0 && state.age >= MAIN_EXAM_MIN_AGE && !examTakenThisYear() && state.exam.rank < EXAM_STAGES.length - 1 && imperialQuestionPool().length > 0;
 }
 
 function examStatusNote() {
@@ -14630,7 +14643,7 @@ function examStatusNote() {
 }
 
 function canOpenExtraExam(type) {
-  if (state.dead || state.currentEvent || state.eventResult || state.pendingCaravan || state.prisonYears > 0 || state.age < MAIN_EXAM_MIN_AGE || examTakenThisYear()) return false;
+  if (yearAdvanceBlockReason() || state.prisonYears > 0 || state.age < MAIN_EXAM_MIN_AGE || examTakenThisYear()) return false;
   const femaleAssessment = type === "female" || type?.startsWith?.("female-");
   if (femaleAssessment && state.gender !== "female") return false;
   if (!femaleAssessment && state.gender === "female") return false;
@@ -15574,6 +15587,7 @@ function renderGame() {
     && !state.eventResult
     && !state.pendingTravel
     && !state.pendingCaravan
+    && !state.exam?.current
     && !state.poetryRound;
   const mobilePanelMode = mobilePanelAvailable && view.mobileSection === "panel";
   return `
@@ -15812,13 +15826,18 @@ function achievementToast() {
 }
 
 function centerContent() {
-  if (state.dead) return view.page === "save-manager" ? saveManagerView() : deathView();
+  if (view.page === "save-manager") return pausedLifeNotice() + saveManagerView();
+  if (view.page === "menu") return pausedLifeNotice() + menuView();
+  if (view.page === "annals") return pausedLifeNotice() + familyAnnalsView();
+  if (view.page === "history") return pausedLifeNotice() + `<article class="play-card history-reading">${historyPanel()}<button class="ghost-btn" data-action="back-main">回到这一生</button></article>`;
+  if (state.dead) return deathView();
   // 奇案仅在明确进入办案页时全屏，不再永久挡住「下一年」
   if (state.mystery?.active && view.page === "mystery") return mysteryCaseView();
   if (state.pendingTravel) return travelRunView();
   if (state.pendingCaravan) return caravanRunView();
   if (state.eventResult) return eventResultView();
   if (state.currentEvent) return eventView(state.currentEvent);
+  if (state.exam?.current) return examView();
   // 文斗是一个需要明确作答或弃局的流程，避免从顶部导航离开后留下幽灵局面。
   if (state.poetryRound) return poetryView();
   if (view.page === "home") return homeView();
@@ -15830,8 +15849,6 @@ function centerContent() {
   if (view.page === "travel") return travelView();
   if (view.page === "backpack") return backpackView();
   if (view.page === "ledger") return ledgerView();
-  if (view.page === "menu") return menuView();
-  if (view.page === "save-manager") return saveManagerView();
   if (view.page === "poetry") return poetryView();
   if (view.page === "matchmaker") return matchmakerView();
   if (view.page === "codex") return codexView();
@@ -15849,6 +15866,11 @@ function centerContent() {
   if (view.page === "jianghu") return jianghuView();
   if (view.page === "secrets") return secretsView();
   return overviewView();
+}
+
+function pausedLifeNotice() {
+  const label = state.dead ? "回到身后事" : state.pendingTravel ? "接着走完旅途" : state.pendingCaravan ? "回到押镖途中" : state.eventResult ? "继续读完结果" : state.currentEvent ? "回到待处理事件" : state.exam?.current ? "继续未完的试卷" : state.poetryRound ? "回到诗会" : "";
+  return label ? `<aside class="paused-life-notice"><span>${state.dead ? "这一生的记录仍可翻阅，家业等待承接。" : "眼前的进度已保留，翻阅不会推进流年。"}</span><button class="secondary-btn" data-action="back-main">${label} →</button></aside>` : "";
 }
 
 function secretLineNoticeCount() {
@@ -16107,9 +16129,9 @@ function clanView() {
     </article>
 
     <section class="genealogy-section">
-      <div class="section-title"><h2>族谱世系</h2><span>上溯 ${ancestors.length} 代记名 · 下见 ${descendants.length} 名孙辈</span></div>
+      <div class="section-title"><h2>族谱世系</h2><span>已录 ${ancestors.length} 位前人 · 下见 ${descendants.length} 名孙辈</span></div>
       <div class="genealogy-tree">
-        ${ancestors.length ? `<div class="genealogy-level ancestors"><small>先人</small>${ancestors.slice(0, 4).map((person) => clanTreeNode({ ...person, relation: "先祖", alive: false })).join("")}</div>` : ""}
+        ${ancestors.length ? `<div class="genealogy-level ancestors"><small>先人</small>${ancestors.slice(0, 4).map((person) => clanTreeNode({ ...person, relation: "先任主事", alive: false })).join("")}</div>` : ""}
         <div class="genealogy-level parents"><small>尊亲</small>${parents.map((person) => clanTreeNode(person)).join("") || `<span class="empty-note">尊亲名讳未录</span>`}</div>
         <div class="genealogy-level current"><small>本代</small>${clanTreeNode({ id: "player", name: state.name, relation: "主事人", age: state.age, alive: !state.dead })}${partners.map((person) => clanTreeNode(person, "配偶")).join("")}</div>
         ${children.length ? `<div class="genealogy-level children"><small>子女与姻亲</small>${children.map((child) => `${clanTreeNode(child)}${child.spouse ? clanTreeNode(child.spouse) : ""}`).join("")}</div>` : ""}
@@ -16117,6 +16139,7 @@ function clanView() {
       </div>
     </section>
 
+    ${familyAnnalsDoor()}
     <section class="clan-management-grid">
       <article class="clan-hall-card">
         <span>香火中枢</span><h3>宗祠 ${clan.hallLevel}/3 阶</h3>
@@ -16810,6 +16833,7 @@ function homeView() {
       </section>
       ${heirloomDoor()}
       ${careerStoriesDoor()}
+      ${familyAnnalsDoor()}
       <div class="main-actions"><button class="ghost-btn" data-action="back-main">返回</button></div>
     </article>`;
 }
@@ -16832,6 +16856,39 @@ function careerStoriesDoor() {
   const active = state.careerChapters?.active;
   const pack = active && CAREER_STORY_PACKS[active.id];
   return `<button class="heirloom-door story-shelf-door" data-page="stories">${icon("MainBook", "本业长卷")}<span><strong>本业长卷 · ${Object.keys(CAREER_STORY_PACKS).length}卷人生</strong><small>${escapeHtml(pack ? `正在续写《${pack.title}》 · 第${active.stage + 1}幕` : "从田畴到作坊，一次选择，数年回声")}</small></span><b aria-hidden="true">→</b></button>`;
+}
+
+function familyAnnalsDoor() {
+  const count = state.lineage?.ancestors?.length || 0;
+  return `<button class="heirloom-door family-annals-door" data-page="annals">${icon("FamilyIcon", "家族史册")}<span><strong>家族史册${count ? ` · 已录${count}位前人` : ""}</strong><small>留住每一位主事人的长卷、旧物与未竟之事</small></span><b aria-hidden="true">→</b></button>`;
+}
+
+function familyAnnalsView() {
+  const ancestors = normalizeLineage(state.lineage, state.name.slice(0, 1)).ancestors;
+  return `<article class="play-card family-annals"><header class="annals-heading"><p class="eyebrow">家族史册 · 人各有一生</p><h2>一人一生，代代有回声</h2><p>田契可以传下去，做过的选择也值得留下。这里按主事人的姓名收录人生，夫妻承业仍各有一卷。</p></header>
+    <div class="annals-counts"><span><b>${ancestors.length}</b>位前人已收卷</span><span>本代 · 第${state.lineage.generation}代</span></div>
+    ${familyLifeCard(currentLifeRecord(), true)}
+    ${ancestors.length ? `<section class="annals-ancestors"><h3>往世 · 从近到远</h3>${ancestors.map(person => familyLifeCard(person)).join("")}</section>` : '<p class="annals-empty">第一卷正在你手中。由子女、孙辈或配偶承接时，本人的已结长卷、未竟章节和旧物来源会收入此册。</p>'}
+    <p class="annals-footnote">保留最近十二位前人的记录。旧存档没有记下的职业经历与辈分会留白；史册仅供回看，不重发旧奖励。</p>
+    <div class="main-actions"><button class="ghost-btn" data-action="back-main">回到这一生</button><button class="secondary-btn" data-page="history">翻阅本人的命册</button></div></article>`;
+}
+
+function familyLifeCard(person, current = false) {
+  const chapters = person.chapters;
+  const active = chapters?.active;
+  const completed = chapters?.completed || [];
+  return `<details class="annals-life ${current ? "is-current" : ""}" ${current ? "open" : ""}><summary><span class="annals-mark" aria-hidden="true">${current ? "今" : "昔"}</span><span><small>${current ? (state.dead ? "本人生平 · 已落幕" : "本人生平 · 续写中") : person.generation ? `第${person.generation}代主事人` : "旧谱记名 · 辈分未录"}</small><strong>${escapeHtml(person.name)}</strong><em>${person.age == null ? "享年未录" : `${current && !state.dead ? "行至" : "享年"}${person.age}岁`}${person.career ? ` · ${escapeHtml(person.career)}` : ""}</em></span><b aria-hidden="true">＋</b></summary>
+    <div class="annals-life-body"><p class="annals-life-note">${escapeHtml([person.era, person.location, person.reason].filter(Boolean).join(" · ") || "旧谱只留下姓名与家业，未详录这一生的起落。")}</p>
+    <div class="annals-facts"><span>功名 · ${escapeHtml(person.exam || "未录")}</span><span>家产 · ${person.assets}处</span><span>命评 · ${escapeHtml(person.grade || "未录")} ${person.score}分</span></div>
+    ${completed.length ? `<section class="annals-chapters"><h4>已落卷的选择</h4>${completed.map(chapter => annalsChapterCard(chapter)).join("")}</section>` : `<p class="empty-note">${chapters ? "这一生尚无已结的本业长卷。" : "旧存档未记录本人的职业长卷，保留原有记名。"}</p>`}
+    ${active ? `<section class="annals-unfinished"><h4>${current && !state.dead ? "仍在续写" : "未竟之卷"}</h4><strong>${escapeHtml(CAREER_STORY_PACKS[active.id].title)} · 第${active.stage + 1}幕</strong><p>${current && !state.dead ? "尚待你作出下一项选择。" : `止于“${escapeHtml(CAREER_STORY_PACKS[active.id].stages[active.stage].title)}”；后人可有自己的人生，这一卷不补写结局。`}</p>${active.history.length ? careerChoiceRecord(active.history) : ""}</section>` : ""}
+    ${person.heirlooms.length ? `<section class="annals-heirlooms"><h4>这一生留下的旧物记录</h4>${person.heirlooms.map(item => `<p><strong>${escapeHtml(item.title)}</strong><span>原主 · ${escapeHtml(item.originName)} · ${{ kept: "家中留存", sealed: "封存待后人", donated: "已赠乡里" }[item.status]}</span></p>`).join("")}</section>` : ""}
+    </div></details>`;
+}
+
+function annalsChapterCard(chapter) {
+  const pack = CAREER_STORY_PACKS[chapter.id];
+  return `<details class="annals-chapter"><summary><span>${escapeHtml(pack.title)}</span><b>${escapeHtml(chapter.outcome)}</b><small>${chapter.year}岁落卷 · ${chapter.history.length}次抉择</small></summary><p>${escapeHtml(chapter.summary || "当年的结局已收入履历。")}</p>${chapter.history.length ? careerChoiceRecord(chapter.history) : ""}</details>`;
 }
 
 function careerStoriesView() {
@@ -17631,6 +17688,7 @@ function menuView() {
       <h2>设置</h2>
       <p>保存、导出或重新开始当前人生。</p>
       <div class="button-list">
+        <button class="list-btn" data-page="annals">${icon("FamilyIcon", "家族史册")}<span>家族史册<small>回看本人与前人留下的长卷、旧物和未竟之事。</small></span></button>
         <button class="list-btn" data-page="stories">${icon("MainBook", "本业长卷")}<span>本业长卷<small>翻阅官场、商路、医案、农事与匠作故事，寻找今生的下一卷。</small></span></button>
         <button class="list-btn" data-page="codex">${icon("MainBook", "图鉴")}<span>成就图鉴<small>查看铜银金成就、人生阶段与本局评分。</small></span></button>
         <button class="list-btn" data-action="open-save-manager">${icon("MenuButton0", "存档")}<span>存档管理<small>多槽位保存、读取与导入导出。</small></span></button>
@@ -19104,7 +19162,8 @@ function deathView() {
       </section>` : ""}
       <div class="main-actions">
         <button class="${heirs.length ? "ghost-btn danger" : "primary-btn"}" data-action="new-life">另开新档</button>
-        <button class="secondary-btn" data-tab="history">查看命册</button>
+        <button class="secondary-btn" data-page="history">查看命册</button>
+        <button class="ghost-btn" data-page="annals">翻阅家族史册</button>
         <button class="ghost-btn" data-action="open-save-manager">读取或恢复存档</button>
       </div>
     </article>`;
@@ -19231,6 +19290,7 @@ function historyPanel() {
       </div>
       ${ambitionDef ? `<section class="history-feature"><strong>人生志向 · ${escapeHtml(ambitionDef.title)}</strong><small>${ambition.completed ? "三重志业皆成" : `已完成 ${ambition.stage}/3 · 当前“${escapeHtml(ambitionDef.stages[ambition.stage]?.title || "收束余生")}”`}</small></section>` : ""}
       ${careerStoryJournal()}
+      ${familyAnnalsDoor()}
       ${regionalLegacyMemory()}
       ${activeThreads.length ? `<section class="thread-preview"><div class="section-title"><h2>未了之事</h2><span>会在往后流年找上门，也可能由继承人接过</span></div>${activeThreads.map((item) => `<article class="record-item thread-item"><strong>${icon(THREAD_KINDS[item.kind].icon, item.title)}${escapeHtml(item.title)}</strong><p>${escapeHtml(item.summary)} · ${item.dueYear <= state.year ? "因果已到" : `${item.dueYear - state.year}年后或有回响`}${item.inherited ? " · 先人遗事" : ""}</p></article>`).join("")}</section>` : ""}
       ${closedThreads.length ? `<section class="thread-preview"><div class="section-title"><h2>往事回响</h2><span>当年的选择，后来的结局</span></div>${closedThreads.map((item) => `<article class="record-item thread-item"><strong>${escapeHtml(item.title)}</strong><p>${escapeHtml(item.summary)}</p><small>结局：${escapeHtml(item.outcome)}${item.inherited ? " · 由后人接续" : ""}</small></article>`).join("")}</section>` : ""}
@@ -19807,7 +19867,7 @@ app.addEventListener("click", (event) => {
     view.page = button.dataset.page;
     view.placeId = button.dataset.place === "activities" ? "" : button.dataset.place || "";
     render();
-    if (["regions", "heirlooms", "stories"].includes(button.dataset.page)) focusStoryContent();
+    if (["regions", "heirlooms", "stories", "annals", "history"].includes(button.dataset.page)) focusStoryContent();
     return;
   }
   if (button.dataset.place) {
