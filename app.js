@@ -8899,7 +8899,7 @@ function chooseOption(index) {
       state.eventResult = {
         title: choice.title || event.title || "结果",
         text: resultText,
-        deltas,
+        deltas: state.lastDeltas,
         icon: resultIcon(choice, event),
       };
     }
@@ -15400,6 +15400,7 @@ const BORDER_GLOW_TARGETS = [
 ];
 
 let lastRenderedRoute = "";
+let lastRenderedStory = null;
 let overlayReturnFocus = "";
 
 function controlSelector(element) {
@@ -15420,7 +15421,11 @@ function render() {
   app.innerHTML = view.screen === "game" && state ? renderGame() : renderCreate();
   initProfileCards();
   window.DynastySceneEngine?.sync?.(app);
+  const story = app.querySelector(".center-panel .result-card") ? state.eventResult
+    : app.querySelector(".center-panel .event-card") ? state.currentEvent : null;
+  const storyChanged = story !== lastRenderedStory;
   const dialog = app.querySelector("dialog.game-overlay");
+  if (!dialog) lastRenderedStory = story;
   if (dialog) {
     dialog.showModal();
     if (previousDialog && focusedControl) dialog.querySelector(focusedControl)?.focus({ preventScroll: true });
@@ -15436,6 +15441,7 @@ function render() {
   } else if (view.screen === "create" && focusedControl) {
     app.querySelector(focusedControl)?.focus({ preventScroll: true });
   }
+  if (!dialog && storyChanged && view.screen === "game") focusStoryContent();
   if (routeChanged && !window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
     app.querySelector(".center-panel > *")?.animate(
       [{ opacity: 0.35, transform: "translateY(5px)" }, { opacity: 1, transform: "translateY(0)" }],
@@ -15948,14 +15954,14 @@ function statDesc(key, value) {
   return list[3];
 }
 
-function deltaHtml() {
-  if (!state.lastDeltas?.length) return "";
-  return state.lastDeltas
-    .slice(0, 8)
+function deltaHtml(deltas = state.lastDeltas, limit = 8) {
+  if (!deltas?.length) return "";
+  return deltas
+    .slice(0, limit)
     .map((item) => {
-      const negative = item.negative || (typeof item.value === "number" && item.value < 0);
+      const negative = item.negative ?? (typeof item.value === "number" && item.value < 0);
       const value = item.stat === "money" && typeof item.value === "number" ? moneyText(item.value, { signed: true }) : typeof item.value === "number" ? `${item.value > 0 ? "+" : ""}${item.value}` : item.value;
-      return `<span class="delta ${negative ? "bad" : ""}">${escapeHtml(item.label)} ${escapeHtml(value)}</span>`;
+      return `<span class="delta ${negative ? "bad" : typeof item.value === "number" && item.value !== 0 ? "good" : ""}">${escapeHtml(item.label)} ${escapeHtml(value)}</span>`;
     })
     .join("");
 }
@@ -16680,13 +16686,13 @@ function brothelCompanionCard(candidate) {
 
 function resultReasonText(result = {}) {
   if (result.reason) return String(result.reason);
-  const deltas = Array.isArray(result.deltas) && result.deltas.length ? result.deltas : state.lastDeltas || [];
+  const deltas = Array.isArray(result.deltas) ? result.deltas : state.lastDeltas || [];
   const numeric = deltas.filter((item) => typeof item.value === "number");
   const gains = numeric.filter((item) => item.value > 0).sort((a, b) => b.value - a.value);
   const losses = numeric.filter((item) => item.value < 0).sort((a, b) => a.value - b.value);
   if (gains.length && losses.length) return `本次结算中，${losses[0].label}有所下降，${gains[0].label}有所增长。具体经过已记在上方。`;
   if (gains.length) return `这次经历增加了${gains.slice(0, 2).map((item) => item.label).join("与")}，变化列在上方。`;
-  if (losses.length) return `这次经历带来了${losses.slice(0, 2).map((item) => item.label).join("与")}方面的消耗，变化列在上方。`;
+  if (losses.length) return `这次经历使${losses.slice(0, 2).map((item) => item.label).join("与")}有所下降，变化列在上方。`;
   return "这次经历已记录；没有结算即时的数值变化。";
 }
 
@@ -16703,6 +16709,7 @@ function resultFollowupText(result = {}) {
 
 function eventResultView() {
   const result = state.eventResult || {};
+  const deltas = Array.isArray(result.deltas) ? result.deltas : state.lastDeltas || [];
   const scene = result.scene || activitySceneFor(result.icon, result.title, result.text);
   return `
     <article class="play-card result-card scene-${escapeHtml(scene)}">
@@ -16715,7 +16722,10 @@ function eventResultView() {
       </div>
       <p>${formatText(result.text || "事情有了结果。")}</p>
       ${result.caravan ? caravanResultHtml(result.caravan) : ""}
-      <div class="delta-list result-deltas">${deltaHtml()}</div>
+      ${deltas.length ? `<section class="result-changes" aria-label="本次结算变化">
+        <div class="delta-list result-deltas">${deltaHtml(deltas)}</div>
+        ${deltas.length > 8 ? `<details class="result-more-changes"><summary>展开其余 ${deltas.length - 8} 项变化 · 共 ${deltas.length} 项</summary><div class="delta-list result-deltas">${deltaHtml(deltas.slice(8), Infinity)}</div></details>` : ""}
+      </section>` : `<p class="result-no-changes">本次没有即时数值变化。</p>`}
       <section class="result-explainer">
         <article><small>为何如此</small><p>${escapeHtml(resultReasonText(result))}</p></article>
         <article><small>后续影响</small><p>${escapeHtml(resultFollowupText(result))}</p></article>
@@ -19214,7 +19224,9 @@ function focusResponsivePanel(selector) {
 
 function focusStoryContent() {
   window.requestAnimationFrame(() => {
-    const panel = app.querySelector(".center-panel");
+    if (app.querySelector("dialog[open]")) return;
+    let panel = app.querySelector(".center-panel");
+    if (!panel?.getClientRects().length) panel = app.querySelector(".detail-panel");
     const heading = panel?.querySelector("h2");
     if (!heading) return;
     heading.tabIndex = -1;
