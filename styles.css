@@ -7114,6 +7114,49 @@ dialog.game-overlay::backdrop { background: #152b26a8; backdrop-filter: blur(4px
 .legacy-memory article small { display: block; font-size: 11px; line-height: 1.7; color: #66705d; }
 .legacy-memory > button { font-size: 11px; padding: 0; min-height: 40px; margin-top: 4px; }
 
+.paused-life-notice { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 18px; padding: 13px 16px; margin-bottom: 15px; border: 1px solid #c5cbb8; border-radius: 5px; background: #e9edde; color: #55634c; font-size: 12px; line-height: 1.8; }
+.paused-life-notice > button { min-height: 40px; font-size: 12px; flex-shrink: 0; }
+.family-annals-door { background: #eee8db; border-color: #cbbfa6; }
+.family-annals-door small { color: #76694f; }
+.annals-heading { padding: 8px 0 22px; border-bottom: 1px solid var(--line); }
+.annals-heading h2 { margin: 12px 0; font-family: "STSong", "SimSun", serif; font-weight: 400; font-size: clamp(27px, 3vw, 36px); line-height: 1.5; }
+.annals-heading > p:last-child { color: var(--muted); line-height: 1.9; font-size: 13px; max-width: 43em; }
+.annals-counts { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px 24px; margin: 22px 0; color: #786c52; font-size: 12px; }
+.annals-counts b { font-size: 26px; font-weight: 400; font-family: "STSong", "SimSun", serif; margin-right: 6px; color: var(--ink); }
+.annals-life { margin: 14px 0; border: 1px solid #ccc3ad; border-radius: 5px; background: #faf6eb; overflow: hidden; }
+.annals-life.is-current { border-color: #7e9573; }
+.annals-life > summary { display: grid; grid-template-columns: 43px minmax(0, 1fr) 16px; align-items: center; gap: 14px; padding: 20px; cursor: pointer; list-style: none; }
+.annals-life > summary::-webkit-details-marker { display: none; }
+.annals-mark { display: grid; place-items: center; width: 38px; height: 46px; border: 1px solid #a36d51; color: #995e43; font-family: "STSong", "SimSun", serif; font-size: 23px; }
+.is-current .annals-mark { color: #55714a; border-color: #7b926b; }
+.annals-life > summary small { display: block; font-size: 10px; color: #84775d; }
+.annals-life > summary strong { display: block; font-family: "STSong", "SimSun", serif; font-size: 26px; font-weight: 400; margin: 7px 0; overflow-wrap: anywhere; }
+.annals-life > summary em { display: block; font-size: 12px; color: #67725b; font-style: normal; line-height: 1.7; }
+.annals-life > summary > b { font-weight: 400; color: #8a7f65; }
+.annals-life[open] > summary > b { transform: rotate(45deg); }
+.annals-life-body { padding: 0 20px 20px; border-top: 1px solid #8b805326; }
+.annals-life-note { color: #786b54; font-size: 12px; line-height: 1.9; }
+.annals-facts { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 11px; color: #646e54; margin: 14px 0 20px; }
+.annals-life h4 { font-size: 13px; font-weight: 500; color: #715e42; margin: 19px 0 12px; }
+.annals-chapter { background: #f2efdf; border: 1px solid #cdc6b04d; margin: 9px 0; border-radius: 3px; padding: 0 13px; }
+.annals-chapter > summary { padding: 13px 0; cursor: pointer; font-size: 12px; line-height: 1.9; }
+.annals-chapter > summary > span { font-size: 15px; margin-right: 13px; }
+.annals-chapter > summary > b { color: #855642; font-weight: 400; }
+.annals-chapter > summary > small { display: block; font-size: 10px; color: #7b795f; }
+.annals-chapter > p, .annals-unfinished > p { font-size: 12px; line-height: 1.9; color: #637056; overflow-wrap: anywhere; }
+.annals-unfinished { border-left: 2px solid #ad8d57; padding-left: 14px; margin: 20px 0; }
+.annals-unfinished > strong { font-size: 15px; font-weight: 400; }
+.annals-heirlooms > p { border-top: 1px dashed #97835d36; padding-top: 11px; margin: 10px 0; }
+.annals-heirlooms strong { display: block; font-size: 12px; font-weight: 500; }
+.annals-heirlooms span { display: block; font-size: 10px; color: #7b765e; margin-top: 7px; line-height: 1.9; }
+.annals-ancestors > h3 { font-size: 15px; color: #7b6a4e; margin-top: 29px; font-weight: 400; }
+.family-annals > .annals-empty, .family-annals > .annals-footnote { font-size: 12px; color: var(--muted); line-height: 1.95; margin: 22px 0; }
+@media (max-width: 760px) {
+  .family-annals { padding: 20px 16px; }
+  .annals-life > summary { gap: 11px; padding: 16px; }
+  .annals-life-body { padding: 0 16px 16px; }
+}
+
 .story-shelf-door { background: #f0e9da; border-color: #cec0a6; }
 .story-shelf-door small { color: #796647; }
 .story-library-header { border-bottom: 1px solid var(--line); padding: 6px 0 24px; }
