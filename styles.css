@@ -482,6 +482,11 @@ p {
   background: rgba(181, 72, 62, 0.1);
 }
 
+.delta.good {
+  color: var(--accent);
+  background: rgba(49, 89, 76, 0.09);
+}
+
 .game-layout {
   display: grid;
   grid-template-columns: 300px minmax(360px, 1fr) 360px;
@@ -914,6 +919,25 @@ p {
 
 .result-deltas {
   justify-content: center;
+}
+
+.result-more-changes {
+  margin-top: 14px;
+  padding: 12px 0;
+  border-block: 1px solid var(--line);
+  text-align: left;
+}
+
+.result-more-changes > summary {
+  padding: 8px 2px;
+  color: var(--accent);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.result-no-changes {
+  color: var(--muted);
+  font-size: 13px;
 }
 
 .game-overlay {
