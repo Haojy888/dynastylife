@@ -41,6 +41,15 @@ try {
       const index = await page.evaluate(id => state.currentEvent.children.findIndex(choice => choice.id === id), decisions[stage]);
       await page.click(`[data-choice="${index}"]`);
       await page.waitForFunction(() => document.activeElement.matches('.result-card h2'));
+      assert.equal(await page.evaluate(() => state.eventResult.chapterId), 'blank-letter');
+      assert.ok(await page.$('.result-card .chapter-clues'), '结果页可以直接回看本幕收下的线索');
+      if (stage === 0) {
+        const savedResult = await page.evaluate(() => JSON.stringify(state.eventResult));
+        await page.reload({ waitUntil: 'domcontentloaded' });
+        assert.equal(await page.evaluate(() => JSON.stringify(state.eventResult)), savedResult);
+        await page.click('.result-card .chapter-clues > summary');
+        assert.ok(await page.$eval('.result-card .chapter-clues', node => node.innerText.includes('纸背的针孔') && !node.innerText.includes('早了一年的关牒')), '刷新后仍只显示已得到的线索');
+      }
       if (stage === 3) break;
       await page.click('[data-action="finish-result"]');
       await page.evaluate(() => { view.page = 'main'; view.mobileSection = 'life'; render(); nextYear(); });
@@ -69,7 +78,24 @@ try {
     assert.equal(await page.evaluate(() => state.heirlooms.items[0].kind), 'night-route');
     assert.equal(await page.evaluate(() => state.life.goals.includes('night-passage')), true);
     assert.equal(await page.evaluate(() => state.careerChapters.completed[0].history.length), 4);
-    if (await page.$('[data-action="close-achievement"]')) await page.click('[data-action="close-achievement"]');
+    const notificationBounds = await page.evaluate(() => {
+      const award = document.querySelector('.achievement-toast').getBoundingClientRect();
+      const result = document.querySelector('.result-card').getBoundingClientRect();
+      return { awardBottom: award.bottom, resultTop: result.top };
+    });
+    assert.ok(notificationBounds.awardBottom <= notificationBounds.resultTop, '成就提示应占据自己的位置，不盖住结果');
+    await page.$eval('[data-action="finish-result"]', node => node.scrollIntoView({ block: 'center' }));
+    assert.ok(await page.$eval('[data-action="finish-result"]', node => {
+      const box = node.getBoundingClientRect();
+      return document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2)?.closest('[data-action="finish-result"]');
+    }), '未收起成就也能直接点击继续按钮');
+    const pendingResult = await page.evaluate(() => JSON.stringify({ result: state.eventResult, year: state.year, money: state.stats.money }));
+    await page.click('[data-action="open-achievement-codex"]');
+    await page.waitForSelector('.codex-card');
+    assert.ok(await page.$('.paused-life-notice'));
+    assert.equal(await page.evaluate(() => JSON.stringify({ result: state.eventResult, year: state.year, money: state.stats.money })), pendingResult, '翻图鉴不结算或吃掉当前结果');
+    await page.click('.paused-life-notice [data-action="back-main"]');
+    assert.ok(await page.$('.result-card .chapter-clues'));
     await page.click('[data-action="finish-result"]');
     await page.evaluate(() => { view.page = 'history'; render(); });
     await page.click('.center-panel .chapter-journal-entry > summary');

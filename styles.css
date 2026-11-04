@@ -1494,11 +1494,8 @@ p {
 }
 
 .achievement-toast {
-  position: fixed;
-  top: 22px;
-  right: 22px;
-  z-index: 45;
-  width: min(420px, calc(100vw - 44px));
+  margin-bottom: 16px;
+  width: 100%;
   display: grid;
   grid-template-columns: 72px minmax(0, 1fr);
   gap: 14px;
@@ -1509,7 +1506,7 @@ p {
   background:
     radial-gradient(circle at 12% 0%, rgba(255, 239, 176, 0.72), transparent 34%),
     linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(232, 245, 233, 0.88));
-  box-shadow: 0 18px 48px rgba(31, 42, 42, 0.18);
+  box-shadow: 0 5px 18px rgba(31, 42, 42, 0.08);
   animation: achievement-pop 560ms cubic-bezier(.2, .8, .2, 1);
 }
 
@@ -4757,10 +4754,6 @@ p {
   }
 
   .achievement-toast {
-    top: auto;
-    right: 12px;
-    bottom: 12px;
-    width: calc(100vw - 24px);
     grid-template-columns: 58px minmax(0, 1fr);
     gap: 10px;
     padding: 12px;
