@@ -95,7 +95,7 @@ try {
     };
   });
   assert.deepEqual(eventIllustrations.mapped, eventIllustrations.routes, "事件类型没有路由到对应插画");
-  assert.equal(eventIllustrations.assetCount, 18, "流年场景配置不完整");
+  assert.equal(eventIllustrations.assetCount, 23, "流年场景配置不完整");
   assert.equal(eventIllustrations.rendered, true, "流年事件卡没有渲染插画");
   assert.equal(eventIllustrations.engineVersion, "pixi-8.19.0", "PixiJS 动态画卷引擎没有初始化");
   assert.equal(eventIllustrations.pixiVersion, "8.19.0", "PixiJS 运行时版本不正确");
