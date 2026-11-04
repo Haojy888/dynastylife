@@ -31,6 +31,7 @@ try {
     }, { baseline, age });
     const snapshot = () => page.evaluate(() => JSON.stringify(state));
     const capture = async label => {
+      await page.$eval('[data-scene-actions] > img', image => image.decode());
       await page.$eval('[data-scene-actions]', node => node.scrollIntoView({ block: 'center', behavior: 'instant' }));
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${name}: horizontal overflow`);
       const hitTargets = await page.$$eval('.scene-point', points => points.map(point => {

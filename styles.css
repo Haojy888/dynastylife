@@ -794,7 +794,6 @@ p {
   transition: transform .18s ease, background .18s ease;
 }
 .scene-point.is-locked > b { background: rgba(67, 66, 58, .9); border-style: dashed; }
-.scene-point > b > img { width: 22px; height: 22px; object-fit: contain; }
 .scene-point:is(:hover, :focus-visible, .is-selected) > b { background: #996a26; transform: scale(1.12); }
 .scene-point-label {
   position: absolute;
