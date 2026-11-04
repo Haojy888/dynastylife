@@ -926,8 +926,10 @@ const EVENT_SCENE_ART = {
   grainRoad: { src: "assets/event-grain-road.webp", label: "一线粮途", focus: "57% 50%" },
   dispensary: { src: "assets/event-dispensary.webp", label: "药灯未灭", focus: "43% 50%" },
   springWater: { src: "assets/region-qingping.webp", label: "一渠春水", focus: "45% 55%" },
-  workshopPromise: { src: "assets/event-career.webp", label: "百工一诺", focus: "61% 50%" },
-  blankLetter: { src: "assets/event-jianghu.webp", label: "无字镖书", focus: "55% 50%" },
+  workshopPromise: { src: "assets/event-workshop-v1.webp", smallSrc: "assets/event-workshop-v1-small.webp", label: "百工一诺", alt: "日光照进木工作坊，师傅与学徒一起核验木作接合处", focus: "52% 45%" },
+  blankLetter: { src: "assets/event-blank-letter-v1.webp", smallSrc: "assets/event-blank-letter-v1-small.webp", label: "无字镖书", alt: "雨夜渡口中提灯的接应人与渡船，檐下放着一封信", focus: "52% 52%" },
+  home: { src: "assets/scene-home-v1.webp", smallSrc: "assets/scene-home-v1-small.webp", label: "庭院灯火", alt: "青瓦庭院亮着暖灯，竹影间的桌上放着茶具和陶制油灯", focus: "55% 58%" },
+  heirloom: { src: "assets/scene-heirlooms-v1.webp", smallSrc: "assets/scene-heirlooms-v1-small.webp", label: "书案旧物", alt: "窗边旧书案上摊开家传书册、旧契和印章，木匣中收着历年的物件", focus: "55% 55%" },
   culture: { src: "assets/event-culture.webp", label: "华夏岁时", focus: "56% 50%" },
   prison: { src: "assets/event-prison.webp", label: "铁窗流年", focus: "68% 50%" },
   jianghu: { src: "assets/event-jianghu.webp", label: "江湖暗门", focus: "66% 50%" },
@@ -942,7 +944,7 @@ const EVENT_KIND_SCENES = {
   familyStory: "life",
   femaleSchool: "study",
   scholarStory: "study",
-  heirloom: "clan",
+  heirloom: "heirloom",
   officialCase: "official",
   careerCase: "career",
   culturalEvent: "culture",
@@ -16777,15 +16779,16 @@ function eventResultView() {
     (state.careerChapters?.active?.id === result.chapterId ? state.careerChapters.active : state.careerChapters?.completed?.find(entry => entry.id === result.chapterId)) : null;
   const deltas = Array.isArray(result.deltas) ? result.deltas : state.lastDeltas || [];
   const scene = result.scene || activitySceneFor(result.icon, result.title, result.text);
+  const art = chapter ? eventSceneArt({ kind: "careerChapter", chapterId: chapter.id }) : null;
   return `
     <article class="play-card result-card scene-${escapeHtml(scene)}">
       <p class="eyebrow">结果</p>
       <h2>${escapeHtml(result.title || "结果")}</h2>
-      <div class="cinematic-stage" aria-hidden="true">
+      ${art ? pageIllustration(art) : `<div class="cinematic-stage" aria-hidden="true">
         <span class="scene-orbit orbit-one"></span><span class="scene-orbit orbit-two"></span>
         <span class="scene-particle particle-one"></span><span class="scene-particle particle-two"></span><span class="scene-particle particle-three"></span>
         <div class="result-illustration">${icon(result.icon || "MainBook", result.title || "结果")}</div>
-      </div>
+      </div>`}
       <p>${formatText(result.text || "事情有了结果。")}</p>
       ${result.caravan ? caravanResultHtml(result.caravan) : ""}
       ${deltas.length ? `<section class="result-changes" aria-label="本次结算变化">
@@ -16898,6 +16901,7 @@ function homeView() {
   const blocked = state.dead || !!state.currentEvent || !!state.eventResult || !!state.pendingCaravan || state.prisonYears > 0;
   return `
     <article class="play-card home-card">
+      ${pageIllustration(EVENT_SCENE_ART.home)}
       <p class="eyebrow">家中</p>
       <h2>${state.age < 15 ? "庭院日常" : "持家"} </h2>
       <p>${state.age < 8 ? "年岁尚幼，家中小事也能慢慢养成性情。" : state.age < 15 ? "读书、玩耍、帮忙，都是少年时光。" : "成丁之后，家中也有账册、人情与长辈需要照看。"}选择一项家中活动，度过这一年。</p>
@@ -16942,7 +16946,7 @@ function familyAnnalsDoor() {
 
 function familyAnnalsView() {
   const ancestors = normalizeLineage(state.lineage, state.name.slice(0, 1)).ancestors;
-  return `<article class="play-card family-annals"><header class="annals-heading"><p class="eyebrow">家族史册 · 人各有一生</p><h2>一人一生，代代有回声</h2><p>田契可以传下去，做过的选择也值得留下。这里按主事人的姓名收录人生，夫妻承业仍各有一卷。</p></header>
+  return `<article class="play-card family-annals">${pageIllustration(EVENT_SCENE_ART.heirloom)}<header class="annals-heading"><p class="eyebrow">家族史册 · 人各有一生</p><h2>一人一生，代代有回声</h2><p>田契可以传下去，做过的选择也值得留下。这里按主事人的姓名收录人生，夫妻承业仍各有一卷。</p></header>
     <div class="annals-counts"><span><b>${ancestors.length}</b>位前人已收卷</span><span>本代 · 第${state.lineage.generation}代</span></div>
     ${familyLifeCard(currentLifeRecord(), true)}
     ${ancestors.length ? `<section class="annals-ancestors"><h3>往世 · 从近到远</h3>${ancestors.map(person => familyLifeCard(person)).join("")}</section>` : '<p class="annals-empty">第一卷正在你手中。由子女、孙辈或配偶承接时，本人的已结长卷、未竟章节和旧物来源会收入此册。</p>'}
@@ -16992,7 +16996,7 @@ function careerStoryCard(pack, chapters) {
   const canStart = !reason && !wait;
   const status = record ? `已落卷 · ${record.outcome}` : active ? `正在续写 · 第${active.stage + 1}/${pack.stages.length}幕` : fits ? "今生可启卷" : "待你入此业";
   return `<section class="story-book ${active ? "is-active" : ""}" data-story-id="${escapeHtml(pack.id)}">
-    <figure><img src="${escapeHtml(art.src)}" alt="" width="1600" height="900" loading="lazy" decoding="async"><figcaption>${escapeHtml(role)}<span>${pack.stages.length}幕</span></figcaption></figure>
+    <figure>${sceneImage(art, "", true)}<figcaption>${escapeHtml(role)}<span>${pack.stages.length}幕</span></figcaption></figure>
     <div class="story-book-copy"><small class="story-book-status">${escapeHtml(status)}</small><h3>${escapeHtml(pack.title)}</h3><p>${escapeHtml(pack.summary)}</p><details class="story-book-contents"><summary>翻看卷目</summary><ol>${pack.stages.map((stage, index) => `<li ${active?.stage === index ? 'aria-current="step"' : ""}><span>${String(index + 1).padStart(2, "0")}</span>${escapeHtml(stage.title)}</li>`).join("")}</ol></details>
     <p class="story-book-note">${escapeHtml(reason || (wait ? `还需${wait}年进入“${pack.stages[active.stage].title}”，旧选择已留在命册。` : active ? `“${pack.stages[active.stage].title}”已到，由你续写。` : "从第一幕开始，你的每项取舍都会记下。"))}</p>
     ${record ? '<button class="ghost-btn" data-tab="history">回看当年抉择</button>' : !fits ? '<button class="secondary-btn" data-tab="career">去营生页择业</button>' : `<button class="primary-btn" data-start-chapter="${escapeHtml(pack.id)}" ${canStart ? "" : "disabled"}>${active ? (wait ? "来年再续" : "续写此章") : "从此启卷"}</button>`}</div>
@@ -17003,6 +17007,7 @@ function heirloomsView() {
   const items = heirloomItems();
   const kept = items.filter(item => item.status !== "donated").length;
   return `<article class="play-card heirloom-cabinet">
+    ${pageIllustration(EVENT_SCENE_ART.heirloom)}
     <header><p class="eyebrow">家门旧物 · 一代接一代</p><h2>家传之物</h2><p>一纸船契，一册医案。留给后人的，不只是一件旧物，还有你这一生的选择。</p></header>
     ${items.length ? `<div class="heirloom-counts"><span><b>${kept}</b>件仍在家中</span><span><b>${items.length - kept}</b>件已赠予乡里</span></div><div class="heirloom-grid">${items.map(heirloomCard).join("")}</div>` : `<section class="heirloom-empty">${icon("MainBook", "尚待落笔")}<h3>旧物尚待落笔</h3><p>守住粮路、记录医案、立下分水旧约、整理百工留样，或收下故人的批注。你的经历，会成为后人打开的第一卷。</p><p>获得的旧物会保留来历；传给家人后，可以续用、转赠，或封存。</p><button class="text-btn" data-page="stories">翻看本业长卷 →</button></section>`}
     <div class="main-actions"><button class="ghost-btn" data-page="home">回到家中</button><button class="secondary-btn" data-page="backpack">查看行囊</button></div>
@@ -19113,6 +19118,15 @@ function palaceExamView(stage, current) {
     </article>`;
 }
 
+function sceneImage(art, alt = art.alt || `${art.label}场景插画`, lazy = false) {
+  const sizes = lazy ? "(max-width: 760px) calc(100vw - 64px), 420px" : "(max-width: 760px) calc(100vw - 52px), (max-width: 1120px) calc(100vw - 96px), 1000px";
+  return `<img src="${escapeHtml(art.src)}" ${art.smallSrc ? `srcset="${escapeHtml(art.smallSrc)} 800w, ${escapeHtml(art.src)} 1600w" sizes="${sizes}"` : ""} alt="${escapeHtml(alt)}" width="1600" height="900" decoding="async" ${lazy ? 'loading="lazy"' : 'fetchpriority="high"'}>`;
+}
+
+function pageIllustration(art) {
+  return `<figure class="page-illustration" style="--illustration-focus:${escapeHtml(art.focus || "50% 50%")}">${sceneImage(art)}</figure>`;
+}
+
 function eventSceneArt(event = {}) {
   const chapterScene = event.kind === "careerChapter" ? ({ "grain-road": "grainRoad", "epidemic-dispensary": "dispensary", "granary-ledger": "official", "spring-water": "springWater", "workshop-promise": "workshopPromise", "blank-letter": "blankLetter" })[event.chapterId] : "";
   let key = chapterScene || EVENT_KIND_SCENES[event.kind] || EVENT_ACTIVITY_SCENES[state.pendingActivity?.id];
@@ -19188,7 +19202,7 @@ function eventView(event) {
   return `
     <article class="play-card event-card ${sceneInteraction ? "interactive-scene-event" : ""} ${prisonEvent ? "prison-event" : ""} ${culturalEvent ? `culture-event season-${event.season}` : ""} ${worldEvent ? "world-event" : ""} ${clanEvent ? "clan-event" : ""} ${regionalEvent ? "regional-event" : ""}">
       <figure class="event-scene event-scene-${sceneArt.key}" data-dynasty-scene="event" data-scene-key="${escapeHtml(sceneArt.key)}" data-scene-src="${escapeHtml(sceneArt.src)}" data-scene-focus="${escapeHtml(sceneArt.focus)}" data-scene-season="${escapeHtml(event.season || "")}" style="--event-focus:${sceneArt.focus}">
-        <img src="${sceneArt.src}" alt="${escapeHtml(sceneArt.label)}场景插画" width="1600" height="900" decoding="async" fetchpriority="high" />
+        ${sceneImage(sceneArt)}
         <figcaption><span>流年画卷</span><b>${escapeHtml(sceneArt.label)}</b></figcaption>
       </figure>
       <p class="eyebrow">${event.kind === "careerChapter" ? "本业长卷 · 一念一生" : event.kind === "heirloom" ? "家传之物 · 续写前人旧事" : eyebrow}</p>

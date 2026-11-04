@@ -223,7 +223,10 @@
       app.canvas.className = "dynasty-scene-canvas";
       app.canvas.setAttribute("aria-hidden", "true");
       node.appendChild(app.canvas);
-      const texture = await pixi.Assets.load(src);
+      const responsiveImage = node.querySelector("img[srcset]");
+      if (responsiveImage) await responsiveImage.decode().catch(() => {});
+      if (instance.destroyed || generation !== renderGeneration || !node.isConnected) return destroyInstance(instance);
+      const texture = await pixi.Assets.load(responsiveImage?.currentSrc || src);
       if (instance.destroyed || generation !== renderGeneration || !node.isConnected) return destroyInstance(instance);
       const sprite = new pixi.Sprite(texture);
       sprite.anchor.set(0.5);

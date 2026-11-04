@@ -31,7 +31,7 @@ try {
     assert.equal(await page.$$eval('.story-book', nodes => nodes.length), 6);
     assert.equal(await page.$eval('.story-book', node => node.dataset.storyId), 'blank-letter');
     await page.click('[data-start-chapter="blank-letter"]');
-    assert.equal(await page.$eval('.event-scene img', node => node.getAttribute('src')), 'assets/event-jianghu.webp');
+    assert.equal(await page.$eval('.event-scene img', node => node.getAttribute('src')), 'assets/event-blank-letter-v1.webp');
     assert.equal(await page.$eval('.center-panel', node => node.innerText.includes('白纸照夜')), false, '开卷不透露隐藏结局');
     await page.focus('.center-panel .chapter-clues > summary');
     await page.keyboard.press('Enter');
