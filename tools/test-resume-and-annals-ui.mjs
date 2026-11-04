@@ -35,6 +35,11 @@ try {
     assert.equal(await page.$eval('[data-question="0"].active', node => node.dataset.examAnswer), selected);
     assert.equal(await page.$('.mobile-primary-tabs'), null, 'An unfinished exam must not be hidden behind mobile panel mode');
     const exam = await page.evaluate(() => JSON.stringify(state.exam.current));
+    await page.evaluate(() => { view.page = 'codex'; render(); });
+    assert.ok(await page.$('.codex-card'), 'An unfinished exam must not block the achievement codex');
+    await page.click('.paused-life-notice [data-action="back-main"]');
+    assert.equal(await page.evaluate(() => JSON.stringify(state.exam.current)), exam, 'Reading the codex must preserve every selected answer');
+    assert.ok(await page.$('.question-card'));
     if (width < 761) await page.click('[data-action="toggle-tools"]');
     await page.click('[data-shortcut="menu"]');
     await page.click('[data-action="open-save-manager"]');

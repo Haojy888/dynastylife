@@ -73,6 +73,8 @@ try {
     chooseOption(3); next(); chooseOption(3); next();
     const locked = state.currentEvent.children[0];
     check(locked.disabled && locked.note.includes('针孔') && locked.note.includes('暂不可选'), '缺线索时仍说明本项内容与禁用原因');
+    const missingBoth = careerChapterChoiceLockReason(state.careerChapters.active, locked);
+    check(missingBoth.includes('纸背的针孔') && missingBoth.includes('早了一年的关牒') && !missingBoth.includes('paper-trace'), '缺少的线索用玩家可读的名字逐项说明');
     const beforeMissing = JSON.stringify(state);
     resolveCareerChapter(state.currentEvent, { id: locked.id, disabled: false });
     check(JSON.stringify(state) === beforeMissing, '伪造未禁用按钮不能绕过 requiresAll');
@@ -107,6 +109,10 @@ try {
     reset(); chooseOption(0); finishEventResult();
     const unfinished = familyLifeCard(currentLifeRecord(), true);
     check(unfinished.includes('纸背的针孔') && !unfinished.includes('两份能对照的证词'), '未竟之卷也只保留先人实际取得的线索');
+    check(careerChapterChoiceLockReason(state.careerChapters.active, { requiresAll: ['paper-trace', 'false-warrant'] }) === '还缺线索：早了一年的关牒', '已经取得的线索不再列入缺项');
+    state.eventResult = { title: '旧档中的普通结果', text: '这份结果没有记录所属故事。', deltas: [] };
+    check(!eventResultView().includes('chapter-clues'), '旧结果没有章节标识时不借用旁边故事的线索');
+    state.eventResult = null;
     save();
     return { checks, playablePaths, theoreticalPaths: 320, endings: [...outcomes], career: state.career.name, money: state.stats.money };
   });

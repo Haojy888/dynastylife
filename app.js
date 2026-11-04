@@ -14141,7 +14141,11 @@ function createCareerChapter(id = "granary-ledger") {
 
 function careerChapterChoiceLockReason(active, choice) {
   if (choice.cost && state.stats.money < choice.cost) return `需 ${moneyText(choice.cost)}（当前不足）`;
-  if (choice.requiresAll?.length && !choice.requiresAll.every((flag) => active.flags.includes(flag))) return "此前尚未集齐本项需要的线索或记录";
+  const missing = (choice.requiresAll || []).filter(flag => !active.flags.includes(flag));
+  if (missing.length) {
+    const names = missing.map(flag => CAREER_STORY_PACKS[active.id]?.clues?.find(clue => clue.flag === flag)?.title);
+    return names.every(Boolean) ? `还缺线索：${names.join("、")}` : "此前尚未集齐本项需要的线索或记录";
+  }
   if (choice.requiresAny?.length && !choice.requiresAny.some((flag) => active.flags.includes(flag))) return "此前选择没有留下本项需要的约定、记录或门路";
   const progress = choice.minLivelihood ? careerProgressFor() : null;
   for (const [key, need] of Object.entries(choice.minLivelihood || {})) {
@@ -14398,6 +14402,7 @@ function resolveCareerChapter(event, choice) {
     title,
     text,
     deltas,
+    chapterId: pack.id,
     icon: pack.icon,
     scene: pack.careerKind === "medicine" ? "herb" : pack.careerKind === "caravan" ? "travel" : "ink",
     reason: pack.careerKind === "official" ? `这不是独立随机事件：它读取了你的${officialOffice().office}职权、${actor?.name || "家中人"}的态度、前几幕证据以及清浊路线。` : `本幕接续了${active.originName || state.name}在${travelDestinationByStaticId(active.regionId || currentRegionalId()).name}开始的“${pack.title}”；此前约定决定可用选项，钱财与本业资源按实际数目结算。`,
@@ -15704,6 +15709,7 @@ function renderGame() {
         </aside>
 
         <section class="center-panel">
+          ${achievementToast()}
           ${centerContent()}
         </section>
 
@@ -15713,7 +15719,6 @@ function renderGame() {
         </aside>
       </div>
       ${overlayView()}
-      ${achievementToast()}
     </main>`;
 }
 
@@ -15895,6 +15900,7 @@ function centerContent() {
   if (view.page === "menu") return pausedLifeNotice() + menuView();
   if (view.page === "annals") return pausedLifeNotice() + familyAnnalsView();
   if (view.page === "history") return pausedLifeNotice() + `<article class="play-card history-reading">${historyPanel()}<button class="ghost-btn" data-action="back-main">回到这一生</button></article>`;
+  if (view.page === "codex") return pausedLifeNotice() + codexView();
   if (state.dead) return deathView();
   // 奇案仅在明确进入办案页时全屏，不再永久挡住「下一年」
   if (state.mystery?.active && view.page === "mystery") return mysteryCaseView();
@@ -15916,7 +15922,6 @@ function centerContent() {
   if (view.page === "ledger") return ledgerView();
   if (view.page === "poetry") return poetryView();
   if (view.page === "matchmaker") return matchmakerView();
-  if (view.page === "codex") return codexView();
   if (view.page === "culture") return cultureView();
   if (view.page === "world") return worldView();
   if (view.page === "clan") return clanView();
@@ -16768,6 +16773,8 @@ function resultFollowupText(result = {}) {
 
 function eventResultView() {
   const result = state.eventResult || {};
+  const chapter = Object.hasOwn(CAREER_STORY_PACKS, result.chapterId) ?
+    (state.careerChapters?.active?.id === result.chapterId ? state.careerChapters.active : state.careerChapters?.completed?.find(entry => entry.id === result.chapterId)) : null;
   const deltas = Array.isArray(result.deltas) ? result.deltas : state.lastDeltas || [];
   const scene = result.scene || activitySceneFor(result.icon, result.title, result.text);
   return `
@@ -16789,6 +16796,7 @@ function eventResultView() {
         <article><small>为何如此</small><p>${escapeHtml(resultReasonText(result))}</p></article>
         <article><small>后续影响</small><p>${escapeHtml(resultFollowupText(result))}</p></article>
       </section>
+      ${careerClueNotebook(chapter)}
       <button class="primary-btn" data-action="finish-result">点击继续</button>
     </article>`;
 }
@@ -19708,6 +19716,7 @@ app.addEventListener("click", (event) => {
     state.pendingAchievement = null;
     save();
     render();
+    focusStoryContent();
     return;
   }
   if (button.dataset.action === "open-achievement-codex") {
@@ -19716,6 +19725,7 @@ app.addEventListener("click", (event) => {
     view.overlay = "";
     save();
     render();
+    focusStoryContent();
     return;
   }
   if (button.dataset.action === "open-save-manager") {
