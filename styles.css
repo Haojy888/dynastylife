@@ -7102,6 +7102,12 @@ dialog.game-overlay::backdrop { background: #152b26a8; backdrop-filter: blur(4px
 .chapter-steps .is-current { border-color: #a4533d; color: #954431; }
 .chapter-steps .is-current b { font-weight: 700; }
 .chapter-opening-note { margin: 10px 0 0; font-size: 11px; color: var(--muted); }
+.chapter-clues { margin: 16px 0; padding: 12px 15px; border: 1px solid var(--line); border-radius: 12px; background: rgba(49, 89, 76, .04); text-align: left; }
+.chapter-clues > summary { padding: 8px 0; cursor: pointer; color: var(--accent); font-size: 13px; font-weight: 700; }
+.chapter-clues ol { padding-left: 20px; }
+.chapter-clues li { padding: 8px 0; border-top: 1px dashed var(--line); }
+.chapter-clues strong { font-size: 13px; }
+.chapter-clues p { margin: 6px 0; color: var(--muted); font-size: 12px; line-height: 1.85; overflow-wrap: anywhere; }
 .chapter-recollection { margin-top: 12px; background: #ebe8db; border-radius: 4px; padding: 0 12px; }
 .chapter-recollection summary { cursor: pointer; font-size: 12px; padding: 11px 0; line-height: 1.6; }
 .chapter-choice-record { margin: 10px 0 12px; padding: 0; list-style: none; }
