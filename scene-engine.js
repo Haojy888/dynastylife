@@ -5,6 +5,9 @@
   const instances = new Set();
   let renderGeneration = 0;
   let webglAvailable;
+  let interactionId = 0;
+  const motionPreference = window.matchMedia?.("(prefers-reduced-motion: reduce)");
+  let reducedMotion = !!motionPreference?.matches;
 
   const THEMES = {
     spring: { mode: "petal", colors: [0xf4c1cf, 0xf0a7bb, 0xffe1e7], count: 18 },
@@ -40,7 +43,7 @@
 
   function canAnimate() {
     if (!window.PIXI?.Application || !window.PIXI?.Assets) return false;
-    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return false;
+    if (reducedMotion) return false;
     if (navigator.connection?.saveData) return false;
     if (Number(navigator.deviceMemory || 4) <= 2) return false;
     return supportsWebGL();
@@ -52,7 +55,107 @@
     const key = node.dataset.sceneKey || "life";
     if (key === "culture" && THEMES[season]) return THEMES[season];
     if (type === "travel") return THEMES.travel;
-    return THEMES[key] || THEMES.life;
+    return THEMES[key === "academy" ? "study" : key] || THEMES.life;
+  }
+
+  function mountActions(node) {
+    if (!node.dataset.sceneActions || node.querySelector(".scene-points")) return;
+    const card = node.closest("article");
+    if (!card) return;
+    const actions = [...card.querySelectorAll(node.dataset.sceneActions)];
+    if (!actions.length) return;
+    const points = document.createElement("div");
+    points.className = "scene-points";
+    points.setAttribute("role", "group");
+    points.setAttribute("aria-label", "画中行动，点选查看详情");
+    const hint = document.createElement("span");
+    hint.className = "scene-points-hint";
+    hint.textContent = "点画中标记 · 选择行动";
+    node.append(hint, points);
+    const inspector = document.createElement("section");
+    inspector.className = "scene-inspector";
+    inspector.id = `scene-inspector-${++interactionId}`;
+    inspector.setAttribute("aria-label", "场景行动详情");
+    inspector.hidden = true;
+    inspector.innerHTML = '<div class="scene-inspector-copy" role="status"><strong></strong><p></p><small></small></div><div class="scene-inspector-actions"><button type="button" class="primary-btn" data-scene-confirm>确认行动</button><button type="button" class="ghost-btn" data-scene-close>收起</button></div>';
+    node.after(inspector);
+    const title = inspector.querySelector("strong");
+    const description = inspector.querySelector("p");
+    const note = inspector.querySelector("small");
+    const confirm = inspector.querySelector("[data-scene-confirm]");
+    const positions = [[18, 35], [50, 30], [82, 35], [30, 64], [70, 64], [50, 53]];
+    let selected = null;
+    let activePoint = null;
+    const close = () => {
+      inspector.hidden = true;
+      node.classList.remove("scene-inspecting");
+      activePoint?.setAttribute("aria-expanded", "false");
+      activePoint?.classList.remove("is-selected");
+      if (activePoint?.isConnected) activePoint.focus({ preventScroll: true });
+      selected = null;
+    };
+    actions.slice(0, positions.length).forEach((target, index) => {
+      const labelCopy = target.cloneNode(true);
+      labelCopy.querySelectorAll("small, img, svg, .icon-wrap").forEach(item => item.remove());
+      const label = labelCopy.textContent.replace(/\s+/g, " ").trim() || "查看行动";
+      const point = document.createElement("button");
+      point.type = "button";
+      point.className = `scene-point${target.disabled ? " is-locked" : ""}`;
+      point.dataset.scenePoint = String(index);
+      point.style.setProperty("--point-x", `${positions[index][0]}%`);
+      point.style.setProperty("--point-y", `${positions[index][1]}%`);
+      point.setAttribute("aria-label", `${label}${target.disabled ? "，暂不可用，查看条件" : "，查看行动"}`);
+      point.setAttribute("aria-controls", inspector.id);
+      point.setAttribute("aria-expanded", "false");
+      const number = document.createElement("b");
+      const sourceIcon = target.querySelector("img");
+      if (sourceIcon) {
+        const image = sourceIcon.cloneNode(true);
+        image.alt = "";
+        image.draggable = false;
+        number.appendChild(image);
+      } else number.textContent = String(index + 1);
+      number.setAttribute("aria-hidden", "true");
+      const caption = document.createElement("span");
+      caption.className = "scene-point-label";
+      caption.textContent = label;
+      point.append(number, caption);
+      point.addEventListener("click", () => {
+        activePoint?.setAttribute("aria-expanded", "false");
+        activePoint?.classList.remove("is-selected");
+        selected = target;
+        activePoint = point;
+        node.classList.add("scene-inspecting");
+        point.setAttribute("aria-expanded", "true");
+        point.classList.add("is-selected");
+        title.textContent = label;
+        description.textContent = target.querySelector("small")?.textContent || "这次选择将写入你的人生经历。";
+        note.textContent = target.disabled ? "暂不可用，请先满足此行动的条件。" : node.dataset.sceneNote || "确认后执行这项行动。";
+        confirm.disabled = target.disabled;
+        confirm.textContent = target.disabled ? "条件未满足" : "就这样做";
+        inspector.hidden = false;
+      });
+      points.appendChild(point);
+    });
+    confirm.addEventListener("click", () => {
+      if (!selected?.isConnected || !node.isConnected || selected.disabled || !selected.getClientRects().length) {
+        confirm.disabled = true;
+        note.textContent = "行动条件已变化，请重新选择。";
+        return;
+      }
+      // All game rules and saving remain in the original action handler.
+      confirm.disabled = true;
+      selected.click();
+    });
+    inspector.querySelector("[data-scene-close]").addEventListener("click", close);
+    const escape = event => {
+      if (event.key !== "Escape" || inspector.hidden) return;
+      event.preventDefault();
+      event.stopPropagation();
+      close();
+    };
+    points.addEventListener("keydown", escape);
+    inspector.addEventListener("keydown", escape);
   }
 
   function parseFocus(value = "50% 50%") {
@@ -189,15 +292,23 @@
     instances.delete(instance);
   }
 
+  function updatePlayback(instance) {
+    if (!instance.app?.renderer || instance.destroyed) return;
+    if (instance.visible && !document.hidden && !reducedMotion) instance.app.ticker.start();
+    else instance.app.ticker.stop();
+  }
+
   async function mount(node, generation) {
     const src = node.dataset.sceneSrc;
     if (!src || !node.isConnected || node.clientWidth < 2 || node.clientHeight < 2) return;
+    if ([...instances].some(instance => instance.node === node && !instance.destroyed)) return;
     const pixi = window.PIXI;
     const app = new pixi.Application();
     const instance = {
       node,
       app,
       destroyed: false,
+      visible: false,
       focus: parseFocus(node.dataset.sceneFocus),
       targetX: 0,
       targetY: 0,
@@ -237,6 +348,7 @@
       createParticles(instance, themeFor(node));
 
       instance.onPointerMove = (event) => {
+        if (event.pointerType === "touch") return;
         const rect = node.getBoundingClientRect();
         instance.targetX = ((event.clientX - rect.left) / Math.max(1, rect.width) - 0.5) * 2;
         instance.targetY = ((event.clientY - rect.top) / Math.max(1, rect.height) - 0.5) * 2;
@@ -250,8 +362,8 @@
       instance.resizeObserver = new ResizeObserver(() => fitSprite(instance));
       instance.resizeObserver.observe(node);
       instance.intersectionObserver = new IntersectionObserver(([entry]) => {
-        if (entry?.isIntersecting && !document.hidden) app.ticker.start();
-        else app.ticker.stop();
+        instance.visible = !!entry?.isIntersecting;
+        updatePlayback(instance);
       }, { rootMargin: "120px" });
       instance.intersectionObserver.observe(node);
       app.ticker.add((ticker) => {
@@ -265,6 +377,7 @@
       });
       node.dataset.sceneEngineState = "ready";
       node.classList.add("scene-engine-ready");
+      updatePlayback(instance);
     } catch {
       node.dataset.sceneEngineState = "fallback";
       destroyInstance(instance);
@@ -279,6 +392,7 @@
   function sync(root = document) {
     const generation = renderGeneration;
     const targets = [...root.querySelectorAll("[data-dynasty-scene]")];
+    targets.forEach(mountActions);
     if (!canAnimate()) {
       targets.forEach((node) => { node.dataset.sceneEngineState = "fallback"; });
       return;
@@ -293,9 +407,17 @@
       mounted: [...instances].filter((item) => !item.destroyed).length,
       ready: document.querySelectorAll('[data-scene-engine-state="ready"]').length,
       fallbacks: document.querySelectorAll('[data-scene-engine-state="fallback"]').length,
+      interactive: document.querySelectorAll(".scene-points").length,
+      visible: [...instances].filter(item => item.visible).length,
+      running: [...instances].filter(item => item.app?.renderer && item.app.ticker.started).length,
     };
   }
 
   document.documentElement.dataset.sceneEngine = ENGINE_VERSION;
+  document.addEventListener("visibilitychange", () => instances.forEach(updatePlayback));
+  motionPreference?.addEventListener("change", event => {
+    reducedMotion = event.matches;
+    instances.forEach(updatePlayback);
+  });
   window.DynastySceneEngine = Object.freeze({ version: ENGINE_VERSION, beforeRender, sync, status });
 })();

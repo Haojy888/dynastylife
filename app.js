@@ -16906,7 +16906,7 @@ function homeView() {
   const blocked = state.dead || !!state.currentEvent || !!state.eventResult || !!state.pendingCaravan || state.prisonYears > 0;
   return `
     <article class="play-card home-card">
-      ${pageIllustration(state.age >= 6 && state.age < 15 ? EVENT_SCENE_ART.childhood : EVENT_SCENE_ART.home)}
+      ${pageIllustration(state.age >= 6 && state.age < 15 ? EVENT_SCENE_ART.childhood : EVENT_SCENE_ART.home, "[data-home-action]", "家中行动会度过一年。")}
       <p class="eyebrow">家中</p>
       <h2>${state.age < 15 ? "庭院日常" : "持家"} </h2>
       <p>${state.age < 8 ? "年岁尚幼，家中小事也能慢慢养成性情。" : state.age < 15 ? "读书、玩耍、帮忙，都是少年时光。" : "成丁之后，家中也有账册、人情与长辈需要照看。"}选择一项家中活动，度过这一年。</p>
@@ -17037,7 +17037,7 @@ function placeSceneHeader(place) {
   const key = { official: "official", temple: "fortune", academy: "academy", theater: "culture" }[place?.id];
   const art = key ? EVENT_SCENE_ART[key] : null;
   if (!art) return "";
-  return `<figure class="place-scene place-scene-${key}" data-dynasty-scene="place" data-scene-key="${key}">${sceneImage(art, art.alt || `${place.label}场景`)}<figcaption><small>可交互场景</small><b>${escapeHtml(place.label)}</b><span>从场景行动中选择你要做的事</span></figcaption></figure>`;
+  return `<figure class="place-scene place-scene-${key}" data-dynasty-scene="place" data-scene-key="${key}" data-scene-src="${escapeHtml(art.src)}" data-scene-focus="${escapeHtml(art.focus)}" data-scene-actions=".button-list button">${sceneImage(art, art.alt || `${place.label}场景`)}<figcaption><small>可交互场景</small><b>${escapeHtml(place.label)}</b><span>点选画中标记，查看行动</span></figcaption></figure>`;
 }
 
 function placeView() {
@@ -17567,7 +17567,7 @@ function travelRunView() {
     const canSettle = state.age >= 15 && localRegion.reputation >= 35 && state.stats.money >= profile.settleCost && state.regional.residenceId !== destination.id;
     return `
       <article class="play-card travel-run-card travel-arrival">
-        <div class="travel-arrival-scene" data-dynasty-scene="travel" data-scene-key="${escapeHtml(destination.id)}" data-scene-src="${escapeHtml(regionSceneArt(destination.id).hero)}" data-scene-focus="${escapeHtml(regionSceneArt(destination.id).focus)}" style="--region-focus:${regionSceneArt(destination.id).focus}"><img src="${regionSceneArt(destination.id).hero}" alt="${escapeHtml(regionSceneArt(destination.id).alt)}" width="1400" height="933" decoding="async" fetchpriority="high" /><span><small>山河抵达</small><b>${escapeHtml(destination.name)} · ${escapeHtml(destination.landmark)}</b></span></div>
+        <div class="travel-arrival-scene" data-dynasty-scene="travel" data-scene-key="${escapeHtml(destination.id)}" data-scene-src="${escapeHtml(regionSceneArt(destination.id).hero)}" data-scene-focus="${escapeHtml(regionSceneArt(destination.id).focus)}" data-scene-actions="[data-travel-local]" data-scene-note="选择一项当地游历，为这段旅程收尾。" style="--region-focus:${regionSceneArt(destination.id).focus}"><img src="${regionSceneArt(destination.id).hero}" alt="${escapeHtml(regionSceneArt(destination.id).alt)}" width="1400" height="933" decoding="async" fetchpriority="high" /><span><small>山河抵达</small><b>${escapeHtml(destination.name)} · ${escapeHtml(destination.landmark)}</b></span></div>
         <p class="eyebrow">抵达 · ${escapeHtml(destination.name)}</p>
         <h2>${escapeHtml(destination.landmark)}在望</h2>
         <p>${escapeHtml(destination.story)}一路行程评定：${travelQualityLabel(run.quality)}（${Math.round(run.quality)}）。你还可以选择一项当地游历。</p>
@@ -19129,8 +19129,8 @@ function sceneImage(art, alt = art.alt || `${art.label}场景插画`, lazy = fal
   return `<img src="${escapeHtml(art.src)}" ${art.smallSrc ? `srcset="${escapeHtml(art.smallSrc)} 800w, ${escapeHtml(art.src)} 1600w" sizes="${sizes}"` : ""} alt="${escapeHtml(alt)}" width="1600" height="900" decoding="async" ${lazy ? 'loading="lazy"' : 'fetchpriority="high"'}>`;
 }
 
-function pageIllustration(art) {
-  return `<figure class="page-illustration" style="--illustration-focus:${escapeHtml(art.focus || "50% 50%")}">${sceneImage(art)}</figure>`;
+function pageIllustration(art, actions = "", note = "") {
+  return `<figure class="page-illustration" ${actions ? `data-dynasty-scene="home" data-scene-key="life" data-scene-src="${escapeHtml(art.src)}" data-scene-focus="${escapeHtml(art.focus)}" data-scene-actions="${escapeHtml(actions)}" data-scene-note="${escapeHtml(note)}"` : ""} style="--illustration-focus:${escapeHtml(art.focus || "50% 50%")}">${sceneImage(art)}</figure>`;
 }
 
 function eventSceneArt(event = {}) {
@@ -19207,7 +19207,7 @@ function eventView(event) {
   const eyebrow = npcRequest ? "亲友主动请求 · 有期限的答复" : fateThread ? "命册伏笔 · 旧事重来" : childLifeEvent ? "家门流年 · 子女自立" : worldEvent ? `${state.dynasty.eraName}${state.dynasty.reignYear}年 · 天下主线` : regionalEvent ? `${travelDestinationByStaticId(event.regionId).name} · 地方纪事` : clanEvent ? `${state.clan.familyName}氏 · 合族议事` : femaleSchoolEvent ? "女学 · 闺塾见闻" : prisonEvent ? `牢狱流年 · 余刑 ${state.prisonYears} 年` : culturalEvent ? `${CULTURAL_SEASONS[event.season]?.name || "四时"}时 · ${event.culturalType === "festival" ? "传统节日" : "二十四节气"}` : event.kind === "secretIntroduction" ? "奇闻暗线开启" : event.kind === "examinerBribe" ? "贡院暗局" : event.kind === "underworldConsequence" ? "旧账追门" : event.kind === "jianghuProphecy" ? "江湖命数" : official ? "官场考验" : familyStory ? "家事流年" : careerCase ? "本业专案" : fortuneEvent ? "签运应验" : "事件";
   return `
     <article class="play-card event-card ${sceneInteraction ? "interactive-scene-event" : ""} ${prisonEvent ? "prison-event" : ""} ${culturalEvent ? `culture-event season-${event.season}` : ""} ${worldEvent ? "world-event" : ""} ${clanEvent ? "clan-event" : ""} ${regionalEvent ? "regional-event" : ""}">
-      <figure class="event-scene event-scene-${sceneArt.key}" data-dynasty-scene="event" data-scene-key="${escapeHtml(sceneArt.key)}" data-scene-src="${escapeHtml(sceneArt.src)}" data-scene-focus="${escapeHtml(sceneArt.focus)}" data-scene-season="${escapeHtml(event.season || "")}" style="--event-focus:${sceneArt.focus}">
+      <figure class="event-scene event-scene-${sceneArt.key}" data-dynasty-scene="event" data-scene-key="${escapeHtml(sceneArt.key)}" data-scene-src="${escapeHtml(sceneArt.src)}" data-scene-focus="${escapeHtml(sceneArt.focus)}" data-scene-season="${escapeHtml(event.season || "")}" data-scene-actions="[data-choice]" data-scene-note="确认后作出本次选择。" style="--event-focus:${sceneArt.focus}">
         ${sceneImage(sceneArt)}
         <figcaption><span>流年画卷</span><b>${escapeHtml(sceneArt.label)}</b></figcaption>
       </figure>
@@ -19676,6 +19676,7 @@ function finishOnboarding({ advance = false } = {}) {
 app.addEventListener("click", (event) => {
   const button = event.target.closest("button");
   if (!button) return;
+  if (button.closest(".scene-points, .scene-inspector")) return;
   if (button.closest("#save-status-notice")) return;
   if (button.dataset.action === "toggle-tools") {
     view.toolsOpen = !view.toolsOpen;
