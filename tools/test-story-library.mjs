@@ -85,7 +85,7 @@ try {
     await page.click('.center-panel [data-page="stories"]');
     await page.click('[data-start-chapter="workshop-promise"]');
     assert.equal(await page.evaluate(() => state.currentEvent.chapterId), 'workshop-promise');
-    assert.equal(await page.$eval('.event-scene img', node => node.getAttribute('src')), 'assets/event-career.webp');
+    assert.equal(await page.$eval('.event-scene img', node => node.getAttribute('src')), 'assets/event-workshop-v1.webp');
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${name}: 匠作选项横向溢出`);
     await capture(page, `${name}-workshop-promise.png`);
     await page.evaluate(() => {
