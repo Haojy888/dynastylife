@@ -108,13 +108,7 @@
       point.setAttribute("aria-controls", inspector.id);
       point.setAttribute("aria-expanded", "false");
       const number = document.createElement("b");
-      const sourceIcon = target.querySelector("img");
-      if (sourceIcon) {
-        const image = sourceIcon.cloneNode(true);
-        image.alt = "";
-        image.draggable = false;
-        number.appendChild(image);
-      } else number.textContent = String(index + 1);
+      number.textContent = String(index + 1);
       number.setAttribute("aria-hidden", "true");
       const caption = document.createElement("span");
       caption.className = "scene-point-label";
