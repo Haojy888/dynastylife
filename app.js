@@ -930,6 +930,11 @@ const EVENT_SCENE_ART = {
   blankLetter: { src: "assets/event-blank-letter-v1.webp", smallSrc: "assets/event-blank-letter-v1-small.webp", label: "无字镖书", alt: "雨夜渡口中提灯的接应人与渡船，檐下放着一封信", focus: "52% 52%" },
   home: { src: "assets/scene-home-v1.webp", smallSrc: "assets/scene-home-v1-small.webp", label: "庭院灯火", alt: "青瓦庭院亮着暖灯，竹影间的桌上放着茶具和陶制油灯", focus: "55% 58%" },
   heirloom: { src: "assets/scene-heirlooms-v1.webp", smallSrc: "assets/scene-heirlooms-v1-small.webp", label: "书案旧物", alt: "窗边旧书案上摊开家传书册、旧契和印章，木匣中收着历年的物件", focus: "55% 55%" },
+  childhood: { src: "assets/scene-childhood-v1.webp", smallSrc: "assets/scene-childhood-v1-small.webp", label: "巷口放鸢", alt: "春日村巷旁，孩子们牵着纸鸢沿河嬉戏", focus: "55% 43%" },
+  academy: { src: "assets/scene-academy-v1.webp", smallSrc: "assets/scene-academy-v1-small.webp", label: "晨光书院", alt: "晨光穿过书院廊窗，桌上放着书册、纸张与笔砚", focus: "50% 58%" },
+  matchmaking: { src: "assets/scene-matchmaking-v1.webp", smallSrc: "assets/scene-matchmaking-v1-small.webp", label: "春庭庚帖", alt: "春庭茶席上摆着系红线的庚帖与两只茶杯，两张空椅等待来客", focus: "50% 54%" },
+  mentorship: { src: "assets/scene-mentorship-v1.webp", smallSrc: "assets/scene-mentorship-v1-small.webp", label: "树下传艺", alt: "树荫下师徒对坐，在卷册与茶盏旁传授本领", focus: "50% 52%" },
+  lifeClosing: { src: "assets/scene-life-closing-v1.webp", smallSrc: "assets/scene-life-closing-v1-small.webp", label: "暮色归舟", alt: "暮色河岸旁的空椅与卷册，系岸小舟映着远处的夕阳", focus: "52% 58%" },
   culture: { src: "assets/event-culture.webp", label: "华夏岁时", focus: "56% 50%" },
   prison: { src: "assets/event-prison.webp", label: "铁窗流年", focus: "68% 50%" },
   jianghu: { src: "assets/event-jianghu.webp", label: "江湖暗门", focus: "66% 50%" },
@@ -7232,7 +7237,7 @@ function takeApprentice() {
   }])[0];
   state.apprentices.push(apprentice);
   state.apprenticeLastYear = state.year;
-  finishAction("开门收徒", `${apprentice.name}在门前行过拜师礼，自此跟随你学习${currentCareerName()}的本领。教得好，他会把你的名号与手艺带到下一代。`, [{ label: "弟子", value: apprentice.name }], careerIcon(careerKind(state.career)));
+  finishAction("开门收徒", `${apprentice.name}在门前行过拜师礼，自此跟随你学习${currentCareerName()}的本领。教得好，他会把你的名号与手艺带到下一代。`, [{ label: "弟子", value: apprentice.name }], careerIcon(careerKind(state.career)), "mentorship");
 }
 
 function teachApprentice(id) {
@@ -7246,7 +7251,7 @@ function teachApprentice(id) {
   apprentice.taughtYear = state.year;
   addLedger("授徒用度", -40, `为${apprentice.name}置办材料、书册与工具。`);
   graduateApprentice(apprentice, deltas);
-  finishAction("亲授门艺", `你没有只让${apprentice.name}打杂，而是把本业中的关窍逐条讲透。如今技艺 ${Math.round(apprentice.skill)}，忠诚 ${Math.round(apprentice.loyalty)}。`, deltas, careerIcon(careerKind(state.career)));
+  finishAction("亲授门艺", `你没有只让${apprentice.name}打杂，而是把本业中的关窍逐条讲透。如今技艺 ${Math.round(apprentice.skill)}，忠诚 ${Math.round(apprentice.loyalty)}。`, deltas, careerIcon(careerKind(state.career)), "mentorship");
 }
 
 function graduateApprentice(apprentice, deltas = []) {
@@ -9330,7 +9335,7 @@ function performHomeAction(action) {
   }
   state.lastDeltas = deltas;
   addLog(title, text, deltas);
-  state.eventResult = { title, text, deltas, icon: iconName };
+  state.eventResult = { title, text, deltas, icon: iconName, ...(action === "play" && state.age >= 6 && state.age < 15 ? { illustrationKey: "childhood" } : {}) };
   state.age += 1;
   state.year += 1;
   view.page = "main";
@@ -14599,10 +14604,10 @@ function officialPosthumousTitle() {
   return "官虽不显，亦算有始有终。";
 }
 
-function finishAction(title, text, deltas, iconName) {
+function finishAction(title, text, deltas, iconName, illustrationKey = "") {
   state.lastDeltas = deltas;
   const iconNameResolved = iconName || resultIcon({ title, content: text }, null);
-  state.eventResult = { title, text, deltas, icon: iconNameResolved, scene: activitySceneFor(iconNameResolved, title, text) };
+  state.eventResult = { title, text, deltas, icon: iconNameResolved, scene: activitySceneFor(iconNameResolved, title, text), ...(illustrationKey ? { illustrationKey } : {}) };
   addLog(title, text, deltas);
   save();
   render();
@@ -14665,7 +14670,7 @@ function prepareExam() {
   if (!state.tags.includes("备考")) state.tags.push("备考");
   state.lastDeltas = deltas;
   addLog("备考", "你在书院温经读题，先生圈点得失，心里对下场考试更有把握。", deltas);
-  state.eventResult = { title: "备考一年", text: "你在书院温经读题，先生圈点得失，心里对下场考试更有把握。", deltas, icon: "Book" };
+  state.eventResult = { title: "备考一年", text: "你在书院温经读题，先生圈点得失，心里对下场考试更有把握。", deltas, icon: "Book", illustrationKey: "academy" };
   state.age += 1;
   state.year += 1;
   view.page = "main";
@@ -16779,7 +16784,7 @@ function eventResultView() {
     (state.careerChapters?.active?.id === result.chapterId ? state.careerChapters.active : state.careerChapters?.completed?.find(entry => entry.id === result.chapterId)) : null;
   const deltas = Array.isArray(result.deltas) ? result.deltas : state.lastDeltas || [];
   const scene = result.scene || activitySceneFor(result.icon, result.title, result.text);
-  const art = chapter ? eventSceneArt({ kind: "careerChapter", chapterId: chapter.id }) : null;
+  const art = chapter ? eventSceneArt({ kind: "careerChapter", chapterId: chapter.id }) : Object.hasOwn(EVENT_SCENE_ART, result.illustrationKey) ? EVENT_SCENE_ART[result.illustrationKey] : null;
   return `
     <article class="play-card result-card scene-${escapeHtml(scene)}">
       <p class="eyebrow">结果</p>
@@ -16901,7 +16906,7 @@ function homeView() {
   const blocked = state.dead || !!state.currentEvent || !!state.eventResult || !!state.pendingCaravan || state.prisonYears > 0;
   return `
     <article class="play-card home-card">
-      ${pageIllustration(EVENT_SCENE_ART.home)}
+      ${pageIllustration(state.age >= 6 && state.age < 15 ? EVENT_SCENE_ART.childhood : EVENT_SCENE_ART.home)}
       <p class="eyebrow">家中</p>
       <h2>${state.age < 15 ? "庭院日常" : "持家"} </h2>
       <p>${state.age < 8 ? "年岁尚幼，家中小事也能慢慢养成性情。" : state.age < 15 ? "读书、玩耍、帮忙，都是少年时光。" : "成丁之后，家中也有账册、人情与长辈需要照看。"}选择一项家中活动，度过这一年。</p>
@@ -17029,10 +17034,10 @@ function heirloomCard(item) {
 }
 
 function placeSceneHeader(place) {
-  const key = { official: "official", temple: "fortune", academy: "study", theater: "culture" }[place?.id];
+  const key = { official: "official", temple: "fortune", academy: "academy", theater: "culture" }[place?.id];
   const art = key ? EVENT_SCENE_ART[key] : null;
   if (!art) return "";
-  return `<figure class="place-scene place-scene-${key}" data-dynasty-scene="place" data-scene-key="${key}"><img src="${escapeHtml(art.src)}" alt="${escapeHtml(place.label)}场景" width="1600" height="900" decoding="async"><figcaption><small>可交互场景</small><b>${escapeHtml(place.label)}</b><span>从场景行动中选择你要做的事</span></figcaption></figure>`;
+  return `<figure class="place-scene place-scene-${key}" data-dynasty-scene="place" data-scene-key="${key}">${sceneImage(art, art.alt || `${place.label}场景`)}<figcaption><small>可交互场景</small><b>${escapeHtml(place.label)}</b><span>从场景行动中选择你要做的事</span></figcaption></figure>`;
 }
 
 function placeView() {
@@ -17819,6 +17824,7 @@ function matchmakerView() {
   const hasLover = !!state.family.lover && !livingSpouse;
   return `
     <article class="play-card matchmaker-card">
+      ${pageIllustration(EVENT_SCENE_ART.matchmaking)}
       <p class="eyebrow">联姻策略局</p>
       <h2>细看人家</h2>
       <p>媒人摊开庚帖：家世、婚仪门槛、性情、生育预期与亲族势力一应写明。选定需付媒资 ${moneyText(30)}，之后可在亲友页成婚；婚仪筹备不足则暂不能成礼。</p>
@@ -19238,6 +19244,7 @@ function deathView() {
     <article class="play-card death-card">
       <p class="eyebrow">身后事</p>
       <h2>${escapeHtml(state.name)}</h2>
+      ${pageIllustration(EVENT_SCENE_ART.lifeClosing)}
       <p>${escapeHtml(state.name)}享年${state.age}岁，${escapeHtml(state.deathReason || "命数已尽")}。命格总评：${escapeHtml(lifeGrade(score))}，${score} 分。若妻子尚在或有子孙，可由家人承继家业继续此存档。</p>
       <section class="score-grid">
       ${scoreTile("达成成就", `${completedGoals().length}/${availableLifeGoals().length}`)}
@@ -19543,6 +19550,7 @@ function apprenticePanel() {
   const currentName = state.career ? currentCareerName() : "旧业";
   return `
     <section class="apprentice-panel">
+      ${apprentices.length ? pageIllustration(EVENT_SCENE_ART.mentorship) : ""}
       <div class="section-title"><h2>师门传业</h2><span>${learning.length} 人在学 · ${apprentices.filter((item) => item.status === "graduated").length} 人出师</span></div>
       ${apprentices.length ? `<div class="apprentice-list">${apprentices.map((item) => `<article class="apprentice-item"><span class="apprentice-person">${icon(item.gender === "female" ? "FamilySisterAvatar" : "FamilyBrotherAvatar", item.name)}<span class="apprentice-copy"><b>${escapeHtml(item.name)}</b><small>${escapeHtml(item.careerName)} · 技艺 ${Math.round(item.skill)} · 忠诚 ${Math.round(item.loyalty)} · ${item.status === "learning" ? "随师学艺" : item.status === "graduated" ? "出师立业" : "离门"}</small></span></span>${item.status === "learning" ? `<button class="text-btn" data-apprentice-teach="${escapeHtml(item.id)}" ${item.taughtYear === state.year || state.stats.money < 40 || state.prisonYears > 0 ? "disabled" : ""}>亲授 · ${moneyText(40)}</button>` : ""}</article>`).join("")}</div>` : `<p class="empty-note">${currentName}还没有收徒传艺。</p>`}
       ${state.career ? `<div class="main-actions"><button class="secondary-btn" data-action="take-apprentice" ${canTakeApprentice() ? "" : "disabled"}>开门收徒</button><small>${canTakeApprentice() ? `可收一名弟子，传下${escapeHtml(currentName)}门艺。` : "需年满24岁、本业达到3级；同年不可反复收徒。"}</small></div>` : ""}
