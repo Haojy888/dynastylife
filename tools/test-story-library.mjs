@@ -40,7 +40,7 @@ try {
     const beforePreview = await page.evaluate(() => ({ age: state.age, year: state.year, money: state.stats.money, completed: state.careerChapters.completed.length }));
     await page.click('.center-panel [data-page="stories"]');
     await page.waitForFunction(() => document.activeElement.matches('.center-panel h2'));
-    assert.equal(await page.$$eval('.story-book', nodes => nodes.length), 5, '五条长卷应有统一入口');
+    assert.equal(await page.$$eval('.story-book', nodes => nodes.length), 6, '六条长卷应有统一入口');
     assert.equal(await page.$eval('.story-book', node => node.dataset.storyId), 'spring-water', '当前营生的长卷应排在前面');
     await page.focus('[data-story-id="spring-water"] .story-book-contents summary');
     await page.keyboard.press('Enter');

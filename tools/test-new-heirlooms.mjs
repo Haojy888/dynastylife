@@ -17,6 +17,7 @@ try {
     const definitions = [
       { id: "spring-water", kind: "farmer", item: "water-register", title: "分水农事簿", outcome: "一渠同春", cost: 40, path: ["survey-channel", "shared-weir", "teach-water", "public-register"] },
       { id: "workshop-promise", kind: "craft", item: "craft-pattern", title: "百工留样册", outcome: "百工传式", cost: 50, path: ["keep-sample", "prove-process", "teach-work", "open-pattern"] },
+      { id: "blank-letter", kind: "caravan", item: "night-route", title: "听雨行镖录", outcome: "白纸照夜", cost: 40, path: ["trace-paper", "check-warrant", "match-testimony", "expose-network"] },
     ];
     let checks = 0;
     const check = (condition, message) => { checks += 1; if (!condition) throw new Error(message); };
@@ -85,6 +86,9 @@ try {
         if (definition.kind === "farmer") {
           check(careerProgressFor().livelihood.readiness === 28 && careerProgressFor().livelihood.reputation === 14 && careerProgressFor().livelihood.resource === before.resource, "农簿增加地力与乡望，不把地力误算为仓粮");
           check(note.includes("地力 +8") && note.includes("乡望 +4"), "农簿效果提示与结算一致");
+        } else if (definition.kind === "caravan") {
+          check(!careerProgressFor().livelihood && state.stats.knowledge === 42 && state.stats.physique === 52, "行镖录增加经验、学识与体魄，不虚构行业指标");
+          check(note.includes("学识 +2") && note.includes("体魄 +2"), "行镖录提示与结算一致");
         } else {
           check(!careerProgressFor().livelihood && state.stats.knowledge === 43, "工匠只加经验与学识，没有虚构行业属性");
           check(note.includes("学识 +3") && !note.includes("门路"), "留样册没有不存在的指标提示");
@@ -110,7 +114,7 @@ try {
       finishEventResult();
       use("donate");
       check(state.stats.money === 500 - definition.cost - 25 && item().status === "donated", "转赠费用为 25 铜钱，物件永久离家");
-      check(state.eventResult.text.includes(definition.kind === "farmer" ? "用水农户" : "匠作同业"), "新物件交给对应乡里受赠者");
+      check(state.eventResult.text.includes(definition.kind === "farmer" ? "用水农户" : definition.kind === "caravan" ? "镖行同业" : "匠作同业"), "新物件交给对应乡里受赠者");
       finishEventResult();
       inherit("spouse", careerName);
       check(!heirloomActionState(item()).canUse && item().status === "donated", "捐赠后妻子承继不能取回旧物");
@@ -136,7 +140,7 @@ try {
     return { checks, results };
   });
   assert.deepEqual(errors, []);
-  assert.equal(result.results.length, 2);
+  assert.equal(result.results.length, 3);
   console.log(JSON.stringify(result));
 } finally {
   await browser?.close();
